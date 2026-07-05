@@ -6,12 +6,20 @@
 //
 
 import SwiftUI
+import UI
 
 @main
 struct RouteFinderAppApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @StateObject private var weatherViewModel = WeatherViewModel.makeDefault()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(weatherViewModel)
+                .onAppear {
+                    weatherViewModel.startMonitoring()
+                }
         }
     }
 }

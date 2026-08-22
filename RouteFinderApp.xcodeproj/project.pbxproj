@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		84F64BFF303B221100803C6E /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = 84F064C42FF9D37C00F1F49E /* UI */; };
+		84F64C00303B221100803C6E /* CarPlayUI in Frameworks */ = {isa = PBXBuildFile; productRef = 84F064C52FF9D37C00F1F49E /* CarPlayUI */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		84F064A72FF9D36A00F1F49E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -28,6 +33,16 @@
 		84F064A62FF9D36A00F1F49E /* RouteFinderAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RouteFinderAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		84F064B02FF9D36A00F1F49E /* RouteFinderAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RouteFinderAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		84F064C62FF9D37D00F1F49E /* Exceptions for "RouteFinderApp" folder in "RouteFinderApp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 84F064982FF9D36900F1F49E /* RouteFinderApp */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		84F0649B2FF9D36900F1F49E /* RouteFinderApp */ = {
@@ -55,6 +70,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				84F64C00303B221100803C6E /* CarPlayUI in Frameworks */,
+				84F64BFF303B221100803C6E /* UI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -201,7 +218,7 @@
 			mainGroup = 84F064902FF9D36900F1F49E;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				84F064C32FF9D37C00F1F49E /* XCLocalSwiftPackageReference "../RouteFinder" */,
+				84F064C32FF9D37C00F1F49E /* XCLocalSwiftPackageReference "RouteFinder" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 84F0649A2FF9D36900F1F49E /* Products */;
@@ -614,33 +631,22 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		84F064C62FF9D37D00F1F49E /* Exceptions for "RouteFinderApp" folder in "RouteFinderApp" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-				RouteFinderApp.entitlements,
-			);
-			target = 84F064982FF9D36900F1F49E /* RouteFinderApp */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin XCLocalSwiftPackageReference section */
-		84F064C32FF9D37C00F1F49E /* XCLocalSwiftPackageReference "../RouteFinder" */ = {
+		84F064C32FF9D37C00F1F49E /* XCLocalSwiftPackageReference "RouteFinder" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = ../RouteFinder;
+			relativePath = RouteFinder;
 		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		84F064C42FF9D37C00F1F49E /* UI */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 84F064C32FF9D37C00F1F49E /* XCLocalSwiftPackageReference "../RouteFinder" */;
+			package = 84F064C32FF9D37C00F1F49E /* XCLocalSwiftPackageReference "RouteFinder" */;
 			productName = UI;
 		};
 		84F064C52FF9D37C00F1F49E /* CarPlayUI */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 84F064C32FF9D37C00F1F49E /* XCLocalSwiftPackageReference "../RouteFinder" */;
+			package = 84F064C32FF9D37C00F1F49E /* XCLocalSwiftPackageReference "RouteFinder" */;
 			productName = CarPlayUI;
 		};
 /* End XCSwiftPackageProductDependency section */

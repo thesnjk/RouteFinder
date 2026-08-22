@@ -1,0 +1,686 @@
+import CoreLocation
+import CryptoKit
+import RouteController
+import SwiftUI
+import WebKit
+
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
+
+/// Simulated vehicle position for route playback on the map.
+public struct SimulatedVehicleState: Equatable, Sendable {
+    public let latitude: Double
+    public let longitude: Double
+    public let bearing: Double
+    public let visible: Bool
+    public let lengthMeters: Double
+    public let widthMeters: Double
+    public let playbackRevision: UInt64
+    public let dimensionRevision: UInt64
+    public let renderMode: VehicleRenderMode
+    public let footprintCoordinates: [CLLocationCoordinate2D]
+
+    /// Creates simulated vehicle state for the map bridge.
+    public init(
+        latitude: Double,
+        longitude: Double,
+        bearing: Double,
+        visible: Bool,
+        lengthMeters: Double = SimulatedVehicleFootprint.defaultLengthMeters,
+        widthMeters: Double = SimulatedVehicleFootprint.defaultWidthMeters,
+        playbackRevision: UInt64 = 0,
+        dimensionRevision: UInt64 = 0,
+        renderMode: VehicleRenderMode = .polygon,
+        footprintCoordinates: [CLLocationCoordinate2D] = []
+    ) {
+        self.latitude = latitude
+        self.longitude = longitude
+        self.bearing = bearing
+        self.visible = visible
+        self.lengthMeters = lengthMeters
+        self.widthMeters = widthMeters
+        self.playbackRevision = playbackRevision
+        self.dimensionRevision = dimensionRevision
+        self.renderMode = renderMode
+        if visible, footprintCoordinates.isEmpty {
+            self.footprintCoordinates = VehicleGeometryCalculator.generateFootprint(
+                rearAxle: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
+                headingDegrees: bearing,
+                lengthMeters: lengthMeters,
+                widthMeters: widthMeters
+            )
+        } else {
+            self.footprintCoordinates = footprintCoordinates
+        }
+    }
+
+    public static func == (lhs: SimulatedVehicleState, rhs: SimulatedVehicleState) -> Bool {
+        lhs.latitude == rhs.latitude
+            && lhs.longitude == rhs.longitude
+            && lhs.bearing == rhs.bearing
+            && lhs.visible == rhs.visible
+            && lhs.lengthMeters == rhs.lengthMeters
+            && lhs.widthMeters == rhs.widthMeters
+            && lhs.playbackRevision == rhs.playbackRevision
+            && lhs.dimensionRevision == rhs.dimensionRevision
+            && lhs.renderMode == rhs.renderMode
+            && lhs.footprintCoordinates.count == rhs.footprintCoordinates.count
+            && zip(lhs.footprintCoordinates, rhs.footprintCoordinates).allSatisfy {
+                $0.latitude == $1.latitude && $0.longitude == $1.longitude
+            }
+    }
+}
+
+/// MapLibre GL JS map embedded in WKWebView with OpenFreeMap tiles.
+public struct MapLibreWebMapView: View {
+    let coordinates: [CLLocationCoordinate2D]
+    let encodedPolyline: String?
+    let encodedPolylinePrecision: Int
+    let routeCumulativeLengths: [Double]
+    let pins: [MapLibrePin]
+    let hazardsGeoJSON: String
+    let simulatedVehicle: SimulatedVehicleState?
+    let interactionMode: MapLibreInteractionMode
+    let region: MapRegion
+    let mapBridge: MapViewControllerBridge?
+    let onMapClick: (CLLocationCoordinate2D) -> Void
+    let onContextMenu: (CLLocationCoordinate2D) -> Void
+    let onRegionChange: (CLLocationCoordinate2D) -> Void
+
+    public init(
+        coordinates: [CLLocationCoordinate2D],
+        encodedPolyline: String? = nil,
+        encodedPolylinePrecision: Int = 6,
+        routeCumulativeLengths: [Double] = [],
+        pins: [MapLibrePin] = [],
+        hazardsGeoJSON: String = "{\"type\":\"FeatureCollection\",\"features\":[]}",
+        simulatedVehicle: SimulatedVehicleState? = nil,
+        interactionMode: MapLibreInteractionMode = .navigate,
+        region: MapRegion,
+        mapBridge: MapViewControllerBridge? = nil,
+        onMapClick: @escaping (CLLocationCoordinate2D) -> Void = { _ in },
+        onContextMenu: @escaping (CLLocationCoordinate2D) -> Void = { _ in },
+        onRegionChange: @escaping (CLLocationCoordinate2D) -> Void = { _ in }
+    ) {
+        self.coordinates = coordinates
+        self.encodedPolyline = encodedPolyline
+        self.encodedPolylinePrecision = encodedPolylinePrecision
+        self.routeCumulativeLengths = routeCumulativeLengths
+        self.pins = pins
+        self.hazardsGeoJSON = hazardsGeoJSON
+        self.simulatedVehicle = simulatedVehicle
+        self.interactionMode = interactionMode
+        self.region = region
+        self.mapBridge = mapBridge
+        self.onMapClick = onMapClick
+        self.onContextMenu = onContextMenu
+        self.onRegionChange = onRegionChange
+    }
+
+    public var body: some View {
+        MapLibreWebViewRepresentable(
+            coordinates: coordinates,
+            encodedPolyline: encodedPolyline,
+            encodedPolylinePrecision: encodedPolylinePrecision,
+            routeCumulativeLengths: routeCumulativeLengths,
+            pins: pins,
+            hazardsGeoJSON: hazardsGeoJSON,
+            simulatedVehicle: simulatedVehicle,
+            interactionMode: interactionMode,
+            region: region,
+            mapBridge: mapBridge,
+            onMapClick: onMapClick,
+            onContextMenu: onContextMenu,
+            onRegionChange: onRegionChange
+        )
+        .ignoresSafeArea()
+    }
+}
+
+/// Pin rendered on the MapLibre canvas.
+public struct MapLibrePin: Identifiable, Sendable {
+    public let id: String
+    public let coordinate: CLLocationCoordinate2D
+    public let colorHex: String
+    public let title: String
+
+    public init(id: String, coordinate: CLLocationCoordinate2D, colorHex: String, title: String) {
+        self.id = id
+        self.coordinate = coordinate
+        self.colorHex = colorHex
+        self.title = title
+    }
+}
+
+/// Map interaction mode for pin placement vs navigation.
+public enum MapLibreInteractionMode: Equatable, Sendable {
+    case navigate
+    case pin
+}
+
+#if os(macOS)
+/// WKWebView subclass that does not capture keyboard focus, keeping text fields in sheets usable.
+private final class MapKeyboardPassiveWebView: WKWebView {
+    override var acceptsFirstResponder: Bool { false }
+}
+
+/// Hosts the WKWebView behind SwiftUI overlays so map chrome receives pointer events first.
+private final class MapWebViewHost: NSView {
+    let webView: WKWebView
+
+    init(webView: WKWebView) {
+        self.webView = webView
+        super.init(frame: .zero)
+        wantsLayer = true
+        addSubview(webView)
+        webView.wantsLayer = true
+        webView.layer?.zPosition = -1
+        webView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            webView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            webView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            webView.topAnchor.constraint(equalTo: topAnchor),
+            webView.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
+private struct MapLibreWebViewRepresentable: NSViewRepresentable {
+    typealias PlatformWebView = WKWebView
+
+    let coordinates: [CLLocationCoordinate2D]
+    let encodedPolyline: String?
+    let encodedPolylinePrecision: Int
+    let routeCumulativeLengths: [Double]
+    let pins: [MapLibrePin]
+    let hazardsGeoJSON: String
+    let simulatedVehicle: SimulatedVehicleState?
+    let interactionMode: MapLibreInteractionMode
+    let region: MapRegion
+    let mapBridge: MapViewControllerBridge?
+    let onMapClick: (CLLocationCoordinate2D) -> Void
+    let onContextMenu: (CLLocationCoordinate2D) -> Void
+    let onRegionChange: (CLLocationCoordinate2D) -> Void
+
+    func makeNSView(context: Context) -> MapWebViewHost {
+        let webView = MapKeyboardPassiveWebView(frame: .zero, configuration: context.coordinator.makeConfiguration())
+        webView.setValue(false, forKey: "drawsBackground")
+        webView.navigationDelegate = context.coordinator
+        context.coordinator.webView = webView
+        context.coordinator.loadMap(in: webView, region: region)
+        return MapWebViewHost(webView: webView)
+    }
+
+    func updateNSView(_ host: MapWebViewHost, context: Context) {
+        context.coordinator.parent = self
+        context.coordinator.registerSimulationBridge()
+        context.coordinator.syncState(to: host.webView)
+    }
+
+    func makeCoordinator() -> Coordinator {
+        let coordinator = Coordinator(parent: self)
+        coordinator.registerSimulationBridge()
+        return coordinator
+    }
+}
+#else
+/// Hosts the WKWebView behind SwiftUI overlays so map chrome receives touches first.
+private final class MapWebViewHostView: UIView {
+    let webView: WKWebView
+
+    init(webView: WKWebView) {
+        self.webView = webView
+        super.init(frame: .zero)
+        addSubview(webView)
+        webView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            webView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            webView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            webView.topAnchor.constraint(equalTo: topAnchor),
+            webView.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
+        webView.layer.zPosition = -1
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
+private struct MapLibreWebViewRepresentable: UIViewRepresentable {
+    typealias PlatformWebView = WKWebView
+
+    let coordinates: [CLLocationCoordinate2D]
+    let encodedPolyline: String?
+    let encodedPolylinePrecision: Int
+    let routeCumulativeLengths: [Double]
+    let pins: [MapLibrePin]
+    let hazardsGeoJSON: String
+    let simulatedVehicle: SimulatedVehicleState?
+    let interactionMode: MapLibreInteractionMode
+    let region: MapRegion
+    let mapBridge: MapViewControllerBridge?
+    let onMapClick: (CLLocationCoordinate2D) -> Void
+    let onContextMenu: (CLLocationCoordinate2D) -> Void
+    let onRegionChange: (CLLocationCoordinate2D) -> Void
+
+    func makeUIView(context: Context) -> MapWebViewHostView {
+        let webView = WKWebView(frame: .zero, configuration: context.coordinator.makeConfiguration())
+        webView.isOpaque = true
+        webView.backgroundColor = .systemBackground
+        webView.isMultipleTouchEnabled = true
+        webView.scrollView.isScrollEnabled = false
+        webView.scrollView.delaysContentTouches = false
+        webView.navigationDelegate = context.coordinator
+        context.coordinator.webView = webView
+        context.coordinator.loadMap(in: webView, region: region)
+        return MapWebViewHostView(webView: webView)
+    }
+
+    func updateUIView(_ host: MapWebViewHostView, context: Context) {
+        context.coordinator.parent = self
+        context.coordinator.registerSimulationBridge()
+        context.coordinator.syncState(to: host.webView)
+    }
+
+    func makeCoordinator() -> Coordinator {
+        let coordinator = Coordinator(parent: self)
+        coordinator.registerSimulationBridge()
+        return coordinator
+    }
+}
+#endif
+
+private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
+    var parent: MapLibreWebViewRepresentable
+    weak var webView: WKWebView?
+    private var isReady = false
+    private var didInitMap = false
+    private var lastRouteFingerprint = ""
+    private var lastPinFingerprint = ""
+    private var lastHazardsFingerprint = ""
+    private var lastVehicleFingerprint = ""
+    private var lastRegionFingerprint = ""
+    private var lastMode: MapLibreInteractionMode = .navigate
+    private var suppressUserMoveEventCount = 0
+    private let vehicleCoalescer = BridgeFrameCoalescer()
+
+    private var shouldSuppressUserMoveEvents: Bool {
+        suppressUserMoveEventCount > 0
+    }
+
+    private func beginSuppressUserMoveEvents(for durationMs: Int) {
+        suppressUserMoveEventCount += 1
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(durationMs + 50))
+            suppressUserMoveEventCount = max(0, suppressUserMoveEventCount - 1)
+        }
+    }
+
+    init(parent: MapLibreWebViewRepresentable) {
+        self.parent = parent
+    }
+
+    func registerSimulationBridge() {
+        parent.mapBridge?.easeToCenterHandler = { [weak self] lng, lat, zoom, durationMs in
+            guard let self, let webView = self.webView else { return }
+            self.beginSuppressUserMoveEvents(for: durationMs)
+            if let zoom {
+                webView.evaluateJavaScript(
+                    "easeToCenter(\(lng), \(lat), \(zoom), \(durationMs))"
+                )
+            } else {
+                webView.evaluateJavaScript(
+                    "easeToCenter(\(lng), \(lat), null, \(durationMs))"
+                )
+            }
+        }
+
+        parent.mapBridge?.easeToNavigationHandler = { [weak self] command in
+            guard let self, let webView = self.webView else { return }
+            self.beginSuppressUserMoveEvents(for: command.durationMs)
+            let zoomArg = command.zoom.map { String($0) } ?? "null"
+            let bearingArg = command.bearing.map { String($0) } ?? "null"
+            let pitchArg = command.pitch.map { String($0) } ?? "null"
+            webView.evaluateJavaScript(
+                "easeToNavigation(\(command.longitude), \(command.latitude), \(zoomArg), \(bearingArg), \(pitchArg), \(command.durationMs))"
+            )
+        }
+
+        parent.mapBridge?.fitRouteBoundsHandler = { [weak self] padding in
+            guard let self, let webView = self.webView else { return }
+            self.beginSuppressUserMoveEvents(for: 850)
+            webView.evaluateJavaScript(
+                "fitRouteBounds({ top: \(padding.top), bottom: \(padding.bottom), left: \(padding.leading), right: \(padding.trailing) })"
+            )
+        }
+
+        parent.mapBridge?.zoomByHandler = { [weak self] delta in
+            guard let self, let webView = self.webView else { return }
+            webView.evaluateJavaScript("zoomBy(\(delta))")
+        }
+
+        NavigationMapBridge.shared.pushVehicle = { [weak self] state in
+            guard let self, let webView = self.webView else { return }
+            let renderMode = self.parent.mapBridge?.renderMode(
+                for: self.parent.mapBridge?.currentMapZoom ?? MapViewControllerBridge.lodZoomThreshold
+            ) ?? state.renderMode
+            var enriched = state
+            if renderMode != state.renderMode {
+                enriched = SimulatedVehicleState(
+                    latitude: state.latitude,
+                    longitude: state.longitude,
+                    bearing: state.bearing,
+                    visible: state.visible,
+                    lengthMeters: state.lengthMeters,
+                    widthMeters: state.widthMeters,
+                    playbackRevision: state.playbackRevision,
+                    dimensionRevision: state.dimensionRevision,
+                    renderMode: renderMode,
+                    footprintCoordinates: state.footprintCoordinates
+                )
+            }
+            self.enqueueVehicleBridgeUpdate(enriched, to: webView)
+            if state.visible {
+                self.parent.mapBridge?.vehicleDidUpdate(
+                    coordinate: CLLocationCoordinate2D(latitude: state.latitude, longitude: state.longitude),
+                    bearing: state.bearing,
+                    dimensions: VehicleMapDimensions(
+                        lengthMeters: state.lengthMeters,
+                        widthMeters: state.widthMeters
+                    )
+                )
+            }
+        }
+
+        NavigationMapBridge.shared.pushRouteProgress = { [weak self] progress in
+            guard let self, let webView = self.webView else { return }
+            webView.evaluateJavaScript("setRouteProgress(\(progress.progressFraction))")
+        }
+
+        NavigationMapBridge.shared.pushRouteSplit = { [weak self] split in
+            guard let self, let webView = self.webView else { return }
+            let traveledJSON = split.traversedPath
+                .map { "[\($0.longitude), \($0.latitude)]" }
+                .joined(separator: ", ")
+            let remainingJSON = split.remainingPath
+                .map { "[\($0.longitude), \($0.latitude)]" }
+                .joined(separator: ", ")
+            webView.evaluateJavaScript(
+                "applyRouteSplitLayers([\(traveledJSON)], [\(remainingJSON)])"
+            )
+        }
+
+        NavigationMapBridge.shared.loadRouteGeometry = { [weak self] coordinates, cumulativeLengths, totalLength in
+            guard let self, let webView = self.webView else { return }
+            let coordsJSON = coordinates.map { "[\($0.longitude), \($0.latitude)]" }.joined(separator: ", ")
+            let cumulativeJSON = cumulativeLengths.map { String($0) }.joined(separator: ", ")
+            webView.evaluateJavaScript(
+                "loadRouteGeometry([\(coordsJSON)], [\(cumulativeJSON)], \(totalLength))"
+            )
+        }
+
+        NavigationMapBridge.shared.beginRouteReveal = { [weak self] coordinates, _, cumulativeLengths in
+            guard let self, let webView = self.webView else { return }
+            let coordsJSON = coordinates.map { "[\($0.longitude), \($0.latitude)]" }.joined(separator: ", ")
+            let cumulativeJSON = cumulativeLengths.map { String($0) }.joined(separator: ", ")
+            webView.evaluateJavaScript(
+                "animateRouteReveal([\(coordsJSON)], [\(cumulativeJSON)], 1200)"
+            )
+        }
+    }
+
+    func makeConfiguration() -> WKWebViewConfiguration {
+        let config = WKWebViewConfiguration()
+        config.defaultWebpagePreferences.allowsContentJavaScript = true
+        config.userContentController.add(self, name: "mapBridge")
+        return config
+    }
+
+    func loadMap(in webView: WKWebView, region: MapRegion) {
+        let html = MapLibreMapHTML.page(
+            styleURL: MapLibreConfiguration.openFreeMapStyleURL,
+            scriptURL: MapLibreConfiguration.mapLibreScriptURL.absoluteString,
+            cssURL: MapLibreConfiguration.mapLibreStyleSheetURL.absoluteString
+        )
+        webView.loadHTMLString(html, baseURL: URL(string: "https://localhost/"))
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        guard !didInitMap else { return }
+        didInitMap = true
+        let controlPosition = "top-right"
+        webView.evaluateJavaScript(
+            "initMap([\(parent.region.center.longitude), \(parent.region.center.latitude)], \(parent.region.zoomLevel), '\(MapLibreConfiguration.openFreeMapStyleURL)', '\(controlPosition)')"
+        )
+    }
+
+    func syncState(to webView: WKWebView) {
+        guard isReady else { return }
+
+        let routeFingerprint = routeFingerprint(
+            coordinates: parent.coordinates,
+            encodedPolyline: parent.encodedPolyline,
+            precision: parent.encodedPolylinePrecision
+        )
+        if routeFingerprint != lastRouteFingerprint {
+            lastRouteFingerprint = routeFingerprint
+            if !parent.routeCumulativeLengths.isEmpty, parent.coordinates.count >= 2 {
+                let coordsJSON = parent.coordinates.map { "[\($0.longitude), \($0.latitude)]" }.joined(separator: ", ")
+                let cumulativeJSON = parent.routeCumulativeLengths.map { String($0) }.joined(separator: ", ")
+                let total = parent.routeCumulativeLengths.last ?? 0
+                webView.evaluateJavaScript(
+                    "loadRouteGeometry([\(coordsJSON)], [\(cumulativeJSON)], \(total))"
+                )
+            } else if let encoded = parent.encodedPolyline, !encoded.isEmpty {
+                let escaped = escapeJS(encoded)
+                webView.evaluateJavaScript("setRouteEncoded('\(escaped)', \(parent.encodedPolylinePrecision))")
+            } else {
+                let coordsJSON = parent.coordinates.map { "[\($0.longitude), \($0.latitude)]" }.joined(separator: ", ")
+                let cumulativeJSON = parent.routeCumulativeLengths.map { String($0) }.joined(separator: ", ")
+                if parent.routeCumulativeLengths.isEmpty {
+                    webView.evaluateJavaScript("setRoute([\(coordsJSON)])")
+                } else {
+                    webView.evaluateJavaScript("setRoute([\(coordsJSON)], [\(cumulativeJSON)])")
+                }
+            }
+        }
+
+        let pinFingerprint = parent.pins.map(\.id).joined(separator: "|")
+        if pinFingerprint != lastPinFingerprint {
+            lastPinFingerprint = pinFingerprint
+            let markersJSON = parent.pins.map {
+                "{ lng: \($0.coordinate.longitude), lat: \($0.coordinate.latitude), color: '\($0.colorHex)', title: '\(escapeJS($0.title))' }"
+            }.joined(separator: ", ")
+            webView.evaluateJavaScript("setMarkers([\(markersJSON)])")
+        }
+
+        let hazardsFingerprint = String(parent.hazardsGeoJSON.hashValue)
+        if hazardsFingerprint != lastHazardsFingerprint {
+            lastHazardsFingerprint = hazardsFingerprint
+            let literal = jsonStringLiteral(parent.hazardsGeoJSON)
+            webView.evaluateJavaScript("setHazards(JSON.parse(\(literal)))")
+        }
+
+        syncSimulatedVehicle(to: webView)
+
+        let regionFingerprint = "\(parent.region.center.latitude)-\(parent.region.center.longitude)-\(parent.region.zoomLevel)"
+        if regionFingerprint != lastRegionFingerprint {
+            lastRegionFingerprint = regionFingerprint
+            beginSuppressUserMoveEvents(for: 950)
+            webView.evaluateJavaScript(
+                "flyTo([\(parent.region.center.longitude), \(parent.region.center.latitude)], \(parent.region.zoomLevel))"
+            )
+        }
+
+        if parent.interactionMode != lastMode {
+            lastMode = parent.interactionMode
+            let mode = parent.interactionMode == .pin ? "pin" : "navigate"
+            webView.evaluateJavaScript("setInteractionMode('\(mode)')")
+        }
+    }
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard let body = message.body as? [String: Any],
+              let type = body["type"] as? String else { return }
+
+        switch type {
+        case "ready":
+            isReady = true
+            webView.flatMap { syncState(to: $0) }
+        case "click":
+            guard let lng = body["lng"] as? Double, let lat = body["lat"] as? Double else { return }
+            let coordinate = CLLocationCoordinate2D(latitude: lat, longitude: lng)
+            if parent.interactionMode == .pin {
+                parent.onMapClick(coordinate)
+            } else {
+                #if os(macOS)
+                parent.onContextMenu(coordinate)
+                #else
+                parent.onMapClick(coordinate)
+                #endif
+            }
+        case "contextmenu":
+            guard let lng = body["lng"] as? Double, let lat = body["lat"] as? Double else { return }
+            parent.onContextMenu(CLLocationCoordinate2D(latitude: lat, longitude: lng))
+        case "moveend":
+            guard let lng = body["lng"] as? Double,
+                  let lat = body["lat"] as? Double else { return }
+            let zoom = body["zoom"] as? Double ?? parent.mapBridge?.currentMapZoom ?? 12.0
+            let userInitiated = (body["userInitiated"] as? Bool ?? false) && !shouldSuppressUserMoveEvents
+            parent.mapBridge?.mapDidMove(
+                center: CLLocationCoordinate2D(latitude: lat, longitude: lng),
+                zoom: zoom,
+                userInitiated: userInitiated
+            )
+            parent.onRegionChange(CLLocationCoordinate2D(latitude: lat, longitude: lng))
+        default:
+            break
+        }
+    }
+
+    private func syncSimulatedVehicle(to webView: WKWebView) {
+        guard let vehicle = parent.simulatedVehicle else {
+            return
+        }
+        pushSimulatedVehicle(vehicle, to: webView)
+    }
+
+    private func enqueueVehicleBridgeUpdate(
+        _ vehicle: SimulatedVehicleState,
+        to webView: WKWebView,
+        force: Bool = false
+    ) {
+        if force {
+            vehicleCoalescer.reset()
+            dispatchVehicleBridgeUpdate(vehicle, to: webView, force: true) {}
+            return
+        }
+        vehicleCoalescer.enqueue(vehicle) { [weak self] state, completion in
+            self?.dispatchVehicleBridgeUpdate(state, to: webView, force: false, completion: completion)
+        }
+    }
+
+    private func dispatchVehicleBridgeUpdate(
+        _ vehicle: SimulatedVehicleState,
+        to webView: WKWebView,
+        force: Bool,
+        completion: @escaping () -> Void
+    ) {
+        let fingerprint: String
+        if vehicle.visible {
+            fingerprint = BridgeFrameCoalescer.fingerprint(for: vehicle)
+        } else {
+            fingerprint = "hidden"
+        }
+
+        if !force, fingerprint == lastVehicleFingerprint {
+            completion()
+            return
+        }
+
+        lastVehicleFingerprint = fingerprint
+        let signpost = SimulationBridgeInstrumentation.beginBridgeEval()
+        let finish: () -> Void = {
+            SimulationBridgeInstrumentation.endBridgeEval(signpost)
+            completion()
+        }
+
+        if vehicle.visible {
+            let renderMode = vehicle.renderMode.rawValue
+            let footprintJSON = footprintJSONString(from: vehicle.footprintCoordinates)
+            let escapedFootprint = escapeJS(footprintJSON)
+            webView.evaluateJavaScript(
+                "setSimulatedVehicleFootprint(\(vehicle.longitude),\(vehicle.latitude),true,\(vehicle.bearing),'\(escapedFootprint)',\(vehicle.lengthMeters),\(vehicle.widthMeters),'\(renderMode)')"
+            ) { _, _ in
+                finish()
+            }
+        } else {
+            webView.evaluateJavaScript(
+                "setSimulatedVehicleFootprint(0,0,false,0,'[]',12,2.55,'icon')"
+            ) { _, _ in
+                finish()
+            }
+        }
+    }
+
+    private func footprintJSONString(from coordinates: [CLLocationCoordinate2D]) -> String {
+        guard !coordinates.isEmpty else { return "[]" }
+        let pairs = coordinates.map { "[\($0.longitude), \($0.latitude)]" }.joined(separator: ",")
+        return "[\(pairs)]"
+    }
+
+    private func pushSimulatedVehicle(
+        _ vehicle: SimulatedVehicleState,
+        to webView: WKWebView,
+        force: Bool = false
+    ) {
+        enqueueVehicleBridgeUpdate(vehicle, to: webView, force: force)
+    }
+
+    private func routeFingerprint(
+        coordinates: [CLLocationCoordinate2D],
+        encodedPolyline: String?,
+        precision: Int
+    ) -> String {
+        if let encodedPolyline, !encodedPolyline.isEmpty {
+            let digest = SHA256.hash(data: Data(encodedPolyline.utf8))
+            let hash = digest.map { String(format: "%02x", $0) }.joined()
+            return "enc-\(precision)-\(hash)"
+        }
+
+        guard !coordinates.isEmpty else { return "" }
+
+        var payload = Data()
+        payload.append(contentsOf: withUnsafeBytes(of: coordinates.count) { Array($0) })
+        for coordinate in coordinates {
+            payload.append(contentsOf: withUnsafeBytes(of: coordinate.latitude) { Array($0) })
+            payload.append(contentsOf: withUnsafeBytes(of: coordinate.longitude) { Array($0) })
+        }
+        let digest = SHA256.hash(data: payload)
+        return "coords-\(coordinates.count)-" + digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    private func escapeJS(_ value: String) -> String {
+        value.replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "'", with: "\\'")
+            .replacingOccurrences(of: "\n", with: "\\n")
+    }
+
+    private func jsonStringLiteral(_ value: String) -> String {
+        if let data = try? JSONEncoder().encode(value),
+           let encoded = String(data: data, encoding: .utf8) {
+            return encoded
+        }
+        return "\"\""
+    }
+}

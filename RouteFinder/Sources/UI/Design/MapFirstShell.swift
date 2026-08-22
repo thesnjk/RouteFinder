@@ -1,0 +1,503 @@
+import Contracts
+import RouteController
+import SwiftUI
+
+#if os(iOS)
+import UIKit
+#endif
+
+/// Map-first shell: top route chips, floating controls, bottom route sheet.
+struct MapFirstShell: View {
+    @Bindable var viewModel: RouteViewModel
+    var onOpenProfile: () -> Void = {}
+    var onOpenSettings: () -> Void = {}
+
+    #if os(iOS)
+    @State private var presentedModal: IOSModal?
+    @State private var isRouteSheetVisible = false
+    #endif
+
+    var body: some View {
+        #if os(iOS)
+        IOSMapChrome(
+            viewModel: viewModel,
+            isRouteSheetVisible: $isRouteSheetVisible,
+            onPresentModal: { presentedModal = $0 }
+        )
+        .sheet(item: $presentedModal) { modal in
+            iosModalContent(modal)
+        }
+        .onChange(of: viewModel.routeFailure) { _, failure in
+            guard let failure else { return }
+            guard !isRouteSheetVisible else { return }
+            presentedModal = .routeFailure(failure)
+        }
+        #else
+        macOSMapChrome
+        #endif
+    }
+
+    #if os(iOS)
+    @ViewBuilder
+    private func iosModalContent(_ modal: IOSModal) -> some View {
+        switch modal {
+        case .settings:
+            SettingsSheet(viewModel: viewModel)
+        case .profile:
+            NavigationStack {
+                VehicleProfileManager(viewModel: viewModel)
+            }
+            .presentationDetents([.medium, .large])
+        case .routeFailure(let failure):
+            RouteFailureSheet(presentation: failure) {
+                viewModel.routeFailure = nil
+                presentedModal = nil
+            }
+        }
+    }
+    #endif
+
+    #if os(macOS)
+    @State private var isSearchExpanded = false
+    @State private var isDetailExpanded = false
+    @State private var isTelemetryPresented = false
+    @FocusState private var focusedSearchWaypointID: UUID?
+
+    private var macOSMapChrome: some View {
+        ZStack(alignment: .topLeading) {
+            topBar
+                .frame(maxWidth: 420, alignment: .topLeading)
+                .padding(.leading, RFSpacing.md)
+                .padding(.top, RFSpacing.md)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .zIndex(20)
+
+            floatingControls
+                .padding(.trailing, RFSpacing.md)
+                .padding(.top, 88)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .zIndex(15)
+        }
+        .overlay(alignment: .bottom) {
+            bottomSheet
+                .zIndex(10)
+        }
+        .sheet(isPresented: $isTelemetryPresented) {
+            if let report = viewModel.simulationEngine.telemetryReport {
+                ScrollView {
+                    PredictiveTelemetryReportView(report: report)
+                        .padding(RFSpacing.lg)
+                }
+                .frame(minWidth: 480, minHeight: 420)
+            }
+        }
+        .sheet(item: $viewModel.pendingDisambiguation) { request in
+            GeocodeDisambiguationSheet(
+                query: request.query,
+                candidates: request.candidates,
+                onSelect: { suggestion in
+                    Task { await viewModel.resolveDisambiguation(suggestion) }
+                },
+                onCancel: { viewModel.cancelDisambiguation() }
+            )
+        }
+        .sheet(item: $viewModel.routeFailure) { failure in
+            RouteFailureSheet(presentation: failure) {
+                viewModel.routeFailure = nil
+            }
+        }
+    }
+    #endif
+
+    #if os(macOS)
+    private var topBar: some View {
+        VStack(spacing: RFSpacing.sm) {
+            if let banner = viewModel.cloudRoutingBanner {
+                cloudRoutingBannerView(banner)
+            }
+
+            if isSearchExpanded {
+                expandedSearchPanel
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            } else {
+                collapsedRouteChips
+            }
+        }
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: isSearchExpanded)
+    }
+
+    private func cloudRoutingBannerView(_ message: String) -> some View {
+        HStack(alignment: .top, spacing: RFSpacing.sm) {
+            Image(systemName: "cloud.fill")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(message)
+                .font(RFFont.caption)
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, RFSpacing.md)
+        .padding(.vertical, RFSpacing.sm)
+        .frame(maxWidth: 420, alignment: .leading)
+        .controlSheetStyle()
+    }
+
+    private var collapsedRouteChips: some View {
+        Button {
+            withAnimation { isSearchExpanded = true }
+        } label: {
+            HStack(spacing: RFSpacing.sm) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(viewModel.originWaypoint.rawText.isEmpty ? "Choose starting point" : viewModel.originWaypoint.rawText)
+                        .font(RFFont.caption)
+                        .lineLimit(1)
+                    Text(viewModel.destinationWaypoint.rawText.isEmpty ? "Choose destination" : viewModel.destinationWaypoint.rawText)
+                        .font(RFFont.summary)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, RFSpacing.md)
+            .padding(.vertical, RFSpacing.sm + 2)
+            .controlSheetStyle()
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var expandedSearchPanel: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.sm) {
+            HStack {
+                Text("Route Search")
+                    .font(RFFont.sectionTitle)
+                Spacer()
+                Button("Done") {
+                    dismissRouteSearchFocus($focusedSearchWaypointID)
+                    withAnimation { isSearchExpanded = false }
+                }
+                .buttonStyle(.borderless)
+            }
+
+            RouteSearchFields(viewModel: viewModel, focusedWaypointID: $focusedSearchWaypointID)
+
+            if let optimizationError = viewModel.optimizationError {
+                Label(optimizationError, systemImage: "exclamationmark.triangle.fill")
+                    .font(RFFont.caption)
+                    .foregroundStyle(.red)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            HStack {
+                Button("Add Stop") { viewModel.addWaypoint() }
+                    .buttonStyle(.borderless)
+                Button("Optimize Sequence") {
+                    Task { await viewModel.optimizeWaypointSequence() }
+                }
+                .buttonStyle(.borderless)
+                .disabled(!viewModel.canOptimizeSequence || viewModel.isOptimizing || viewModel.isCalculating)
+                Spacer()
+                Button {
+                    Task {
+                        await viewModel.findRoute()
+                        dismissRouteSearchFocus($focusedSearchWaypointID)
+                        withAnimation { isSearchExpanded = false }
+                    }
+                } label: {
+                    if viewModel.isCalculating {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Text("Find Route")
+                    }
+                }
+                .modifier(GlassButton())
+                .disabled(!viewModel.canFindRoute || viewModel.isCalculating)
+            }
+        }
+        .padding(RFSpacing.md + 4)
+        .controlSheetStyle()
+    }
+
+    private var floatingControls: some View {
+        VStack(spacing: RFSpacing.sm) {
+            MapControlButton(icon: "gearshape.fill") {
+                onOpenSettings()
+            }
+
+            MapControlButton(icon: viewModel.isHGVMode ? "truck.box.fill" : "truck.box") {
+                viewModel.isHGVMode.toggle()
+                if viewModel.isHGVMode { viewModel.applyHGVPreset() }
+                Task { await viewModel.recalculateIfReady() }
+            }
+
+            MapControlButton(icon: viewModel.avoidCameras ? "camera.fill" : "camera") {
+                viewModel.avoidCameras.toggle()
+                Task { await viewModel.recalculateIfReady() }
+            }
+
+            MapControlButton(icon: "chart.bar.doc.horizontal.fill") {
+                isTelemetryPresented = true
+            }
+            .disabled(viewModel.simulationEngine.telemetryReport == nil)
+
+            MapControlButton(icon: "location.fill") {
+                viewModel.recenterMap()
+            }
+
+            if viewModel.simulationEngine.isRunning {
+                MapControlButton(
+                    icon: viewModel.mapBridge?.isTrackingVehicle == true
+                        ? "location.north.line.fill"
+                        : "location.north.line"
+                ) {
+                    if let coordinate = viewModel.simulationEngine.currentCoordinate {
+                        viewModel.mapBridge?.resumeTracking(at: coordinate)
+                    }
+                }
+            }
+        }
+    }
+
+    private var bottomSheet: some View {
+        RouteBottomSheet(viewModel: viewModel, isDetailExpanded: $isDetailExpanded)
+            .padding(.horizontal, RFSpacing.md)
+            .padding(.bottom, RFSpacing.md)
+    }
+    #endif
+}
+
+struct MapControlButton: View {
+    let icon: String
+    var action: () -> Void
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.body.weight(.semibold))
+                .frame(width: 44, height: 44)
+                .background(.ultraThinMaterial, in: Circle())
+                .overlay(Circle().strokeBorder(.white.opacity(0.2), lineWidth: 0.5))
+        }
+        .buttonStyle(.plain)
+        .depthShadow()
+    }
+}
+
+/// Shared route search fields used by map-first shell and legacy sidebar.
+struct RouteSearchFields: View {
+    @Bindable var viewModel: RouteViewModel
+    var focusedWaypointID: FocusState<UUID?>.Binding
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.sm) {
+            if let error = viewModel.errorMessage {
+                if viewModel.isRouteDimensionBlocked {
+                    RouteBlockedOverlay()
+                } else if viewModel.showsHGVRouteFailureBanner {
+                    HGVRouteFailureBanner()
+                } else {
+                    Label(error, systemImage: "exclamationmark.triangle.fill")
+                        .font(RFFont.caption)
+                        .foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            ForEach($viewModel.routeWaypoints) { $waypoint in
+                HStack {
+                    LocationSearchField(
+                        placeholder: placeholder(for: waypoint.role, waypoint: waypoint),
+                        text: $waypoint.rawText,
+                        focusTag: waypoint.id,
+                        focusedWaypointID: focusedWaypointID,
+                        isActive: viewModel.activePinTarget == .waypoint(waypoint.id),
+                        resolutionStatus: viewModel.resolutionStatus(for: waypoint.id),
+                        snapHint: snapHint(for: waypoint),
+                        feedback: viewModel.searchFeedback(for: waypoint.id),
+                        suggestions: viewModel.suggestions(for: waypoint.id),
+                        onQueryChange: { viewModel.updateSearchSuggestions(for: waypoint.id, query: $0) },
+                        onPinTap: { viewModel.beginPinMode(for: waypoint.id) },
+                        onSelect: { suggestion in
+                            Task { await viewModel.applySuggestion(suggestion, for: waypoint.id) }
+                        }
+                    )
+                    .id(waypoint.id)
+
+                    if waypoint.role == .via {
+                        Button {
+                            viewModel.removeWaypoint(id: waypoint.id)
+                        } label: {
+                            Image(systemName: "minus.circle.fill")
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+
+    private func placeholder(for role: RouteWaypoint.Role, waypoint: RouteWaypoint) -> String {
+        switch role {
+        case .origin: return "Choose starting point"
+        case .destination: return "Choose destination"
+        case .via:
+            let viaIndex = viewModel.viaWaypoints.firstIndex(where: { $0.id == waypoint.id }).map { $0 + 1 } ?? 1
+            return "Stop \(viaIndex)"
+        }
+    }
+
+    private func snapHint(for waypoint: RouteWaypoint) -> String? {
+        switch waypoint.role {
+        case .origin, .destination:
+            viewModel.snapHint(for: waypoint.id)
+        case .via:
+            nil
+        }
+    }
+}
+
+/// Bottom sheet route summary with turn-by-turn.
+struct RouteBottomSheet: View {
+    @Bindable var viewModel: RouteViewModel
+    @Binding var isDetailExpanded: Bool
+    @State private var dragOffset: CGFloat = 0
+
+    private var shouldShow: Bool {
+        viewModel.originWaypoint.resolved != nil || viewModel.result != nil || viewModel.isCalculating || viewModel.errorMessage != nil
+    }
+
+    private var showsSimulationControls: Bool {
+        viewModel.result != nil && viewModel.routeCoordinates.count >= 3
+    }
+
+    private var sheetExpandedHeight: CGFloat {
+        showsSimulationControls ? 520 : 400
+    }
+
+    var body: some View {
+        if shouldShow {
+            VStack(alignment: .leading, spacing: RFSpacing.sm) {
+                HStack {
+                    Capsule()
+                        .fill(.secondary.opacity(0.35))
+                        .frame(width: 36, height: 4)
+                        .frame(maxWidth: .infinity)
+                }
+                .padding(.top, 4)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 20)
+                        .onChanged { value in
+                            dragOffset = value.translation.height
+                        }
+                        .onEnded { value in
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                if value.translation.height < -20 {
+                                    isDetailExpanded = true
+                                } else if value.translation.height > 20 {
+                                    isDetailExpanded = false
+                                }
+                            }
+                            dragOffset = 0
+                        }
+                )
+
+                if viewModel.isRouteDimensionBlocked {
+                    RouteBlockedOverlay()
+                } else if viewModel.showsHGVRouteFailureBanner {
+                    HGVRouteFailureBanner()
+                }
+
+                RouteSummaryCard(viewModel: viewModel, embeddedInBottomSheet: true, isExpanded: $isDetailExpanded)
+            }
+            .padding(.top, RFSpacing.sm)
+            .padding(.horizontal, RFSpacing.md)
+            .padding(.bottom, RFSpacing.md)
+            .frame(maxWidth: 560)
+            .frame(maxHeight: isDetailExpanded ? sheetExpandedHeight : nil)
+            .controlSheetStyle()
+            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .allowsHitTesting(true)
+            .frame(maxWidth: .infinity)
+            .offset(y: dragOffset > 0 ? dragOffset : 0)
+            .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isDetailExpanded)
+        }
+    }
+}
+
+/// Prominent banner when vehicle dimensions block the selected corridor.
+struct RouteBlockedOverlay: View {
+    var body: some View {
+        HStack(alignment: .top, spacing: RFSpacing.sm) {
+            Image(systemName: "exclamationmark.octagon.fill")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(RFColor.hazard)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Route Blocked")
+                    .font(RFFont.sectionTitle)
+                    .foregroundStyle(RFColor.hazard)
+                Text(ExternalRoutingError.vehicleDimensionBlockedMessage)
+                    .font(RFFont.caption)
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(RFSpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RFColor.hazard.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(RFColor.hazard.opacity(0.35), lineWidth: 1)
+        )
+    }
+}
+
+/// Prominent banner when no legal HGV route exists for the current vehicle profile.
+struct HGVRouteFailureBanner: View {
+    var body: some View {
+        HStack(alignment: .top, spacing: RFSpacing.sm) {
+            Image(systemName: "truck.box.fill")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(RFColor.hazard)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("No HGV Route Available")
+                    .font(RFFont.sectionTitle)
+                    .foregroundStyle(RFColor.hazard)
+                Text(ExternalRoutingError.hgvNoRouteMessage)
+                    .font(RFFont.caption)
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(RFSpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RFColor.hazard.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(RFColor.hazard.opacity(0.35), lineWidth: 1)
+        )
+    }
+}
+
+#if os(iOS)
+/// Secondary modals presented from the map shell (settings, profile, route failure).
+enum IOSModal: Identifiable {
+    case settings
+    case profile
+    case routeFailure(RouteFailurePresentation)
+
+    var id: String {
+        switch self {
+        case .settings: "settings"
+        case .profile: "profile"
+        case .routeFailure(let presentation): "routeFailure-\(presentation.id)"
+        }
+    }
+}
+#endif

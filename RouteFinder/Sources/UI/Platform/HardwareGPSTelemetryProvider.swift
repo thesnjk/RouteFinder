@@ -39,7 +39,8 @@ public final class HardwareGPSTelemetryProvider: NSObject, TelemetryStreamProvid
     public func start() async throws {
         guard !isActive else { return }
         isActive = true
-        manager.requestWhenInUseAuthorization()
+        requestAuthorizationForNavigation()
+        configureBackgroundUpdatesIfAuthorized()
         manager.startUpdatingLocation()
         startMotionSensors()
         startFusionTimer()
@@ -47,12 +48,48 @@ public final class HardwareGPSTelemetryProvider: NSObject, TelemetryStreamProvid
 
     public func stop() {
         isActive = false
+        manager.allowsBackgroundLocationUpdates = false
+        manager.showsBackgroundLocationIndicator = false
         manager.stopUpdatingLocation()
         stopHeadingUpdatesIfNeeded()
         stopMotionSensors()
         fusionTimer?.invalidate()
         fusionTimer = nil
         Task { await fusion.reset() }
+    }
+
+    /// Requests Always authorization and enables background GPS for active navigation.
+    public func enableBackgroundNavigation() {
+        switch manager.authorizationStatus {
+        case .authorizedWhenInUse:
+            manager.requestAlwaysAuthorization()
+        case .authorizedAlways:
+            break
+        case .notDetermined:
+            manager.requestWhenInUseAuthorization()
+        default:
+            break
+        }
+        configureBackgroundUpdatesIfAuthorized()
+    }
+
+    private func requestAuthorizationForNavigation() {
+        switch manager.authorizationStatus {
+        case .notDetermined:
+            manager.requestWhenInUseAuthorization()
+        case .authorizedWhenInUse:
+            manager.requestAlwaysAuthorization()
+        default:
+            break
+        }
+    }
+
+    private func configureBackgroundUpdatesIfAuthorized() {
+        let status = manager.authorizationStatus
+        let authorized = status == .authorizedAlways || status == .authorizedWhenInUse
+        guard authorized else { return }
+        manager.allowsBackgroundLocationUpdates = true
+        manager.showsBackgroundLocationIndicator = true
     }
 
     /// Enables compass heading updates for low-speed bearing fallback.
@@ -109,6 +146,7 @@ public final class HardwareGPSTelemetryProvider: NSObject, TelemetryStreamProvid
         if isActive,
            manager.authorizationStatus == .authorizedWhenInUse
                || manager.authorizationStatus == .authorizedAlways {
+            configureBackgroundUpdatesIfAuthorized()
             manager.startUpdatingLocation()
         }
     }

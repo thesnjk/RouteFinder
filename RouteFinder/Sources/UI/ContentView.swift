@@ -136,6 +136,7 @@ private struct MapWorkspaceView: View {
                 simulatedVehicle: simulatedVehicleState,
                 interactionMode: viewModel.interactionMode,
                 initialRegion: viewModel.mapRegion,
+                styleURL: viewModel.mapStyleURL,
                 mapBridge: mapBridge,
                 onMapClick: { coordinate in
                     Task {

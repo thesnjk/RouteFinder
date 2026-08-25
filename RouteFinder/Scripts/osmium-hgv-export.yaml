@@ -1,0 +1,68 @@
+# Osmium export profile for RouteFinder HGV-aware road graphs.
+# Used by Scripts/build-global-tiles.sh when converting PBF → GeoJSON → CSV.
+#
+# Tag mapping (consumed by Scripts/osm-geojson-to-csv.py):
+#   highway           → road_type
+#   maxheight         → max_height (metres)
+#   maxweight         → max_weight (tonnes)
+#   maxwidth          → max_width
+#   maxlength         → max_length
+#   hgv=no            → hgv_restricted
+#   motor_vehicle=no  → hgv_restricted
+#   oneway            → is_one_way
+#   name              → road_name
+#
+# Docs: https://docs.osmcode.org/osmium/latest/osmium-export.html
+
+attributes:
+  type: false
+  id: true
+  version: false
+  changeset: false
+  timestamp: false
+  uid: false
+  user: false
+  way_nodes: false
+
+linear_tags:
+  - highway
+  - name
+  - maxheight
+  - maxweight
+  - maxwidth
+  - maxlength
+  - hgv
+  - motor_vehicle
+  - oneway
+  - maxspeed
+  - bridge
+  - tunnel
+  - toll
+  - route
+  - access
+
+area_tags:
+  - none
+
+exclude_tags:
+  - created_by
+  - source
+  - note
+  - fixme
+
+include_tags:
+  - highway
+  - name
+  - maxheight
+  - maxweight
+  - maxwidth
+  - maxlength
+  - hgv
+  - motor_vehicle
+  - oneway
+  - maxspeed
+  - bridge
+  - tunnel
+  - toll
+  - route
+  - access

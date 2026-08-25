@@ -22,6 +22,12 @@ public struct SimulatedVehicleState: Equatable, Sendable {
     public let dimensionRevision: UInt64
     public let renderMode: VehicleRenderMode
     public let footprintCoordinates: [CLLocationCoordinate2D]
+    /// Optional multi-part footprint rings (tractor + trailer, etc.).
+    public let footprintParts: [[CLLocationCoordinate2D]]
+    /// Whether the rendered vehicle is a passenger car.
+    public let isPassengerCar: Bool
+    /// Wheelbase used for footprint / Ackermann helpers.
+    public let wheelbaseMeters: Double
 
     /// Creates simulated vehicle state for the map bridge.
     public init(
@@ -34,7 +40,10 @@ public struct SimulatedVehicleState: Equatable, Sendable {
         playbackRevision: UInt64 = 0,
         dimensionRevision: UInt64 = 0,
         renderMode: VehicleRenderMode = .polygon,
-        footprintCoordinates: [CLLocationCoordinate2D] = []
+        footprintCoordinates: [CLLocationCoordinate2D] = [],
+        footprintParts: [[CLLocationCoordinate2D]] = [],
+        isPassengerCar: Bool = false,
+        wheelbaseMeters: Double = 6.5
     ) {
         self.latitude = latitude
         self.longitude = longitude
@@ -45,6 +54,9 @@ public struct SimulatedVehicleState: Equatable, Sendable {
         self.playbackRevision = playbackRevision
         self.dimensionRevision = dimensionRevision
         self.renderMode = renderMode
+        self.footprintParts = footprintParts
+        self.isPassengerCar = isPassengerCar
+        self.wheelbaseMeters = wheelbaseMeters
         if visible, footprintCoordinates.isEmpty {
             self.footprintCoordinates = VehicleGeometryCalculator.generateFootprint(
                 rearAxle: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
@@ -67,10 +79,13 @@ public struct SimulatedVehicleState: Equatable, Sendable {
             && lhs.playbackRevision == rhs.playbackRevision
             && lhs.dimensionRevision == rhs.dimensionRevision
             && lhs.renderMode == rhs.renderMode
+            && lhs.isPassengerCar == rhs.isPassengerCar
+            && lhs.wheelbaseMeters == rhs.wheelbaseMeters
             && lhs.footprintCoordinates.count == rhs.footprintCoordinates.count
             && zip(lhs.footprintCoordinates, rhs.footprintCoordinates).allSatisfy {
                 $0.latitude == $1.latitude && $0.longitude == $1.longitude
             }
+            && lhs.footprintParts.count == rhs.footprintParts.count
     }
 }
 
@@ -85,6 +100,8 @@ public struct MapLibreWebMapView: View {
     let simulatedVehicle: SimulatedVehicleState?
     let interactionMode: MapLibreInteractionMode
     let region: MapRegion
+    /// MapLibre style URL (CDN, `http://127.0.0.1`, or `routefinder-tiles://`).
+    let styleURL: String
     let mapBridge: MapViewControllerBridge?
     let onMapClick: (CLLocationCoordinate2D) -> Void
     let onContextMenu: (CLLocationCoordinate2D) -> Void
@@ -100,6 +117,7 @@ public struct MapLibreWebMapView: View {
         simulatedVehicle: SimulatedVehicleState? = nil,
         interactionMode: MapLibreInteractionMode = .navigate,
         region: MapRegion,
+        styleURL: String = MapLibreConfiguration.openFreeMapStyleURL,
         mapBridge: MapViewControllerBridge? = nil,
         onMapClick: @escaping (CLLocationCoordinate2D) -> Void = { _ in },
         onContextMenu: @escaping (CLLocationCoordinate2D) -> Void = { _ in },
@@ -114,6 +132,7 @@ public struct MapLibreWebMapView: View {
         self.simulatedVehicle = simulatedVehicle
         self.interactionMode = interactionMode
         self.region = region
+        self.styleURL = styleURL
         self.mapBridge = mapBridge
         self.onMapClick = onMapClick
         self.onContextMenu = onContextMenu
@@ -131,6 +150,7 @@ public struct MapLibreWebMapView: View {
             simulatedVehicle: simulatedVehicle,
             interactionMode: interactionMode,
             region: region,
+            styleURL: styleURL,
             mapBridge: mapBridge,
             onMapClick: onMapClick,
             onContextMenu: onContextMenu,
@@ -205,6 +225,7 @@ private struct MapLibreWebViewRepresentable: NSViewRepresentable {
     let simulatedVehicle: SimulatedVehicleState?
     let interactionMode: MapLibreInteractionMode
     let region: MapRegion
+    let styleURL: String
     let mapBridge: MapViewControllerBridge?
     let onMapClick: (CLLocationCoordinate2D) -> Void
     let onContextMenu: (CLLocationCoordinate2D) -> Void
@@ -268,6 +289,7 @@ private struct MapLibreWebViewRepresentable: UIViewRepresentable {
     let simulatedVehicle: SimulatedVehicleState?
     let interactionMode: MapLibreInteractionMode
     let region: MapRegion
+    let styleURL: String
     let mapBridge: MapViewControllerBridge?
     let onMapClick: (CLLocationCoordinate2D) -> Void
     let onContextMenu: (CLLocationCoordinate2D) -> Void
@@ -369,6 +391,11 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
             webView.evaluateJavaScript("zoomBy(\(delta))")
         }
 
+        parent.mapBridge?.setZoomHandler = { [weak self] zoom in
+            guard let self, let webView = self.webView else { return }
+            webView.evaluateJavaScript("setZoom(\(zoom))")
+        }
+
         NavigationMapBridge.shared.pushVehicle = { [weak self] state in
             guard let self, let webView = self.webView else { return }
             let renderMode = self.parent.mapBridge?.renderMode(
@@ -447,20 +474,33 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
     }
 
     func loadMap(in webView: WKWebView, region: MapRegion) {
+        let scriptURL = MapLibreConfiguration.mapLibreScriptURL
+        let cssURL = MapLibreConfiguration.mapLibreStyleSheetURL
+        var inlineScript: String?
+        var inlineCSS: String?
+        if scriptURL.isFileURL {
+            inlineScript = try? String(contentsOf: scriptURL, encoding: .utf8)
+        }
+        if cssURL.isFileURL {
+            inlineCSS = try? String(contentsOf: cssURL, encoding: .utf8)
+        }
         let html = MapLibreMapHTML.page(
-            styleURL: MapLibreConfiguration.openFreeMapStyleURL,
-            scriptURL: MapLibreConfiguration.mapLibreScriptURL.absoluteString,
-            cssURL: MapLibreConfiguration.mapLibreStyleSheetURL.absoluteString
+            styleURL: parent.styleURL,
+            scriptURL: scriptURL.absoluteString,
+            cssURL: cssURL.absoluteString,
+            inlineScript: inlineScript,
+            inlineStyleSheet: inlineCSS
         )
-        webView.loadHTMLString(html, baseURL: URL(string: "https://localhost/"))
+        webView.loadHTMLString(html, baseURL: URL(string: "http://127.0.0.1/"))
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         guard !didInitMap else { return }
         didInitMap = true
         let controlPosition = "top-right"
+        let escapedStyle = escapeJS(parent.styleURL)
         webView.evaluateJavaScript(
-            "initMap([\(parent.region.center.longitude), \(parent.region.center.latitude)], \(parent.region.zoomLevel), '\(MapLibreConfiguration.openFreeMapStyleURL)', '\(controlPosition)')"
+            "initMap([\(parent.region.center.longitude), \(parent.region.center.latitude)], \(parent.region.zoomLevel), '\(escapedStyle)', '\(controlPosition)')"
         )
     }
 

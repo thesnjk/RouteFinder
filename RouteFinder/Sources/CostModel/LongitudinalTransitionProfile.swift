@@ -20,6 +20,13 @@ public struct LongitudinalTransitionProfile: Sendable, Equatable {
         self.limitChangeHysteresisMps = limitChangeHysteresisMps
     }
 
-    /// Default zone-transition profile for passenger cars and HGVs.
+    /// Default zone-transition profile for passenger cars.
     public static let standard = LongitudinalTransitionProfile()
+
+    /// Slower longitudinal transitions appropriate for heavy goods vehicles.
+    public static let hgv = LongitudinalTransitionProfile(
+        accelerationMps2: 0.8,
+        decelerationMps2: 1.6,
+        limitChangeHysteresisMps: 0.75
+    )
 }

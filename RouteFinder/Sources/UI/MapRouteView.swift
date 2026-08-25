@@ -18,6 +18,7 @@ public struct MapRouteView: View {
     let simulatedVehicle: SimulatedVehicleState?
     let interactionMode: MapInteractionMode
     let initialRegion: MapRegion
+    let styleURL: String
     let mapBridge: MapViewControllerBridge?
     let onMapClick: (CLLocationCoordinate2D) -> Void
     let onContextAction: (MapContextAction, CLLocationCoordinate2D) -> Void
@@ -33,6 +34,7 @@ public struct MapRouteView: View {
         simulatedVehicle: SimulatedVehicleState? = nil,
         interactionMode: MapInteractionMode = .navigate,
         initialRegion: MapRegion,
+        styleURL: String = MapLibreConfiguration.openFreeMapStyleURL,
         mapBridge: MapViewControllerBridge? = nil,
         onMapClick: @escaping (CLLocationCoordinate2D) -> Void = { _ in },
         onContextAction: @escaping (MapContextAction, CLLocationCoordinate2D) -> Void = { _, _ in },
@@ -47,6 +49,7 @@ public struct MapRouteView: View {
         self.simulatedVehicle = simulatedVehicle
         self.interactionMode = interactionMode
         self.initialRegion = initialRegion
+        self.styleURL = styleURL
         self.mapBridge = mapBridge
         self.onMapClick = onMapClick
         self.onContextAction = onContextAction
@@ -65,6 +68,7 @@ public struct MapRouteView: View {
                 simulatedVehicle: simulatedVehicle,
                 interactionMode: libreInteractionMode,
                 region: initialRegion,
+                styleURL: styleURL,
                 mapBridge: mapBridge,
                 onMapClick: onMapClick,
                 onContextMenu: { coordinate in

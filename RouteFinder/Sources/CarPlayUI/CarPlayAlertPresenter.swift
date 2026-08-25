@@ -30,5 +30,15 @@ public final class CarPlayAlertPresenter {
         )
         interfaceController?.presentTemplate(template, animated: true) { _, _ in }
     }
+
+    /// Presents an advisory hours-of-service / rest alert (tachograph remains legal record).
+    public func presentHosAdvisory(title: String, message: String) {
+        let dismiss = CPAlertAction(title: "OK", style: .default) { _ in }
+        let template = CPAlertTemplate(
+            titleVariants: [title, message],
+            actions: [dismiss]
+        )
+        interfaceController?.presentTemplate(template, animated: true) { _, _ in }
+    }
 }
 #endif

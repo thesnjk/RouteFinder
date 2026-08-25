@@ -41,6 +41,43 @@ import Testing
     #expect(restrictions["height"] as? Double == 4.0)
     #expect(restrictions["width"] as? Double == 2.55)
     #expect(restrictions["weight"] as? Double == 44.0)
+    #expect(restrictions["length"] as? Double == 16.5)
+    #expect(restrictions["axleload"] as? Double == 11.5)
+}
+
+@Test func orsPayloadBuilderFullHazmatAndAvoidFeatures() throws {
+    let vehicle = VehicleProfile(
+        height: 4.0,
+        weight: 40,
+        width: 2.55,
+        length: 16.5,
+        axleWeight: 11.5,
+        hazmatClass: .class3,
+        tunnelRestrictionCode: .c
+    )
+    let request = ExternalRouteRequest(
+        origin: RoutingCoordinate(latitude: 52.0, longitude: 1.0),
+        destination: RoutingCoordinate(latitude: 52.1, longitude: 1.1),
+        vehicle: vehicle,
+        preferences: RoutingPreferences(
+            avoidTolls: true,
+            avoidFerries: true,
+            avoidTunnels: true,
+            isHGVMode: true
+        )
+    )
+
+    let data = try OpenRouteServicePayloadBuilder.buildData(from: request)
+    let json = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    let options = try #require(json["options"] as? [String: Any])
+    let avoid = try #require(options["avoid_features"] as? [String])
+    #expect(Set(avoid) == Set(["tollways", "ferries", "tunnels"]))
+
+    let profileParams = try #require(options["profile_params"] as? [String: Any])
+    let restrictions = try #require(profileParams["restrictions"] as? [String: Any])
+    #expect(restrictions["hazmat"] as? Bool == true)
+    #expect(restrictions["hazmat_tunnel_restriction_code"] as? String == "C")
+    #expect(restrictions["axleload"] as? Double == 11.5)
 }
 
 @Test func orsPayloadBuilderOmitsNilRestrictions() throws {

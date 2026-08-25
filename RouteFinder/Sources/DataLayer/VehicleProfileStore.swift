@@ -103,6 +103,57 @@ public actor VehicleProfileStore {
     public static func saveOpenWeatherAPIKey(_ key: String, defaults: UserDefaults = .standard) {
         defaults.set(key, forKey: openWeatherAPIKeyKey)
     }
+
+    private static let tileServerURLKey = "RouteFinder.tileServerURL"
+    private static let offlineRoutingEnabledKey = "RouteFinder.offlineRoutingEnabled"
+    private static let preferOfflineRoutingKey = "RouteFinder.preferOfflineRouting"
+    private static let useLocalMapStyleWhenPackPresentKey = "RouteFinder.useLocalMapStyleWhenPackPresent"
+
+    /// Loads the configurable offline graph tile CDN base URL, if any.
+    public static func loadTileServerURL(defaults: UserDefaults = .standard) -> String? {
+        defaults.string(forKey: tileServerURLKey)
+    }
+
+    /// Persists the offline graph tile CDN base URL.
+    public static func saveTileServerURL(_ url: String, defaults: UserDefaults = .standard) {
+        defaults.set(url, forKey: tileServerURLKey)
+    }
+
+    /// Whether offline / tiled routing may be used as a fallback (or primary when preferred).
+    public static func loadOfflineRoutingEnabled(defaults: UserDefaults = .standard) -> Bool {
+        if defaults.object(forKey: offlineRoutingEnabledKey) == nil {
+            return true
+        }
+        return defaults.bool(forKey: offlineRoutingEnabledKey)
+    }
+
+    /// Persists the offline routing availability flag.
+    public static func saveOfflineRoutingEnabled(_ enabled: Bool, defaults: UserDefaults = .standard) {
+        defaults.set(enabled, forKey: offlineRoutingEnabledKey)
+    }
+
+    /// When true, prefer tiled offline routing over ORS even when online and keyed.
+    public static func loadPreferOfflineRouting(defaults: UserDefaults = .standard) -> Bool {
+        defaults.bool(forKey: preferOfflineRoutingKey)
+    }
+
+    /// Persists the prefer-offline-routing flag.
+    public static func savePreferOfflineRouting(_ enabled: Bool, defaults: UserDefaults = .standard) {
+        defaults.set(enabled, forKey: preferOfflineRoutingKey)
+    }
+
+    /// Whether MapLibre should use a local map pack style when present on disk.
+    public static func loadUseLocalMapStyleWhenPackPresent(defaults: UserDefaults = .standard) -> Bool {
+        if defaults.object(forKey: useLocalMapStyleWhenPackPresentKey) == nil {
+            return true
+        }
+        return defaults.bool(forKey: useLocalMapStyleWhenPackPresentKey)
+    }
+
+    /// Persists the local map style preference.
+    public static func saveUseLocalMapStyleWhenPackPresent(_ enabled: Bool, defaults: UserDefaults = .standard) {
+        defaults.set(enabled, forKey: useLocalMapStyleWhenPackPresentKey)
+    }
 }
 
 /// Errors when persisting vehicle profiles.

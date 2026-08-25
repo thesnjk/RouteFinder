@@ -7,14 +7,17 @@ import SwiftUI
 public struct TurnByTurnList: View {
     let instructions: [TurnInstruction]
     let routeReferenceCoordinate: CLLocationCoordinate2D?
+    let displayMeasurementSystem: RegionalMeasurementSystem?
 
     /// Creates a turn-by-turn list with optional route coordinate for regional speed formatting.
     public init(
         instructions: [TurnInstruction],
-        routeReferenceCoordinate: CLLocationCoordinate2D? = nil
+        routeReferenceCoordinate: CLLocationCoordinate2D? = nil,
+        displayMeasurementSystem: RegionalMeasurementSystem? = nil
     ) {
         self.instructions = instructions
         self.routeReferenceCoordinate = routeReferenceCoordinate
+        self.displayMeasurementSystem = displayMeasurementSystem
     }
 
     public var body: some View {
@@ -57,6 +60,11 @@ public struct TurnByTurnList: View {
                                             .font(.caption2)
                                             .foregroundStyle(.orange)
                                     }
+                                    if let lane = instruction.laneGuidance {
+                                        Text(lane)
+                                            .font(.caption2.weight(.semibold))
+                                            .foregroundStyle(.blue)
+                                    }
                                 }
                             }
                         }
@@ -68,6 +76,9 @@ public struct TurnByTurnList: View {
     }
 
     private func formattedRecommendedSpeed(_ speedKmh: Double) -> String {
+        if let system = displayMeasurementSystem {
+            return TelemetryUnitConverter.formatSpeedKmh(speedKmh, system: system)
+        }
         if let coordinate = routeReferenceCoordinate {
             return TelemetryUnitConverter.formatSpeedKmh(speedKmh, at: coordinate)
         }

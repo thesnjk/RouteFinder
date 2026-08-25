@@ -30,6 +30,8 @@ public struct SimulationPhysicsConfiguration: Sendable {
   public let staticWebETASeconds: TimeInterval
   /// Minimum physical turn radius used as a floor for curve speed caps.
   public let minimumTurnRadiusMeters: Double?
+  /// Turn instructions used for maneuver-aware physics cues.
+  public let turnInstructions: [TurnInstruction]
 
   /// Creates a physics configuration bundle.
   public init(
@@ -53,7 +55,8 @@ public struct SimulationPhysicsConfiguration: Sendable {
     isPassengerCarMode: Bool,
     activeSpecificationProfile: VehicleSpecificationProfile?,
     staticWebETASeconds: TimeInterval,
-    minimumTurnRadiusMeters: Double? = nil
+    minimumTurnRadiusMeters: Double? = nil,
+    turnInstructions: [TurnInstruction] = []
   ) {
     self.densifiedRoute = densifiedRoute
     self.segmentLengths = segmentLengths
@@ -76,6 +79,7 @@ public struct SimulationPhysicsConfiguration: Sendable {
     self.activeSpecificationProfile = activeSpecificationProfile
     self.staticWebETASeconds = staticWebETASeconds
     self.minimumTurnRadiusMeters = minimumTurnRadiusMeters
+    self.turnInstructions = turnInstructions
   }
 
   /// Returns a copy with an updated vehicle specification profile and rebuilt telematics-driven dynamics.
@@ -120,7 +124,8 @@ public struct SimulationPhysicsConfiguration: Sendable {
       isPassengerCarMode: profile.vehicleClass == .passengerCar,
       activeSpecificationProfile: profile,
       staticWebETASeconds: staticWebETASeconds,
-      minimumTurnRadiusMeters: minimumTurnRadiusMeters
+      minimumTurnRadiusMeters: minimumTurnRadiusMeters,
+      turnInstructions: turnInstructions
     )
   }
 }
@@ -243,6 +248,11 @@ public actor SimulationPhysicsActor {
 
     publishMailboxSnapshot()
     publishUIState()
+  }
+
+  /// Returns the active physics configuration, if configured.
+  public func exportConfiguration() -> SimulationPhysicsConfiguration? {
+    configuration
   }
 
   /// Resets telemetry for a new playback session.

@@ -5,6 +5,7 @@ public enum NavigationWorkspaceSettings {
     private static let telemetrySourceModeKey = "RouteFinder.telemetrySourceMode"
     private static let autoOptimizeOnRouteFindKey = "RouteFinder.autoOptimizeOnRouteFind"
     private static let voiceGuidanceEnabledKey = "RouteFinder.voiceGuidanceEnabled"
+    private static let hosAdvisoryClockEnabledKey = "RouteFinder.hosAdvisoryClockEnabled"
 
     /// Loads the preferred telemetry source mode.
     public static func loadTelemetrySourceMode(defaults: UserDefaults = .standard) -> LocationProviderMode {
@@ -41,5 +42,18 @@ public enum NavigationWorkspaceSettings {
     /// Persists voice guidance preference.
     public static func saveVoiceGuidanceEnabled(_ enabled: Bool, defaults: UserDefaults = .standard) {
         defaults.set(enabled, forKey: voiceGuidanceEnabledKey)
+    }
+
+    /// Whether the advisory EU hours-of-service clock is enabled.
+    public static func loadHosAdvisoryClockEnabled(defaults: UserDefaults = .standard) -> Bool {
+        if defaults.object(forKey: hosAdvisoryClockEnabledKey) == nil {
+            return false
+        }
+        return defaults.bool(forKey: hosAdvisoryClockEnabledKey)
+    }
+
+    /// Persists advisory HOS clock preference.
+    public static func saveHosAdvisoryClockEnabled(_ enabled: Bool, defaults: UserDefaults = .standard) {
+        defaults.set(enabled, forKey: hosAdvisoryClockEnabledKey)
     }
 }

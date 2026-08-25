@@ -8,6 +8,8 @@ public struct ExternalRouteRequest: Sendable, Codable {
     public let waypoints: [RoutingCoordinate]
     public let vehicle: VehicleProfile
     public let preferences: RoutingPreferences
+    /// Optional GeoJSON-style avoid polygons as rings of `[lon, lat]` pairs (ORS `avoid_polygons`).
+    public let avoidPolygons: [[[Double]]]?
 
     /// Creates an external routing request from routing-safe coordinates only.
     public init(
@@ -15,13 +17,15 @@ public struct ExternalRouteRequest: Sendable, Codable {
         destination: RoutingCoordinate,
         waypoints: [RoutingCoordinate] = [],
         vehicle: VehicleProfile,
-        preferences: RoutingPreferences
+        preferences: RoutingPreferences,
+        avoidPolygons: [[[Double]]]? = nil
     ) {
         self.origin = origin
         self.destination = destination
         self.waypoints = waypoints
         self.vehicle = vehicle
         self.preferences = preferences
+        self.avoidPolygons = avoidPolygons
     }
 
     /// Returns a copy with segment speed limit requests disabled.
@@ -46,7 +50,20 @@ public struct ExternalRouteRequest: Sendable, Codable {
                 vehicle: preferences.vehicle,
                 algorithm: preferences.algorithm,
                 requestSegmentSpeedLimits: false
-            )
+            ),
+            avoidPolygons: avoidPolygons
+        )
+    }
+
+    /// Returns a copy that also avoids the given polygons on the next ORS call.
+    public func withAvoidPolygons(_ polygons: [[[Double]]]?) -> ExternalRouteRequest {
+        ExternalRouteRequest(
+            origin: origin,
+            destination: destination,
+            waypoints: waypoints,
+            vehicle: vehicle,
+            preferences: preferences,
+            avoidPolygons: polygons
         )
     }
 }

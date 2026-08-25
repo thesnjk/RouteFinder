@@ -21,6 +21,27 @@ public struct TelemetryUnitConverter: Sendable {
         return .metric
     }
 
+    /// Resolves dial / turn-list display units from registration origin, falling back to geography.
+    ///
+    /// UK and US plates map to imperial (mph); EU plates map to metric (km/h).
+    public static func displayMeasurementSystem(
+        forRegistration registration: String,
+        fallbackCoordinate: CLLocationCoordinate2D
+    ) -> RegionalMeasurementSystem {
+        let trimmed = registration.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            switch RegionalPlateFallbackParser.detectRegion(from: trimmed) {
+            case .uk, .us:
+                return .imperial
+            case .eu:
+                return .metric
+            case .auto:
+                break
+            }
+        }
+        return measurementSystem(for: fallbackCoordinate)
+    }
+
     /// Formats a canonical km/h speed limit value for the requested display system.
     ///
     /// - Parameters:

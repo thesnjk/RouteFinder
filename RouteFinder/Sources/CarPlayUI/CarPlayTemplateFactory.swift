@@ -33,18 +33,42 @@ public enum CarPlayTemplateFactory {
         )
     }
 
-    /// Maps a turn instruction to a CarPlay maneuver template.
-    public static func makeManeuver(from instruction: TurnInstruction) -> CPManeuver {
+    /// Maps a turn instruction to a CarPlay maneuver aligned with phone voice labels.
+    public static func makeManeuver(
+        from instruction: TurnInstruction,
+        remainingETASeconds: TimeInterval? = nil,
+        remainingDistanceMeters: Double? = nil
+    ) -> CPManeuver {
         let maneuver = CPManeuver()
+        let timeRemaining = estimatedTimeRemaining(
+            for: instruction,
+            remainingETASeconds: remainingETASeconds,
+            remainingDistanceMeters: remainingDistanceMeters
+        )
         maneuver.initialTravelEstimates = CPTravelEstimates(
-            distanceRemaining: Measurement(value: instruction.distance, unit: .meters),
-            timeRemaining: 0
+            distanceRemaining: Measurement(value: max(0, instruction.distance), unit: .meters),
+            timeRemaining: timeRemaining
         )
         let road = instruction.roadName ?? "Road"
-        maneuver.instructionVariants = [
-            ManeuverSpeechFormatter.displayDescription(for: instruction.maneuver, roadName: road)
-        ]
+        let display = ManeuverSpeechFormatter.displayDescription(for: instruction.maneuver, roadName: road)
+        let spoken = ManeuverSpeechFormatter.spokenPrompt(for: instruction, tier: .execute)
+        // Prefer voice-aligned wording first so CarPlay TBT matches iPhone announcements.
+        maneuver.instructionVariants = Array(Set([spoken, display]))
         return maneuver
+    }
+
+    private static func estimatedTimeRemaining(
+        for instruction: TurnInstruction,
+        remainingETASeconds: TimeInterval?,
+        remainingDistanceMeters: Double?
+    ) -> TimeInterval {
+        if let eta = remainingETASeconds,
+           let remaining = remainingDistanceMeters,
+           remaining > 1 {
+            return max(0, eta * (instruction.distance / remaining))
+        }
+        // ~48 km/h cruise fallback for pre-trip seeding.
+        return max(0, instruction.distance / 13.3)
     }
 
     private static func mapItem(at coordinate: CLLocationCoordinate2D, name: String) -> MKMapItem {

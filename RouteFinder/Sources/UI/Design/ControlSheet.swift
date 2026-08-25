@@ -116,6 +116,11 @@ private struct VehicleProfileSection: View {
             if viewModel.isHGVMode {
                 HGVModeBadge()
                 Toggle("Avoid residential roads", isOn: $viewModel.avoidResidential)
+                Toggle("Advisory hours clock (EU 561)", isOn: $viewModel.hosEnabled)
+                    .tint(RFColor.hazard)
+                    .onChange(of: viewModel.hosEnabled) { _, _ in
+                        viewModel.persistHosEnabled()
+                    }
                 Text("UK artic preset: 4.0 m × 2.55 m × 16.5 m · 44 t")
                     .font(.caption2)
                     .foregroundStyle(.secondary)

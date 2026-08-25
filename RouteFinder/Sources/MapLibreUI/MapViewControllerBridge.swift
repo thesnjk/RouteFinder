@@ -63,6 +63,8 @@ public final class MapViewControllerBridge: ObservableObject {
     public var fitRouteBoundsHandler: ((MapEdgePadding) -> Void)?
     /// Handler invoked to zoom the map by a delta level.
     public var zoomByHandler: ((Double) -> Void)?
+    /// Handler invoked to set an absolute zoom level.
+    public var setZoomHandler: ((Double) -> Void)?
 
     private var lastCameraUpdateInstant: ContinuousClock.Instant?
 
@@ -219,5 +221,11 @@ public final class MapViewControllerBridge: ObservableObject {
     /// Zooms the map by the given delta level.
     public func zoomBy(_ delta: Double) {
         zoomByHandler?(delta)
+    }
+
+    /// Sets the map to an absolute zoom level.
+    public func setZoom(_ zoom: Double) {
+        trackingZoomLevel = zoom
+        setZoomHandler?(zoom)
     }
 }

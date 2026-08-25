@@ -1,15 +1,35 @@
 import Foundation
 
 enum MapLibreMapHTML {
-    static func page(styleURL: String, scriptURL: String, cssURL: String) -> String {
-        """
+    static func page(
+        styleURL: String,
+        scriptURL: String,
+        cssURL: String,
+        inlineScript: String? = nil,
+        inlineStyleSheet: String? = nil
+    ) -> String {
+        let cssTag: String
+        if let inlineStyleSheet {
+            cssTag = "<style>\n\(inlineStyleSheet)\n</style>"
+        } else {
+            cssTag = "<link href=\"\(cssURL)\" rel=\"stylesheet\"/>"
+        }
+
+        let scriptTag: String
+        if let inlineScript {
+            scriptTag = "<script>\n\(inlineScript)\n</script>"
+        } else {
+            scriptTag = "<script src=\"\(scriptURL)\"></script>"
+        }
+
+        return """
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="utf-8"/>
           <meta name="viewport" content="width=device-width, initial-scale=1"/>
-          <link href="\(cssURL)" rel="stylesheet"/>
-          <script src="\(scriptURL)"></script>
+          \(cssTag)
+          \(scriptTag)
           <style>
             html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
             .maplibregl-ctrl-attrib { font-size: 10px; }
@@ -38,6 +58,7 @@ enum MapLibreMapHTML {
             let vehicleIconLengthMeters = 12;
             let vehicleIconVisible = false;
             let vehicleIconCenter = { lng: 0, lat: 0 };
+            const initialStyleURL = '\(styleURL)';
 
             function post(type, payload) {
               if (!bridge) return;
@@ -429,6 +450,13 @@ enum MapLibreMapHTML {
               if (!map || !map.isStyleLoaded()) return;
               userMapInteraction = true;
               map.zoomTo(map.getZoom() + (delta || 0), { duration: 200 });
+            };
+
+            window.setZoom = function(zoom) {
+              if (!map || !map.isStyleLoaded()) return;
+              if (typeof zoom !== 'number' || !isFinite(zoom)) return;
+              userMapInteraction = true;
+              map.zoomTo(zoom, { duration: 200 });
             };
 
             function decodePolyline(encoded, precision) {

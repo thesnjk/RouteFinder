@@ -24,16 +24,23 @@ public enum OpenRouteServicePayloadBuilder {
         validate(coordinates)
 
         let extraInfo = includeExtraInfo(for: request) ? ["maxspeed"] : nil
+        let avoidFeatures = avoidFeatures(from: request.preferences)
 
         if request.preferences.isHGVMode {
+            let vehicle = request.vehicle
             let restrictions = ORSRestrictions(
-                height: request.vehicle.height,
-                width: request.vehicle.width,
-                weight: request.vehicle.weight
+                length: vehicle.length,
+                width: vehicle.width,
+                height: vehicle.height,
+                axleload: vehicle.axleWeight,
+                weight: vehicle.weight,
+                hazmat: hazmatEnabled(for: vehicle),
+                hazmatTunnelRestrictionCode: tunnelRestrictionCode(for: vehicle)
             )
             return ORSDirectionsRequest(
                 coordinates: coordinates,
                 options: ORSDirectionsOptions(
+                    avoidFeatures: avoidFeatures,
                     profileParams: ORSProfileParams(restrictions: restrictions),
                     extraInfo: extraInfo
                 )
@@ -43,6 +50,7 @@ public enum OpenRouteServicePayloadBuilder {
         return ORSDirectionsRequest(
             coordinates: coordinates,
             options: ORSDirectionsOptions(
+                avoidFeatures: avoidFeatures,
                 profileParams: nil,
                 extraInfo: extraInfo
             )
@@ -51,6 +59,24 @@ public enum OpenRouteServicePayloadBuilder {
 
     private static func includeExtraInfo(for request: ExternalRouteRequest) -> Bool {
         request.preferences.requestSegmentSpeedLimits && ORSAPIDefaults.supportsExtraInfo
+    }
+
+    private static func avoidFeatures(from preferences: RoutingPreferences) -> [String]? {
+        var features: [String] = []
+        if preferences.avoidTolls { features.append("tollways") }
+        if preferences.avoidFerries { features.append("ferries") }
+        if preferences.avoidTunnels { features.append("tunnels") }
+        return features.isEmpty ? nil : features
+    }
+
+    private static func hazmatEnabled(for vehicle: VehicleProfile) -> Bool? {
+        guard let hazmat = vehicle.hazmatClass, hazmat != .none else { return nil }
+        return true
+    }
+
+    private static func tunnelRestrictionCode(for vehicle: VehicleProfile) -> String? {
+        guard let code = vehicle.tunnelRestrictionCode, code != .none else { return nil }
+        return code.rawValue.uppercased()
     }
 
     private static func validate(_ coordinates: [[Double]]) {
@@ -92,12 +118,21 @@ struct ORSDirectionsRequest: Encodable {
 }
 
 struct ORSDirectionsOptions: Encodable {
+    let avoidFeatures: [String]?
     let profileParams: ORSProfileParams?
     let extraInfo: [String]?
 
     enum CodingKeys: String, CodingKey {
+        case avoidFeatures = "avoid_features"
         case profileParams = "profile_params"
         case extraInfo = "extra_info"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(avoidFeatures, forKey: .avoidFeatures)
+        try container.encodeIfPresent(profileParams, forKey: .profileParams)
+        try container.encodeIfPresent(extraInfo, forKey: .extraInfo)
     }
 }
 
@@ -106,18 +141,27 @@ struct ORSProfileParams: Encodable {
 }
 
 struct ORSRestrictions: Encodable {
-    let height: Double?
+    let length: Double?
     let width: Double?
+    let height: Double?
+    let axleload: Double?
     let weight: Double?
+    let hazmat: Bool?
+    let hazmatTunnelRestrictionCode: String?
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encodeIfPresent(height, forKey: .height)
+        try container.encodeIfPresent(length, forKey: .length)
         try container.encodeIfPresent(width, forKey: .width)
+        try container.encodeIfPresent(height, forKey: .height)
+        try container.encodeIfPresent(axleload, forKey: .axleload)
         try container.encodeIfPresent(weight, forKey: .weight)
+        try container.encodeIfPresent(hazmat, forKey: .hazmat)
+        try container.encodeIfPresent(hazmatTunnelRestrictionCode, forKey: .hazmatTunnelRestrictionCode)
     }
 
     enum CodingKeys: String, CodingKey {
-        case height, width, weight
+        case length, width, height, axleload, weight, hazmat
+        case hazmatTunnelRestrictionCode = "hazmat_tunnel_restriction_code"
     }
 }

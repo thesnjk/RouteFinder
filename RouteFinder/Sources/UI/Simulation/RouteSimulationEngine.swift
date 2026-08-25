@@ -52,8 +52,12 @@ public final class RouteSimulationEngine: ObservableObject {
 
   /// Optional callback invoked on each display frame during simulation playback.
   public var onDisplayFrameTick: (() -> Void)?
+  /// Optional callback when published simulation UI state changes (kinetic advisories).
+  public var onUIStatePublished: ((SimulationUIState) -> Void)?
   /// Optional callback invoked when simulation playback starts.
   public var onSimulationStarted: (() -> Void)?
+  /// Awaitable hook invoked before the display clock starts (e.g. navigation telemetry activation).
+  public var onSimulationStarting: (() async -> Void)?
   /// Optional callback invoked when simulation playback stops.
   public var onSimulationStopped: (() -> Void)?
 
@@ -309,7 +313,7 @@ public final class RouteSimulationEngine: ObservableObject {
           vehicleCeilingKmh: vehicleMaxSpeedKmh
         )
       ),
-      transitionProfile: .standard,
+      transitionProfile: isPassengerCar ? .standard : .hgv,
       vehicleMaxSpeedMps: vehicleMaxSpeedMps,
       defaultSpeedFloorMps: defaultSpeedFloorMps,
       kineticStressProfile: self.kineticStressProfile,
@@ -321,11 +325,36 @@ public final class RouteSimulationEngine: ObservableObject {
       isPassengerCarMode: isPassengerCarMode,
       activeSpecificationProfile: activeSpecificationProfile,
       staticWebETASeconds: staticWebETASeconds,
-      minimumTurnRadiusMeters: minimumTurnRadiusMeters
+      minimumTurnRadiusMeters: minimumTurnRadiusMeters,
+      turnInstructions: turnInstructions
     )
     configureTask = Task {
       await physicsActor.configure(physicsConfig)
     }
+  }
+
+  /// Runs a headless physics integration pass to predict kinetic route duration.
+  public func estimatePhysicsDuration() async -> PhysicsRouteDurationResult? {
+    await configureTask?.value
+    guard let config = await physicsActor.exportConfiguration() else { return nil }
+    return await PhysicsRouteDurationEstimator.estimate(
+      configuration: config,
+      tomTomAPIKey: lastConfigureTomTomAPIKey
+    )
+  }
+
+  /// Runs a full pre-trip physics rehearsal and stores the predictive telemetry report.
+  public func rehearseRoute() async -> PredictiveTelemetryReport? {
+    await configureTask?.value
+    guard let config = await physicsActor.exportConfiguration() else { return nil }
+    let report = await RouteRehearsalService.rehearse(
+      configuration: config,
+      tomTomAPIKey: lastConfigureTomTomAPIKey
+    )
+    if let report {
+      telemetryReport = report
+    }
+    return report
   }
 
   /// Configures the simulation from 2D map coordinates with optional parallel elevations.
@@ -505,6 +534,9 @@ public final class RouteSimulationEngine: ObservableObject {
       await configureTask?.value
       await physicsActor.resetTelemetry()
       await physicsActor.start()
+      if let onSimulationStarting {
+        await onSimulationStarting()
+      }
       displayClock.start { [weak self] tick in
         self?.renderDisplayFrame(tick)
       }
@@ -600,6 +632,7 @@ public final class RouteSimulationEngine: ObservableObject {
     if force || shouldPublishUI(now: now) {
       lastPublishedUIInstant = now
       playbackRevision &+= 1
+      onUIStatePublished?(uiState)
     }
   }
 
@@ -675,8 +708,11 @@ public final class RouteSimulationEngine: ObservableObject {
       widthMeters: dimensions.width,
       playbackRevision: bridgeRevision,
       dimensionRevision: dimensionRevision,
-      renderMode: renderMode,
-      footprintCoordinates: []
+      renderMode: .polygon,
+      footprintCoordinates: [],
+      footprintParts: [],
+      isPassengerCar: isPassengerCarMode,
+      wheelbaseMeters: resolvedWheelbaseMeters()
     )
   }
 

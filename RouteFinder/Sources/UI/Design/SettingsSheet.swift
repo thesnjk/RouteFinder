@@ -122,6 +122,23 @@ struct SettingsSheet: View {
                     Task { await viewModel.recalculateIfReady() }
                 }
             Toggle("Avoid hazmat-restricted roads", isOn: $viewModel.avoidHazmatRestricted)
+            if viewModel.isHGVMode {
+                Picker("Hazmat class", selection: $viewModel.hazmatClass) {
+                    Text("None").tag(HazmatClass?.none)
+                    ForEach(HazmatClass.allCases.filter { $0 != .none }, id: \.self) { hazmat in
+                        Text(hazmat.rawValue).tag(Optional(hazmat))
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Picker("ADR tunnel code", selection: $viewModel.tunnelRestrictionCode) {
+                    Text("None").tag(TunnelRestrictionCode?.none)
+                    ForEach(TunnelRestrictionCode.allCases.filter { $0 != .none }, id: \.self) { code in
+                        Text(code.rawValue.uppercased()).tag(Optional(code))
+                    }
+                }
+                .pickerStyle(.menu)
+            }
             Toggle("Enforce turn radius", isOn: $viewModel.enforceTurnRadius)
             Toggle("Curve speed advisories", isOn: $viewModel.enforceCurveSpeed)
             Toggle("Apple search fallback", isOn: $viewModel.useAppleSearchFallback)

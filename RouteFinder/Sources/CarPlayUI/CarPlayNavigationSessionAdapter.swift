@@ -13,13 +13,22 @@ public final class CarPlayNavigationSessionAdapter {
     /// Whether an active CarPlay navigation session exists.
     public var isActive: Bool { navigationSession != nil }
 
-    /// Starts a CarPlay navigation session for the given trip on the root map template.
+    /// Starts a CarPlay navigation session and optionally seeds the first maneuver.
     public func start(
         mapTemplate: CPMapTemplate,
         trip: CPTrip,
-        routeChoice: CPRouteChoice
+        routeChoice: CPRouteChoice,
+        initialInstruction: TurnInstruction? = nil,
+        progress: NavigationProgressSnapshot? = nil
     ) {
+        _ = routeChoice
         navigationSession = mapTemplate.startNavigationSession(for: trip)
+        if let initialInstruction {
+            updateManeuver(initialInstruction, progress: progress)
+            if let progress {
+                update(progress: progress)
+            }
+        }
     }
 
     /// Updates travel estimates from a navigation progress snapshot.
@@ -33,9 +42,16 @@ public final class CarPlayNavigationSessionAdapter {
     }
 
     /// Updates the active maneuver on the CarPlay navigation session.
-    public func updateManeuver(_ instruction: TurnInstruction) {
+    public func updateManeuver(
+        _ instruction: TurnInstruction,
+        progress: NavigationProgressSnapshot? = nil
+    ) {
         guard let navigationSession else { return }
-        let maneuver = CarPlayTemplateFactory.makeManeuver(from: instruction)
+        let maneuver = CarPlayTemplateFactory.makeManeuver(
+            from: instruction,
+            remainingETASeconds: progress?.remainingETASeconds,
+            remainingDistanceMeters: progress?.remainingDistanceMeters
+        )
         currentManeuver = maneuver
         navigationSession.upcomingManeuvers = [maneuver]
     }

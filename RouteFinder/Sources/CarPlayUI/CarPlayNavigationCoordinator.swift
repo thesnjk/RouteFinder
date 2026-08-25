@@ -30,6 +30,29 @@ public final class CarPlayNavigationCoordinator: NavigationSessionDelegate {
         tripStarted = false
     }
 
+    /// Bootstraps an in-progress trip when CarPlay connects mid-navigation.
+    public func bootstrapIfNeeded() {
+        guard !tripStarted else { return }
+        if let progress = navigationSession.progressSnapshot {
+            startTripIfPossible(progress: progress)
+            return
+        }
+        if navigationSession.phase == .navigating || navigationSession.canonicalGeometry != nil {
+            let length = navigationSession.canonicalGeometry?.totalLengthMeters ?? 0
+            let eta = navigationSession.staticTotalTimeSeconds
+            let synthetic = NavigationProgressSnapshot(
+                remainingDistanceMeters: length,
+                remainingETASeconds: eta,
+                traveledDistanceMeters: 0,
+                progressFraction: 0,
+                arcLengthMeters: 0,
+                totalLengthMeters: length,
+                currentManeuverIndex: 0
+            )
+            startTripIfPossible(progress: synthetic)
+        }
+    }
+
     public func navigationSession(_ session: NavigationSession, didUpdateProgress snapshot: NavigationProgressSnapshot) {
         if !tripStarted {
             startTripIfPossible(progress: snapshot)
@@ -38,13 +61,18 @@ public final class CarPlayNavigationCoordinator: NavigationSessionDelegate {
     }
 
     public func navigationSession(_ session: NavigationSession, didAdvanceManeuver instruction: TurnInstruction) {
-        sessionAdapter.updateManeuver(instruction)
+        sessionAdapter.updateManeuver(instruction, progress: session.progressSnapshot)
     }
 
     public func navigationSession(_ session: NavigationSession, didChangePhase phase: NavigationPhase) {
-        if phase == .completed || phase == .idle {
+        switch phase {
+        case .navigating:
+            bootstrapIfNeeded()
+        case .completed, .idle:
             sessionAdapter.cancel()
             tripStarted = false
+        case .routeLoaded, .constraintRecalcPending, .rerouteRequired, .stopSafe:
+            break
         }
     }
 
@@ -80,7 +108,9 @@ public final class CarPlayNavigationCoordinator: NavigationSessionDelegate {
 
         let routeChoice = CarPlayTemplateFactory.makeRouteChoice(
             name: "Active Route",
-            distanceMeters: progress.totalLengthMeters,
+            distanceMeters: progress.remainingDistanceMeters > 0
+                ? progress.remainingDistanceMeters
+                : progress.totalLengthMeters,
             timeSeconds: progress.remainingETASeconds
         )
         let trip = CarPlayTemplateFactory.makeTrip(
@@ -88,10 +118,14 @@ public final class CarPlayNavigationCoordinator: NavigationSessionDelegate {
             destination: destination,
             routeChoices: [routeChoice]
         )
+        let instruction = navigationSession.currentInstruction()
+            ?? navigationSession.currentInstruction(atArcLength: 0)
         sessionAdapter.start(
             mapTemplate: mapTemplateController.rootTemplate,
             trip: trip,
-            routeChoice: routeChoice
+            routeChoice: routeChoice,
+            initialInstruction: instruction,
+            progress: progress
         )
         tripStarted = true
     }

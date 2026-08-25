@@ -34,6 +34,7 @@ public actor OpenRouteServiceGeocoder {
     private let session: URLSession
     private let baseURL: URL
     private let cache: GeocoderCache
+    private let hitCache: DiskGeocodeCache
     private var lastRequestTime: Date = .distantPast
     private let minInterval: TimeInterval = 0.25
 
@@ -41,11 +42,13 @@ public actor OpenRouteServiceGeocoder {
     public init(
         baseURL: URL = URL(string: ORSAPIDefaults.peliasBaseURL)!,
         session: URLSession = SecureURLSession.shared,
-        cache: GeocoderCache = GeocoderCache()
+        cache: GeocoderCache = GeocoderCache(),
+        hitCache: DiskGeocodeCache = DiskGeocodeCache()
     ) {
         self.baseURL = baseURL
         self.session = session
         self.cache = cache
+        self.hitCache = hitCache
     }
 
     /// Searches for places near the given coordinate (viewport-biased typeahead).
@@ -78,6 +81,20 @@ public actor OpenRouteServiceGeocoder {
         )
     }
 
+    /// Searches globally without an explicit focus coordinate (neutral focus).
+    public func searchGlobal(
+        query: String,
+        apiKey: String,
+        limit: Int = 8
+    ) async throws -> [GeocodeSuggestion] {
+        try await searchGlobal(
+            query: query,
+            near: Coordinate(latitude: 0, longitude: 0),
+            apiKey: apiKey,
+            limit: limit
+        )
+    }
+
     /// Searches for places near the given coordinate (viewport-biased).
     public func search(
         query: String,
@@ -86,6 +103,28 @@ public actor OpenRouteServiceGeocoder {
         limit: Int = 8
     ) async throws -> [GeocodeSuggestion] {
         try await searchBiased(query: query, near: coordinate, apiKey: apiKey, limit: limit)
+    }
+
+    /// Returns whether a free-text query likely refers to a place outside the United Kingdom.
+    ///
+    /// Used to prefer global Pelias search over UK-biased results for overseas destinations.
+    public static func querySuggestsOutsideUnitedKingdom(_ query: String) -> Bool {
+        let lowered = query.lowercased()
+        let overseasMarkers = [
+            "france", "paris", "germany", "berlin", "spain", "madrid", "italy", "rome",
+            "ireland", "dublin", "netherlands", "amsterdam", "belgium", "brussels",
+            "portugal", "lisbon", "poland", "warsaw", "usa", "united states", "new york",
+            "canada", "toronto", "australia", "sydney", "europe", "eu ",
+        ]
+        if overseasMarkers.contains(where: { lowered.contains($0) }) {
+            return true
+        }
+        // Continental-style postcodes (digits-first) often indicate non-UK addresses.
+        let compact = lowered.filter { !$0.isWhitespace }
+        if compact.range(of: #"^\d{4,5}"#, options: .regularExpression) != nil {
+            return true
+        }
+        return false
     }
 
     private func performSearch(
@@ -150,7 +189,16 @@ public actor OpenRouteServiceGeocoder {
 
         let suggestions = collection.features.compactMap { Self.suggestion(from: $0) }
         await cache.store(suggestions, forKey: cacheKey)
+        await hitCache.store(query: trimmed, suggestions: suggestions)
         return suggestions
+    }
+
+    /// Returns last-N disk-cached Pelias hits for offline / no-key fallback.
+    public func cachedHits(matching query: String) async -> [GeocodeSuggestion] {
+        if let exact = await hitCache.suggestions(matching: query) {
+            return exact
+        }
+        return await hitCache.suggestions(prefix: query)
     }
 
     /// Formats an ORS Pelias feature into a geocode suggestion.

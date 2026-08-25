@@ -29,8 +29,15 @@ import Testing
         distance: 250,
         bearing: 270
     )
-    let maneuver = CarPlayTemplateFactory.makeManeuver(from: instruction)
+    let maneuver = CarPlayTemplateFactory.makeManeuver(
+        from: instruction,
+        remainingETASeconds: 600,
+        remainingDistanceMeters: 5_000
+    )
     #expect(maneuver.instructionVariants.first?.contains("High Street") == true)
+    let spoken = ManeuverSpeechFormatter.spokenPrompt(for: instruction, tier: .execute)
+    #expect(spoken.lowercased().contains("left"))
+    #expect(maneuver.initialTravelEstimates?.timeRemaining ?? 0 > 0)
 }
 #else
 import Testing

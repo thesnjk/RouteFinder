@@ -74,6 +74,11 @@ public final class NavigationSession {
         setPhase(.navigating)
     }
 
+    /// Replaces the static routing ETA used for remaining-time proportioning.
+    public func updateStaticTotalTime(_ totalTimeSeconds: TimeInterval) {
+        staticTotalTimeSeconds = max(0, totalTimeSeconds)
+    }
+
     /// Stops navigation tracking and resets progress.
     public func stopNavigation() {
         progressSnapshot = nil
@@ -159,6 +164,19 @@ public final class NavigationSession {
         if snapshot.progressFraction >= 1 {
             setPhase(.completed)
         }
+    }
+
+    /// Returns the current upcoming turn instruction for the given arc length, if any.
+    public func currentInstruction(atArcLength arcLengthMeters: Double) -> TurnInstruction? {
+        maneuverTracker?.currentManeuver(for: arcLengthMeters)
+    }
+
+    /// Returns the current upcoming turn instruction based on the latest progress snapshot.
+    public func currentInstruction() -> TurnInstruction? {
+        guard let snapshot = progressSnapshot else {
+            return maneuverTracker?.currentManeuver(for: 0)
+        }
+        return maneuverTracker?.currentManeuver(for: snapshot.arcLengthMeters)
     }
 
     /// Reports an invalid vehicle profile lookup for alert presentation.

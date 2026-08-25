@@ -71,4 +71,40 @@ public enum H3Grid {
 
         return cells
     }
+
+    /// Returns all cells whose centers (sampled on a half-cell lattice) fall inside the bbox.
+    ///
+    /// Used by offline tile download to determine which `*.graphjson` files cover a region.
+    public static func cellsCovering(
+        minLat: Double,
+        maxLat: Double,
+        minLon: Double,
+        maxLon: Double,
+        resolution: Int = defaultResolution
+    ) -> Set<H3CellIndex> {
+        let size = cellSizeDegrees(resolution: resolution)
+        let step = max(size * 0.5, 1e-6)
+        var cells: Set<H3CellIndex> = []
+        var lat = min(minLat, maxLat)
+        let latMax = max(minLat, maxLat)
+        let lonMin = min(minLon, maxLon)
+        let lonMax = max(minLon, maxLon)
+
+        while lat <= latMax + step {
+            var lon = lonMin
+            while lon <= lonMax + step {
+                cells.insert(cell(for: Coordinate(latitude: lat, longitude: lon), resolution: resolution))
+                lon += step
+            }
+            lat += step
+        }
+
+        // Corner samples ensure edge coverage when the lattice misses boundaries.
+        for (latCorner, lonCorner) in [
+            (minLat, minLon), (minLat, maxLon), (maxLat, minLon), (maxLat, maxLon)
+        ] {
+            cells.insert(cell(for: Coordinate(latitude: latCorner, longitude: lonCorner), resolution: resolution))
+        }
+        return cells
+    }
 }

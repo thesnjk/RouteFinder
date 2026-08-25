@@ -57,14 +57,20 @@ struct RouteSummaryCard: View {
 
     @ViewBuilder
     private var collapsedSummary: some View {
-        HStack {
+        HStack(alignment: .center, spacing: RFSpacing.sm) {
             if viewModel.isCalculating {
                 ProgressView()
                     .controlSize(.small)
                 Text("Calculating route…")
                     .font(RFFont.summary)
                     .foregroundStyle(.secondary)
-            } else if let error = viewModel.errorMessage {
+            } else if viewModel.isEstimatingPhysicsDuration, viewModel.result == nil {
+                ProgressView()
+                    .controlSize(.small)
+                Text("Estimating physics ETA…")
+                    .font(RFFont.summary)
+                    .foregroundStyle(.secondary)
+            } else if let error = viewModel.errorMessage, viewModel.result == nil {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundStyle(.red)
                 Text(error)
@@ -72,27 +78,32 @@ struct RouteSummaryCard: View {
                     .foregroundStyle(.red)
                     .lineLimit(2)
             } else if let result = viewModel.result {
-                Text(summaryLine(for: result))
-                    .font(RFFont.summary)
-                    .vibrancyLabel()
-
-                if result.metrics.speedCameraCount > 0 {
-                    Label("\(result.metrics.speedCameraCount)", systemImage: "camera.fill")
-                        .font(RFFont.caption)
-                        .foregroundStyle(RFColor.hazard)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(summaryLine(for: result))
+                        .font(RFFont.summary)
+                        .vibrancyLabel()
+                        .lineLimit(1)
+                    if viewModel.isEstimatingPhysicsDuration {
+                        Text("Refining physics ETA…")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
+
+                Spacer(minLength: 4)
+
+                if simulationEngine.currentCoordinate != nil || simulationEngine.isRunning {
+                    speedDial(compact: true)
+                }
+
+                Image(systemName: isExpanded ? "chevron.down" : "chevron.up")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
             } else {
                 Text("Set a destination to calculate a route")
                     .font(RFFont.caption)
                     .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            if viewModel.result != nil {
-                Image(systemName: isExpanded ? "chevron.down" : "chevron.up")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                Spacer()
             }
         }
     }
@@ -115,14 +126,27 @@ struct RouteSummaryCard: View {
 
                     TurnByTurnList(
                         instructions: result.turnInstructions,
-                        routeReferenceCoordinate: viewModel.routeCoordinates.first
+                        routeReferenceCoordinate: viewModel.routeCoordinates.first,
+                        displayMeasurementSystem: viewModel.displayMeasurementSystem
                     )
 
                     if showsSimulationControls {
                         Divider()
+                        if let lane = viewModel.activeLaneGuidance {
+                            LaneGuidancePopup(message: lane)
+                        }
                         SimulationControlRow(
+                            viewModel: viewModel,
                             simulationEngine: simulationEngine,
                             isRunning: simulationEngine.isRunning
+                        )
+                    }
+
+                    if !viewModel.upcomingTruckPois.isEmpty || viewModel.isLoadingTruckPois {
+                        Divider()
+                        TruckPoiAheadList(
+                            pois: viewModel.upcomingTruckPois,
+                            isLoading: viewModel.isLoadingTruckPois
                         )
                     }
 
@@ -160,11 +184,18 @@ struct RouteSummaryCard: View {
                 Label(formatTime(snapshot.remainingETASeconds) + " ETA", systemImage: "clock")
             } else {
                 Label(String(format: "%.1f km", result.metrics.totalDistance / 1000), systemImage: "road.lanes")
-                Label(formatTime(result.metrics.totalTime), systemImage: "clock")
+                Label(formatTime(displayedRouteDuration(for: result)), systemImage: "clock")
             }
         }
         .font(RFFont.caption)
         .foregroundStyle(.secondary)
+
+        if viewModel.physicsPredictedDurationSeconds != nil,
+           !viewModel.navigationMetrics.isLiveNavigationActive {
+            Text("Web routing: \(formatTime(result.metrics.totalTime))")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
 
         HStack {
             Label(String(format: "%.0f ms", result.runtime * 1000), systemImage: "speedometer")
@@ -198,11 +229,17 @@ struct RouteSummaryCard: View {
             return "\(distance) left • \(time) ETA"
         }
         let distance = String(format: "%.1f km", result.metrics.totalDistance / 1000)
-        let time = formatTime(result.metrics.totalTime)
+        let time = formatTime(displayedRouteDuration(for: result))
         if result.metrics.speedCameraCount > 0 {
             return "\(distance) • \(time) • \(result.metrics.speedCameraCount) cameras"
         }
         return "\(distance) • \(time)"
+    }
+
+    private func displayedRouteDuration(for result: SearchResult) -> TimeInterval {
+        viewModel.journeyPhysicsETASeconds
+            ?? viewModel.physicsPredictedDurationSeconds
+            ?? result.metrics.totalTime
     }
 
     private func formatTime(_ seconds: TimeInterval) -> String {
@@ -210,10 +247,55 @@ struct RouteSummaryCard: View {
         if minutes < 60 { return "\(minutes) min" }
         return "\(minutes / 60)h \(minutes % 60)m"
     }
+
+    @ViewBuilder
+    private func speedDial(compact: Bool) -> some View {
+        let values = dialSpeedValues
+        WazeSpeedDial(
+            currentSpeed: values.current,
+            speedLimit: values.limit,
+            unitLabel: values.unit,
+            compact: compact
+        )
+    }
+
+    private var dialSpeedValues: (current: Double, limit: Double?, unit: String) {
+        let currentKmh = simulationEngine.currentSpeedKmh
+        let limitKmh = simulationEngine.activeLegalSpeedLimitKmh
+        let system = viewModel.displayMeasurementSystem
+        switch system {
+        case .imperial:
+            return (currentKmh * 0.621371, limitKmh.map { $0 * 0.621371 }, "mph")
+        case .metric:
+            return (currentKmh, limitKmh, "km/h")
+        }
+    }
+}
+
+private struct LaneGuidancePopup: View {
+    let message: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "road.lanes")
+                .foregroundStyle(RFColor.route)
+            Text(message)
+                .font(RFFont.caption.weight(.semibold))
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(RFColor.route.opacity(0.35), lineWidth: 1)
+        )
+    }
 }
 
 /// Playback controls for route simulation.
 private struct SimulationControlRow: View {
+    @Bindable var viewModel: RouteViewModel
     @ObservedObject var simulationEngine: RouteSimulationEngine
     let isRunning: Bool
 
@@ -243,45 +325,116 @@ private struct SimulationControlRow: View {
                 }
                 .pickerStyle(.segmented)
 
-                Spacer()
+                Spacer(minLength: 4)
 
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(formattedCurrentSpeed)
-                        .font(RFFont.summary.monospacedDigit())
-                    if let postedLimit = formattedPostedSpeedLimit {
-                        Text(postedLimit)
-                            .font(.caption2.monospacedDigit())
-                            .foregroundStyle(.secondary)
-                    }
-                    if simulationEngine.isBrakingWarning {
-                        Label("Braking", systemImage: "exclamationmark.triangle.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.orange)
-                    }
-                }
+                dialFromEngine
             }
+
+            Button {
+                viewModel.rehearseRoute()
+            } label: {
+                HStack(spacing: 6) {
+                    if viewModel.isRehearsingRoute {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Image(systemName: "flame.fill")
+                    }
+                    Text(viewModel.isRehearsingRoute ? "Rehearsing…" : "Rehearse Route")
+                        .font(RFFont.caption.weight(.semibold))
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(viewModel.isRehearsingRoute || viewModel.isEstimatingPhysicsDuration || isRunning)
+
+            if let advisory = viewModel.latestKineticAdvisory {
+                KineticAdvisoryBanner(advisory: advisory)
+            }
+
+            HStack(spacing: RFSpacing.sm) {
+                Image(systemName: "minus.magnifyingglass")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Slider(
+                    value: Binding(
+                        get: { viewModel.simulationCameraZoom },
+                        set: { viewModel.setSimulationCameraZoom($0) }
+                    ),
+                    in: 12...19,
+                    step: 0.25
+                )
+                Image(systemName: "plus.magnifyingglass")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(String(format: "%.1f", viewModel.simulationCameraZoom))
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .frame(width: 28, alignment: .trailing)
+            }
+
+            Button {
+                viewModel.presentHazardReportSheet = true
+            } label: {
+                Label("Report hazard", systemImage: "exclamationmark.bubble")
+                    .font(RFFont.caption)
+            }
+            .buttonStyle(.borderless)
         }
         .padding(RFSpacing.sm)
         .controlSheetStyle()
     }
 
-    private var formattedPostedSpeedLimit: String? {
-        guard let limitKmh = simulationEngine.activeLegalSpeedLimitKmh else { return nil }
-        if let coordinate = simulationEngine.currentCoordinate {
-            let formatted = TelemetryUnitConverter.formatSpeedKmh(limitKmh, at: coordinate)
-            return "Limit \(formatted)"
+    private var dialFromEngine: some View {
+        let currentKmh = simulationEngine.currentSpeedKmh
+        let limitKmh = simulationEngine.activeLegalSpeedLimitKmh
+        let system = viewModel.displayMeasurementSystem
+        let current: Double
+        let limit: Double?
+        let unit: String
+        switch system {
+        case .imperial:
+            current = currentKmh * 0.621371
+            limit = limitKmh.map { $0 * 0.621371 }
+            unit = "mph"
+        case .metric:
+            current = currentKmh
+            limit = limitKmh
+            unit = "km/h"
         }
-        return "Limit \(TelemetryUnitConverter.formatSpeedKmh(limitKmh, system: .metric))"
+        return WazeSpeedDial(currentSpeed: current, speedLimit: limit, unitLabel: unit, compact: false)
+    }
+}
+
+private struct KineticAdvisoryBanner: View {
+    let advisory: KineticAdvisory
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: iconName)
+                .foregroundStyle(RFColor.hazard)
+            Text(advisory.spokenText)
+                .font(RFFont.caption.weight(.semibold))
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(RFColor.hazard.opacity(0.4), lineWidth: 1)
+        )
     }
 
-    private var formattedCurrentSpeed: String {
-        if let coordinate = simulationEngine.currentCoordinate {
-            return TelemetryUnitConverter.formatSpeedKmh(simulationEngine.currentSpeedKmh, at: coordinate)
+    private var iconName: String {
+        switch advisory.kind {
+        case .brakeFade: "thermometer.high"
+        case .steepGrade: "mountain.2.fill"
+        case .tireSlip: "circle.dotted"
+        case .hardDeceleration: "exclamationmark.triangle.fill"
         }
-        return TelemetryUnitConverter.formatSpeedKmh(
-            simulationEngine.currentSpeedKmh,
-            system: .metric
-        )
     }
 }
 

@@ -9,6 +9,7 @@ struct SettingsSheet: View {
     #if os(iOS)
     @EnvironmentObject private var weatherViewModel: WeatherViewModel
     #endif
+    @State private var showInspectionSheet = false
 
     var body: some View {
         NavigationStack {
@@ -16,9 +17,15 @@ struct SettingsSheet: View {
                 VStack(alignment: .leading, spacing: RFSpacing.lg) {
                     algorithmSection
                     vehicleSection
+                    if viewModel.isHGVMode {
+                        TachoAdvisorySettingsSection(viewModel: viewModel)
+                        inspectionSection
+                    }
                     avoidanceSection
                     environmentSection
                     navigationSection
+                    offlineRoutingSection
+                    offlineMapSection
                     orsAPIKeySection
                     openWeatherAPIKeySection
                     regCheckUsernameSection
@@ -38,6 +45,9 @@ struct SettingsSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                 }
+            }
+            .sheet(isPresented: $showInspectionSheet) {
+                InspectionWalkaroundSheet(viewModel: viewModel)
             }
         }
         #if os(macOS)
@@ -77,6 +87,11 @@ struct SettingsSheet: View {
 
             if viewModel.isHGVMode {
                 Toggle("Avoid residential roads", isOn: $viewModel.avoidResidential)
+                Toggle("Advisory hours clock (EU 561)", isOn: $viewModel.hosEnabled)
+                    .tint(RFColor.hazard)
+                    .onChange(of: viewModel.hosEnabled) { _, _ in
+                        viewModel.persistHosEnabled()
+                    }
             }
 
             HStack {
@@ -98,6 +113,26 @@ struct SettingsSheet: View {
                 Label("Advanced vehicle profile", systemImage: "truck.box")
             }
         }
+    }
+
+    private var inspectionSection: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.sm) {
+            Text("Walkaround inspection")
+                .font(RFFont.sectionTitle)
+            Text("DVSA-style local checklist. Official defect books remain authoritative.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            Button {
+                viewModel.startWalkaroundInspection()
+                showInspectionSheet = true
+            } label: {
+                Label("Walkaround check", systemImage: "checklist")
+            }
+            .buttonStyle(.borderless)
+        }
+        .padding(RFSpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glassPanel(cornerRadius: 14)
     }
 
     private var avoidanceSection: some View {
@@ -122,6 +157,23 @@ struct SettingsSheet: View {
                     Task { await viewModel.recalculateIfReady() }
                 }
             Toggle("Avoid hazmat-restricted roads", isOn: $viewModel.avoidHazmatRestricted)
+            if viewModel.isHGVMode {
+                Picker("Hazmat class", selection: $viewModel.hazmatClass) {
+                    Text("None").tag(HazmatClass?.none)
+                    ForEach(HazmatClass.allCases.filter { $0 != .none }, id: \.self) { hazmat in
+                        Text(hazmat.rawValue).tag(Optional(hazmat))
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Picker("ADR tunnel code", selection: $viewModel.tunnelRestrictionCode) {
+                    Text("None").tag(TunnelRestrictionCode?.none)
+                    ForEach(TunnelRestrictionCode.allCases.filter { $0 != .none }, id: \.self) { code in
+                        Text(code.rawValue.uppercased()).tag(Optional(code))
+                    }
+                }
+                .pickerStyle(.menu)
+            }
             Toggle("Enforce turn radius", isOn: $viewModel.enforceTurnRadius)
             Toggle("Curve speed advisories", isOn: $viewModel.enforceCurveSpeed)
             Toggle("Apple search fallback", isOn: $viewModel.useAppleSearchFallback)
@@ -156,6 +208,76 @@ struct SettingsSheet: View {
                     viewModel.persistVoiceGuidanceEnabled()
                 }
             #endif
+        }
+    }
+
+    private var offlineRoutingSection: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.sm) {
+            Text("Offline Routing")
+                .font(RFFont.sectionTitle)
+
+            Toggle("Use offline routing when available", isOn: $viewModel.offlineRoutingEnabled)
+                .onChange(of: viewModel.offlineRoutingEnabled) { _, _ in
+                    viewModel.persistOfflineRoutingEnabled()
+                }
+
+            Toggle("Prefer offline routing", isOn: $viewModel.preferOfflineRouting)
+                .onChange(of: viewModel.preferOfflineRouting) { _, _ in
+                    viewModel.persistPreferOfflineRouting()
+                }
+                .help("When on, skip ORS and route on local/CDN graph tiles first.")
+
+            TextField("Tile server URL (HTTPS)", text: $viewModel.tileServerURL)
+                .textFieldStyle(GlassTextFieldStyle())
+                .onSubmit { viewModel.persistTileServerURL() }
+
+            Text("Pre-place `*.graphjson` under Application Support/RouteFinder/tiles/, or point at a CDN base. Full UK bbox is large — MVP uses a Norfolk demo corridor.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            HStack {
+                Button("Download demo corridor") {
+                    Task { await viewModel.downloadDemoOfflineCorridor() }
+                }
+                .disabled(viewModel.isDownloadingOfflineTiles)
+
+                Button("Ensure UK tiles") {
+                    Task { await viewModel.downloadUKOfflineCorridor() }
+                }
+                .disabled(viewModel.isDownloadingOfflineTiles)
+            }
+            .buttonStyle(.borderless)
+
+            if let status = viewModel.offlineTileStatus {
+                Text(status)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var offlineMapSection: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.sm) {
+            Text("Offline Map Pack")
+                .font(RFFont.sectionTitle)
+
+            Toggle("Use local map style when pack present", isOn: $viewModel.useLocalMapStyleWhenPackPresent)
+                .onChange(of: viewModel.useLocalMapStyleWhenPackPresent) { _, _ in
+                    viewModel.persistUseLocalMapStyleWhenPackPresent()
+                }
+
+            Text(viewModel.offlineMapPackStatus)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            Text("Expected layout: Application Support/RouteFinder/map-pack/style.json (+ tiles/). See MapLibreUI Resources/VENDOR_MAPLIBRE.md.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            Button("Refresh pack status") {
+                Task { await viewModel.refreshOfflineMapPackStatus() }
+            }
+            .buttonStyle(.borderless)
         }
     }
 

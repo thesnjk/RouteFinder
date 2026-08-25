@@ -146,6 +146,17 @@ struct IOSMapChrome: View {
             if viewModel.cloudRoutingBanner != nil, !isCloudBannerDismissed {
                 compactCloudBanner
             }
+            if let advisory = viewModel.laybyAdvisory {
+                LaybyAdvisoryBanner(advisory: advisory) {
+                    viewModel.markCurrentLaybyFull()
+                }
+            }
+            if let restriction = viewModel.activeRestrictionAnnouncement {
+                RestrictionZoneBanner(announcement: restriction)
+            }
+            if let kinetic = viewModel.latestKineticAdvisory {
+                LiveKineticAdvisoryBanner(text: kinetic.spokenText)
+            }
             routeSearchPill
         }
         .frame(maxWidth: .infinity, alignment: .leading)

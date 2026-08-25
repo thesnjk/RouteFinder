@@ -5,15 +5,6 @@ import Foundation
 import NavigationCore
 import UIKit
 
-/// Shared navigation session injected at application launch for CarPlay connectivity.
-@MainActor
-public enum CarPlayServices {
-    /// Navigation session shared between phone UI and CarPlay.
-    public static weak var navigationSession: NavigationSession?
-    /// Optional hook to register CarPlay as a session delegate at connect time.
-    public static var registerDelegate: ((NavigationSessionDelegate) -> Void)?
-}
-
 /// CarPlay template application scene delegate hosting the map navigation UI.
 @MainActor
 public final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
@@ -26,21 +17,10 @@ public final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationScene
         didConnect interfaceController: CPInterfaceController
     ) {
         self.interfaceController = interfaceController
-        guard let session = CarPlayServices.navigationSession ?? NavigationSessionRegistry.shared else { return }
-        connectedSession = session
-        let coordinator = CarPlayNavigationCoordinator(
-            interfaceController: interfaceController,
-            navigationSession: session
-        )
-        self.coordinator = coordinator
-        CarPlayServices.registerDelegate?(coordinator)
-        session.addDelegate(coordinator)
-        Task { @MainActor in
-            try? await interfaceController.setRootTemplate(
-                coordinator.mapTemplateController.rootTemplate,
-                animated: true
-            )
+        CarPlayServices.onSessionAvailable = { [weak self] in
+            self?.attachSessionIfNeeded()
         }
+        attachSessionIfNeeded()
     }
 
     public func templateApplicationScene(
@@ -58,6 +38,42 @@ public final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationScene
         coordinator = nil
         connectedSession = nil
         self.interfaceController = nil
+        CarPlayServices.onSessionAvailable = nil
+    }
+
+    private func attachSessionIfNeeded() {
+        guard let interfaceController else { return }
+        guard let session = CarPlayServices.navigationSession ?? NavigationSessionRegistry.shared else {
+            Task { @MainActor in
+                try? await interfaceController.setRootTemplate(CPMapTemplate(), animated: true)
+            }
+            return
+        }
+        guard connectedSession !== session else {
+            coordinator?.bootstrapIfNeeded()
+            return
+        }
+
+        if let coordinator, let connectedSession {
+            connectedSession.removeDelegate(coordinator)
+            coordinator.teardown()
+        }
+
+        connectedSession = session
+        let coordinator = CarPlayNavigationCoordinator(
+            interfaceController: interfaceController,
+            navigationSession: session
+        )
+        self.coordinator = coordinator
+        CarPlayServices.registerDelegate?(coordinator)
+        session.addDelegate(coordinator)
+        Task { @MainActor in
+            try? await interfaceController.setRootTemplate(
+                coordinator.mapTemplateController.rootTemplate,
+                animated: true
+            )
+            coordinator.bootstrapIfNeeded()
+        }
     }
 }
 #endif

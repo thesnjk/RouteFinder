@@ -94,6 +94,7 @@ public final class NavigationCoordinator: LocationProviderDelegate {
             telemetryRegistry.enableHardwareHeading(true)
         }
         try await telemetryRegistry.switchMode(to: .hardwareGPS)
+        telemetryRegistry.enableBackgroundNavigation()
         try await telemetryRegistry.locationProvider.start()
         session.startNavigation()
         activeMode = .hardwareGPS

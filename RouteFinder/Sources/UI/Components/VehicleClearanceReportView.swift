@@ -10,6 +10,8 @@ public struct VehicleClearanceReportView: View {
 
   private let maxHeightMeters = 4.0
   private let maxWeightTonnes = 44.0
+  private let maxLengthMeters = 18.75
+  private let maxAxleTonnes = 11.5
 
   /// Creates a clearance report for the current vehicle and route state.
   public init(
@@ -48,6 +50,24 @@ public struct VehicleClearanceReportView: View {
           value: formattedDimension(vehicle.weight, unit: "t"),
           limit: "≤ \(String(format: "%.0f", maxWeightTonnes)) t",
           passed: weightPassed
+        )
+        clearanceCell(
+          title: "Length",
+          value: formattedDimension(vehicle.length, unit: "m"),
+          limit: "≤ \(String(format: "%.2f", maxLengthMeters)) m",
+          passed: lengthPassed
+        )
+        clearanceCell(
+          title: "Axle",
+          value: formattedDimension(vehicle.axleWeight, unit: "t"),
+          limit: "≤ \(String(format: "%.1f", maxAxleTonnes)) t",
+          passed: axlePassed
+        )
+        clearanceCell(
+          title: "Hazmat / ADR",
+          value: hazmatValue,
+          limit: "ORS HGV restrictions",
+          passed: hazmatPassed
         )
         clearanceCell(
           title: "Bridge Corridor",
@@ -90,6 +110,26 @@ public struct VehicleClearanceReportView: View {
     return weight <= maxWeightTonnes
   }
 
+  private var lengthPassed: Bool {
+    guard let length = vehicle.length else { return isHGVMode }
+    return length <= maxLengthMeters
+  }
+
+  private var axlePassed: Bool {
+    guard let axle = vehicle.axleWeight else { return isHGVMode }
+    return axle <= maxAxleTonnes
+  }
+
+  private var hazmatPassed: Bool {
+    !isDimensionBlocked
+  }
+
+  private var hazmatValue: String {
+    let hazmat = vehicle.hazmatClass.map { $0.rawValue } ?? "None"
+    let tunnel = vehicle.tunnelRestrictionCode.map { $0.rawValue.uppercased() } ?? "-"
+    return "\(hazmat) / \(tunnel)"
+  }
+
   private var bridgeCorridorPassed: Bool {
     routeSucceeded && !isDimensionBlocked
   }
@@ -101,8 +141,8 @@ public struct VehicleClearanceReportView: View {
   }
 
   private func formattedDimension(_ value: Double?, unit: String) -> String {
-    guard let value else { return "Default" }
-    return String(format: "%.1f %@", value, unit)
+    guard let value else { return "—" }
+    return String(format: "%.2f %@", value, unit)
   }
 
   private func clearanceCell(
@@ -111,22 +151,19 @@ public struct VehicleClearanceReportView: View {
     limit: String,
     passed: Bool
   ) -> some View {
-    VStack(alignment: .leading, spacing: 4) {
-      HStack(spacing: 4) {
-        Image(systemName: passed ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-          .font(.caption)
-          .foregroundStyle(passed ? .green : .orange)
-        Text(title)
-          .font(RFFont.caption.weight(.semibold))
-      }
+    VStack(alignment: .leading, spacing: 2) {
+      Text(title)
+        .font(RFFont.caption)
+        .foregroundStyle(.secondary)
       Text(value)
-        .font(RFFont.summary)
+        .font(RFFont.body.weight(.semibold))
+        .foregroundStyle(passed ? Color.primary : Color.orange)
       Text(limit)
         .font(.caption2)
         .foregroundStyle(.secondary)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(RFSpacing.sm)
-    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    .padding(8)
+    .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
   }
 }

@@ -32,6 +32,19 @@ struct MapFirstShell: View {
             guard !isRouteSheetVisible else { return }
             presentedModal = .routeFailure(failure)
         }
+        .sheet(isPresented: $viewModel.presentHazardReportSheet) {
+            HazardReportSheet(viewModel: viewModel)
+        }
+        .alert(
+            viewModel.pendingStillTherePrompt?.message ?? "Still there?",
+            isPresented: Binding(
+                get: { viewModel.pendingStillTherePrompt != nil },
+                set: { if !$0 { viewModel.pendingStillTherePrompt = nil } }
+            )
+        ) {
+            Button("Still there") { viewModel.resolveStillTherePrompt(stillPresent: true) }
+            Button("Cleared", role: .cancel) { viewModel.resolveStillTherePrompt(stillPresent: false) }
+        }
         #else
         macOSMapChrome
         #endif
@@ -106,6 +119,19 @@ struct MapFirstShell: View {
                 viewModel.routeFailure = nil
             }
         }
+        .sheet(isPresented: $viewModel.presentHazardReportSheet) {
+            HazardReportSheet(viewModel: viewModel)
+        }
+        .alert(
+            viewModel.pendingStillTherePrompt?.message ?? "Still there?",
+            isPresented: Binding(
+                get: { viewModel.pendingStillTherePrompt != nil },
+                set: { if !$0 { viewModel.pendingStillTherePrompt = nil } }
+            )
+        ) {
+            Button("Still there") { viewModel.resolveStillTherePrompt(stillPresent: true) }
+            Button("Cleared", role: .cancel) { viewModel.resolveStillTherePrompt(stillPresent: false) }
+        }
     }
     #endif
 
@@ -114,6 +140,20 @@ struct MapFirstShell: View {
         VStack(spacing: RFSpacing.sm) {
             if let banner = viewModel.cloudRoutingBanner {
                 cloudRoutingBannerView(banner)
+            }
+
+            if let advisory = viewModel.laybyAdvisory {
+                LaybyAdvisoryBanner(advisory: advisory) {
+                    viewModel.markCurrentLaybyFull()
+                }
+            }
+
+            if let restriction = viewModel.activeRestrictionAnnouncement {
+                RestrictionZoneBanner(announcement: restriction)
+            }
+
+            if let kinetic = viewModel.latestKineticAdvisory {
+                LiveKineticAdvisoryBanner(text: kinetic.spokenText)
             }
 
             if isSearchExpanded {
@@ -263,9 +303,20 @@ struct MapFirstShell: View {
     }
 
     private var bottomSheet: some View {
-        RouteBottomSheet(viewModel: viewModel, isDetailExpanded: $isDetailExpanded)
-            .padding(.horizontal, RFSpacing.md)
-            .padding(.bottom, RFSpacing.md)
+        GeometryReader { geo in
+            VStack {
+                Spacer(minLength: 0)
+                RouteBottomSheet(
+                    viewModel: viewModel,
+                    isDetailExpanded: $isDetailExpanded,
+                    maxAvailableHeight: max(180, geo.size.height - RFSpacing.md * 2)
+                )
+                .padding(.horizontal, RFSpacing.md)
+                .padding(.bottom, RFSpacing.md)
+            }
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .bottom)
+        }
+        .allowsHitTesting(true)
     }
     #endif
 }
@@ -366,6 +417,8 @@ struct RouteSearchFields: View {
 struct RouteBottomSheet: View {
     @Bindable var viewModel: RouteViewModel
     @Binding var isDetailExpanded: Bool
+    /// Hard cap so the sheet cannot extend past the map column / window bottom.
+    var maxAvailableHeight: CGFloat = 560
     @State private var dragOffset: CGFloat = 0
 
     private var shouldShow: Bool {
@@ -377,7 +430,12 @@ struct RouteBottomSheet: View {
     }
 
     private var sheetExpandedHeight: CGFloat {
-        showsSimulationControls ? 520 : 400
+        let preferred: CGFloat = showsSimulationControls ? 520 : 400
+        return min(preferred, maxAvailableHeight)
+    }
+
+            private var collapsedMaxHeight: CGFloat {
+        min(200, maxAvailableHeight)
     }
 
     var body: some View {
@@ -420,12 +478,13 @@ struct RouteBottomSheet: View {
             .padding(.horizontal, RFSpacing.md)
             .padding(.bottom, RFSpacing.md)
             .frame(maxWidth: 560)
-            .frame(maxHeight: isDetailExpanded ? sheetExpandedHeight : nil)
+            .frame(maxHeight: isDetailExpanded ? sheetExpandedHeight : collapsedMaxHeight, alignment: .top)
+            .clipped()
             .controlSheetStyle()
             .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .allowsHitTesting(true)
             .frame(maxWidth: .infinity)
-            .offset(y: dragOffset > 0 ? dragOffset : 0)
+            .offset(y: dragOffset > 0 ? min(dragOffset, 40) : 0)
             .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isDetailExpanded)
         }
     }

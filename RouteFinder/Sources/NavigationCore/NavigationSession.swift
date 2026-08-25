@@ -161,6 +161,19 @@ public final class NavigationSession {
         }
     }
 
+    /// Returns the current upcoming turn instruction for the given arc length, if any.
+    public func currentInstruction(atArcLength arcLengthMeters: Double) -> TurnInstruction? {
+        maneuverTracker?.currentManeuver(for: arcLengthMeters)
+    }
+
+    /// Returns the current upcoming turn instruction based on the latest progress snapshot.
+    public func currentInstruction() -> TurnInstruction? {
+        guard let snapshot = progressSnapshot else {
+            return maneuverTracker?.currentManeuver(for: 0)
+        }
+        return maneuverTracker?.currentManeuver(for: snapshot.arcLengthMeters)
+    }
+
     /// Reports an invalid vehicle profile lookup for alert presentation.
     public func reportInvalidVehicleProfile(_ message: String) {
         notifyDelegates { $0.navigationSession(self, didEncounterInvalidVehicleProfile: message) }

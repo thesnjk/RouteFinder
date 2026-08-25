@@ -66,6 +66,19 @@ public final class VoiceGuidanceCoordinator: NavigationSessionDelegate {
         announcementController.setOffRoute(offRoute)
     }
 
+    /// Speaks a kinetic advisory (brake fade, grade, slip) during live or simulated navigation.
+    public func speakKineticAdvisory(_ advisory: KineticAdvisory) {
+        guard isEnabled else { return }
+        try? voiceService.configureAudioSession()
+        let prompt = SpeechPrompt(
+            text: advisory.spokenText,
+            priority: max(advisory.priority, AnnouncementTier.execute.priority),
+            tier: .execute,
+            instructionID: advisory.id
+        )
+        voiceService.speak(prompt)
+    }
+
     private func evaluateDistanceTiers(
         session: NavigationSession,
         snapshot: NavigationProgressSnapshot

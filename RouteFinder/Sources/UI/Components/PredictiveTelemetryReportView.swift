@@ -30,6 +30,11 @@ public struct PredictiveTelemetryReportView: View {
             Text("Predictive Telemetry")
                 .font(RFFont.sectionTitle)
             Spacer()
+            ShareLink(item: TripBriefFormatter.plainText(from: report)) {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.body.weight(.semibold))
+            }
+            .accessibilityLabel("Share trip brief")
             efficiencyBadge
         }
     }

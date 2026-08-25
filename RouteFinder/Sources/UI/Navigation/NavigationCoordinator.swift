@@ -94,6 +94,7 @@ public final class NavigationCoordinator: LocationProviderDelegate {
             telemetryRegistry.enableHardwareHeading(true)
         }
         try await telemetryRegistry.switchMode(to: .hardwareGPS)
+        telemetryRegistry.enableBackgroundNavigation()
         try await telemetryRegistry.locationProvider.start()
         session.startNavigation()
         activeMode = .hardwareGPS
@@ -114,6 +115,11 @@ public final class NavigationCoordinator: LocationProviderDelegate {
     public func clearRoute() {
         stopNavigation()
         session.clearRoute()
+    }
+
+    /// Updates the static total-time baseline used for remaining ETA proportioning.
+    public func updateStaticTotalTime(_ totalTimeSeconds: TimeInterval) {
+        session.updateStaticTotalTime(totalTimeSeconds)
     }
 
     /// Emits the current simulation pose through the navigation pipeline.

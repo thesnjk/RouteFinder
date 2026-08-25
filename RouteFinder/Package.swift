@@ -82,6 +82,9 @@ let package = Package(
             dependencies: [
                 "RouteController",
                 "NavigationCore",
+            ],
+            resources: [
+                .copy("Resources"),
             ]
         ),
 
@@ -127,6 +130,7 @@ let package = Package(
             dependencies: [
                 "Contracts",
                 "GraphCore",
+                "CostModel",
             ]
         ),
 
@@ -253,6 +257,7 @@ let package = Package(
             name: "DataLayerTests",
             dependencies: [
                 "DataLayer",
+                "CostModel",
                 "RouteController",
                 .product(name: "Testing", package: "swift-testing"),
             ]

@@ -105,6 +105,11 @@ public final class TelemetrySourceRegistry {
             hardwareAdapter.stopHeadingUpdatesIfNeeded()
         }
     }
+
+    /// Requests Always authorization and enables background GPS updates when navigating.
+    public func enableBackgroundNavigation() {
+        hardwareAdapter.enableBackgroundNavigation()
+    }
     #endif
 
     /// Emits the current simulation sample through the navigation pipeline.

@@ -16,6 +16,8 @@ public struct VehicleProfile: Sendable, Hashable, Codable {
     public let turningRadius: Double?
     /// Hazmat cargo class, if carrying restricted goods.
     public let hazmatClass: HazmatClass?
+    /// ADR tunnel restriction code for the load.
+    public let tunnelRestrictionCode: TunnelRestrictionCode?
     /// Emission standard for LEZ compatibility.
     public let emissionClass: EmissionClass?
     /// Saved profile name when persisted by the user.
@@ -31,6 +33,7 @@ public struct VehicleProfile: Sendable, Hashable, Codable {
         groundClearance: Double? = nil,
         turningRadius: Double? = nil,
         hazmatClass: HazmatClass? = nil,
+        tunnelRestrictionCode: TunnelRestrictionCode? = nil,
         emissionClass: EmissionClass? = nil,
         savedProfileName: String? = nil
     ) {
@@ -42,6 +45,7 @@ public struct VehicleProfile: Sendable, Hashable, Codable {
         self.groundClearance = groundClearance
         self.turningRadius = turningRadius
         self.hazmatClass = hazmatClass
+        self.tunnelRestrictionCode = tunnelRestrictionCode
         self.emissionClass = emissionClass
         self.savedProfileName = savedProfileName
     }

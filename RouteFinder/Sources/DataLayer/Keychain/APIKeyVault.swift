@@ -34,6 +34,19 @@ public struct APIKeyVault: Sendable {
         try KeychainStore.get(service: service, account: kind.rawValue)
     }
 
+    /// Loads every non-empty secret stored for this user.
+    public func loadAll() throws -> [APIKeyKind: String] {
+        var result: [APIKeyKind: String] = [:]
+        for kind in APIKeyKind.allCases {
+            guard let value = try load(kind)?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !value.isEmpty else {
+                continue
+            }
+            result[kind] = value
+        }
+        return result
+    }
+
     /// Saves a secret for the kind. Empty values delete the item.
     public func save(_ value: String, for kind: APIKeyKind) throws {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)

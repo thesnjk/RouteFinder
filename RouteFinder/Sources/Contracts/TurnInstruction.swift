@@ -31,6 +31,8 @@ public struct TurnInstruction: Sendable, Hashable, Codable, Identifiable {
     public let bearing: Double
     /// Recommended cornering speed in km/h, when curve-speed enforcement is active.
     public let recommendedSpeedKmh: Double?
+    /// Optional lane-keep guidance text (e.g. `"Keep left"` / `"Use 2nd lane"`).
+    public let laneGuidance: String?
 
     /// Creates a turn instruction.
     public init(
@@ -39,7 +41,8 @@ public struct TurnInstruction: Sendable, Hashable, Codable, Identifiable {
         roadName: String?,
         distance: Double,
         bearing: Double,
-        recommendedSpeedKmh: Double? = nil
+        recommendedSpeedKmh: Double? = nil,
+        laneGuidance: String? = nil
     ) {
         self.id = id
         self.maneuver = maneuver
@@ -47,5 +50,6 @@ public struct TurnInstruction: Sendable, Hashable, Codable, Identifiable {
         self.distance = distance
         self.bearing = bearing
         self.recommendedSpeedKmh = recommendedSpeedKmh
+        self.laneGuidance = laneGuidance
     }
 }

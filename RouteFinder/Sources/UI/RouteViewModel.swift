@@ -71,7 +71,7 @@ public final class RouteViewModel {
     public var useAStar = true
     public var routingEngine: RoutingEngine = .defaultEngine
     public var orsAPIKey: String = ""
-    /// Draft text for Settings SecureField (never pre-filled from Keychain).
+    /// Draft text for Settings SecureField (never pre-filled from the vault).
     public var orsAPIKeyDraft: String = ""
     public var hasORSAPIKey = false
     public var vehicleHeight: String = ""
@@ -84,14 +84,29 @@ public final class RouteViewModel {
     /// Physics fields explicitly edited by the user (non-placeholder).
     public var userOverriddenPhysicsFields: Set<VehiclePhysicsField> = []
     public var hazmatClass: HazmatClass?
+    public var tunnelRestrictionCode: TunnelRestrictionCode?
     public var emissionClass: EmissionClass?
     public var activeProfileName: String?
     public var vehicleRegistration: String = ""
+    /// Dial / turn-list display units from registration origin (UK/US → mph, EU → km/h).
+    public var displayMeasurementSystem: RegionalMeasurementSystem {
+        TelemetryUnitConverter.displayMeasurementSystem(
+            forRegistration: vehicleRegistration,
+            fallbackCoordinate: routeCoordinates.first
+                ?? simulationEngine.currentCoordinate
+                ?? CLLocationCoordinate2D(
+                    latitude: mapViewportCenter.latitude,
+                    longitude: mapViewportCenter.longitude
+                )
+        )
+    }
     public var vehicleTypeLabel: String = ""
     public var vehicleAxleCount: String = ""
     public var vehicleEnginePowerHP: String = ""
     public var registrationLookupError: String?
     public var registrationLookupInProgress = false
+    /// Cached registration plates from prior successful lookups.
+    public var plateLibraryEntries: [VehiclePlateLibraryEntry] = []
     public var registrationSource: RegistrySource?
     public var resolvedSpecificationProfile: VehicleSpecificationProfile?
     public var dvlaAPIKey: String = ""
@@ -116,6 +131,35 @@ public final class RouteViewModel {
     public var voiceGuidanceEnabled = NavigationWorkspaceSettings.loadVoiceGuidanceEnabled()
     #endif
 
+    /// Whether the advisory EU hours-of-service clock is enabled.
+    public var hosEnabled = NavigationWorkspaceSettings.loadHosAdvisoryClockEnabled()
+    /// When true, tiled offline routing may be used (fallback or primary).
+    public var offlineRoutingEnabled = VehicleProfileStore.loadOfflineRoutingEnabled()
+    /// When true, prefer offline tiles over ORS even when online and keyed.
+    public var preferOfflineRouting = VehicleProfileStore.loadPreferOfflineRouting()
+    /// Configurable HTTPS base for `*.graphjson` tile downloads.
+    public var tileServerURL: String = VehicleProfileStore.loadTileServerURL() ?? ""
+    /// Status string for UK / demo corridor tile downloads.
+    public var offlineTileStatus: String?
+    /// Whether a corridor download is in progress.
+    public var isDownloadingOfflineTiles = false
+    /// Whether MapLibre should use a local map pack when present.
+    public var useLocalMapStyleWhenPackPresent = VehicleProfileStore.loadUseLocalMapStyleWhenPackPresent()
+    /// Human-readable offline map pack status for Settings.
+    public var offlineMapPackStatus: String = "Checking map pack…"
+    /// Active MapLibre style URL (CDN or localhost pack).
+    public var mapStyleURL: String = MapLibreConfiguration.openFreeMapStyleURL
+    /// Latest HOS snapshot for HUD.
+    public var hosSnapshot: HosClockSnapshot?
+    /// Latest HOS rest forecast for the active route / trip brief.
+    public var hosForecast: HosRestInsertionResult?
+    /// Latest imported driver-card remaining-time summary (advisory).
+    public var tachoSummary: TachoCardSummary?
+    /// Latest “Can I drive now?” advisory status.
+    public var canIDriveStatus: CanIDriveStatus?
+    /// Error from the most recent tachograph file import, if any.
+    public var tachoImportError: String?
+
     public var isCalculating = false
     public var result: SearchResult?
     public var errorMessage: String?
@@ -133,9 +177,63 @@ public final class RouteViewModel {
     public var isNavigationActive = false
     #endif
 
+    /// Active fleet trip id when the driver device is working a dispatch.
+    public var activeDispatchTripId: UUID?
+    /// Shared fleet vehicle id for polling dispatched jobs (demo / MVP).
+    public var fleetVehicleId: UUID?
+    /// Last published fleet snapshot for dispatch console visibility.
+    public var lastPublishedFleetSnapshot: FleetTripSnapshot?
+
     public var interactionMode: MapInteractionMode = .navigate
     public var activePinTarget: MapPinTarget = .none
     public var pendingDisambiguation: GeocodeDisambiguationRequest?
+
+    /// Upcoming layby advisory for the active route, when within alert range.
+    public var laybyAdvisory: LaybyAdvisory?
+    /// All layby candidates discovered along the current route.
+    public var upcomingLaybys: [LaybyStop] = []
+    /// Whether layby POIs are being fetched for the current route.
+    public var isLoadingLaybys = false
+    /// Truck fuel / parking / weigh POIs ahead along the route.
+    public var upcomingTruckPois: [TruckPoi] = []
+    /// Whether truck POI search is in progress.
+    public var isLoadingTruckPois = false
+    /// LEZ / restriction announcements for the active route.
+    public var restrictionAnnouncements: [RestrictionZoneAnnouncement] = []
+    /// Nearest upcoming restriction for HUD.
+    public var activeRestrictionAnnouncement: RestrictionZoneAnnouncement?
+<<<<<<< HEAD
+    /// `true` when TomTom detected delay and an avoid-polygon alternate is ready to apply.
+    public var trafficRerouteAvailable = false
+    /// Whether a background traffic re-route evaluation is running.
+    public var isEvaluatingTrafficReroute = false
+=======
+>>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
+
+    /// Physics-predicted route duration from headless simulation, when available.
+    public var physicsPredictedDurationSeconds: TimeInterval?
+    /// Planned journey duration from the physics estimator (frozen for the trip).
+    public var journeyPhysicsETASeconds: TimeInterval?
+    /// Wall-clock moment when the physics journey ETA was committed.
+    public var journeyETAAnchorDate: Date?
+    /// Whether a headless physics duration estimate is running.
+    public var isEstimatingPhysicsDuration = false
+    /// True while a pre-trip route rehearsal is running.
+    public var isRehearsingRoute = false
+    /// Latest live kinetic advisory for HUD (fade, grade, slip).
+    public var latestKineticAdvisory: KineticAdvisory?
+    /// Shareable plain-text trip brief from the latest predictive report.
+    public var tripBriefShareText: String?
+    /// Map camera zoom while simulating (user-adjustable).
+    public var simulationCameraZoom: Double = 16.5
+    /// When true, auto camera tracking will not override the sim zoom slider.
+    public var simulationZoomLockedByUser = false
+    /// Active lane-keep popup text near the upcoming maneuver.
+    public var activeLaneGuidance: String?
+    /// Presents the Waze-style hazard report sheet.
+    public var presentHazardReportSheet = false
+    /// Pending “still there?” prompt for a recent crowd report.
+    public var pendingStillTherePrompt: CrowdReportStillTherePrompt?
 
     public var mapViewportCenter = MapDefaults.ukCenter
 
@@ -238,16 +336,49 @@ public final class RouteViewModel {
 
     private let planner = RoutePlanner()
     private let geocoder = OpenRouteServiceGeocoder()
+    private let offlineGraphStore: DiskOfflineGraphStore
+    private let mapPackStore = OfflineMapPackStore()
     private let appleGeocodeSearch = AppleGeocodeSearch()
     private let locationResolver = LocationResolver()
     private var vehicleRegistryClient = VehicleRegistryClient()
+    private let plateLibraryStore = VehiclePlateLibraryStore()
     private var recalculateTask: Task<Void, Never>?
     private var searchTasks: [UUID: Task<Void, Never>] = [:]
     private var hasCompletedCloudRoute = false
+    private let laybyCatalogService = LaybyCatalogService()
+    private let truckPoiRepository = OverpassTruckPoiRepository()
+    private let crowdEventIngest = LocalCrowdEventIngest()
+<<<<<<< HEAD
+    private let fleetStore = DiskFleetStore()
+    /// In-memory driver alert bus (HOS and related).
+    public let hosAlertBus: InMemoryDriverAlertBus
+    /// Advisory EU 561 hours-of-service clock.
+    public let hosClock: EU561HosClock
+    /// Best-effort DDD / JSON driver-card importer.
+    public let tachoImporter = DDDImporter()
+    /// Local DVSA walkaround inspection store.
+    public let inspectionStore = DiskInspectionStore()
+    /// Active walkaround checklist for the inspection sheet.
+    public var activeInspection: InspectionRecord?
+=======
+    private let fleetStore = InMemoryFleetStore()
+>>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
+    private var crowdReports: [CrowdReport] = []
+    private let laybyAdvisor = LaybyAdvisor()
+    private var laybyLoadTask: Task<Void, Never>?
+    private var truckPoiLoadTask: Task<Void, Never>?
+<<<<<<< HEAD
+    private var trafficRerouteTask: Task<Void, Never>?
+    private var pendingTrafficAlternate: ExternalRouteResponse?
+    private var lastExternalRouteRequest: ExternalRouteRequest?
+=======
+>>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
 
     #if os(iOS)
     private let voiceGuidanceCoordinator = VoiceGuidanceCoordinator()
     #endif
+    private let kineticAdvisoryCoordinator = KineticAdvisoryCoordinator()
+    private var rehearseTask: Task<Void, Never>?
 
     private var apiKeyVault: APIKeyVault?
 
@@ -257,7 +388,17 @@ public final class RouteViewModel {
 
     public init(vault: APIKeyVault?) {
         apiKeyVault = vault
-        let savedTomTomKey = (try? vault?.load(.tomTom)) ?? VehicleProfileStore.loadTomTomAPIKey()
+<<<<<<< HEAD
+        let alertBus = InMemoryDriverAlertBus()
+        hosAlertBus = alertBus
+        hosClock = EU561HosClock(alertBus: alertBus)
+        let tileURLString = VehicleProfileStore.loadTileServerURL()
+        let tileBase = tileURLString.flatMap { URL(string: $0) }
+        offlineGraphStore = DiskOfflineGraphStore(tileBaseURL: tileBase)
+=======
+>>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
+        let secrets = Self.loadSecretsSnapshot(from: vault)
+        let savedTomTomKey = secrets[.tomTom] ?? VehicleProfileStore.loadTomTomAPIKey()
         let engine = RouteSimulationEngine(tomTomAPIKey: savedTomTomKey)
         simulationEngine = engine
         navigationCoordinator = NavigationCoordinator { [weak engine] in
@@ -269,30 +410,13 @@ public final class RouteViewModel {
                 widthMeters: engine.vehicleWidthMeters
             )
         }
-        let ors = (try? vault?.load(.ors)) ?? VehicleProfileStore.loadORSAPIKey()
-        let dvla = (try? vault?.load(.dvla)) ?? VehicleProfileStore.loadDVLAAPIKey()
-        let regCheck = (try? vault?.load(.regCheckUsername)) ?? VehicleProfileStore.loadRegCheckUsername()
-        let openWeather = (try? vault?.load(.openWeather)) ?? VehicleProfileStore.loadOpenWeatherAPIKey()
-        if let ors, !ors.isEmpty {
-            orsAPIKey = ors
-            hasORSAPIKey = true
-        }
-        if let dvla, !dvla.isEmpty {
-            dvlaAPIKey = dvla
-            hasDVLAAPIKey = true
-        }
-        if let regCheck, !regCheck.isEmpty {
-            regCheckUsername = regCheck
-            hasRegCheckUsername = true
-        }
-        if let savedTomTomKey, !savedTomTomKey.isEmpty {
-            tomTomAPIKey = savedTomTomKey
-            hasTomTomAPIKey = true
-        }
-        if let openWeather, !openWeather.isEmpty {
-            openWeatherAPIKey = openWeather
-            hasOpenWeatherAPIKey = true
-        }
+        applyLoadedSecrets(
+            ors: secrets[.ors] ?? VehicleProfileStore.loadORSAPIKey(),
+            dvla: secrets[.dvla] ?? VehicleProfileStore.loadDVLAAPIKey(),
+            regCheck: secrets[.regCheckUsername] ?? VehicleProfileStore.loadRegCheckUsername(),
+            tomTom: savedTomTomKey,
+            openWeather: secrets[.openWeather] ?? VehicleProfileStore.loadOpenWeatherAPIKey()
+        )
         #if os(macOS)
         if orsAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             useAppleSearchFallback = true
@@ -300,21 +424,40 @@ public final class RouteViewModel {
         #endif
         wireNavigationPipeline()
         updateCloudRoutingBanner()
+        Task { @MainActor [weak self] in
+            await self?.hosClock.loadPersistedLog()
+            self?.loadPersistedTachoSummary()
+            await self?.refreshHosSnapshot()
+            await self?.refreshCanIDriveStatus()
+            await self?.refreshOfflineMapPackStatus()
+            try? await self?.offlineGraphStore.loadLocalTiles()
+        }
     }
 
-    /// Attaches or refreshes the Keychain vault after login.
+    /// Attaches or refreshes the on-disk API vault after login without re-reading when unchanged.
     public func bindVault(_ vault: APIKeyVault?) {
+        let previousUserID = apiKeyVault?.userID
         apiKeyVault = vault
         guard let vault else { return }
-        try? vault.migrateFromUserDefaultsIfNeeded()
+        // Skip duplicate vault reload when ContentView already initialized with this vault.
+        if previousUserID == vault.userID,
+           hasORSAPIKey || hasDVLAAPIKey || hasTomTomAPIKey || hasOpenWeatherAPIKey || hasRegCheckUsername {
+            return
+        }
+        let secrets = Self.loadSecretsSnapshot(from: vault)
         applyLoadedSecrets(
-            ors: loadSecret(.ors),
-            dvla: loadSecret(.dvla),
-            regCheck: loadSecret(.regCheckUsername),
-            tomTom: loadSecret(.tomTom),
-            openWeather: loadSecret(.openWeather)
+            ors: secrets[.ors],
+            dvla: secrets[.dvla],
+            regCheck: secrets[.regCheckUsername],
+            tomTom: secrets[.tomTom],
+            openWeather: secrets[.openWeather]
         )
         updateCloudRoutingBanner()
+    }
+
+    private static func loadSecretsSnapshot(from vault: APIKeyVault?) -> [APIKeyKind: String] {
+        guard let vault else { return [:] }
+        return (try? vault.loadAll()) ?? [:]
     }
 
     private func applyLoadedSecrets(
@@ -334,6 +477,7 @@ public final class RouteViewModel {
         if let dvla, !dvla.isEmpty {
             dvlaAPIKey = dvla
             hasDVLAAPIKey = true
+            VehicleProfileStore.saveDVLAAPIKey(dvla)
         } else {
             hasDVLAAPIKey = false
         }
@@ -341,6 +485,7 @@ public final class RouteViewModel {
         if let regCheck, !regCheck.isEmpty {
             regCheckUsername = regCheck
             hasRegCheckUsername = true
+            VehicleProfileStore.saveRegCheckUsername(regCheck)
         } else {
             hasRegCheckUsername = false
         }
@@ -369,14 +514,14 @@ public final class RouteViewModel {
     private func persistSecret(_ value: String, kind: APIKeyKind) {
         if let apiKeyVault {
             try? apiKeyVault.save(value, for: kind)
-        } else {
-            switch kind {
-            case .ors: VehicleProfileStore.saveORSAPIKey(value)
-            case .openWeather: VehicleProfileStore.saveOpenWeatherAPIKey(value)
-            case .dvla: VehicleProfileStore.saveDVLAAPIKey(value)
-            case .tomTom: VehicleProfileStore.saveTomTomAPIKey(value)
-            case .regCheckUsername: VehicleProfileStore.saveRegCheckUsername(value)
-            }
+        }
+        // Always mirror registry credentials for VehicleRegistryCoordinator.makeDefault().
+        switch kind {
+        case .ors: VehicleProfileStore.saveORSAPIKey(value)
+        case .openWeather: VehicleProfileStore.saveOpenWeatherAPIKey(value)
+        case .dvla: VehicleProfileStore.saveDVLAAPIKey(value)
+        case .tomTom: VehicleProfileStore.saveTomTomAPIKey(value)
+        case .regCheckUsername: VehicleProfileStore.saveRegCheckUsername(value)
         }
     }
 
@@ -392,17 +537,43 @@ public final class RouteViewModel {
         }
         simulationEngine.onDisplayFrameTick = { [weak self] in
             self?.navigationCoordinator.emitSimulationPose()
+            Task { @MainActor in
+                await self?.refreshLaybyAdvisory()
+                self?.refreshActiveLaneGuidance()
+            }
+        }
+        simulationEngine.onSimulationStarting = { [weak self] in
+            try? await self?.navigationCoordinator.startSimulationNavigation()
         }
         simulationEngine.onSimulationStarted = { [weak self] in
-            Task { @MainActor in
-                try? await self?.navigationCoordinator.startSimulationNavigation()
+            self?.navigationCoordinator.emitSimulationPose()
+            if let self {
+                self.mapBridge?.trackingZoomLevel = self.simulationCameraZoom
+                if self.simulationZoomLockedByUser {
+                    self.mapBridge?.setZoom(self.simulationCameraZoom)
+                }
             }
         }
         simulationEngine.onSimulationStopped = { [weak self] in
             self?.navigationCoordinator.stopNavigation()
+            self?.kineticAdvisoryCoordinator.reset()
+            self?.latestKineticAdvisory = nil
+        }
+        simulationEngine.onUIStatePublished = { [weak self] uiState in
+            self?.handleKineticUIState(uiState)
+        }
+        kineticAdvisoryCoordinator.onAdvisory = { [weak self] advisory in
+            self?.latestKineticAdvisory = advisory
+            #if os(iOS)
+            self?.voiceGuidanceCoordinator.speakKineticAdvisory(advisory)
+            #endif
         }
         NavigationSessionRegistry.shared = navigationCoordinator.session
         #if os(iOS)
+        CarPlayServices.publish(session: navigationCoordinator.session)
+        CarPlayServices.registerDelegate = { [weak self] delegate in
+            self?.navigationCoordinator.session.addDelegate(delegate)
+        }
         voiceGuidanceCoordinator.attach(to: navigationCoordinator.session)
         voiceGuidanceCoordinator.setEnabled(voiceGuidanceEnabled)
         navigationCoordinator.session.addDelegate(voiceGuidanceCoordinator)
@@ -439,6 +610,7 @@ public final class RouteViewModel {
             groundClearance: VehicleDimensionParser.parseOptional(vehicleGroundClearance),
             turningRadius: VehicleDimensionParser.parseOptional(vehicleTurningRadius),
             hazmatClass: hazmatClass,
+            tunnelRestrictionCode: tunnelRestrictionCode,
             emissionClass: emissionClass,
             savedProfileName: activeProfileName
         )
@@ -477,6 +649,7 @@ public final class RouteViewModel {
             groundClearance: physics.groundClearanceMeters,
             turningRadius: physics.turningRadiusMeters,
             hazmatClass: raw.hazmatClass,
+            tunnelRestrictionCode: raw.tunnelRestrictionCode,
             emissionClass: raw.emissionClass,
             savedProfileName: raw.savedProfileName
         )
@@ -529,6 +702,7 @@ public final class RouteViewModel {
         vehicleGroundClearance = profile.groundClearance.map { String($0) } ?? ""
         vehicleTurningRadius = profile.turningRadius.map { String($0) } ?? ""
         hazmatClass = profile.hazmatClass
+        tunnelRestrictionCode = profile.tunnelRestrictionCode
         emissionClass = profile.emissionClass
         activeProfileName = profile.savedProfileName
         refreshMapVehicleFootprint()
@@ -547,30 +721,36 @@ public final class RouteViewModel {
             return
         }
 
-        let client = vehicleRegistryClient
+        if let cached = await plateLibraryStore.entry(forRegistration: sanitized) {
+            await applyResolvedSpecification(
+                cached.specification,
+                displayRegistration: cached.displayRegistration
+            )
+            await refreshPlateLibrary()
+            return
+        }
+
+        guard hasRegCheckUsername else {
+            registrationLookupError = VehicleRegistryError.notConfigured.localizedDescription
+            return
+        }
+
         do {
-            let spec = try await client.lookupSpecification(
+            let spec = try await vehicleRegistryClient.lookupSpecification(
                 registration: sanitized,
                 manualClassOverride: vehicleClassOverride
             )
-            resolvedSpecificationProfile = spec
-            syncMapBridgeSpecificationProfile()
-            let profile = spec.toRegistryProfile()
-            applyRegistryProfile(profile)
-            vehicleRegistration = RegistrationNormalizer.formatForDisplay(sanitized)
-            validateRegistryStateAfterLookup(spec)
-
-            if vehicleClassOverride != nil {
-                simulationEngine.refreshLiveFootprint(
-                    lengthMeters: profile.lengthM,
-                    widthMeters: profile.widthM
-                )
+            guard spec.source == .verifiedAPI else {
+                registrationLookupError = "RegCheck lookup did not return verified vehicle data."
+                return
             }
-            await simulationEngine.configureVehicleSpecification(
-                spec,
-                vehicle: resolvedVehicleProfile(),
-                minimumTurnRadiusMeters: resolvedVehiclePhysics().turningRadiusMeters
+            let entry = VehiclePlateLibraryEntry(
+                specification: spec,
+                displayRegistration: RegistrationNormalizer.formatForDisplay(sanitized)
             )
+            try await plateLibraryStore.upsert(entry)
+            await applyResolvedSpecification(spec, displayRegistration: entry.displayRegistration)
+            await refreshPlateLibrary()
         } catch {
             registrationLookupError = error.localizedDescription
             navigationCoordinator.reportInvalidVehicleProfile(error.localizedDescription)
@@ -579,6 +759,54 @@ public final class RouteViewModel {
             resolvedSpecificationProfile = nil
             syncMapBridgeSpecificationProfile()
         }
+    }
+
+    /// Reloads the on-disk plate library for the vehicle profile UI.
+    public func refreshPlateLibrary() async {
+        plateLibraryEntries = await plateLibraryStore.allEntries()
+    }
+
+    /// Applies a cached plate library entry.
+    public func applyPlateLibraryEntry(_ entry: VehiclePlateLibraryEntry) async {
+        registrationLookupError = nil
+        vehicleRegistration = entry.displayRegistration
+        await applyResolvedSpecification(entry.specification, displayRegistration: entry.displayRegistration)
+    }
+
+    /// Renames a cached plate library entry.
+    public func renamePlateLibraryEntry(registration: String, customName: String?) async {
+        try? await plateLibraryStore.rename(registration: registration, customName: customName)
+        await refreshPlateLibrary()
+    }
+
+    /// Deletes a cached plate library entry.
+    public func deletePlateLibraryEntry(registration: String) async {
+        try? await plateLibraryStore.delete(registration: registration)
+        await refreshPlateLibrary()
+    }
+
+    private func applyResolvedSpecification(
+        _ spec: VehicleSpecificationProfile,
+        displayRegistration: String
+    ) async {
+        resolvedSpecificationProfile = spec
+        syncMapBridgeSpecificationProfile()
+        let profile = spec.toRegistryProfile()
+        applyRegistryProfile(profile)
+        vehicleRegistration = displayRegistration
+        validateRegistryStateAfterLookup(spec)
+
+        if vehicleClassOverride != nil {
+            simulationEngine.refreshLiveFootprint(
+                lengthMeters: profile.lengthM,
+                widthMeters: profile.widthM
+            )
+        }
+        await simulationEngine.configureVehicleSpecification(
+            spec,
+            vehicle: resolvedVehicleProfile(),
+            minimumTurnRadiusMeters: resolvedVehiclePhysics().turningRadiusMeters
+        )
     }
 
     private func syncMapBridgeSpecificationProfile() {
@@ -641,7 +869,7 @@ public final class RouteViewModel {
         resolvedSpecificationProfile?.widthMeters ?? 2.55
     }
 
-    /// Persists the DVLA Vehicle Enquiry Service API key to the Keychain vault.
+    /// Persists the DVLA Vehicle Enquiry Service API key (optional; prefer when available).
     public func persistDVLAAPIKey() {
         let value = dvlaAPIKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !value.isEmpty else { return }
@@ -649,9 +877,10 @@ public final class RouteViewModel {
         hasDVLAAPIKey = true
         dvlaAPIKeyDraft = ""
         persistSecret(value, kind: .dvla)
+        vehicleRegistryClient = vehicleRegistryClient.rebuildProviders()
     }
 
-    /// Persists the RegCheck account username to the Keychain vault.
+    /// Persists the RegCheck account username to the on-disk vault.
     public func persistRegCheckUsername() {
         let value = regCheckUsernameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !value.isEmpty else { return }
@@ -662,7 +891,7 @@ public final class RouteViewModel {
         vehicleRegistryClient = vehicleRegistryClient.rebuildProviders()
     }
 
-    /// Persists the TomTom Traffic Flow API key to the Keychain vault.
+    /// Persists the TomTom Traffic Flow API key to the on-disk vault.
     public func persistTomTomAPIKey() {
         let value = tomTomAPIKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !value.isEmpty else { return }
@@ -672,7 +901,7 @@ public final class RouteViewModel {
         persistSecret(value, kind: .tomTom)
     }
 
-    /// Persists the OpenWeather API key to the Keychain vault.
+    /// Persists the OpenWeather API key to the on-disk vault.
     public func persistOpenWeatherAPIKey() {
         let value = openWeatherAPIKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !value.isEmpty else { return }
@@ -722,6 +951,282 @@ public final class RouteViewModel {
     }
     #endif
 
+    /// Persists advisory HOS clock preference and refreshes HUD state.
+    public func persistHosEnabled() {
+        NavigationWorkspaceSettings.saveHosAdvisoryClockEnabled(hosEnabled)
+        if hosEnabled {
+            Task { await refreshHosSnapshot() }
+        } else {
+            hosSnapshot = nil
+            hosForecast = nil
+        }
+    }
+
+    /// Persists offline routing toggle.
+    public func persistOfflineRoutingEnabled() {
+        VehicleProfileStore.saveOfflineRoutingEnabled(offlineRoutingEnabled)
+        updateCloudRoutingBanner()
+    }
+
+    /// Persists prefer-offline-routing toggle.
+    public func persistPreferOfflineRouting() {
+        VehicleProfileStore.savePreferOfflineRouting(preferOfflineRouting)
+        updateCloudRoutingBanner()
+    }
+
+    /// Persists the graph tile CDN base URL and updates the offline store.
+    public func persistTileServerURL() {
+        let trimmed = tileServerURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        VehicleProfileStore.saveTileServerURL(trimmed)
+        Task {
+            await offlineGraphStore.setTileBaseURL(URL(string: trimmed))
+        }
+    }
+
+    /// Persists local map style preference and refreshes the active style URL.
+    public func persistUseLocalMapStyleWhenPackPresent() {
+        VehicleProfileStore.saveUseLocalMapStyleWhenPackPresent(useLocalMapStyleWhenPackPresent)
+        Task { await refreshOfflineMapPackStatus() }
+    }
+
+    /// Downloads the small Norfolk demo corridor (MVP). Full UK tiles should be pre-placed.
+    public func downloadDemoOfflineCorridor() async {
+        isDownloadingOfflineTiles = true
+        offlineTileStatus = "Downloading demo corridor tiles…"
+        defer { isDownloadingOfflineTiles = false }
+        do {
+            let box = DiskOfflineGraphStore.demoCorridorBoundingBox
+            try await offlineGraphStore.ensureCorridor(
+                minLat: box.minLat,
+                maxLat: box.maxLat,
+                minLon: box.minLon,
+                maxLon: box.maxLon
+            )
+            let count = await offlineGraphStore.loadedTileCount()
+            offlineTileStatus = "Demo corridor ready (\(count) tiles). Full UK: pre-place *.graphjson in Application Support/RouteFinder/tiles/"
+        } catch {
+            offlineTileStatus = error.localizedDescription
+        }
+    }
+
+    /// Attempts to ensure a UK-wide corridor (may request many tiles — prefer pre-placed packs).
+    public func downloadUKOfflineCorridor() async {
+        isDownloadingOfflineTiles = true
+        offlineTileStatus = "Ensuring UK corridor (large — prefer pre-placed tiles)…"
+        defer { isDownloadingOfflineTiles = false }
+        do {
+            let box = DiskOfflineGraphStore.ukBoundingBox
+            try await offlineGraphStore.ensureCorridor(
+                minLat: box.minLat,
+                maxLat: box.maxLat,
+                minLon: box.minLon,
+                maxLon: box.maxLon
+            )
+            let count = await offlineGraphStore.loadedTileCount()
+            offlineTileStatus = "UK corridor loaded (\(count) tiles in memory/cache)."
+        } catch {
+            offlineTileStatus = error.localizedDescription + " Place tiles under Application Support/RouteFinder/tiles/ if download is unavailable."
+        }
+    }
+
+    /// Refreshes offline map pack status and starts the local style server when enabled.
+    public func refreshOfflineMapPackStatus() async {
+        do {
+            if let local = try await mapPackStore.prepareLocalStyleIfAvailable(enabled: useLocalMapStyleWhenPackPresent) {
+                mapStyleURL = local.absoluteString
+            } else {
+                mapStyleURL = MapLibreConfiguration.openFreeMapStyleURL
+            }
+            let status = await mapPackStore.status(useLocalWhenPresent: useLocalMapStyleWhenPackPresent)
+            offlineMapPackStatus = status.message
+        } catch {
+            mapStyleURL = MapLibreConfiguration.openFreeMapStyleURL
+            offlineMapPackStatus = error.localizedDescription
+        }
+    }
+
+    /// Transitions the advisory HOS duty mode and refreshes the HUD snapshot.
+    public func transitionHosMode(_ mode: HosDutyMode, note: String? = nil) async {
+        guard hosEnabled else { return }
+        do {
+            _ = try await hosClock.transition(mode: HosDutyEvent(mode: mode, note: note))
+            await refreshHosSnapshot()
+            await refreshHosForecast()
+        } catch {
+            errorMessage = "Could not update hours clock: \(error.localizedDescription)"
+        }
+    }
+
+    /// Refreshes the HOS HUD snapshot from the clock.
+    public func refreshHosSnapshot() async {
+        guard hosEnabled else {
+            hosSnapshot = nil
+            await refreshCanIDriveStatus()
+            return
+        }
+        hosSnapshot = await hosClock.snapshot()
+        await refreshCanIDriveStatus()
+    }
+
+    /// Recomputes the advisory “Can I drive now?” status from import + clock.
+    public func refreshCanIDriveStatus() async {
+        let snapshot: HosClockSnapshot
+        if let hosSnapshot {
+            snapshot = hosSnapshot
+        } else {
+            snapshot = await hosClock.snapshot()
+        }
+        canIDriveStatus = CanIDriveEvaluator.evaluate(
+            imported: tachoSummary,
+            clockSnapshot: snapshot
+        )
+    }
+
+    /// Imports a driver-card JSON / DDD file and refreshes can-I-drive status.
+    public func importTachoFile(url: URL) async {
+        tachoImportError = nil
+        let accessed = url.startAccessingSecurityScopedResource()
+        defer {
+            if accessed { url.stopAccessingSecurityScopedResource() }
+        }
+        do {
+            let summary = try tachoImporter.importDriverCard(from: url)
+            tachoSummary = summary
+            persistTachoSummary(summary)
+            await refreshCanIDriveStatus()
+        } catch {
+            tachoImportError = error.localizedDescription
+        }
+    }
+
+    /// Clears the imported tachograph summary.
+    public func clearImportedTachoSummary() {
+        tachoSummary = nil
+        tachoImportError = nil
+        Self.removePersistedTachoSummary()
+        Task { await refreshCanIDriveStatus() }
+    }
+
+    /// Starts a new DVSA-style walkaround checklist for the current vehicle.
+    public func startWalkaroundInspection() {
+        let label = activeProfileName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let plate = vehicleRegistration.trimmingCharacters(in: .whitespacesAndNewlines)
+        activeInspection = InspectionRecord(
+            vehicleLabel: (label?.isEmpty == false ? label! : "HGV"),
+            registrationPlate: plate.isEmpty ? nil : plate
+        )
+    }
+
+    /// Persists the active walkaround inspection to disk.
+    public func saveActiveInspection() async {
+        guard var record = activeInspection else { return }
+        let allChecked = record.items.allSatisfy { $0.status != .notChecked }
+        if allChecked {
+            record.completedAt = Date()
+        }
+        activeInspection = record
+        do {
+            try await inspectionStore.save(record)
+            if allChecked {
+                try await inspectionStore.enqueueSync(record)
+            }
+        } catch {
+            errorMessage = "Could not save inspection: \(error.localizedDescription)"
+        }
+    }
+
+    private func persistTachoSummary(_ summary: TachoCardSummary) {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        guard let data = try? encoder.encode(summary) else { return }
+        try? data.write(to: Self.tachoSummaryURL(), options: .atomic)
+    }
+
+    private func loadPersistedTachoSummary() {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        guard let data = try? Data(contentsOf: Self.tachoSummaryURL()),
+              let summary = try? decoder.decode(TachoCardSummary.self, from: data) else {
+            return
+        }
+        tachoSummary = summary
+    }
+
+    private static func removePersistedTachoSummary() {
+        try? FileManager.default.removeItem(at: tachoSummaryURL())
+    }
+
+    private static func tachoSummaryURL() -> URL {
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let dir = support.appendingPathComponent("RouteFinder/tacho", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("imported_card.json")
+    }
+
+    /// Rebuilds the HOS rest forecast for the current route using POIs and path durations.
+    public func refreshHosForecast() async {
+        guard hosEnabled else {
+            hosForecast = nil
+            return
+        }
+        let durations = hosPathDurationsSeconds()
+        guard !durations.isEmpty else {
+            hosForecast = await hosClock.forecast(pathDurationsSeconds: [])
+            await refreshHosSnapshot()
+            return
+        }
+        let snap = await hosClock.snapshot()
+        hosSnapshot = snap
+        let arcs: [Double]? = routeCumulativeLengths.count == durations.count
+            ? Array(routeCumulativeLengths.dropFirst())
+            : (routeCumulativeLengths.count == durations.count + 1
+                ? Array(routeCumulativeLengths.dropFirst())
+                : nil)
+        let insertions = HosRestInserter.insertions(
+            remainingContinuousDriveSeconds: snap.remainingContinuousDriveSeconds,
+            remainingDailyDriveSeconds: snap.remainingDailyDriveSeconds,
+            pathDurationsSeconds: durations,
+            pathArcLengthsMeters: arcs,
+            upcomingTruckPois: upcomingTruckPois,
+            kineticStress: nil
+        )
+        let base = await hosClock.forecast(pathDurationsSeconds: durations)
+        hosForecast = HosRestInsertionResult(
+            remainingContinuousDriveSeconds: snap.remainingContinuousDriveSeconds,
+            remainingDailyDriveSeconds: snap.remainingDailyDriveSeconds,
+            insertions: insertions.isEmpty ? base.insertions : insertions,
+            summary: base.summary
+        )
+        refreshTripBriefShareText()
+        if let forecast = hosForecast, !forecast.insertions.isEmpty {
+            NotificationCenter.default.post(
+                name: .routeFinderHosAdvisory,
+                object: nil,
+                userInfo: ["summary": forecast.summary]
+            )
+        }
+    }
+
+    private func hosPathDurationsSeconds() -> [TimeInterval] {
+        guard let total = physicsPredictedDurationSeconds ?? result?.metrics.totalTime, total > 0 else {
+            return []
+        }
+        let segmentCount = max(routeCoordinates.count - 1, 1)
+        if routeCumulativeLengths.count >= 2 {
+            let totalLength = routeCumulativeLengths.last ?? 0
+            guard totalLength > 0 else {
+                return Array(repeating: total / Double(segmentCount), count: segmentCount)
+            }
+            var durations: [TimeInterval] = []
+            for index in 1..<routeCumulativeLengths.count {
+                let delta = routeCumulativeLengths[index] - routeCumulativeLengths[index - 1]
+                durations.append(total * (delta / totalLength))
+            }
+            return durations
+        }
+        return Array(repeating: total / Double(segmentCount), count: segmentCount)
+    }
+
     /// Reorders intermediate stops for minimum travel time, then optionally recalculates the route.
     public func optimizeWaypointSequence(routeAfter: Bool = true) async {
         optimizationError = nil
@@ -762,9 +1267,105 @@ public final class RouteViewModel {
             if routeAfter {
                 await calculateRoute()
             }
+            if activeDispatchTripId != nil {
+                await publishDispatchSnapshot(status: .optimized)
+            }
         } catch {
             optimizationError = error.localizedDescription
         }
+    }
+
+    /// Applies a dispatched fleet trip onto the driver route model (3-stop MVP).
+    public func applyDispatchedTrip(_ trip: FleetTrip) async {
+        activeDispatchTripId = trip.id
+        fleetVehicleId = trip.vehicleId
+        if let profile = trip.vehicleProfile {
+            applyProfile(profile)
+            isHGVMode = true
+        }
+
+        let ordered = trip.stops.sorted { $0.sequence < $1.sequence }
+        routeWaypoints = ordered.map { stop in
+            let role: RouteWaypoint.Role = switch stop.role {
+            case .origin: .origin
+            case .via: .via
+            case .destination: .destination
+            }
+            let coordinate = Coordinate(latitude: stop.latitude, longitude: stop.longitude)
+            return RouteWaypoint(
+                id: stop.id,
+                role: role,
+                rawText: stop.label,
+                resolved: ResolvedEndpoint(
+                    displayLabel: stop.label,
+                    rawCoordinate: coordinate,
+                    snappedCoordinate: coordinate
+                )
+            )
+        }
+
+        await publishDispatchSnapshot(status: .accepted)
+        if canFindRoute {
+            await findRoute()
+        }
+    }
+
+<<<<<<< HEAD
+    /// Seeds a demo 3-stop UK job and applies it to the driver device (persisted via DiskFleetStore).
+    public func acceptDemoFleetDispatch() async throws {
+        do {
+            let seeded = try await fleetStore.seedDemoThreeStopJob()
+            fleetVehicleId = seeded.vehicle.id
+            await applyDispatchedTrip(seeded.trip)
+        } catch {
+            // Fall back to in-memory seed if disk persistence fails.
+            let fallback = InMemoryFleetStore()
+            let seeded = try await fallback.seedDemoThreeStopJob()
+            fleetVehicleId = seeded.vehicle.id
+            await applyDispatchedTrip(seeded.trip)
+        }
+    }
+
+    /// Applies a pending traffic-aware alternate route when available.
+    public func applyTrafficReroute() async {
+        guard let alternate = pendingTrafficAlternate else { return }
+        let preferences = routingPreferences()
+        do {
+            try await applyExternalRouteResponse(alternate, preferences: preferences)
+            trafficRerouteAvailable = false
+            pendingTrafficAlternate = nil
+        } catch {
+            errorMessage = "Could not apply traffic re-route: \(error.localizedDescription)"
+        }
+=======
+    /// Seeds a demo 3-stop UK job and applies it to the driver device.
+    public func acceptDemoFleetDispatch() async throws {
+        let seeded = try await fleetStore.seedDemoThreeStopJob()
+        fleetVehicleId = seeded.vehicle.id
+        await applyDispatchedTrip(seeded.trip)
+>>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
+    }
+
+    /// Publishes trip status + physics ETA for the dispatch console.
+    public func publishDispatchSnapshot(status: FleetTripStatus? = nil) async {
+        guard let tripId = activeDispatchTripId else { return }
+        let resolvedStatus = status
+            ?? (simulationEngine.telemetryReport != nil ? .rehearsed : .active)
+        let snapshot = FleetTripSnapshot(
+            tripId: tripId,
+            status: resolvedStatus,
+            orderedStopIds: routeWaypoints.map(\.id),
+            physicsETASeconds: journeyPhysicsETASeconds ?? physicsPredictedDurationSeconds,
+            predictiveReport: simulationEngine.telemetryReport
+        )
+        lastPublishedFleetSnapshot = snapshot
+        _ = try? await fleetStore.applySnapshot(snapshot)
+    }
+
+    /// Returns the current trip as seen by dispatch (after driver snapshot publish).
+    public func fetchDispatchTrip() async -> FleetTrip? {
+        guard let tripId = activeDispatchTripId else { return nil }
+        return try? await fleetStore.trip(id: tripId)
     }
 
     private func applyOptimizedIndices(_ indices: [Int]) {
@@ -897,7 +1498,7 @@ public final class RouteViewModel {
         mapViewportCenter = Coordinate(latitude: center.latitude, longitude: center.longitude)
     }
 
-    /// Persists the HeiGIT API key to the Keychain vault.
+    /// Persists the HeiGIT API key to the on-disk vault.
     public func persistORSAPIKey() {
         let value = orsAPIKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !value.isEmpty else { return }
@@ -1106,7 +1707,14 @@ public final class RouteViewModel {
         recalculateTask = Task {
             try? await Task.sleep(for: .milliseconds(500))
             guard !Task.isCancelled else { return }
-            guard originWaypoint.isResolved, destinationWaypoint.isResolved else { return }
+            guard originWaypoint.isResolved, destinationWaypoint.isResolved else {
+                await MainActor.run {
+                    clearRouteGeometry()
+                    result = nil
+                    errorMessage = nil
+                }
+                return
+            }
             await calculateRoute()
         }
     }
@@ -1132,7 +1740,7 @@ public final class RouteViewModel {
         let preferences = routingPreferences()
 
         do {
-            try await calculateExternalRoute(preferences: preferences)
+            try await calculateHybridRoute(preferences: preferences)
             hasCompletedCloudRoute = true
             routeFailure = nil
             updateCloudRoutingBanner()
@@ -1207,7 +1815,7 @@ public final class RouteViewModel {
         Task { await recalculateIfReady() }
     }
 
-    private func calculateExternalRoute(preferences: RoutingPreferences) async throws {
+    private func calculateHybridRoute(preferences: RoutingPreferences) async throws {
         guard let start = originWaypoint.resolved, let end = destinationWaypoint.resolved else {
             throw RoutingError.invalidInput("Enter a start and destination")
         }
@@ -1226,8 +1834,144 @@ public final class RouteViewModel {
             preferences: preferences
         )
 
+        let policy = HybridRoutingPolicy(
+            preferOfflineRouting: preferOfflineRouting,
+            offlineRoutingEnabled: offlineRoutingEnabled,
+            hasORSAPIKey: hasORSAPIKey
+        )
+
+        // Pure offline path or no ORS key: route on tiles without constructing an ORS client.
+        if policy.preferredSource == .offlineTiles || !hasORSAPIKey {
+            let (searchResult, coordinates, _) = try await planner.calculateHybridRoute(
+                request: request,
+                policy: policy,
+                offlineStore: offlineGraphStore
+            )
+            applyOfflineRouteResult(searchResult, coordinates: coordinates, preferences: preferences)
+            return
+        }
+
+        do {
+            try await calculateExternalRoute(preferences: preferences)
+        } catch {
+            guard policy.shouldFallbackToOfflineOnORSFailure else { throw error }
+            let (searchResult, coordinates, _) = try await planner.calculateHybridRoute(
+                request: request,
+                policy: HybridRoutingPolicy(
+                    preferOfflineRouting: true,
+                    offlineRoutingEnabled: true,
+                    hasORSAPIKey: false
+                ),
+                offlineStore: offlineGraphStore
+            )
+            applyOfflineRouteResult(searchResult, coordinates: coordinates, preferences: preferences)
+        }
+    }
+
+    private func applyOfflineRouteResult(
+        _ searchResult: SearchResult,
+        coordinates: [Coordinate],
+        preferences: RoutingPreferences
+    ) {
+        result = searchResult
+        let canonical = RouteGeometryCanonicalizer.process(coordinates, speedLimitSource: nil)
+        routeGeometry = .polyline(encoded: nil, precision: 6, coordinates: coordinates)
+        routeEncodedPolyline = nil
+        routeEncodedPolylinePrecision = 6
+        routeCoordinates = canonical.displayCoordinates
+        routeCumulativeLengths = navigationCoordinatorDisplayLengths(canonical)
+
+        navigationCoordinator.loadRoute(
+            canonical: canonical,
+            turnInstructions: searchResult.turnInstructions,
+            staticTotalTimeSeconds: searchResult.metrics.totalTime
+        )
+
+        let physics = resolvedVehiclePhysics()
+        simulationEngine.configure(
+            route: coordinates,
+            environmentalContext: environmentalContext,
+            vehicle: resolvedVehicleProfile(),
+            totalDuration: searchResult.metrics.totalTime,
+            enginePowerHP: configuredEnginePowerHP,
+            maneuvers: [],
+            turnInstructions: searchResult.turnInstructions,
+            isPassengerCar: !preferences.isHGVMode,
+            tomTomAPIKey: tomTomAPIKey.isEmpty ? nil : tomTomAPIKey,
+            vehicleSpecificationProfile: currentVehicleSpecificationProfile(),
+            canonicalGeometry: canonical,
+            minimumTurnRadiusMeters: physics.turningRadiusMeters
+        )
+        cloudRoutingBanner = "Offline tiled routing"
+        fitMapToRoute()
+    }
+
+    private func calculateExternalRoute(preferences: RoutingPreferences) async throws {
+        guard let start = originWaypoint.resolved, let end = destinationWaypoint.resolved else {
+            throw RoutingError.invalidInput("Enter a start and destination")
+        }
+
+        let waypointCoords = viaWaypoints
+            .filter { !$0.rawText.trimmingCharacters(in: .whitespaces).isEmpty }
+            .compactMap { waypoint -> RoutingCoordinate? in
+                waypoint.waypoint?.routingCoordinate
+            }
+
+        let request = ExternalRouteRequest(
+            origin: start.waypoint.routingCoordinate,
+            destination: end.waypoint.routingCoordinate,
+            waypoints: waypointCoords,
+            vehicle: preferences.vehicle,
+            preferences: preferences
+        )
+        lastExternalRouteRequest = request
+
         let externalPlanner = try makeExternalPlanner()
-        let (searchResult, response) = try await externalPlanner.calculateExternalRoute(request: request)
+        let (_, response) = try await externalPlanner.calculateExternalRoute(request: request)
+        try await applyExternalRouteResponse(response, preferences: preferences)
+        scheduleTrafficRerouteEvaluation(request: request, original: response)
+    }
+
+    /// Applies an external route response to map, simulation, and HGV living-layer hooks.
+    private func applyExternalRouteResponse(
+        _ response: ExternalRouteResponse,
+        preferences: RoutingPreferences
+    ) async throws {
+        let turnInstructions: [TurnInstruction]
+        if !response.maneuvers.isEmpty {
+            turnInstructions = ORSTurnInstructionMapper.map(
+                maneuvers: response.maneuvers,
+                coordinates: response.coordinates
+            )
+        } else {
+            turnInstructions = PolylineTurnInstructionGenerator.generate(
+                coordinates: response.coordinates
+            )
+        }
+
+        let distanceLabel = response.distanceMeters >= 1000
+            ? String(format: "%.1f km", response.distanceMeters / 1000)
+            : String(format: "%.0f m", response.distanceMeters)
+        let profileLabel = preferences.isHGVMode ? "HGV" : "Car"
+        let searchResult = SearchResult(
+            path: ["external-ors"],
+            totalDistance: response.distanceMeters,
+            totalTime: response.durationSeconds,
+            nodesVisited: response.coordinates.count,
+            runtime: 0,
+            explanation: "HeiGIT \(profileLabel) route · \(distanceLabel)",
+            turnInstructions: turnInstructions,
+            metrics: RouteMetrics(
+                totalDistance: response.distanceMeters,
+                totalTime: response.durationSeconds,
+                searchCost: response.durationSeconds,
+                speedCameraCount: 0,
+                tollSegmentCount: 0,
+                ferrySegmentCount: 0,
+                tunnelSegmentCount: 0
+            )
+        )
+
         result = searchResult
         let canonical = RouteGeometryCanonicalizer.process(
             response.coordinates,
@@ -1265,6 +2009,233 @@ public final class RouteViewModel {
             minimumTurnRadiusMeters: physics.turningRadiusMeters
         )
         scheduleFitMapToRoute()
+        loadLaybysAlongRoute(response.coordinates)
+        loadTruckPoisAlongRoute(response.coordinates)
+        refreshRestrictionAnnouncements(for: response.coordinates)
+        estimatePhysicsDuration(for: searchResult, canonical: canonical)
+<<<<<<< HEAD
+        if hosEnabled {
+            Task { await refreshHosForecast() }
+        }
+    }
+
+    /// Optionally samples TomTom along the route and prepares an avoid-polygon alternate.
+    private func scheduleTrafficRerouteEvaluation(
+        request: ExternalRouteRequest,
+        original: ExternalRouteResponse
+    ) {
+        trafficRerouteTask?.cancel()
+        trafficRerouteAvailable = false
+        pendingTrafficAlternate = nil
+        guard !tomTomAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              !orsAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return
+        }
+
+        isEvaluatingTrafficReroute = true
+        trafficRerouteTask = Task { @MainActor in
+            defer { isEvaluatingTrafficReroute = false }
+            do {
+                let trafficClient = try TomTomTrafficFlowClient(apiKey: tomTomAPIKey)
+                let routingClient = try OpenRouteServiceRoutingClient(apiKey: orsAPIKey)
+                let coordinator = TrafficRerouteCoordinator(
+                    trafficClient: trafficClient,
+                    routingClient: routingClient
+                )
+                let outcome = await coordinator.evaluate(request: request, original: original)
+                guard !Task.isCancelled else { return }
+                if outcome.trafficDelayDetected, let alternate = outcome.alternate {
+                    pendingTrafficAlternate = alternate
+                    trafficRerouteAvailable = true
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+                trafficRerouteAvailable = false
+                pendingTrafficAlternate = nil
+            }
+        }
+=======
+>>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
+    }
+
+    private var physicsEstimateTask: Task<Void, Never>?
+
+    private func estimatePhysicsDuration(
+        for searchResult: SearchResult,
+        canonical: RouteGeometryCanonicalizer.CanonicalRouteGeometry
+    ) {
+        physicsEstimateTask?.cancel()
+        physicsPredictedDurationSeconds = nil
+        journeyPhysicsETASeconds = nil
+        journeyETAAnchorDate = nil
+        isEstimatingPhysicsDuration = true
+
+        physicsEstimateTask = Task { @MainActor in
+            defer { isEstimatingPhysicsDuration = false }
+            guard !Task.isCancelled else { return }
+            let estimate = await simulationEngine.estimatePhysicsDuration()
+            guard !Task.isCancelled else { return }
+            if let estimate {
+                physicsPredictedDurationSeconds = estimate.kineticDurationSeconds
+                journeyPhysicsETASeconds = estimate.kineticDurationSeconds
+                journeyETAAnchorDate = Date()
+                navigationCoordinator.updateStaticTotalTime(estimate.kineticDurationSeconds)
+            } else {
+                // Timeout / cancel / failure: keep web ETA visible; clear spinner via defer.
+                journeyPhysicsETASeconds = nil
+                journeyETAAnchorDate = nil
+            }
+        }
+    }
+
+    /// Runs a full pre-trip physics rehearsal and publishes a shareable predictive trip brief.
+    public func rehearseRoute() {
+        guard result != nil, routeCoordinates.count >= 3 else { return }
+        rehearseTask?.cancel()
+        isRehearsingRoute = true
+        rehearseTask = Task { @MainActor in
+            defer { isRehearsingRoute = false }
+            guard !Task.isCancelled else { return }
+            let report = await simulationEngine.rehearseRoute()
+            guard !Task.isCancelled else { return }
+            if let report {
+                physicsPredictedDurationSeconds = report.kineticPhysicsETASeconds
+                journeyPhysicsETASeconds = report.kineticPhysicsETASeconds
+                journeyETAAnchorDate = Date()
+                navigationCoordinator.updateStaticTotalTime(report.kineticPhysicsETASeconds)
+<<<<<<< HEAD
+                tripBriefShareText = TripBriefFormatter.plainText(
+                    from: report,
+                    hosForecast: hosEnabled ? hosForecast : nil
+                )
+=======
+                tripBriefShareText = TripBriefFormatter.plainText(from: report)
+>>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
+                if activeDispatchTripId != nil {
+                    await publishDispatchSnapshot(status: .rehearsed)
+                }
+            }
+        }
+    }
+
+    /// Refreshes share text from the current predictive telemetry report, if any.
+    public func refreshTripBriefShareText() {
+        guard let report = simulationEngine.telemetryReport else {
+            tripBriefShareText = nil
+            return
+        }
+<<<<<<< HEAD
+        tripBriefShareText = TripBriefFormatter.plainText(
+            from: report,
+            hosForecast: hosEnabled ? hosForecast : nil
+        )
+=======
+        tripBriefShareText = TripBriefFormatter.plainText(from: report)
+>>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
+    }
+
+    private func handleKineticUIState(_ uiState: SimulationUIState) {
+        kineticAdvisoryCoordinator.ingest(uiState: uiState)
+    }
+
+    /// Fetches layby POIs along the route and configures the layby advisor.
+    public func loadLaybysAlongRoute(_ coordinates: [Coordinate]) {
+        laybyLoadTask?.cancel()
+        laybyAdvisory = nil
+        upcomingLaybys = []
+        isLoadingLaybys = true
+
+        laybyLoadTask = Task { @MainActor in
+            defer { isLoadingLaybys = false }
+            do {
+                let stops = try await laybyCatalogService.laybysAlongRoute(coordinates)
+                guard !Task.isCancelled else { return }
+                await laybyAdvisor.configure(candidates: stops)
+                upcomingLaybys = stops
+                await refreshLaybyAdvisory()
+            } catch {
+                guard !Task.isCancelled else { return }
+                upcomingLaybys = []
+                laybyAdvisory = nil
+            }
+        }
+    }
+
+    /// Searches truck fuel / parking / weighbridges within 20 miles ahead along the route.
+    public func loadTruckPoisAlongRoute(_ coordinates: [Coordinate]) {
+        truckPoiLoadTask?.cancel()
+        upcomingTruckPois = []
+        isLoadingTruckPois = true
+
+        truckPoiLoadTask = Task { @MainActor in
+            defer { isLoadingTruckPois = false }
+            do {
+                let profile = VehiclePhysicalVector.from(legacy: resolvedVehicleProfile())
+                let fromArc = simulationEngine.currentArcLengthMeters
+                let pois = try await truckPoiRepository.queryAlongRoute(
+                    route: coordinates,
+                    kinds: [.highFlowDiesel, .weighStation, .overnightSecureParking, .layby],
+                    aheadMeters: TruckPoiSearchDefaults.twentyMilesMeters,
+                    fromArcLengthMeters: fromArc,
+                    corridorHalfWidthMeters: TruckPoiSearchDefaults.corridorHalfWidthMeters,
+                    profile: profile
+                )
+                guard !Task.isCancelled else { return }
+<<<<<<< HEAD
+                upcomingTruckPois = ParkingOccupancyPrior.adjust(
+                    pois: pois,
+                    reports: crowdReports
+                )
+                if hosEnabled {
+                    await refreshHosForecast()
+                }
+=======
+                upcomingTruckPois = PoiConfidenceAdjuster.adjust(pois: pois, reports: crowdReports)
+>>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
+            } catch {
+                guard !Task.isCancelled else { return }
+                upcomingTruckPois = []
+            }
+        }
+    }
+
+<<<<<<< HEAD
+    /// Refreshes LEZ / restriction / driving-ban announcements for the given route coordinates.
+    public func refreshRestrictionAnnouncements(for coordinates: [Coordinate]) {
+        let lez = UKLowEmissionZoneCatalog.announcements(along: coordinates)
+        let bans = UKDrivingBanCatalog.announcements(along: coordinates, at: Date())
+        restrictionAnnouncements = (lez + bans).sorted {
+            $0.distanceAlongRouteMeters < $1.distanceAlongRouteMeters
+        }
+=======
+    /// Refreshes LEZ / restriction announcements for the given route coordinates.
+    public func refreshRestrictionAnnouncements(for coordinates: [Coordinate]) {
+        restrictionAnnouncements = UKLowEmissionZoneCatalog.announcements(along: coordinates)
+>>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
+        activeRestrictionAnnouncement = restrictionAnnouncements.first
+    }
+
+    /// Convenience: truck fuel sites within 20 miles ahead on the active route.
+    public var truckFuelWithin20Miles: [TruckPoi] {
+        upcomingTruckPois.filter { $0.kind == .highFlowDiesel }
+    }
+
+    /// Refreshes the layby advisory from the current simulation position.
+    public func refreshLaybyAdvisory() async {
+        let arcLength = simulationEngine.currentArcLengthMeters
+        let speedMps = max(simulationEngine.currentSpeedKmh / 3.6, 1.0)
+        laybyAdvisory = await laybyAdvisor.upcomingAdvisory(
+            currentArcLengthMeters: arcLength,
+            speedMps: speedMps
+        )
+    }
+
+    /// Marks the current layby as full and advances to the next candidate.
+    public func markCurrentLaybyFull() {
+        Task { @MainActor in
+            _ = await laybyAdvisor.markCurrentFull()
+            await refreshLaybyAdvisory()
+        }
     }
 
     /// Fits after the MapLibre layer has ingested the new polyline (avoids empty-cache race).
@@ -1310,6 +2281,36 @@ public final class RouteViewModel {
         routeEncodedPolyline = nil
         simulationEngine.stop()
         navigationCoordinator.clearRoute()
+        laybyLoadTask?.cancel()
+        truckPoiLoadTask?.cancel()
+        physicsEstimateTask?.cancel()
+        rehearseTask?.cancel()
+        physicsPredictedDurationSeconds = nil
+        journeyPhysicsETASeconds = nil
+        journeyETAAnchorDate = nil
+        isEstimatingPhysicsDuration = false
+        isRehearsingRoute = false
+        tripBriefShareText = nil
+        latestKineticAdvisory = nil
+        kineticAdvisoryCoordinator.reset()
+        laybyAdvisory = nil
+        upcomingLaybys = []
+        isLoadingLaybys = false
+        upcomingTruckPois = []
+        isLoadingTruckPois = false
+        restrictionAnnouncements = []
+        activeRestrictionAnnouncement = nil
+<<<<<<< HEAD
+        trafficRerouteTask?.cancel()
+        trafficRerouteAvailable = false
+        isEvaluatingTrafficReroute = false
+        pendingTrafficAlternate = nil
+        lastExternalRouteRequest = nil
+=======
+>>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
+        Task {
+            await laybyAdvisor.reset()
+        }
     }
 
     private func presentRouteError(_ error: Error, preferences: RoutingPreferences) {
@@ -1364,21 +2365,43 @@ public final class RouteViewModel {
         let trimmed = query.trimmingCharacters(in: .whitespaces)
         let apiKey = orsAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
         let near = mapViewportCenter
+        let emptyFeedback = "No places found — try a fuller name or city."
 
-        #if os(macOS)
+        #if os(macOS) || os(iOS)
         if useAppleSearchFallback && apiKey.isEmpty {
-            let appleResults = await appleGeocodeSearch.search(query: trimmed, near: near, limit: 8)
+            let appleResults = await appleGeocodeSearch.search(
+                query: trimmed,
+                near: near,
+                limit: 8,
+                regionSpanMeters: AppleGeocodeSearch.worldwideRegionSpanMeters
+            )
             if appleResults.isEmpty {
-                return GeocodeSearchOutcome(
-                    suggestions: [],
-                    feedback: "No matches — try a more specific place name"
-                )
+                return GeocodeSearchOutcome(suggestions: [], feedback: emptyFeedback)
             }
             return GeocodeSearchOutcome(suggestions: appleResults, feedback: nil)
         }
         #endif
 
         if apiKey.isEmpty {
+<<<<<<< HEAD
+            let cached = await geocoder.cachedHits(matching: trimmed)
+            if !cached.isEmpty {
+                return GeocodeSearchOutcome(suggestions: cached, feedback: "Offline geocode cache")
+            }
+=======
+>>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
+            #if os(iOS)
+            // iOS: try Apple MapKit even when HeiGIT key is missing.
+            let appleResults = await appleGeocodeSearch.search(
+                query: trimmed,
+                near: near,
+                limit: 8,
+                regionSpanMeters: AppleGeocodeSearch.worldwideRegionSpanMeters
+            )
+            if !appleResults.isEmpty {
+                return GeocodeSearchOutcome(suggestions: appleResults, feedback: nil)
+            }
+            #endif
             return GeocodeSearchOutcome(
                 suggestions: [],
                 feedback: "Add HeiGIT API key in Settings, or enable Apple search fallback"
@@ -1386,35 +2409,40 @@ public final class RouteViewModel {
         }
 
         var results: [GeocodeSuggestion] = []
+        let preferGlobal = OpenRouteServiceGeocoder.querySuggestsOutsideUnitedKingdom(trimmed)
 
         try? await Task.sleep(for: .milliseconds(350))
-        if !Task.isCancelled {
-            if let biased = try? await geocoder.searchBiased(query: trimmed, near: near, apiKey: apiKey) {
-                results.append(contentsOf: biased)
-            }
-        }
-
         if !Task.isCancelled {
             if let global = try? await geocoder.searchGlobal(query: trimmed, near: near, apiKey: apiKey) {
                 results.append(contentsOf: global)
             }
+            if !preferGlobal,
+               let biased = try? await geocoder.searchBiased(query: trimmed, near: near, apiKey: apiKey) {
+                results.append(contentsOf: biased)
+            }
         }
 
         var seen = Set<String>()
-        let deduped = results.filter { seen.insert($0.id).inserted }
+        var deduped = results.filter { seen.insert($0.id).inserted }
+
+        #if os(macOS) || os(iOS)
+        if useAppleSearchFallback || deduped.isEmpty {
+            let appleResults = await appleGeocodeSearch.search(
+                query: trimmed,
+                near: near,
+                limit: 8,
+                regionSpanMeters: AppleGeocodeSearch.worldwideRegionSpanMeters
+            )
+            for suggestion in appleResults where seen.insert(suggestion.id).inserted {
+                deduped.append(suggestion)
+            }
+        }
+        #endif
 
         if deduped.isEmpty {
-            #if os(macOS)
-            if useAppleSearchFallback {
-                let appleResults = await appleGeocodeSearch.search(query: trimmed, near: near, limit: 8)
-                if !appleResults.isEmpty {
-                    return GeocodeSearchOutcome(suggestions: appleResults, feedback: nil)
-                }
-            }
-            #endif
             return GeocodeSearchOutcome(
                 suggestions: [],
-                feedback: "No matches for “\(trimmed)”"
+                feedback: emptyFeedback
             )
         }
 
@@ -1427,9 +2455,19 @@ public final class RouteViewModel {
     }
 
     private func updateCloudRoutingBanner() {
-        let serviceLabel = "Routing via HeiGIT OpenRouteService (`api.heigit.org/openrouteservice/v2`)"
+        let serviceLabel: String
+        if preferOfflineRouting, offlineRoutingEnabled {
+            serviceLabel = "Offline tiled routing (preferred)"
+        } else if hasORSAPIKey {
+            serviceLabel = "Routing via HeiGIT OpenRouteService (`api.heigit.org/openrouteservice/v2`)"
+        } else if offlineRoutingEnabled {
+            serviceLabel = "Offline tiled routing"
+        } else {
+            serviceLabel = "Routing via HeiGIT OpenRouteService (`api.heigit.org/openrouteservice/v2`)"
+        }
 
-        if orsAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        if orsAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+           !offlineRoutingEnabled {
             cloudRoutingBanner = "\(serviceLabel) — add your API key in Settings."
             return
         }
@@ -1445,5 +2483,159 @@ public final class RouteViewModel {
         }
 
         cloudRoutingBanner = serviceLabel
+    }
+
+    /// Applies a user-chosen simulation camera zoom and keeps tracking from overriding it.
+    public func setSimulationCameraZoom(_ zoom: Double) {
+        let clamped = min(19, max(12, zoom))
+        simulationCameraZoom = clamped
+        simulationZoomLockedByUser = true
+        mapBridge?.trackingZoomLevel = clamped
+        mapBridge?.setZoom(clamped)
+    }
+
+    /// Updates the lane-keep popup from the upcoming turn instruction.
+    public func refreshActiveLaneGuidance() {
+        guard let result else {
+            activeLaneGuidance = nil
+            return
+        }
+        let arcLength = simulationEngine.currentArcLengthMeters
+        let catalog = navigationCoordinator.session.maneuverAnchorCatalog
+        let remainingToManeuver: Double
+        if let distance = catalog?.distanceToNextManeuver(from: arcLength) {
+            remainingToManeuver = distance
+        } else if let index = navigationMetrics.snapshot?.currentManeuverIndex,
+                  result.turnInstructions.indices.contains(index) {
+            remainingToManeuver = max(0, result.turnInstructions[index].distance)
+        } else {
+            remainingToManeuver = .greatestFiniteMagnitude
+        }
+
+        let upcoming: TurnInstruction?
+        if let nextID = catalog?.nextAnchor(after: arcLength)?.id {
+            upcoming = result.turnInstructions.first { $0.id == nextID }
+        } else if let index = navigationMetrics.snapshot?.currentManeuverIndex,
+                  result.turnInstructions.indices.contains(index) {
+            upcoming = result.turnInstructions[index]
+        } else {
+            upcoming = nil
+        }
+
+        guard let instruction = upcoming, remainingToManeuver <= 250 else {
+            activeLaneGuidance = nil
+            return
+        }
+        if let lane = instruction.laneGuidance {
+            activeLaneGuidance = lane
+            return
+        }
+        // Fall back to a short keep-left/right hint for turns without lane payload.
+        if remainingToManeuver <= 180 {
+            switch instruction.maneuver {
+            case .slightLeft, .left, .sharpLeft:
+                activeLaneGuidance = "Keep left"
+                return
+            case .slightRight, .right, .sharpRight:
+                activeLaneGuidance = "Keep right"
+                return
+            default:
+                break
+            }
+        }
+        activeLaneGuidance = nil
+    }
+
+    /// Submits a local crowd hazard report and optionally schedules a “still there?” prompt.
+    public func submitCrowdHazardReport(type: HazardEventType, note: String?) {
+        guard let coordinate = simulationEngine.currentCoordinate
+            ?? routeCoordinates.first.map({
+                CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+            }) else {
+            return
+        }
+        let report = CrowdReport(
+            latitude: coordinate.latitude,
+            longitude: coordinate.longitude,
+            type: type,
+            reporterId: currentVaultUserID ?? "local-driver"
+        )
+        crowdReports.append(report)
+        Task {
+            try? await crowdEventIngest.submit(report)
+            _ = await crowdEventIngest.score(
+                reportId: report.id,
+                inputs: CrowdConfidenceInputs(
+                    uniqueVehiclesNearby: 3,
+                    ageSeconds: 0,
+                    reporterReputation: 0.8,
+                    corroborationCount: 1
+                )
+            )
+        }
+        upcomingTruckPois = PoiConfidenceAdjuster.adjust(pois: upcomingTruckPois, reports: crowdReports)
+        let inputs = CrowdConfidenceInputs(
+            uniqueVehiclesNearby: 3,
+            ageSeconds: 0,
+            reporterReputation: 0.8,
+            corroborationCount: 1
+        )
+        if let hazard = CrowdEventBus.promoteIfConfident(report: report, inputs: inputs, severity: .moderate) {
+            appendHazardOverlay(hazard)
+        }
+        presentHazardReportSheet = false
+        let promptID = report.id
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 45_000_000_000)
+            guard result != nil else { return }
+            pendingStillTherePrompt = CrowdReportStillTherePrompt(
+                id: promptID,
+                reportType: type,
+                message: note?.isEmpty == false
+                    ? "Is “\(note!)” still there?"
+                    : "Is the \(type.rawValue) report still there?"
+            )
+        }
+    }
+
+    /// Confirms or dismisses a still-there crowd prompt.
+    public func resolveStillTherePrompt(stillPresent: Bool) {
+        defer { pendingStillTherePrompt = nil }
+        guard stillPresent, let prompt = pendingStillTherePrompt,
+              let coordinate = simulationEngine.currentCoordinate else { return }
+        let hazard = HazardEvent(
+            id: "crowd-confirm-\(prompt.id)",
+            latitude: coordinate.latitude,
+            longitude: coordinate.longitude,
+            radiusMeters: 90,
+            type: prompt.reportType,
+            severity: .high,
+            validFrom: Date(),
+            validTo: Date().addingTimeInterval(45 * 60),
+            source: "crowd:confirm"
+        )
+        appendHazardOverlay(hazard)
+    }
+
+    private var currentVaultUserID: String? {
+        apiKeyVault?.userID
+    }
+
+    private func appendHazardOverlay(_ hazard: HazardEvent) {
+        let feature = """
+        {"type":"Feature","properties":{"id":"\(hazard.id)","color":"#ef4444","title":"\(hazard.type.rawValue)"},"geometry":{"type":"Point","coordinates":[\(hazard.longitude),\(hazard.latitude)]}}
+        """
+        if hazardOverlayJSON.contains("\"features\":[]") {
+            hazardOverlayJSON = "{\"type\":\"FeatureCollection\",\"features\":[\(feature)]}"
+        } else if let range = hazardOverlayJSON.range(of: "\"features\":[") {
+            let insertAt = hazardOverlayJSON.index(range.upperBound, offsetBy: 0)
+            hazardOverlayJSON.insert(contentsOf: feature + ",", at: insertAt)
+        }
+    }
+}
+
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }

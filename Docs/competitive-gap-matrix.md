@@ -79,6 +79,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 
 **Do not chase:** CoPilot parking booking, ELD vendor lock-in, Android-first CoPilot 11 parity yet.
 
+
 ## 90-day bar checklist
 
 - [x] Routes legally respect full vehicle profile on ORS

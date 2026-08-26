@@ -11,7 +11,7 @@ Built as a Swift 6 Swift Package with SwiftUI, MapLibre (WKWebView), and HeiGIT 
 - **Hours of service (advisory)** — EU Regulation 561 / Working Time Directive clock, rest insertion suggestions, driver-card JSON/DDD import, “Can I drive now?”
 - **CarPlay** — turn-by-turn templates with voice coexistence hooks (iOS)
 - **UK living layer** — plate → vehicle profile (RegCheck + DVLA), truck POIs (fuel / parking / weigh / layby), LEZ / restriction banners
-- **Fleet MVP** — disk-backed org → trip → physics ETA snapshot for dispatch demos
+- **Fleet MVP** — native dispatch console + disk-backed org → trip → physics ETA; optional **LAN sync** via `RouteFinderFleetServer`
 - **Offline routing & maps** — H3 graph tiles + hybrid ORS/offline policy; optional local MapLibre map pack via on-device HTTP
 - **Live traffic reroute** — TomTom flow sampling can trigger an ORS `avoid_polygons` recalculation
 - **Walkaround checks** — local DVSA-style inspection checklist
@@ -55,6 +55,19 @@ swift run RouteFinderMacApp
 ```
 
 Or open the package in Xcode and run the `RouteFinderMacApp` scheme.
+
+### Fleet LAN server (multi-device sync)
+
+On the dispatch Mac, start the fleet HTTP server (default port 8080):
+
+```bash
+cd RouteFinder
+swift run RouteFinderFleetServer --port 8080
+```
+
+On the driver iPhone (same Wi‑Fi/LAN), open **Settings → Fleet dispatch**, enable **Use remote fleet server**, enter `http://<dispatch-mac-ip>:8080`, and tap **Test fleet connection**. Restart the app to switch store mode. Open the **Dispatch Console** window on macOS to push trips; the driver polls as usual.
+
+**LAN only — no auth in MVP.** Do not expose the fleet server to the public internet.
 
 ### iOS app
 

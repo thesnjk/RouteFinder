@@ -509,11 +509,44 @@ struct SettingsSheet: View {
             Text("Fleet dispatch")
                 .font(RFFont.sectionTitle)
 
+            Toggle("Use remote fleet server", isOn: $viewModel.useRemoteFleetServer)
+                .onChange(of: viewModel.useRemoteFleetServer) { _, enabled in
+                    FleetWorkspaceSettings.saveUseRemoteFleetServer(enabled)
+                }
+
+            TextField("Fleet server URL", text: $viewModel.fleetServerURLText)
+                .textFieldStyle(GlassTextFieldStyle())
+                #if os(iOS)
+                .textInputAutocapitalization(.never)
+                .keyboardType(.URL)
+                #endif
+                .onSubmit { viewModel.saveFleetServerURLFromSettings() }
+
+            Text("LAN only — no auth in MVP. Run RouteFinderFleetServer on the dispatch Mac, then enter http://<mac-ip>:8080. Do not expose to the public internet.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            Button("Save fleet server URL") {
+                viewModel.saveFleetServerURLFromSettings()
+            }
+            .buttonStyle(.borderless)
+
+            Button("Test fleet connection") {
+                Task { await viewModel.testFleetServerConnection() }
+            }
+            .buttonStyle(.borderless)
+
+            if let status = viewModel.fleetServerConnectionStatus {
+                Text(status)
+                    .font(.caption2)
+                    .foregroundStyle(status.contains("Connected") ? .green : .secondary)
+            }
+
             TextField("Fleet vehicle UUID", text: $viewModel.fleetVehicleIdText)
                 .textFieldStyle(GlassTextFieldStyle())
                 .onSubmit { viewModel.saveFleetVehicleIdFromSettings() }
 
-            Text("Vehicle id must match the dispatch console picker. Same-device demo uses shared Application Support fleet store.")
+            Text("Vehicle id must match the dispatch console picker. Enable remote server for multi-device sync over LAN.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 

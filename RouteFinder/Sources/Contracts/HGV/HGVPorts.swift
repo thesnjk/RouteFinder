@@ -45,17 +45,12 @@ public protocol NavigationSessionPort: Sendable {
 
 /// HOS clock port.
 public protocol HosClockPort: Sendable {
-<<<<<<< HEAD
     /// Transitions duty mode and persists the duty log.
     func transition(mode: HosDutyEvent) async throws -> HosDutyMode
     /// Forecasts rest insertions for a planned path of segment durations.
     func forecast(pathDurationsSeconds: [TimeInterval]) async -> HosRestInsertionResult
     /// Returns the current advisory remaining-time snapshot for HUD.
     func snapshot() async -> HosClockSnapshot
-=======
-    func transition(mode: HosDutyEvent) async throws -> HosDutyMode
-    func forecast(pathDurationsSeconds: [TimeInterval]) async -> HosRestInsertionResult
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
 }
 
 /// Inspection store port.

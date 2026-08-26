@@ -82,13 +82,8 @@ struct RestrictionZoneBanner: View {
 
     var body: some View {
         HStack(spacing: RFSpacing.sm) {
-<<<<<<< HEAD
             Image(systemName: iconName)
                 .foregroundStyle(iconColor)
-=======
-            Image(systemName: "leaf.circle.fill")
-                .foregroundStyle(.green)
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
             Text(announcement.message)
                 .font(RFFont.caption.weight(.semibold))
                 .fixedSize(horizontal: false, vertical: true)
@@ -99,7 +94,6 @@ struct RestrictionZoneBanner: View {
         .controlSheetStyle()
         .accessibilityLabel(announcement.message)
     }
-<<<<<<< HEAD
 
     private var iconName: String {
         switch announcement.kind {
@@ -152,6 +146,3 @@ struct TrafficRerouteBanner: View {
     }
 }
 
-=======
-}
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b

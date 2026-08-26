@@ -202,13 +202,10 @@ public final class RouteViewModel {
     public var restrictionAnnouncements: [RestrictionZoneAnnouncement] = []
     /// Nearest upcoming restriction for HUD.
     public var activeRestrictionAnnouncement: RestrictionZoneAnnouncement?
-<<<<<<< HEAD
     /// `true` when TomTom detected delay and an avoid-polygon alternate is ready to apply.
     public var trafficRerouteAvailable = false
     /// Whether a background traffic re-route evaluation is running.
     public var isEvaluatingTrafficReroute = false
-=======
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
 
     /// Physics-predicted route duration from headless simulation, when available.
     public var physicsPredictedDurationSeconds: TimeInterval?
@@ -348,7 +345,6 @@ public final class RouteViewModel {
     private let laybyCatalogService = LaybyCatalogService()
     private let truckPoiRepository = OverpassTruckPoiRepository()
     private let crowdEventIngest = LocalCrowdEventIngest()
-<<<<<<< HEAD
     private let fleetStore = DiskFleetStore()
     /// In-memory driver alert bus (HOS and related).
     public let hosAlertBus: InMemoryDriverAlertBus
@@ -360,19 +356,13 @@ public final class RouteViewModel {
     public let inspectionStore = DiskInspectionStore()
     /// Active walkaround checklist for the inspection sheet.
     public var activeInspection: InspectionRecord?
-=======
-    private let fleetStore = InMemoryFleetStore()
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
     private var crowdReports: [CrowdReport] = []
     private let laybyAdvisor = LaybyAdvisor()
     private var laybyLoadTask: Task<Void, Never>?
     private var truckPoiLoadTask: Task<Void, Never>?
-<<<<<<< HEAD
     private var trafficRerouteTask: Task<Void, Never>?
     private var pendingTrafficAlternate: ExternalRouteResponse?
     private var lastExternalRouteRequest: ExternalRouteRequest?
-=======
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
 
     #if os(iOS)
     private let voiceGuidanceCoordinator = VoiceGuidanceCoordinator()
@@ -388,15 +378,12 @@ public final class RouteViewModel {
 
     public init(vault: APIKeyVault?) {
         apiKeyVault = vault
-<<<<<<< HEAD
         let alertBus = InMemoryDriverAlertBus()
         hosAlertBus = alertBus
         hosClock = EU561HosClock(alertBus: alertBus)
         let tileURLString = VehicleProfileStore.loadTileServerURL()
         let tileBase = tileURLString.flatMap { URL(string: $0) }
         offlineGraphStore = DiskOfflineGraphStore(tileBaseURL: tileBase)
-=======
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
         let secrets = Self.loadSecretsSnapshot(from: vault)
         let savedTomTomKey = secrets[.tomTom] ?? VehicleProfileStore.loadTomTomAPIKey()
         let engine = RouteSimulationEngine(tomTomAPIKey: savedTomTomKey)
@@ -1310,7 +1297,6 @@ public final class RouteViewModel {
         }
     }
 
-<<<<<<< HEAD
     /// Seeds a demo 3-stop UK job and applies it to the driver device (persisted via DiskFleetStore).
     public func acceptDemoFleetDispatch() async throws {
         do {
@@ -1337,13 +1323,6 @@ public final class RouteViewModel {
         } catch {
             errorMessage = "Could not apply traffic re-route: \(error.localizedDescription)"
         }
-=======
-    /// Seeds a demo 3-stop UK job and applies it to the driver device.
-    public func acceptDemoFleetDispatch() async throws {
-        let seeded = try await fleetStore.seedDemoThreeStopJob()
-        fleetVehicleId = seeded.vehicle.id
-        await applyDispatchedTrip(seeded.trip)
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
     }
 
     /// Publishes trip status + physics ETA for the dispatch console.
@@ -2013,7 +1992,6 @@ public final class RouteViewModel {
         loadTruckPoisAlongRoute(response.coordinates)
         refreshRestrictionAnnouncements(for: response.coordinates)
         estimatePhysicsDuration(for: searchResult, canonical: canonical)
-<<<<<<< HEAD
         if hosEnabled {
             Task { await refreshHosForecast() }
         }
@@ -2054,8 +2032,6 @@ public final class RouteViewModel {
                 pendingTrafficAlternate = nil
             }
         }
-=======
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
     }
 
     private var physicsEstimateTask: Task<Void, Never>?
@@ -2103,14 +2079,10 @@ public final class RouteViewModel {
                 journeyPhysicsETASeconds = report.kineticPhysicsETASeconds
                 journeyETAAnchorDate = Date()
                 navigationCoordinator.updateStaticTotalTime(report.kineticPhysicsETASeconds)
-<<<<<<< HEAD
                 tripBriefShareText = TripBriefFormatter.plainText(
                     from: report,
                     hosForecast: hosEnabled ? hosForecast : nil
                 )
-=======
-                tripBriefShareText = TripBriefFormatter.plainText(from: report)
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
                 if activeDispatchTripId != nil {
                     await publishDispatchSnapshot(status: .rehearsed)
                 }
@@ -2124,14 +2096,10 @@ public final class RouteViewModel {
             tripBriefShareText = nil
             return
         }
-<<<<<<< HEAD
         tripBriefShareText = TripBriefFormatter.plainText(
             from: report,
             hosForecast: hosEnabled ? hosForecast : nil
         )
-=======
-        tripBriefShareText = TripBriefFormatter.plainText(from: report)
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
     }
 
     private func handleKineticUIState(_ uiState: SimulationUIState) {
@@ -2181,7 +2149,6 @@ public final class RouteViewModel {
                     profile: profile
                 )
                 guard !Task.isCancelled else { return }
-<<<<<<< HEAD
                 upcomingTruckPois = ParkingOccupancyPrior.adjust(
                     pois: pois,
                     reports: crowdReports
@@ -2189,9 +2156,6 @@ public final class RouteViewModel {
                 if hosEnabled {
                     await refreshHosForecast()
                 }
-=======
-                upcomingTruckPois = PoiConfidenceAdjuster.adjust(pois: pois, reports: crowdReports)
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
             } catch {
                 guard !Task.isCancelled else { return }
                 upcomingTruckPois = []
@@ -2199,7 +2163,6 @@ public final class RouteViewModel {
         }
     }
 
-<<<<<<< HEAD
     /// Refreshes LEZ / restriction / driving-ban announcements for the given route coordinates.
     public func refreshRestrictionAnnouncements(for coordinates: [Coordinate]) {
         let lez = UKLowEmissionZoneCatalog.announcements(along: coordinates)
@@ -2207,11 +2170,6 @@ public final class RouteViewModel {
         restrictionAnnouncements = (lez + bans).sorted {
             $0.distanceAlongRouteMeters < $1.distanceAlongRouteMeters
         }
-=======
-    /// Refreshes LEZ / restriction announcements for the given route coordinates.
-    public func refreshRestrictionAnnouncements(for coordinates: [Coordinate]) {
-        restrictionAnnouncements = UKLowEmissionZoneCatalog.announcements(along: coordinates)
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
         activeRestrictionAnnouncement = restrictionAnnouncements.first
     }
 
@@ -2300,14 +2258,11 @@ public final class RouteViewModel {
         isLoadingTruckPois = false
         restrictionAnnouncements = []
         activeRestrictionAnnouncement = nil
-<<<<<<< HEAD
         trafficRerouteTask?.cancel()
         trafficRerouteAvailable = false
         isEvaluatingTrafficReroute = false
         pendingTrafficAlternate = nil
         lastExternalRouteRequest = nil
-=======
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
         Task {
             await laybyAdvisor.reset()
         }
@@ -2383,13 +2338,10 @@ public final class RouteViewModel {
         #endif
 
         if apiKey.isEmpty {
-<<<<<<< HEAD
             let cached = await geocoder.cachedHits(matching: trimmed)
             if !cached.isEmpty {
                 return GeocodeSearchOutcome(suggestions: cached, feedback: "Offline geocode cache")
             }
-=======
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
             #if os(iOS)
             // iOS: try Apple MapKit even when HeiGIT key is missing.
             let appleResults = await appleGeocodeSearch.search(

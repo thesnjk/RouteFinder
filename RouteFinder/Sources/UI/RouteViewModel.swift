@@ -2284,10 +2284,17 @@ public final class RouteViewModel {
         let stops = routeWaypoints.compactMap { waypoint -> TripBriefStop? in
             let label = waypoint.rawText.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !label.isEmpty else { return nil }
-            return TripBriefStop(label: label, role: waypoint.role.rawValue)
+            return TripBriefStop(
+                label: label,
+                role: waypoint.role.rawValue,
+                coordinate: waypoint.coordinate
+            )
         }
         let status: String? = activeDispatchTripId.map { _ in
             lastPublishedFleetSnapshot?.status.rawValue.capitalized ?? "Dispatched"
+        }
+        let coordinates = routeCoordinates.map {
+            Coordinate(latitude: $0.latitude, longitude: $0.longitude)
         }
         return TripBriefContext(
             predictiveReport: simulationEngine.telemetryReport,
@@ -2297,7 +2304,8 @@ public final class RouteViewModel {
             companyBreaks: activeDispatchCompanyBreaks,
             physicsETASeconds: journeyPhysicsETASeconds,
             vehicleLabel: tripBriefVehicleLabel(),
-            tripStatus: status
+            tripStatus: status,
+            routeCoordinates: coordinates
         )
     }
 

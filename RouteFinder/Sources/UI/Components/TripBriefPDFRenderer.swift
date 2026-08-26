@@ -20,7 +20,7 @@ public enum TripBriefPDFRenderer {
     private static let sectionSpacing: CGFloat = 14
 
     /// Builds PDF data for the given trip brief context.
-    public static func pdfData(from context: TripBriefContext) -> Data {
+    public static func pdfData(from context: TripBriefContext, mapImagePNG: Data? = nil) -> Data {
         let sections = TripBriefFormatter.sections(from: context)
         guard !sections.isEmpty else { return Data() }
 
@@ -53,6 +53,20 @@ public enum TripBriefPDFRenderer {
             minimumHeight: 16
         )
         renderer.advance(by: sectionSpacing)
+
+        if let mapImagePNG, let cgImage = cgImage(fromPNG: mapImagePNG) {
+            let mapHeight = contentWidth * (RouteMapSnapshotRenderer.defaultSize.height / RouteMapSnapshotRenderer.defaultSize.width)
+            let mapRect = CGRect(x: margin, y: 0, width: contentWidth, height: mapHeight)
+            renderer.draw(image: cgImage, in: mapRect)
+            renderer.draw(
+                text: "Map data © Apple",
+                font: captionFont(),
+                width: contentWidth,
+                x: margin,
+                minimumHeight: 12
+            )
+            renderer.advance(by: sectionSpacing)
+        }
 
         for (index, section) in sections.enumerated() {
             if index == 0 {
@@ -131,6 +145,18 @@ public enum TripBriefPDFRenderer {
             ensureSpace(for: height)
             drawText(text, font: font, x: x, yTop: yTop, width: width, height: height, context: context)
             yTop += height + lineSpacing
+        }
+
+        mutating func draw(image: CGImage, in rect: CGRect) {
+            ensureSpace(for: rect.height)
+            let drawRect = CGRect(
+                x: rect.origin.x,
+                y: pageHeight - yTop - rect.height,
+                width: rect.width,
+                height: rect.height
+            )
+            context.draw(image, in: drawRect)
+            yTop += rect.height + lineSpacing
         }
 
         mutating func ensureSpace(for height: CGFloat) {
@@ -216,6 +242,18 @@ public enum TripBriefPDFRenderer {
         return UIFont.systemFont(ofSize: 10)
         #else
         return NSFont.systemFont(ofSize: 10)
+        #endif
+    }
+
+    private static func cgImage(fromPNG data: Data) -> CGImage? {
+        #if canImport(UIKit)
+        return UIImage(data: data)?.cgImage
+        #elseif canImport(AppKit)
+        guard let image = NSImage(data: data) else { return nil }
+        var rect = CGRect(origin: .zero, size: image.size)
+        return image.cgImage(forProposedRect: &rect, context: nil, hints: nil)
+        #else
+        return nil
         #endif
     }
 }

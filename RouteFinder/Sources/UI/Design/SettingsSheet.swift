@@ -510,8 +510,8 @@ struct SettingsSheet: View {
                 .font(RFFont.sectionTitle)
 
             Toggle("Use remote fleet server", isOn: $viewModel.useRemoteFleetServer)
-                .onChange(of: viewModel.useRemoteFleetServer) { _, enabled in
-                    FleetWorkspaceSettings.saveUseRemoteFleetServer(enabled)
+                .onChange(of: viewModel.useRemoteFleetServer) { _, _ in
+                    viewModel.saveFleetServerURLFromSettings()
                 }
 
             TextField("Fleet server URL", text: $viewModel.fleetServerURLText)
@@ -522,7 +522,7 @@ struct SettingsSheet: View {
                 #endif
                 .onSubmit { viewModel.saveFleetServerURLFromSettings() }
 
-            Text("LAN only — no auth in MVP. Run RouteFinderFleetServer on the dispatch Mac, then enter http://<mac-ip>:8080. Do not expose to the public internet.")
+            Text("LAN only — no auth in MVP. Run RouteFinderFleetServer on the dispatch Mac, then enter http://<mac-ip>:8080. Changes apply immediately without restarting the app. Do not expose to the public internet.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 

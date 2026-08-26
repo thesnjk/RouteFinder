@@ -1,5 +1,12 @@
 import Foundation
 
+extension Notification.Name {
+    /// Posted when remote fleet server settings change and stores should reload.
+    public static let fleetStoreConfigurationDidChange = Notification.Name(
+        "RouteFinder.fleetStoreConfigurationDidChange"
+    )
+}
+
 /// Persists fleet driver/dispatch workspace preferences (local MVP).
 public enum FleetWorkspaceSettings {
     private static let fleetVehicleIdKey = "RouteFinder.fleetVehicleId"
@@ -25,6 +32,7 @@ public enum FleetWorkspaceSettings {
     /// Persists the remote fleet server preference.
     public static func saveUseRemoteFleetServer(_ enabled: Bool, defaults: UserDefaults = .standard) {
         defaults.set(enabled, forKey: useRemoteFleetServerKey)
+        postConfigurationDidChange()
     }
 
     /// Loads the base URL for the fleet HTTP server (e.g. `http://192.168.1.10:8080`).
@@ -43,5 +51,25 @@ public enum FleetWorkspaceSettings {
         } else {
             defaults.removeObject(forKey: fleetServerURLKey)
         }
+        postConfigurationDidChange()
+    }
+
+    /// Persists remote fleet configuration and posts a single reload notification.
+    public static func saveRemoteFleetConfiguration(
+        useRemote: Bool,
+        serverURL: URL?,
+        defaults: UserDefaults = .standard
+    ) {
+        defaults.set(useRemote, forKey: useRemoteFleetServerKey)
+        if let serverURL {
+            defaults.set(serverURL.absoluteString, forKey: fleetServerURLKey)
+        } else {
+            defaults.removeObject(forKey: fleetServerURLKey)
+        }
+        postConfigurationDidChange()
+    }
+
+    private static func postConfigurationDidChange() {
+        NotificationCenter.default.post(name: .fleetStoreConfigurationDidChange, object: nil)
     }
 }

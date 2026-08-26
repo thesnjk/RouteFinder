@@ -13,12 +13,6 @@ public struct PredictiveTelemetryReportView: View {
         self.briefContext = briefContext
     }
 
-    private var shareText: String {
-        TripBriefFormatter.plainText(
-            from: briefContext ?? TripBriefContext(predictiveReport: report)
-        )
-    }
-
     public var body: some View {
         VStack(alignment: .leading, spacing: RFSpacing.sm) {
             headerRow
@@ -38,11 +32,10 @@ public struct PredictiveTelemetryReportView: View {
             Text("Predictive Telemetry")
                 .font(RFFont.sectionTitle)
             Spacer()
-            ShareLink(item: shareText) {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.body.weight(.semibold))
-            }
-            .accessibilityLabel("Share trip brief")
+            TripBriefShareMenu(
+                context: briefContext ?? TripBriefContext(predictiveReport: report),
+                labelStyle: .iconOnly
+            )
             efficiencyBadge
         }
     }

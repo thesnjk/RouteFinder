@@ -1,11 +1,11 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-27 (multi-device fleet sync)  
+Last updated: 2026-08-27 (trip brief PDF export)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then CarPlay parity, then fleet/dispatch, then advisory tacho + offline packs.
 
 > Parallel API refresh was attempted via `parallel-cli` but the API was unreachable from this environment (`APIConnectionError`). This matrix is maintained from the competitive plan’s live web sources plus a post-implementation codebase inventory. Re-run Parallel when `api.parallel.ai` is reachable.
 
-## Programme status (Phases 0–10)
+## Programme status (Phases 0–11)
 
 | Phase | Focus | Status |
 |---|---|---|
@@ -20,6 +20,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **8** | Native dispatch console — macOS window + iPad split + driver poll loop | **Done** — geocoded stops, ORS preview, push toast, iPad driver default |
 | **9** | Shareable predictive trip brief — unified telemetry + HOS + layby + fleet | **Done** — `TripBriefContext` + ShareLink on driver and dispatch |
 | **10** | Multi-device fleet sync — Hummingbird LAN server + HTTPFleetStore | **Done** — `RouteFinderFleetServer` + Settings remote URL |
+| **11** | Shareable trip brief PDF export — office-ready PDF from same context | **Done** — `TripBriefPDFRenderer` + share menu on driver and dispatch |
 
 ### Remaining gaps (explicitly not claiming parity)
 
@@ -94,6 +95,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 - [x] Offline routing tiles + local map-pack path (Phase 3–4)
 - [x] Fused layby prediction v2 (HOS + company breaks + physics + occupancy)
 - [x] Shareable predictive trip brief (driver + dispatch ShareLink)
+- [x] Shareable trip brief PDF export (driver + dispatch)
 - [ ] Parallel deep-research refresh (blocked: API unreachable)
 - [ ] Full Samsara-class remote VU (partner, don’t rebuild)
 

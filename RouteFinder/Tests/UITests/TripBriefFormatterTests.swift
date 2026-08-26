@@ -84,6 +84,24 @@ import Testing
     #expect(text.contains("moderate"))
 }
 
+@Test func tripBriefFormatterSectionsIncludeFleetTitles() {
+    let trip = FleetTrip(
+        orgId: UUID(),
+        vehicleId: UUID(),
+        status: .rehearsed,
+        stops: [
+            FleetTripStop(sequence: 0, label: "Port", latitude: 51.95, longitude: 1.35, role: .origin),
+            FleetTripStop(sequence: 1, label: "Depot", latitude: 53.48, longitude: -2.24, role: .destination),
+        ],
+        physicsETASeconds: 9_900,
+        companyBreaks: [CompanyBreakAllocation.demoAfternoonBreak()]
+    )
+    let context = TripBriefContext.from(fleetTrip: trip, vehicleLabel: "Artic 1")
+    let titles = TripBriefFormatter.sections(from: context).compactMap(\.title)
+    #expect(titles.contains("Stops"))
+    #expect(titles.contains("Company break windows (planning aid — not legal tacho)"))
+}
+
 @Test func tripBriefContextFromFleetTripMapsSnapshotFields() {
     let trip = FleetTrip(
         orgId: UUID(),

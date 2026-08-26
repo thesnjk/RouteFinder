@@ -46,14 +46,10 @@ struct DispatchStatusPanel: View {
                 .font(RFFont.sectionTitle)
             Spacer()
             if trip.predictiveReport != nil || trip.physicsETASeconds != nil {
-                ShareLink(
-                    item: TripBriefFormatter.plainText(
-                        from: TripBriefContext.from(fleetTrip: trip, vehicleLabel: vehicleLabel)
-                    )
-                ) {
-                    Label("Share brief", systemImage: "square.and.arrow.up")
-                        .font(RFFont.caption)
-                }
+                TripBriefShareMenu(
+                    context: TripBriefContext.from(fleetTrip: trip, vehicleLabel: vehicleLabel),
+                    labelStyle: .caption
+                )
             }
             Text(trip.status.rawValue.capitalized)
                 .font(RFFont.caption.weight(.semibold))

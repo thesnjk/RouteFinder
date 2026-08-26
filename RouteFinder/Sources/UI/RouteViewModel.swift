@@ -355,7 +355,8 @@ public final class RouteViewModel {
     private let laybyCatalogService = LaybyCatalogService()
     private let truckPoiRepository = OverpassTruckPoiRepository()
     private let crowdEventIngest = LocalCrowdEventIngest()
-    private let fleetStore: any FleetDispatchPort = FleetStoreFactory.makeStore()
+    private var fleetStore: any FleetDispatchPort
+    nonisolated(unsafe) private var fleetStoreConfigurationObserver: NSObjectProtocol?
     /// In-memory driver alert bus (HOS and related).
     public let hosAlertBus: InMemoryDriverAlertBus
     /// Advisory EU 561 hours-of-service clock.
@@ -394,6 +395,7 @@ public final class RouteViewModel {
         let tileURLString = VehicleProfileStore.loadTileServerURL()
         let tileBase = tileURLString.flatMap { URL(string: $0) }
         offlineGraphStore = DiskOfflineGraphStore(tileBaseURL: tileBase)
+        fleetStore = FleetStoreFactory.makeStore()
         let secrets = Self.loadSecretsSnapshot(from: vault)
         let savedTomTomKey = secrets[.tomTom] ?? VehicleProfileStore.loadTomTomAPIKey()
         let engine = RouteSimulationEngine(tomTomAPIKey: savedTomTomKey)
@@ -429,6 +431,16 @@ public final class RouteViewModel {
         if let serverURL = FleetWorkspaceSettings.loadFleetServerURL() {
             fleetServerURLText = serverURL.absoluteString
         }
+        fleetStoreConfigurationObserver = NotificationCenter.default.addObserver(
+            forName: .fleetStoreConfigurationDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.reloadFleetStore()
+                await self?.pollAndApplyFleetDispatch()
+            }
+        }
         Task { @MainActor [weak self] in
             await self?.hosClock.loadPersistedLog()
             self?.loadPersistedTachoSummary()
@@ -436,6 +448,12 @@ public final class RouteViewModel {
             await self?.refreshCanIDriveStatus()
             await self?.refreshOfflineMapPackStatus()
             try? await self?.offlineGraphStore.loadLocalTiles()
+        }
+    }
+
+    deinit {
+        if let fleetStoreConfigurationObserver {
+            NotificationCenter.default.removeObserver(fleetStoreConfigurationObserver)
         }
     }
 
@@ -1392,13 +1410,25 @@ public final class RouteViewModel {
     /// Persists fleet server settings from Settings text fields.
     public func saveFleetServerURLFromSettings() {
         let trimmed = fleetServerURLText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty {
-            FleetWorkspaceSettings.saveFleetServerURL(nil)
-        } else if let url = URL(string: trimmed) {
-            FleetWorkspaceSettings.saveFleetServerURL(url)
-            fleetServerURLText = url.absoluteString
+        let serverURL = trimmed.isEmpty ? nil : URL(string: trimmed)
+        if let serverURL {
+            fleetServerURLText = serverURL.absoluteString
         }
-        FleetWorkspaceSettings.saveUseRemoteFleetServer(useRemoteFleetServer)
+        FleetWorkspaceSettings.saveRemoteFleetConfiguration(
+            useRemote: useRemoteFleetServer,
+            serverURL: serverURL
+        )
+    }
+
+    /// Replaces the active fleet store from current workspace settings.
+    public func reloadFleetStore() {
+        fleetStore = FleetStoreFactory.makeStore()
+        if FleetWorkspaceSettings.useRemoteFleetServer(),
+           FleetWorkspaceSettings.loadFleetServerURL() != nil {
+            fleetServerConnectionStatus = "Fleet store switched to remote."
+        } else {
+            fleetServerConnectionStatus = "Fleet store switched to local disk."
+        }
     }
 
     /// Tests connectivity to the configured fleet HTTP server.

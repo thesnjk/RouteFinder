@@ -65,7 +65,7 @@ cd RouteFinder
 swift run RouteFinderFleetServer --port 8080
 ```
 
-On the driver iPhone (same Wi‑Fi/LAN), open **Settings → Fleet dispatch**, enable **Use remote fleet server**, enter `http://<dispatch-mac-ip>:8080`, and tap **Test fleet connection**. Restart the app to switch store mode. Open the **Dispatch Console** window on macOS to push trips; the driver polls as usual.
+On the driver iPhone (same Wi‑Fi/LAN), open **Settings → Fleet dispatch**, enable **Use remote fleet server**, enter `http://<dispatch-mac-ip>:8080`, and tap **Test fleet connection**. Store mode switches immediately — no app restart required. Open the **Dispatch Console** window on macOS to push trips; the driver polls as usual.
 
 **LAN only — no auth in MVP.** Do not expose the fleet server to the public internet.
 

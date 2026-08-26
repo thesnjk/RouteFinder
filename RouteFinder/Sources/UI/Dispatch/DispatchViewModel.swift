@@ -28,7 +28,8 @@ public final class DispatchViewModel {
     public var searchSuggestions: [UUID: [GeocodeSuggestion]] = [:]
     public var searchFeedback: [UUID: String] = [:]
 
-    private let store: any FleetDispatchPort
+    private var store: any FleetDispatchPort
+    nonisolated(unsafe) private var fleetStoreConfigurationObserver: NSObjectProtocol?
     private let geocoder = OpenRouteServiceGeocoder()
     #if os(macOS) || os(iOS)
     private let appleGeocodeSearch = AppleGeocodeSearch()
@@ -41,6 +42,34 @@ public final class DispatchViewModel {
     /// Creates a dispatch view model backed by the shared disk store.
     public init(store: (any FleetDispatchPort)? = nil) {
         self.store = store ?? FleetStoreFactory.makeStore()
+        fleetStoreConfigurationObserver = NotificationCenter.default.addObserver(
+            forName: .fleetStoreConfigurationDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                await self?.reloadFleetStore()
+            }
+        }
+    }
+
+    deinit {
+        if let fleetStoreConfigurationObserver {
+            NotificationCenter.default.removeObserver(fleetStoreConfigurationObserver)
+        }
+    }
+
+    /// Replaces the active fleet store from current workspace settings.
+    public func reloadFleetStore() async {
+        store = FleetStoreFactory.makeStore()
+        await refreshCatalog()
+        await refreshActiveTrip()
+        if FleetWorkspaceSettings.useRemoteFleetServer(),
+           FleetWorkspaceSettings.loadFleetServerURL() != nil {
+            statusMessage = "Fleet store switched to remote."
+        } else {
+            statusMessage = "Fleet store switched to local disk."
+        }
     }
 
     /// Loads orgs and vehicles from disk.

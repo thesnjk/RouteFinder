@@ -28,6 +28,12 @@
     <string>RouteFinder uses motion sensors to improve location accuracy during navigation.</string>
     <key>NSWeatherKitUsageDescription</key>
     <string>RouteFinder uses weather data to automatically set road surface conditions for route simulation.</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>RouteFinder discovers dispatch fleet servers on your local network.</string>
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_routefinder-fleet._tcp</string>
+    </array>
     <key>UIBackgroundModes</key>
     <array>
         <string>location</string>

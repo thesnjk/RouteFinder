@@ -193,6 +193,12 @@ public final class RouteViewModel {
     public var useRemoteFleetServer: Bool = false
     /// Last fleet server connection test result for Settings UI.
     public var fleetServerConnectionStatus: String?
+    /// Fleet servers discovered via Bonjour on the local network.
+    public var discoveredFleetServers: [DiscoveredFleetServer] = []
+    /// Whether a Bonjour fleet discovery scan is in progress.
+    public var isDiscoveringFleetServers = false
+    /// Status text for Bonjour fleet discovery in Settings.
+    public var fleetDiscoveryStatus: String?
     /// Last published fleet snapshot for dispatch console visibility.
     public var lastPublishedFleetSnapshot: FleetTripSnapshot?
 
@@ -1451,6 +1457,31 @@ public final class RouteViewModel {
         } catch {
             fleetServerConnectionStatus = error.localizedDescription
         }
+    }
+
+    /// Scans the local network for fleet servers advertised via Bonjour.
+    public func discoverFleetServersOnLAN() async {
+        isDiscoveringFleetServers = true
+        fleetDiscoveryStatus = "Searching for fleet servers…"
+        discoveredFleetServers = []
+        let servers = await FleetBonjourBrowser.discover()
+        discoveredFleetServers = servers
+        isDiscoveringFleetServers = false
+        if servers.isEmpty {
+            fleetDiscoveryStatus = "No fleet servers found. Ensure the dispatch Mac is running RouteFinderFleetServer on the same Wi‑Fi."
+        } else {
+            fleetDiscoveryStatus = "Found \(servers.count) server\(servers.count == 1 ? "" : "s"). Tap one to apply."
+        }
+    }
+
+    /// Applies a Bonjour-discovered fleet server URL and enables remote sync.
+    public func applyDiscoveredFleetServer(_ server: DiscoveredFleetServer) {
+        fleetServerURLText = server.baseURL.absoluteString
+        useRemoteFleetServer = true
+        saveFleetServerURLFromSettings()
+        reloadFleetStore()
+        fleetServerConnectionStatus = "Applied \(server.displayName)."
+        fleetDiscoveryStatus = nil
     }
 
     /// Polls disk store for a newly pushed trip and applies it on the driver device.

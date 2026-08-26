@@ -30,6 +30,12 @@ struct FleetServerApp {
             print("Fleet API key authentication enabled.")
         }
 
+        let bonjourAdvertiser = FleetBonjourAdvertiser()
+        if config.advertiseBonjour {
+            bonjourAdvertiser.start(port: config.port, usesTLS: config.usesTLS)
+        }
+        defer { bonjourAdvertiser.stop() }
+
         let app = Application(
             router: router,
             server: serverBuilder,

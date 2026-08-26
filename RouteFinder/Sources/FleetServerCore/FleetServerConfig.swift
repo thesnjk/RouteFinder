@@ -12,6 +12,13 @@ public struct FleetServerConfig: Sendable {
     public let tlsCertificatePath: URL?
     /// Optional PEM private key path for TLS.
     public let tlsPrivateKeyPath: URL?
+    /// Whether to advertise the server via Bonjour on the local network.
+    public let advertiseBonjour: Bool
+
+    /// Whether TLS is enabled for this server instance.
+    public var usesTLS: Bool {
+        tlsCertificatePath != nil && tlsPrivateKeyPath != nil
+    }
 
     /// Creates fleet server configuration.
     public init(
@@ -19,13 +26,15 @@ public struct FleetServerConfig: Sendable {
         storageDirectory: URL? = nil,
         apiKey: String? = nil,
         tlsCertificatePath: URL? = nil,
-        tlsPrivateKeyPath: URL? = nil
+        tlsPrivateKeyPath: URL? = nil,
+        advertiseBonjour: Bool = true
     ) {
         self.port = port
         self.storageDirectory = storageDirectory
         self.apiKey = apiKey
         self.tlsCertificatePath = tlsCertificatePath
         self.tlsPrivateKeyPath = tlsPrivateKeyPath
+        self.advertiseBonjour = advertiseBonjour
     }
 
     /// Parses command-line arguments into server configuration.
@@ -35,6 +44,7 @@ public struct FleetServerConfig: Sendable {
         var apiKey: String?
         var tlsCertificatePath: URL?
         var tlsPrivateKeyPath: URL?
+        var advertiseBonjour = true
 
         var index = 1
         while index < arguments.count {
@@ -64,6 +74,8 @@ public struct FleetServerConfig: Sendable {
                 if index < arguments.count {
                     tlsPrivateKeyPath = URL(fileURLWithPath: arguments[index])
                 }
+            case "--no-bonjour":
+                advertiseBonjour = false
             default:
                 break
             }
@@ -90,7 +102,8 @@ public struct FleetServerConfig: Sendable {
             storageDirectory: storageDirectory,
             apiKey: apiKey,
             tlsCertificatePath: tlsCertificatePath,
-            tlsPrivateKeyPath: tlsPrivateKeyPath
+            tlsPrivateKeyPath: tlsPrivateKeyPath,
+            advertiseBonjour: advertiseBonjour
         )
     }
 }

@@ -2,18 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>RouteFinder uses your location for map follow-mode and turn-by-turn navigation.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>RouteFinder uses your location for background navigation and CarPlay guidance.</string>
-	<key>NSMotionUsageDescription</key>
-	<string>RouteFinder uses motion sensors to improve location accuracy during navigation.</string>
 	<key>NSWeatherKitUsageDescription</key>
 	<string>RouteFinder uses weather data to automatically set road surface conditions for route simulation.</string>
-	<key>UIBackgroundModes</key>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>RouteFinder discovers dispatch fleet servers on your local network.</string>
+	<key>NSBonjourServices</key>
 	<array>
-		<string>location</string>
-		<string>audio</string>
+		<string>_routefinder-fleet._tcp</string>
 	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
@@ -34,5 +29,10 @@
 			</array>
 		</dict>
 	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>audio</string>
+	</array>
 </dict>
 </plist>

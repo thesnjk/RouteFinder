@@ -58,12 +58,14 @@ Or open the package in Xcode and run the `RouteFinderMacApp` scheme.
 
 ### Fleet LAN server (multi-device sync)
 
-On the dispatch Mac, start the fleet HTTP server (default port 8080):
+On the dispatch Mac, start the fleet HTTP server (default port 8080). Bonjour advertisement is enabled by default:
 
 ```bash
 cd RouteFinder
 swift run RouteFinderFleetServer --port 8080
 ```
+
+Disable Bonjour for headless/CI with `--no-bonjour`.
 
 Optional shared-secret auth and TLS:
 
@@ -74,7 +76,7 @@ swift run RouteFinderFleetServer --port 8080 --api-key "$ROUTEFINDER_FLEET_API_K
 
 For LAN HTTPS with a self-signed certificate, [mkcert](https://github.com/FiloSottile/mkcert) is a convenient option (`mkcert -install && mkcert localhost 192.168.x.x`).
 
-On the driver iPhone (same Wi‑Fi/LAN), open **Settings → Fleet dispatch**, enable **Use remote fleet server**, enter `http://<dispatch-mac-ip>:8080` (or `https://` when TLS is enabled), add the matching **Fleet API key** if required, and tap **Test fleet connection**. Store mode switches immediately — no app restart required. Open the **Dispatch Console** window on macOS to push trips; the driver polls as usual.
+On the driver iPhone (same Wi‑Fi/LAN), open **Settings → Fleet dispatch**, tap **Discover fleet servers on LAN**, pick the dispatch Mac entry (or manually enter `http://<dispatch-mac-ip>:8080` / `https://` when TLS is enabled), add the matching **Fleet API key** if required, and tap **Test fleet connection**. Store mode switches immediately — no app restart required. Open the **Dispatch Console** window on macOS to push trips; the driver polls as usual.
 
 **LAN / VPN only.** Do not expose the fleet server to the public internet without proper network controls.
 

@@ -351,15 +351,11 @@ private struct SimulationControlRow: View {
             .buttonStyle(.borderedProminent)
             .disabled(viewModel.isRehearsingRoute || viewModel.isEstimatingPhysicsDuration || isRunning)
 
-            if let shareText = viewModel.tripBriefShareText {
-                ShareLink(item: shareText) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "square.and.arrow.up")
-                        Text("Share trip brief")
-                            .font(RFFont.caption.weight(.semibold))
-                    }
-                    .frame(maxWidth: .infinity)
-                }
+            if viewModel.tripBriefShareText != nil {
+                TripBriefShareMenu(
+                    context: viewModel.tripBriefContext(),
+                    labelStyle: .fullWidth
+                )
                 .buttonStyle(.bordered)
             }
 

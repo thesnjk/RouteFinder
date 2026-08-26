@@ -1,6 +1,5 @@
 # HGV Navigation Competitive Gap Matrix
 
-<<<<<<< HEAD
 Last updated: 2026-08-26  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then CarPlay parity, then fleet/dispatch, then advisory tacho + offline packs.
 
@@ -27,13 +26,6 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 - Paid live fuel-price API / SNAP booking
 - Pre-built UK continent tile CDN hosting (app downloads packs; you still need to publish tiles)
 
-=======
-Last updated: 2026-08-25  
-Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then CarPlay parity, then fleet/dispatch.
-
-> Parallel API refresh was attempted via `parallel-cli` but the API was unreachable from this environment (`APIConnectionError`). This matrix is maintained from the competitive plan’s live web sources plus a post-implementation codebase inventory. Re-run Parallel when `api.parallel.ai` is reachable.
-
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
 ## Competitor strengths (reference)
 
 | Competitor | Form | Notable strengths |
@@ -46,7 +38,6 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | [HERE Pro Nav](https://www.here.com/solutions/professional-navigation) | Platform | Commercial routing; multi-stop fleet optimization |
 | [Samsara](https://www.samsara.com/uk/products/telematics/tachograph) / [Geotab](https://www.geotab.com/uk/fleet-management-solutions/smart-digital-tachograph/) | Telematics | UK/EU tacho — not consumer truck GPS |
 
-<<<<<<< HEAD
 ## Capability matrix (RouteFinder after Phases 0–5)
 
 | Capability | RouteFinder | Typical truck GPS | Fleet telematics | Notes |
@@ -63,23 +54,6 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | Fleet dispatch / shared physics ETA | **MVP** (disk-backed org→trip→snapshot) | Weak | **Strong** | Phase 2 |
 | Driver community dock/parking intel | Hazard / crowd confidence on POIs | Garmin community | Crowdsource | Partial |
 | Walkaround inspection | **Local DVSA checklist + disk store** | Varies | Strong | Glass UI |
-=======
-## Capability matrix (RouteFinder after Phases A–E)
-
-| Capability | RouteFinder | Typical truck GPS | Fleet telematics | Notes |
-|---|---|---|---|---|
-| Full constraint routing on live route | **Strong** (ORS L/W/H/length/axle/hazmat/ADR/avoids) | Strong | Strong | Phase A |
-| Offline maps | No | Strong | Hybrid | Deferred past 90 days |
-| Truck POI network | **Fuel / parking / weigh / layby along-route** (+ disk cache) | Strong | Weak as nav | Phase D |
-| Physics pre-trip + kinetic risk | **Strong** (Rehearse + live HUD/voice + shareable brief) | Absent | Absent | Phase B |
-| Plate → auto vehicle profile (UK) | **Strong** (RegCheck + DVLA chain) | Manual | Asset registry | Phase A |
-| CarPlay production quality | **Hardened TBT + Always GPS path + voice ducking** | Strong (Sygic) | Varies | Phase C |
-| Multi-stop optimize | Shipped | Shipped | Strong | Existing |
-| Live traffic affecting route choice | Sim only (TomTom) | Strong | Strong | Next |
-| HOS / tacho | Ports only | Weak | **Strong** | Partner later |
-| Fleet dispatch / shared physics ETA | **MVP** (in-memory org→trip→snapshot) | Weak | **Strong** | Phase E |
-| Driver community dock/parking intel | Hazard / crowd confidence on POIs | Garmin community | Crowdsource | Partial |
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
 
 ## White space RouteFinder owns
 
@@ -88,10 +62,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 3. Shareable predictive trip brief / risk index
 4. UK plate → dims + DVLA registry chain
 5. Physics ETA published back to dispatch on fleet trips
-<<<<<<< HEAD
 6. Honest advisory tacho (import + clock) that never claims to replace the VU
-=======
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
 
 ## 90-day bar checklist
 
@@ -100,17 +71,11 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 - [x] CarPlay continuous TBT with voice coexistence hooks
 - [x] Truck fuel/parking/weigh along-route (20 mi) + UK LEZ banners
 - [x] Single-fleet MVP push trip + physics ETA snapshot
-<<<<<<< HEAD
 - [x] Advisory HOS clock + rest forecast + DDD/JSON import
 - [x] Offline routing tiles + local map-pack path (Phase 3–4)
 - [x] Traffic-aware reroute + driving bans + walkaround inspection
 - [ ] Parallel deep-research refresh (blocked: API unreachable)
 - [ ] Full Samsara-class remote VU (partner, don’t rebuild)
-=======
-- [ ] Parallel deep-research refresh (blocked: API unreachable)
-- [ ] Offline truck maps (explicitly out of first 90 days)
-- [ ] Full Samsara-class tacho (partner, don’t rebuild)
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
 
 ## Quarterly parity checklist vs Sygic / TomTom / PTV / CoPilot
 
@@ -121,11 +86,8 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | CarPlay TBT + background GPS | CarPlayNav | Done |
 | UK truck living layer | UKLivingLayer | Done |
 | Fleet dispatch MVP | FleetBackend | Done (in-memory) |
-<<<<<<< HEAD
 | Advisory tacho + Can-I-drive | AdvisoryTacho | Done (Phase 5) |
 | Offline map packs | OfflineMaps | Pending |
-=======
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
 | Competitive intel refresh | CompetitiveIntel | Pending Parallel API |
 
 ## Sources

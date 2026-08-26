@@ -22,7 +22,6 @@ import Testing
     #expect(text.contains("72"))
     #expect(text.contains("£150"))
 }
-<<<<<<< HEAD
 
 @Test func tripBriefFormatterIncludesHosSummaryAndDisclaimer() {
     let report = PredictiveTelemetryReport(
@@ -47,5 +46,3 @@ import Testing
     #expect(text.contains("Hours of service (advisory)"))
     #expect(text.contains(HosRestInsertionResult.legalDisclaimer))
 }
-=======
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b

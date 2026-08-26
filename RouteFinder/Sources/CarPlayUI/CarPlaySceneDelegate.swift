@@ -67,7 +67,6 @@ public final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationScene
         self.coordinator = coordinator
         CarPlayServices.registerDelegate?(coordinator)
         session.addDelegate(coordinator)
-<<<<<<< HEAD
         NotificationCenter.default.addObserver(
             forName: .routeFinderHosAdvisory,
             object: nil,
@@ -78,8 +77,6 @@ public final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationScene
                 self?.coordinator?.presentHosAdvisory(summary: summary)
             }
         }
-=======
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
         Task { @MainActor in
             try? await interfaceController.setRootTemplate(
                 coordinator.mapTemplateController.rootTemplate,

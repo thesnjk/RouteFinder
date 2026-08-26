@@ -151,7 +151,6 @@ struct IOSMapChrome: View {
                     viewModel.markCurrentLaybyFull()
                 }
             }
-<<<<<<< HEAD
             if viewModel.hosEnabled, let hos = viewModel.hosSnapshot {
                 HosClockBanner(snapshot: hos)
             }
@@ -160,8 +159,6 @@ struct IOSMapChrome: View {
                     Task { await viewModel.applyTrafficReroute() }
                 }
             }
-=======
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
             if let restriction = viewModel.activeRestrictionAnnouncement {
                 RestrictionZoneBanner(announcement: restriction)
             }

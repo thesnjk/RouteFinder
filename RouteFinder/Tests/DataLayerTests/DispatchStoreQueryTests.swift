@@ -76,11 +76,18 @@ import Testing
     #expect(trip.status == .dispatched)
 }
 
-@Test func dispatchTripDraftMapsToFleetStops() throws {
-    var draft = DispatchTripDraft.ukDemoTemplate()
-    draft.stops[0].label = "Port"
-    let stops = try draft.fleetStops()
-    #expect(stops.count == draft.stops.count)
-    #expect(stops[0].label == "Port")
-    #expect(stops.allSatisfy { $0.latitude != 0 || $0.longitude != 0 })
+@Test func dispatchRoutePreviewBuilderMapsDraftCoordinates() {
+    let draft = DispatchTripDraft.ukDemoTemplate()
+    let coords = DispatchRoutePreviewBuilder.straightLineCoordinates(from: draft)
+    #expect(coords.count == 3)
+    #expect(coords.first?.latitude == 51.9542)
+}
+
+@Test func dispatchRoutePreviewBuilderRequiresParseableCoordinates() {
+    var draft = DispatchTripDraft()
+    draft.stops = [
+        DispatchStopDraft(label: "A", latitude: "bad", longitude: "1.0"),
+        DispatchStopDraft(label: "B", latitude: "52.0", longitude: "also-bad"),
+    ]
+    #expect(DispatchRoutePreviewBuilder.straightLineCoordinates(from: draft).isEmpty)
 }

@@ -3,24 +3,36 @@ import CoreLocation
 import MapLibreUI
 import SwiftUI
 
-/// Lightweight map showing dispatched stop pins and a straight-line preview.
+/// Lightweight map showing dispatched stop pins and route preview polyline.
 struct DispatchMapDetailView: View {
     let trip: FleetTrip?
     let draft: DispatchTripDraft
+    let previewCoordinates: [CLLocationCoordinate2D]
+    let isPreviewLoading: Bool
 
     @StateObject private var mapBridge = MapViewControllerBridge()
 
     var body: some View {
-        MapRouteView(
-            coordinates: polylineCoordinates,
-            pins: mapPins,
-            initialRegion: mapRegion,
-            mapBridge: mapBridge,
-            onMapClick: { _ in },
-            onContextAction: { _, _ in },
-            onRegionChange: { _ in }
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        ZStack(alignment: .topTrailing) {
+            MapRouteView(
+                coordinates: previewCoordinates.isEmpty ? polylineCoordinates : previewCoordinates,
+                pins: mapPins,
+                initialRegion: mapRegion,
+                mapBridge: mapBridge,
+                onMapClick: { _ in },
+                onContextAction: { _, _ in },
+                onRegionChange: { _ in }
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+            if isPreviewLoading {
+                ProgressView()
+                    .controlSize(.small)
+                    .padding(RFSpacing.sm)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .padding(RFSpacing.md)
+            }
+        }
         .padding(RFSpacing.md)
     }
 
@@ -32,7 +44,12 @@ struct DispatchMapDetailView: View {
         }
         return draft.stops.compactMap { stop in
             guard let lat = Double(stop.latitude), let lon = Double(stop.longitude) else { return nil }
-            return (stop.label.isEmpty ? "Stop" : stop.label, lat, lon, FleetTripStop.Role.via)
+            let role: FleetTripStop.Role = switch stop.id {
+            case draft.stops.first?.id: .origin
+            case draft.stops.last?.id: .destination
+            default: .via
+            }
+            return (stop.label.isEmpty ? "Stop" : stop.label, lat, lon, role)
         }
     }
 
@@ -47,22 +64,6 @@ struct DispatchMapDetailView: View {
             case .destination: .end
             case .via: .waypoint
             }
-            if displayStops.count == draft.stops.count, trip == nil, index == 0 {
-                return RoutePin(
-                    id: "draft-\(index)",
-                    coordinate: CLLocationCoordinate2D(latitude: stop.lat, longitude: stop.lon),
-                    kind: .start,
-                    title: stop.label
-                )
-            }
-            if displayStops.count == draft.stops.count, trip == nil, index == displayStops.count - 1 {
-                return RoutePin(
-                    id: "draft-\(index)",
-                    coordinate: CLLocationCoordinate2D(latitude: stop.lat, longitude: stop.lon),
-                    kind: .end,
-                    title: stop.label
-                )
-            }
             return RoutePin(
                 id: "stop-\(index)",
                 coordinate: CLLocationCoordinate2D(latitude: stop.lat, longitude: stop.lon),
@@ -73,15 +74,16 @@ struct DispatchMapDetailView: View {
     }
 
     private var mapRegion: MapRegion {
-        guard let first = polylineCoordinates.first else {
+        let coords = previewCoordinates.isEmpty ? polylineCoordinates : previewCoordinates
+        guard let first = coords.first else {
             return MapRegion(
                 center: CLLocationCoordinate2D(latitude: MapDefaults.ukCenter.latitude, longitude: MapDefaults.ukCenter.longitude),
                 latitudeDelta: 6,
                 longitudeDelta: 6
             )
         }
-        let lats = polylineCoordinates.map(\.latitude)
-        let lons = polylineCoordinates.map(\.longitude)
+        let lats = coords.map(\.latitude)
+        let lons = coords.map(\.longitude)
         let center = CLLocationCoordinate2D(
             latitude: (lats.min()! + lats.max()!) / 2,
             longitude: (lons.min()! + lons.max()!) / 2

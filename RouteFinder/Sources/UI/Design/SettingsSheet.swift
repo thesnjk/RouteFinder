@@ -8,8 +8,10 @@ struct SettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
     #if os(iOS)
     @EnvironmentObject private var weatherViewModel: WeatherViewModel
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
     @State private var showInspectionSheet = false
+    @State private var showDispatchConsole = false
 
     var body: some View {
         NavigationStack {
@@ -31,6 +33,7 @@ struct SettingsSheet: View {
                     regCheckUsernameSection
                     dvlaAPIKeySection
                     tomTomAPIKeySection
+                    fleetSection
                     OSMAttributionFooter()
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -48,6 +51,9 @@ struct SettingsSheet: View {
             }
             .sheet(isPresented: $showInspectionSheet) {
                 InspectionWalkaroundSheet(viewModel: viewModel)
+            }
+            .sheet(isPresented: $showDispatchConsole) {
+                DispatchConsoleView()
             }
         }
         #if os(macOS)
@@ -495,6 +501,51 @@ struct SettingsSheet: View {
                 viewModel.persistTomTomAPIKey()
             }
             .buttonStyle(.borderless)
+        }
+    }
+
+    private var fleetSection: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.sm) {
+            Text("Fleet dispatch")
+                .font(RFFont.sectionTitle)
+
+            TextField("Fleet vehicle UUID", text: $viewModel.fleetVehicleIdText)
+                .textFieldStyle(GlassTextFieldStyle())
+                .onSubmit { viewModel.saveFleetVehicleIdFromSettings() }
+
+            Text("Vehicle id must match the dispatch console picker. Same-device demo uses shared Application Support fleet store.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            Button("Save vehicle id") {
+                viewModel.saveFleetVehicleIdFromSettings()
+            }
+            .buttonStyle(.borderless)
+
+            Button("Check for dispatch") {
+                Task { await viewModel.pollAndApplyFleetDispatch() }
+            }
+            .buttonStyle(.borderless)
+
+            Button("Accept demo dispatch") {
+                Task {
+                    do {
+                        try await viewModel.acceptDemoFleetDispatch()
+                    } catch {
+                        viewModel.errorMessage = "Demo dispatch failed: \(error.localizedDescription)"
+                    }
+                }
+            }
+            .buttonStyle(.borderless)
+
+            #if os(iOS)
+            if horizontalSizeClass == .compact {
+                Button("Open dispatch console") {
+                    showDispatchConsole = true
+                }
+                .buttonStyle(.borderless)
+            }
+            #endif
         }
     }
 }

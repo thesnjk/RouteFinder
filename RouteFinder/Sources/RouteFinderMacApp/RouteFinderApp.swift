@@ -14,6 +14,13 @@ struct RouteFinderMacApp: App {
         .defaultSize(width: 1400, height: 900)
         .windowStyle(.titleBar)
         .windowResizability(.automatic)
+
+        WindowGroup("Dispatch Console", id: "dispatch") {
+            DispatchConsoleView()
+        }
+        .defaultSize(width: 1200, height: 800)
+        .windowStyle(.titleBar)
+        .windowResizability(.automatic)
     }
 }
 #endif

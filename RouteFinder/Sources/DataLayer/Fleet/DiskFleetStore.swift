@@ -3,9 +3,9 @@ import Foundation
 
 /// Disk-backed fleet dispatch store (org → vehicles → trips) with JSON persistence.
 public actor DiskFleetStore: FleetDispatchPort {
-    private var orgs: [UUID: FleetOrg] = [:]
-    private var vehicles: [UUID: FleetVehicle] = [:]
-    private var trips: [UUID: FleetTrip] = [:]
+    private var orgById: [UUID: FleetOrg] = [:]
+    private var vehicleById: [UUID: FleetVehicle] = [:]
+    private var tripById: [UUID: FleetTrip] = [:]
     private var activeTripByVehicle: [UUID: UUID] = [:]
 
     private let directory: URL
@@ -39,14 +39,14 @@ public actor DiskFleetStore: FleetDispatchPort {
     public func createOrg(name: String) async throws -> FleetOrg {
         try await loadIfNeeded()
         let org = FleetOrg(name: name)
-        orgs[org.id] = org
+        orgById[org.id] = org
         try persist()
         return org
     }
 
     public func registerVehicle(_ vehicle: FleetVehicle) async throws -> FleetVehicle {
         try await loadIfNeeded()
-        vehicles[vehicle.id] = vehicle
+        vehicleById[vehicle.id] = vehicle
         try persist()
         return vehicle
     }
@@ -56,7 +56,7 @@ public actor DiskFleetStore: FleetDispatchPort {
         var pushed = trip
         pushed.status = .dispatched
         pushed.updatedAt = Date()
-        trips[pushed.id] = pushed
+        tripById[pushed.id] = pushed
         activeTripByVehicle[pushed.vehicleId] = pushed.id
         try persist()
         return pushed
@@ -65,12 +65,12 @@ public actor DiskFleetStore: FleetDispatchPort {
     public func activeTrip(forVehicleId vehicleId: UUID) async throws -> FleetTrip? {
         try await loadIfNeeded()
         guard let tripId = activeTripByVehicle[vehicleId] else { return nil }
-        return trips[tripId]
+        return tripById[tripId]
     }
 
     public func applySnapshot(_ snapshot: FleetTripSnapshot) async throws -> FleetTrip {
         try await loadIfNeeded()
-        guard var trip = trips[snapshot.tripId] else {
+        guard var trip = tripById[snapshot.tripId] else {
             throw FleetStoreError.tripNotFound
         }
         let byId = Dictionary(uniqueKeysWithValues: trip.stops.map { ($0.id, $0) })
@@ -86,15 +86,43 @@ public actor DiskFleetStore: FleetDispatchPort {
         trip.status = snapshot.status
         trip.physicsETASeconds = snapshot.physicsETASeconds
         trip.predictiveReport = snapshot.predictiveReport
+        trip.predictedLayby = snapshot.predictedLayby
         trip.updatedAt = snapshot.updatedAt
-        trips[trip.id] = trip
+        tripById[trip.id] = trip
         try persist()
         return trip
     }
 
+    public func orgs() async throws -> [FleetOrg] {
+        try await loadIfNeeded()
+        return Array(orgById.values).sorted { $0.name < $1.name }
+    }
+
+    public func vehicles(forOrgId orgId: UUID) async throws -> [FleetVehicle] {
+        try await loadIfNeeded()
+        return vehicleById.values.filter { $0.orgId == orgId }.sorted { $0.label < $1.label }
+    }
+
+    public func createAndPushTrip(
+        orgId: UUID,
+        vehicleId: UUID,
+        stops: [FleetTripStop],
+        companyBreaks: [CompanyBreakAllocation] = [],
+        vehicleProfile: VehicleProfile? = nil
+    ) async throws -> FleetTrip {
+        let trip = try FleetTripBuilder.makeTrip(
+            orgId: orgId,
+            vehicleId: vehicleId,
+            stops: stops,
+            companyBreaks: companyBreaks,
+            vehicleProfile: vehicleProfile
+        )
+        return try await pushTrip(trip)
+    }
+
     public func trip(id: UUID) async throws -> FleetTrip? {
         try await loadIfNeeded()
-        return trips[id]
+        return tripById[id]
     }
 
     /// Seeds a demo org, vehicle, and 3-stop UK job (persisted across restarts).
@@ -160,9 +188,9 @@ public actor DiskFleetStore: FleetDispatchPort {
         guard FileManager.default.fileExists(atPath: snapshotURL.path) else { return }
         let data = try Data(contentsOf: snapshotURL)
         let snapshot = try decoder.decode(Snapshot.self, from: data)
-        orgs = Dictionary(uniqueKeysWithValues: snapshot.orgs.map { ($0.id, $0) })
-        vehicles = Dictionary(uniqueKeysWithValues: snapshot.vehicles.map { ($0.id, $0) })
-        trips = Dictionary(uniqueKeysWithValues: snapshot.trips.map { ($0.id, $0) })
+        orgById = Dictionary(uniqueKeysWithValues: snapshot.orgs.map { ($0.id, $0) })
+        vehicleById = Dictionary(uniqueKeysWithValues: snapshot.vehicles.map { ($0.id, $0) })
+        tripById = Dictionary(uniqueKeysWithValues: snapshot.trips.map { ($0.id, $0) })
         activeTripByVehicle = [:]
         for (vehicleKey, tripKey) in snapshot.activeTripByVehicle {
             guard let vehicleId = UUID(uuidString: vehicleKey),
@@ -173,9 +201,9 @@ public actor DiskFleetStore: FleetDispatchPort {
 
     private func persist() throws {
         let snapshot = Snapshot(
-            orgs: Array(orgs.values),
-            vehicles: Array(vehicles.values),
-            trips: Array(trips.values),
+            orgs: Array(orgById.values),
+            vehicles: Array(vehicleById.values),
+            trips: Array(tripById.values),
             activeTripByVehicle: Dictionary(
                 uniqueKeysWithValues: activeTripByVehicle.map {
                     ($0.key.uuidString, $0.value.uuidString)

@@ -89,6 +89,8 @@ public struct FleetTrip: Sendable, Hashable, Codable, Equatable, Identifiable {
     public var predictiveReport: PredictiveTelemetryReport?
     /// Company-defined break windows allocated by dispatch (planning aid only).
     public var companyBreaks: [CompanyBreakAllocation]
+    /// Latest driver-predicted layby merged from snapshots.
+    public var predictedLayby: LaybyAdvisory?
     public var updatedAt: Date
 
     public init(
@@ -101,6 +103,7 @@ public struct FleetTrip: Sendable, Hashable, Codable, Equatable, Identifiable {
         physicsETASeconds: TimeInterval? = nil,
         predictiveReport: PredictiveTelemetryReport? = nil,
         companyBreaks: [CompanyBreakAllocation] = [],
+        predictedLayby: LaybyAdvisory? = nil,
         updatedAt: Date = Date()
     ) {
         self.id = id
@@ -112,6 +115,7 @@ public struct FleetTrip: Sendable, Hashable, Codable, Equatable, Identifiable {
         self.physicsETASeconds = physicsETASeconds
         self.predictiveReport = predictiveReport
         self.companyBreaks = companyBreaks
+        self.predictedLayby = predictedLayby
         self.updatedAt = updatedAt
     }
 }
@@ -154,4 +158,26 @@ public protocol FleetDispatchPort: Sendable {
     func activeTrip(forVehicleId vehicleId: UUID) async throws -> FleetTrip?
     func applySnapshot(_ snapshot: FleetTripSnapshot) async throws -> FleetTrip
     func trip(id: UUID) async throws -> FleetTrip?
+    func orgs() async throws -> [FleetOrg]
+    func vehicles(forOrgId orgId: UUID) async throws -> [FleetVehicle]
+    func createAndPushTrip(
+        orgId: UUID,
+        vehicleId: UUID,
+        stops: [FleetTripStop],
+        companyBreaks: [CompanyBreakAllocation],
+        vehicleProfile: VehicleProfile?
+    ) async throws -> FleetTrip
+}
+
+/// Fleet store errors.
+public enum FleetStoreError: Error, Sendable, LocalizedError {
+    case tripNotFound
+    case invalidTrip(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .tripNotFound: "Fleet trip not found."
+        case .invalidTrip(let message): message
+        }
+    }
 }

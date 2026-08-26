@@ -23,7 +23,10 @@ public struct DispatchConsoleView: View {
                     isPreviewLoading: viewModel.isPreviewLoading
                 )
                 .frame(minHeight: 280)
-                DispatchStatusPanel(trip: viewModel.activeTrip)
+                DispatchStatusPanel(
+                    trip: viewModel.activeTrip,
+                    vehicleLabel: viewModel.selectedVehicleLabel
+                )
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             #if os(macOS)

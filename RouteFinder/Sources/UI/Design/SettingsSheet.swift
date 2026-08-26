@@ -522,11 +522,23 @@ struct SettingsSheet: View {
                 #endif
                 .onSubmit { viewModel.saveFleetServerURLFromSettings() }
 
-            Text("LAN only — no auth in MVP. Run RouteFinderFleetServer on the dispatch Mac, then enter http://<mac-ip>:8080. Changes apply immediately without restarting the app. Do not expose to the public internet.")
+            SecureField("Fleet API key (optional)", text: $viewModel.fleetServerAPIKeyText)
+                .textFieldStyle(GlassTextFieldStyle())
+                #if os(iOS)
+                .textInputAutocapitalization(.never)
+                #endif
+                .onSubmit { viewModel.saveFleetServerURLFromSettings() }
+
+            Text("LAN only — shared-secret auth when the server is started with --api-key. Use https:// when TLS is enabled. Changes apply immediately without restarting the app. Do not expose to the public internet.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 
             Button("Save fleet server URL") {
+                viewModel.saveFleetServerURLFromSettings()
+            }
+            .buttonStyle(.borderless)
+
+            Button("Save fleet API key") {
                 viewModel.saveFleetServerURLFromSettings()
             }
             .buttonStyle(.borderless)

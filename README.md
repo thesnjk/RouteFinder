@@ -65,9 +65,18 @@ cd RouteFinder
 swift run RouteFinderFleetServer --port 8080
 ```
 
-On the driver iPhone (same Wi‑Fi/LAN), open **Settings → Fleet dispatch**, enable **Use remote fleet server**, enter `http://<dispatch-mac-ip>:8080`, and tap **Test fleet connection**. Store mode switches immediately — no app restart required. Open the **Dispatch Console** window on macOS to push trips; the driver polls as usual.
+Optional shared-secret auth and TLS:
 
-**LAN only — no auth in MVP.** Do not expose the fleet server to the public internet.
+```bash
+swift run RouteFinderFleetServer --port 8080 --api-key "$ROUTEFINDER_FLEET_API_KEY" \
+  --tls-cert /path/to/cert.pem --tls-key /path/to/key.pem
+```
+
+For LAN HTTPS with a self-signed certificate, [mkcert](https://github.com/FiloSottile/mkcert) is a convenient option (`mkcert -install && mkcert localhost 192.168.x.x`).
+
+On the driver iPhone (same Wi‑Fi/LAN), open **Settings → Fleet dispatch**, enable **Use remote fleet server**, enter `http://<dispatch-mac-ip>:8080` (or `https://` when TLS is enabled), add the matching **Fleet API key** if required, and tap **Test fleet connection**. Store mode switches immediately — no app restart required. Open the **Dispatch Console** window on macOS to push trips; the driver polls as usual.
+
+**LAN / VPN only.** Do not expose the fleet server to the public internet without proper network controls.
 
 ### iOS app
 

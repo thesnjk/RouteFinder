@@ -29,17 +29,23 @@ public enum HTTPFleetStoreError: Error, Sendable, LocalizedError {
 /// Remote fleet store backed by the LAN Hummingbird fleet API.
 public actor HTTPFleetStore: FleetDispatchPort {
     private let baseURL: URL
+    private let apiKey: String?
     private let session: URLSession
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
 
     /// Creates an HTTP fleet client for the given server base URL.
-    public init(baseURL: URL, session: URLSession = .shared) {
+    public init(
+        baseURL: URL,
+        apiKey: String? = nil,
+        session: URLSession = FleetURLSession.shared
+    ) {
         var normalized = baseURL
         if normalized.path.hasSuffix("/") {
             normalized.deleteLastPathComponent()
         }
         self.baseURL = normalized
+        self.apiKey = apiKey?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
         self.session = session
         encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -151,6 +157,9 @@ public actor HTTPFleetStore: FleetDispatchPort {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let apiKey {
+            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        }
         if let body {
             request.httpBody = body
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -176,5 +185,11 @@ public actor HTTPFleetStore: FleetDispatchPort {
         }
         let body = String(data: data, encoding: .utf8) ?? ""
         return HTTPFleetStoreError.serverError(status: status, body: body)
+    }
+}
+
+private extension String {
+    var nilIfEmpty: String? {
+        isEmpty ? nil : self
     }
 }

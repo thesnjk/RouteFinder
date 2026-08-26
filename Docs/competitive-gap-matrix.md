@@ -1,11 +1,11 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-27 (fleet store hot-reload)  
+Last updated: 2026-08-27 (fleet auth + TLS)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then CarPlay parity, then fleet/dispatch, then advisory tacho + offline packs.
 
 > Parallel API refresh was attempted via `parallel-cli` but the API was unreachable from this environment (`APIConnectionError`). This matrix is maintained from the competitive plan’s live web sources plus a post-implementation codebase inventory. Re-run Parallel when `api.parallel.ai` is reachable.
 
-## Programme status (Phases 0–12)
+## Programme status (Phases 0–13)
 
 | Phase | Focus | Status |
 |---|---|---|
@@ -22,6 +22,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **10** | Multi-device fleet sync — Hummingbird LAN server + HTTPFleetStore | **Done** — `RouteFinderFleetServer` + Settings remote URL; hot-reload in Phase 12 |
 | **11** | Shareable trip brief PDF export — office-ready PDF from same context | **Done** — `TripBriefPDFRenderer` + share menu on driver and dispatch |
 | **12** | Fleet store hot-reload — switch disk/HTTP without app restart | **Done** — `fleetStoreConfigurationDidChange` + VM reload |
+| **13** | Fleet LAN auth + TLS — shared-secret API key + optional HTTPS | **Done** — `FleetAuthMiddleware` + Keychain client key |
 
 ### Remaining gaps (explicitly not claiming parity)
 
@@ -30,7 +31,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 - **Android Auto**
 - **In-process planet PBF** parser (pipeline uses osmium + `PBFPreprocessor` / tile scripts instead)
 - Paid live fuel-price API / SNAP booking
-- **Hosted fleet web portal / TLS / auth** (native dispatch + LAN Hummingbird server shipped; SaaS portal deferred)
+- **Hosted fleet web portal / multi-tenant SaaS** (native dispatch + secured LAN server shipped; hosted portal deferred)
 
 ## Competitor strengths (reference)
 

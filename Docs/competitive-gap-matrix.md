@@ -1,11 +1,11 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-27 (fleet auth + TLS)  
+Last updated: 2026-08-27 (Bonjour fleet discovery)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then CarPlay parity, then fleet/dispatch, then advisory tacho + offline packs.
 
 > Parallel API refresh was attempted via `parallel-cli` but the API was unreachable from this environment (`APIConnectionError`). This matrix is maintained from the competitive plan’s live web sources plus a post-implementation codebase inventory. Re-run Parallel when `api.parallel.ai` is reachable.
 
-## Programme status (Phases 0–13)
+## Programme status (Phases 0–14)
 
 | Phase | Focus | Status |
 |---|---|---|
@@ -23,6 +23,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **11** | Shareable trip brief PDF export — office-ready PDF from same context | **Done** — `TripBriefPDFRenderer` + share menu on driver and dispatch |
 | **12** | Fleet store hot-reload — switch disk/HTTP without app restart | **Done** — `fleetStoreConfigurationDidChange` + VM reload |
 | **13** | Fleet LAN auth + TLS — shared-secret API key + optional HTTPS | **Done** — `FleetAuthMiddleware` + Keychain client key |
+| **14** | Bonjour fleet server discovery — advertise + Settings LAN picker | **Done** — `_routefinder-fleet._tcp` + Discover in Settings |
 
 ### Remaining gaps (explicitly not claiming parity)
 

@@ -522,6 +522,48 @@ struct SettingsSheet: View {
                 #endif
                 .onSubmit { viewModel.saveFleetServerURLFromSettings() }
 
+            Button("Discover fleet servers on LAN") {
+                Task { await viewModel.discoverFleetServersOnLAN() }
+            }
+            .buttonStyle(.borderless)
+            .disabled(viewModel.isDiscoveringFleetServers)
+
+            if viewModel.isDiscoveringFleetServers {
+                HStack(spacing: RFSpacing.xs) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Discovering fleet servers…")
+                        .font(RFFont.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if let discoveryStatus = viewModel.fleetDiscoveryStatus {
+                Text(discoveryStatus)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            ForEach(viewModel.discoveredFleetServers) { server in
+                Button {
+                    viewModel.applyDiscoveredFleetServer(server)
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(server.displayName)
+                            .font(RFFont.caption)
+                        Text(server.baseURL.absoluteString)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.borderless)
+            }
+
+            Text("Discovery requires the same Wi‑Fi or LAN. The dispatch Mac must run RouteFinderFleetServer with Bonjour enabled (default).")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
             SecureField("Fleet API key (optional)", text: $viewModel.fleetServerAPIKeyText)
                 .textFieldStyle(GlassTextFieldStyle())
                 #if os(iOS)

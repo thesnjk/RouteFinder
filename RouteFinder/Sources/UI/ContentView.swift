@@ -78,23 +78,40 @@ public struct ContentView: View {
         .onAppear {
             viewModel.bindVault(session.vault)
         }
+        .task {
+            while !Task.isCancelled {
+                await viewModel.pollAndApplyFleetDispatch()
+                try? await Task.sleep(nanoseconds: 10_000_000_000)
+            }
+        }
     }
     #endif
 
     #if os(iOS)
     @EnvironmentObject private var weatherViewModel: WeatherViewModel
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     private var iOSLayout: some View {
-        MapWorkspaceView(viewModel: viewModel, mapBridge: mapBridge)
-            .onChange(of: weatherViewModel.effectiveCondition) { _, condition in
-                viewModel.environmentalContext = condition
-                viewModel.refreshSimulationEnvironment()
+        Group {
+            if horizontalSizeClass == .regular {
+                DispatchConsoleView()
+            } else {
+                MapWorkspaceView(viewModel: viewModel, mapBridge: mapBridge)
             }
-            .task {
-                viewModel.environmentalContext = weatherViewModel.effectiveCondition
-                viewModel.refreshSimulationEnvironment()
-                await viewModel.startLocationServicesIfNeeded()
+        }
+        .onChange(of: weatherViewModel.effectiveCondition) { _, condition in
+            viewModel.environmentalContext = condition
+            viewModel.refreshSimulationEnvironment()
+        }
+        .task {
+            viewModel.environmentalContext = weatherViewModel.effectiveCondition
+            viewModel.refreshSimulationEnvironment()
+            await viewModel.startLocationServicesIfNeeded()
+            while !Task.isCancelled {
+                await viewModel.pollAndApplyFleetDispatch()
+                try? await Task.sleep(nanoseconds: 10_000_000_000)
             }
+        }
     }
     #endif
 

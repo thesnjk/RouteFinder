@@ -183,6 +183,8 @@ public final class RouteViewModel {
     private var activeDispatchCompanyBreaks: [CompanyBreakAllocation] = []
     /// Shared fleet vehicle id for polling dispatched jobs (demo / MVP).
     public var fleetVehicleId: UUID?
+    /// Text binding for Settings fleet vehicle UUID entry.
+    public var fleetVehicleIdText: String = ""
     /// Last published fleet snapshot for dispatch console visibility.
     public var lastPublishedFleetSnapshot: FleetTripSnapshot?
 
@@ -413,6 +415,10 @@ public final class RouteViewModel {
         #endif
         wireNavigationPipeline()
         updateCloudRoutingBanner()
+        if let savedFleetVehicleId = FleetWorkspaceSettings.loadFleetVehicleId() {
+            fleetVehicleId = savedFleetVehicleId
+            fleetVehicleIdText = savedFleetVehicleId.uuidString
+        }
         Task { @MainActor [weak self] in
             await self?.hosClock.loadPersistedLog()
             self?.loadPersistedTachoSummary()
@@ -1351,14 +1357,35 @@ public final class RouteViewModel {
         do {
             let seeded = try await fleetStore.seedDemoThreeStopJob()
             fleetVehicleId = seeded.vehicle.id
+            fleetVehicleIdText = seeded.vehicle.id.uuidString
+            FleetWorkspaceSettings.saveFleetVehicleId(seeded.vehicle.id)
             await applyDispatchedTrip(seeded.trip)
         } catch {
             // Fall back to in-memory seed if disk persistence fails.
             let fallback = InMemoryFleetStore()
             let seeded = try await fallback.seedDemoThreeStopJob()
             fleetVehicleId = seeded.vehicle.id
+            fleetVehicleIdText = seeded.vehicle.id.uuidString
+            FleetWorkspaceSettings.saveFleetVehicleId(seeded.vehicle.id)
             await applyDispatchedTrip(seeded.trip)
         }
+    }
+
+    /// Persists the fleet vehicle id from Settings text entry.
+    public func saveFleetVehicleIdFromSettings() {
+        let trimmed = fleetVehicleIdText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let vehicleId = UUID(uuidString: trimmed) else { return }
+        fleetVehicleId = vehicleId
+        FleetWorkspaceSettings.saveFleetVehicleId(vehicleId)
+    }
+
+    /// Polls disk store for a newly pushed trip and applies it on the driver device.
+    public func pollAndApplyFleetDispatch() async {
+        saveFleetVehicleIdFromSettings()
+        guard let vehicleId = fleetVehicleId else { return }
+        guard let trip = try? await fleetStore.activeTrip(forVehicleId: vehicleId) else { return }
+        guard trip.id != activeDispatchTripId else { return }
+        await applyDispatchedTrip(trip)
     }
 
     /// Applies a pending traffic-aware alternate route when available.

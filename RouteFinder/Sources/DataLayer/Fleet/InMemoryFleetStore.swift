@@ -3,21 +3,21 @@ import Foundation
 
 /// In-memory fleet dispatch store for MVP / local demos (org → vehicles → trips).
 public actor InMemoryFleetStore: FleetDispatchPort {
-    private var orgs: [UUID: FleetOrg] = [:]
-    private var vehicles: [UUID: FleetVehicle] = [:]
-    private var trips: [UUID: FleetTrip] = [:]
+    private var orgById: [UUID: FleetOrg] = [:]
+    private var vehicleById: [UUID: FleetVehicle] = [:]
+    private var tripById: [UUID: FleetTrip] = [:]
     private var activeTripByVehicle: [UUID: UUID] = [:]
 
     public init() {}
 
     public func createOrg(name: String) async throws -> FleetOrg {
         let org = FleetOrg(name: name)
-        orgs[org.id] = org
+        orgById[org.id] = org
         return org
     }
 
     public func registerVehicle(_ vehicle: FleetVehicle) async throws -> FleetVehicle {
-        vehicles[vehicle.id] = vehicle
+        vehicleById[vehicle.id] = vehicle
         return vehicle
     }
 
@@ -25,18 +25,18 @@ public actor InMemoryFleetStore: FleetDispatchPort {
         var pushed = trip
         pushed.status = .dispatched
         pushed.updatedAt = Date()
-        trips[pushed.id] = pushed
+        tripById[pushed.id] = pushed
         activeTripByVehicle[pushed.vehicleId] = pushed.id
         return pushed
     }
 
     public func activeTrip(forVehicleId vehicleId: UUID) async throws -> FleetTrip? {
         guard let tripId = activeTripByVehicle[vehicleId] else { return nil }
-        return trips[tripId]
+        return tripById[tripId]
     }
 
     public func applySnapshot(_ snapshot: FleetTripSnapshot) async throws -> FleetTrip {
-        guard var trip = trips[snapshot.tripId] else {
+        guard var trip = tripById[snapshot.tripId] else {
             throw FleetStoreError.tripNotFound
         }
         let byId = Dictionary(uniqueKeysWithValues: trip.stops.map { ($0.id, $0) })
@@ -52,13 +52,39 @@ public actor InMemoryFleetStore: FleetDispatchPort {
         trip.status = snapshot.status
         trip.physicsETASeconds = snapshot.physicsETASeconds
         trip.predictiveReport = snapshot.predictiveReport
+        trip.predictedLayby = snapshot.predictedLayby
         trip.updatedAt = snapshot.updatedAt
-        trips[trip.id] = trip
+        tripById[trip.id] = trip
         return trip
     }
 
+    public func orgs() async throws -> [FleetOrg] {
+        Array(orgById.values).sorted { $0.name < $1.name }
+    }
+
+    public func vehicles(forOrgId orgId: UUID) async throws -> [FleetVehicle] {
+        vehicleById.values.filter { $0.orgId == orgId }.sorted { $0.label < $1.label }
+    }
+
+    public func createAndPushTrip(
+        orgId: UUID,
+        vehicleId: UUID,
+        stops: [FleetTripStop],
+        companyBreaks: [CompanyBreakAllocation] = [],
+        vehicleProfile: VehicleProfile? = nil
+    ) async throws -> FleetTrip {
+        let trip = try FleetTripBuilder.makeTrip(
+            orgId: orgId,
+            vehicleId: vehicleId,
+            stops: stops,
+            companyBreaks: companyBreaks,
+            vehicleProfile: vehicleProfile
+        )
+        return try await pushTrip(trip)
+    }
+
     public func trip(id: UUID) async throws -> FleetTrip? {
-        trips[id]
+        tripById[id]
     }
 
     /// Seeds a demo org, vehicle, and 3-stop UK job for acceptance testing.
@@ -111,15 +137,5 @@ public actor InMemoryFleetStore: FleetDispatchPort {
             )
         )
         return (org, vehicle, trip)
-    }
-}
-
-public enum FleetStoreError: Error, Sendable, LocalizedError {
-    case tripNotFound
-
-    public var errorDescription: String? {
-        switch self {
-        case .tripNotFound: "Fleet trip not found."
-        }
     }
 }

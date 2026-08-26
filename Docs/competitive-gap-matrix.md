@@ -17,7 +17,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **5** | Advisory tacho — DDD/JSON import, Can-I-drive, partner stub | **Done** |
 | **6** | Product hygiene — README, this matrix, glass surfaces | **Done** |
 | **7** | Layby prediction v2 — fused HOS + company breaks + physics + occupancy | **Done** — `LaybyPredictionEngine` + `CompanyBreakAllocation` on `FleetTrip` |
-| **8** | Native dispatch console — macOS window + iPad split + driver poll loop | **Done** — `DispatchConsoleView` + `DiskFleetStore` push/poll at $0 |
+| **8** | Native dispatch console — macOS window + iPad split + driver poll loop | **Done** — geocoded stops, ORS preview, push toast, iPad driver default |
 
 ### Remaining gaps (explicitly not claiming parity)
 

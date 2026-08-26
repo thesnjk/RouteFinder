@@ -90,13 +90,25 @@ public struct ContentView: View {
     #if os(iOS)
     @EnvironmentObject private var weatherViewModel: WeatherViewModel
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @AppStorage("iPadPrimaryMode") private var iPadPrimaryMode = "driver"
 
     private var iOSLayout: some View {
         Group {
-            if horizontalSizeClass == .regular {
-                DispatchConsoleView()
+            if horizontalSizeClass == .regular, iPadPrimaryMode == "dispatch" {
+                DispatchConsoleView(onExitDispatch: { iPadPrimaryMode = "driver" })
             } else {
-                MapWorkspaceView(viewModel: viewModel, mapBridge: mapBridge)
+                NavigationStack {
+                    MapWorkspaceView(viewModel: viewModel, mapBridge: mapBridge)
+                        .toolbar {
+                            if horizontalSizeClass == .regular {
+                                ToolbarItem(placement: .topBarTrailing) {
+                                    Button("Dispatch") {
+                                        iPadPrimaryMode = "dispatch"
+                                    }
+                                }
+                            }
+                        }
+                }
             }
         }
         .onChange(of: weatherViewModel.effectiveCondition) { _, condition in

@@ -4,6 +4,12 @@ import SwiftUI
 /// Dispatch detail: trip status, physics ETA, telemetry, predicted layby.
 struct DispatchStatusPanel: View {
     let trip: FleetTrip?
+    let vehicleLabel: String?
+
+    init(trip: FleetTrip?, vehicleLabel: String? = nil) {
+        self.trip = trip
+        self.vehicleLabel = vehicleLabel
+    }
 
     var body: some View {
         ScrollView {
@@ -15,7 +21,10 @@ struct DispatchStatusPanel: View {
                         etaRow(seconds: seconds)
                     }
                     if let report = trip.predictiveReport {
-                        PredictiveTelemetryReportView(report: report)
+                        PredictiveTelemetryReportView(
+                            report: report,
+                            briefContext: TripBriefContext.from(fleetTrip: trip, vehicleLabel: vehicleLabel)
+                        )
                     }
                     if let layby = trip.predictedLayby {
                         laybyCard(layby)
@@ -36,6 +45,16 @@ struct DispatchStatusPanel: View {
             Text("Status")
                 .font(RFFont.sectionTitle)
             Spacer()
+            if trip.predictiveReport != nil || trip.physicsETASeconds != nil {
+                ShareLink(
+                    item: TripBriefFormatter.plainText(
+                        from: TripBriefContext.from(fleetTrip: trip, vehicleLabel: vehicleLabel)
+                    )
+                ) {
+                    Label("Share brief", systemImage: "square.and.arrow.up")
+                        .font(RFFont.caption)
+                }
+            }
             Text(trip.status.rawValue.capitalized)
                 .font(RFFont.caption.weight(.semibold))
                 .padding(.horizontal, 10)

@@ -2156,10 +2156,7 @@ public final class RouteViewModel {
                 journeyPhysicsETASeconds = report.kineticPhysicsETASeconds
                 journeyETAAnchorDate = Date()
                 navigationCoordinator.updateStaticTotalTime(report.kineticPhysicsETASeconds)
-                tripBriefShareText = TripBriefFormatter.plainText(
-                    from: report,
-                    hosForecast: hosEnabled ? hosForecast : nil
-                )
+                tripBriefShareText = TripBriefFormatter.plainText(from: tripBriefContext())
                 if activeDispatchTripId != nil {
                     await publishDispatchSnapshot(status: .rehearsed)
                 }
@@ -2169,14 +2166,44 @@ public final class RouteViewModel {
 
     /// Refreshes share text from the current predictive telemetry report, if any.
     public func refreshTripBriefShareText() {
-        guard let report = simulationEngine.telemetryReport else {
+        let context = tripBriefContext()
+        guard context.predictiveReport != nil || context.physicsETASeconds != nil || !context.stops.isEmpty else {
             tripBriefShareText = nil
             return
         }
-        tripBriefShareText = TripBriefFormatter.plainText(
-            from: report,
-            hosForecast: hosEnabled ? hosForecast : nil
+        tripBriefShareText = TripBriefFormatter.plainText(from: context)
+    }
+
+    /// Builds the unified shareable trip brief from current driver state.
+    public func tripBriefContext() -> TripBriefContext {
+        let stops = routeWaypoints.compactMap { waypoint -> TripBriefStop? in
+            let label = waypoint.rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !label.isEmpty else { return nil }
+            return TripBriefStop(label: label, role: waypoint.role.rawValue)
+        }
+        let status: String? = activeDispatchTripId.map { _ in
+            lastPublishedFleetSnapshot?.status.rawValue.capitalized ?? "Dispatched"
+        }
+        return TripBriefContext(
+            predictiveReport: simulationEngine.telemetryReport,
+            hosForecast: hosEnabled ? hosForecast : nil,
+            laybyAdvisory: laybyAdvisory,
+            stops: stops,
+            companyBreaks: activeDispatchCompanyBreaks,
+            physicsETASeconds: journeyPhysicsETASeconds,
+            vehicleLabel: tripBriefVehicleLabel(),
+            tripStatus: status
         )
+    }
+
+    private func tripBriefVehicleLabel() -> String? {
+        if let name = resolvedVehicleProfile().savedProfileName, !name.isEmpty {
+            return name
+        }
+        if !vehicleRegistration.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return vehicleRegistration
+        }
+        return isHGVMode ? "HGV" : nil
     }
 
     private func handleKineticUIState(_ uiState: SimulationUIState) {
@@ -2272,6 +2299,7 @@ public final class RouteViewModel {
             speedMps: speedMps,
             predictionInput: input
         )
+        refreshTripBriefShareText()
     }
 
     /// Marks the current layby as full and advances to the next candidate.

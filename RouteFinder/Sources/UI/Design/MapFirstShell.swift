@@ -98,7 +98,10 @@ struct MapFirstShell: View {
         .sheet(isPresented: $isTelemetryPresented) {
             if let report = viewModel.simulationEngine.telemetryReport {
                 ScrollView {
-                    PredictiveTelemetryReportView(report: report)
+                    PredictiveTelemetryReportView(
+                        report: report,
+                        briefContext: viewModel.tripBriefContext()
+                    )
                         .padding(RFSpacing.lg)
                 }
                 .frame(minWidth: 480, minHeight: 420)

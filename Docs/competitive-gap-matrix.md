@@ -18,6 +18,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **6** | Product hygiene — README, this matrix, glass surfaces | **Done** |
 | **7** | Layby prediction v2 — fused HOS + company breaks + physics + occupancy | **Done** — `LaybyPredictionEngine` + `CompanyBreakAllocation` on `FleetTrip` |
 | **8** | Native dispatch console — macOS window + iPad split + driver poll loop | **Done** — geocoded stops, ORS preview, push toast, iPad driver default |
+| **9** | Shareable predictive trip brief — unified telemetry + HOS + layby + fleet | **Done** — `TripBriefContext` + ShareLink on driver and dispatch |
 
 ### Remaining gaps (explicitly not claiming parity)
 
@@ -62,7 +63,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 
 1. Pre-trip physics rehearsal of the constrained route (“Rehearse Route”)
 2. Live kinetic advisories (brake fade / grade / slip) fused with voice
-3. Shareable predictive trip brief / risk index
+3. Shareable predictive trip brief / risk index — **shipped** (unified plain-text brief + ShareLink)
 4. UK plate → dims + DVLA registry chain
 5. Physics ETA published back to dispatch on fleet trips
 6. Honest advisory tacho (import + clock) that never claims to replace the VU
@@ -91,6 +92,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 - [x] Advisory HOS clock + rest forecast + DDD/JSON import
 - [x] Offline routing tiles + local map-pack path (Phase 3–4)
 - [x] Fused layby prediction v2 (HOS + company breaks + physics + occupancy)
+- [x] Shareable predictive trip brief (driver + dispatch ShareLink)
 - [ ] Parallel deep-research refresh (blocked: API unreachable)
 - [ ] Full Samsara-class remote VU (partner, don’t rebuild)
 

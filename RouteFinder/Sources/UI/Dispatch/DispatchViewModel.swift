@@ -174,6 +174,18 @@ public final class DispatchViewModel {
         await refreshRoutePreview()
     }
 
+    /// Label for the selected vehicle (dispatch brief header).
+    public var selectedVehicleLabel: String? {
+        guard let vehicleId = selectedVehicleId,
+              let vehicle = vehicles.first(where: { $0.id == vehicleId }) else {
+            return nil
+        }
+        if let plate = vehicle.registrationPlate, !plate.isEmpty {
+            return "\(vehicle.label) (\(plate))"
+        }
+        return vehicle.label
+    }
+
     /// Returns geocode suggestions for a stop row.
     public func suggestions(for stopId: UUID) -> [GeocodeSuggestion] {
         searchSuggestions[stopId] ?? []

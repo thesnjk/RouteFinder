@@ -106,7 +106,8 @@ public actor InMemoryFleetStore: FleetDispatchPort {
                         role: .destination
                     ),
                 ],
-                vehicleProfile: vehicle.profile
+                vehicleProfile: vehicle.profile,
+                companyBreaks: [CompanyBreakAllocation.demoAfternoonBreak()]
             )
         )
         return (org, vehicle, trip)

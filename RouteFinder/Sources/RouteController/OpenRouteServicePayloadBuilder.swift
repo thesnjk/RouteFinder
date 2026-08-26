@@ -163,11 +163,15 @@ struct ORSAvoidPolygonsGeoJSON: Encodable {
         }
     }
 
+    enum CodingKeys: String, CodingKey {
+        case type
+        case coordinates
+    }
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encodeIfPresent(avoidFeatures, forKey: .avoidFeatures)
-        try container.encodeIfPresent(profileParams, forKey: .profileParams)
-        try container.encodeIfPresent(extraInfo, forKey: .extraInfo)
+        try container.encode(type, forKey: .type)
+        try container.encode(coordinates, forKey: .coordinates)
     }
 }
 

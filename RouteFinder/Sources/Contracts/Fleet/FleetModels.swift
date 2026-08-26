@@ -87,6 +87,8 @@ public struct FleetTrip: Sendable, Hashable, Codable, Equatable, Identifiable {
     public var vehicleProfile: VehicleProfile?
     public var physicsETASeconds: TimeInterval?
     public var predictiveReport: PredictiveTelemetryReport?
+    /// Company-defined break windows allocated by dispatch (planning aid only).
+    public var companyBreaks: [CompanyBreakAllocation]
     public var updatedAt: Date
 
     public init(
@@ -98,6 +100,7 @@ public struct FleetTrip: Sendable, Hashable, Codable, Equatable, Identifiable {
         vehicleProfile: VehicleProfile? = nil,
         physicsETASeconds: TimeInterval? = nil,
         predictiveReport: PredictiveTelemetryReport? = nil,
+        companyBreaks: [CompanyBreakAllocation] = [],
         updatedAt: Date = Date()
     ) {
         self.id = id
@@ -108,6 +111,7 @@ public struct FleetTrip: Sendable, Hashable, Codable, Equatable, Identifiable {
         self.vehicleProfile = vehicleProfile
         self.physicsETASeconds = physicsETASeconds
         self.predictiveReport = predictiveReport
+        self.companyBreaks = companyBreaks
         self.updatedAt = updatedAt
     }
 }
@@ -119,6 +123,8 @@ public struct FleetTripSnapshot: Sendable, Hashable, Codable, Equatable {
     public var orderedStopIds: [UUID]
     public var physicsETASeconds: TimeInterval?
     public var predictiveReport: PredictiveTelemetryReport?
+    /// Driver device prediction of the layby the driver will need (fused ranker).
+    public var predictedLayby: LaybyAdvisory?
     public var updatedAt: Date
 
     public init(
@@ -127,6 +133,7 @@ public struct FleetTripSnapshot: Sendable, Hashable, Codable, Equatable {
         orderedStopIds: [UUID],
         physicsETASeconds: TimeInterval? = nil,
         predictiveReport: PredictiveTelemetryReport? = nil,
+        predictedLayby: LaybyAdvisory? = nil,
         updatedAt: Date = Date()
     ) {
         self.tripId = tripId
@@ -134,6 +141,7 @@ public struct FleetTripSnapshot: Sendable, Hashable, Codable, Equatable {
         self.orderedStopIds = orderedStopIds
         self.physicsETASeconds = physicsETASeconds
         self.predictiveReport = predictiveReport
+        self.predictedLayby = predictedLayby
         self.updatedAt = updatedAt
     }
 }

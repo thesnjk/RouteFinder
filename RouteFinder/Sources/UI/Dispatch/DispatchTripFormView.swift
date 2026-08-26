@@ -4,6 +4,7 @@ import SwiftUI
 /// Dispatch sidebar: org/vehicle selection, stops, break window, push action.
 struct DispatchTripFormView: View {
     @Bindable var viewModel: DispatchViewModel
+    @FocusState private var focusedStopId: UUID?
 
     var body: some View {
         ScrollView {
@@ -33,6 +34,9 @@ struct DispatchTripFormView: View {
         }
         .onChange(of: viewModel.selectedOrgId) { _, _ in
             Task { await viewModel.orgSelectionChanged() }
+        }
+        .onChange(of: viewModel.draft) { _, _ in
+            Task { await viewModel.refreshRoutePreview() }
         }
     }
 
@@ -120,7 +124,8 @@ struct DispatchTripFormView: View {
     }
 
     private func stopRow(index: Int) -> some View {
-        VStack(alignment: .leading, spacing: RFSpacing.xs) {
+        let stopId = viewModel.draft.stops[index].id
+        return VStack(alignment: .leading, spacing: RFSpacing.xs) {
             HStack {
                 Text("Stop \(index + 1)")
                     .font(RFFont.caption.weight(.semibold))
@@ -134,14 +139,33 @@ struct DispatchTripFormView: View {
                     .buttonStyle(.plain)
                 }
             }
-            TextField("Label", text: $viewModel.draft.stops[index].label)
-                .textFieldStyle(GlassTextFieldStyle())
-            HStack(spacing: RFSpacing.sm) {
-                TextField("Latitude", text: $viewModel.draft.stops[index].latitude)
-                    .textFieldStyle(GlassTextFieldStyle())
-                TextField("Longitude", text: $viewModel.draft.stops[index].longitude)
-                    .textFieldStyle(GlassTextFieldStyle())
+            LocationSearchField(
+                placeholder: stopPlaceholder(index: index),
+                text: $viewModel.draft.stops[index].label,
+                focusTag: stopId,
+                focusedWaypointID: $focusedStopId,
+                resolutionStatus: viewModel.resolutionStatus(for: stopId),
+                feedback: viewModel.feedback(for: stopId),
+                suggestions: viewModel.suggestions(for: stopId),
+                onQueryChange: { viewModel.updateSearchSuggestions(for: stopId, query: $0) },
+                onPinTap: {},
+                onSelect: { suggestion in
+                    Task { await viewModel.applySuggestion(suggestion, for: stopId) }
+                }
+            )
+            if viewModel.resolutionStatus(for: stopId) == .resolved {
+                Text("\(viewModel.draft.stops[index].latitude), \(viewModel.draft.stops[index].longitude)")
+                    .font(RFFont.caption)
+                    .foregroundStyle(.secondary)
             }
+        }
+    }
+
+    private func stopPlaceholder(index: Int) -> String {
+        switch index {
+        case 0: return "Origin — search address"
+        case viewModel.draft.stops.count - 1: return "Destination — search address"
+        default: return "Stop \(index + 1) — search address"
         }
     }
 

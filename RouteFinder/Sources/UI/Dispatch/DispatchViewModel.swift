@@ -40,7 +40,7 @@ public final class DispatchViewModel {
 
     /// Creates a dispatch view model backed by the shared disk store.
     public init(store: (any FleetDispatchPort)? = nil) {
-        self.store = store ?? DiskFleetStore()
+        self.store = store ?? FleetStoreFactory.makeStore()
     }
 
     /// Loads orgs and vehicles from disk.

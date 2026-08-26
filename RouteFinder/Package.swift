@@ -32,6 +32,7 @@ let package = Package(
         .executable(name: "RouteFinderMacApp", targets: ["RouteFinderMacApp"]),
         .executable(name: "RouteFinderIOS", targets: ["RouteFinderIOS"]),
         .executable(name: "PBFPreprocessor", targets: ["PBFPreprocessor"]),
+        .executable(name: "RouteFinderFleetServer", targets: ["RouteFinderFleetServer"]),
     ],
 
     // ── Apple Collection & Algorithm Packages ──────────────
@@ -49,6 +50,10 @@ let package = Package(
         .package(
             url: "https://github.com/apple/swift-testing.git",
             exact: "0.99.0"
+        ),
+        .package(
+            url: "https://github.com/hummingbird-project/hummingbird.git",
+            from: "2.0.0"
         ),
     ],
 
@@ -235,6 +240,24 @@ let package = Package(
             ]
         ),
 
+        .target(
+            name: "FleetServerCore",
+            dependencies: [
+                "Contracts",
+                "DataLayer",
+                .product(name: "Hummingbird", package: "hummingbird"),
+            ]
+        ),
+
+        .executableTarget(
+            name: "RouteFinderFleetServer",
+            dependencies: [
+                "FleetServerCore",
+                "DataLayer",
+                .product(name: "Hummingbird", package: "hummingbird"),
+            ]
+        ),
+
         // ══════════════════════════════════════════════════════
         // Test targets (one per module)
         // ══════════════════════════════════════════════════════
@@ -259,6 +282,8 @@ let package = Package(
                 "DataLayer",
                 "CostModel",
                 "RouteController",
+                "FleetServerCore",
+                .product(name: "Hummingbird", package: "hummingbird"),
                 .product(name: "Testing", package: "swift-testing"),
             ]
         ),

@@ -185,6 +185,12 @@ public final class RouteViewModel {
     public var fleetVehicleId: UUID?
     /// Text binding for Settings fleet vehicle UUID entry.
     public var fleetVehicleIdText: String = ""
+    /// Text binding for Settings fleet server URL entry.
+    public var fleetServerURLText: String = ""
+    /// Whether Settings uses the remote fleet HTTP server.
+    public var useRemoteFleetServer: Bool = false
+    /// Last fleet server connection test result for Settings UI.
+    public var fleetServerConnectionStatus: String?
     /// Last published fleet snapshot for dispatch console visibility.
     public var lastPublishedFleetSnapshot: FleetTripSnapshot?
 
@@ -349,7 +355,7 @@ public final class RouteViewModel {
     private let laybyCatalogService = LaybyCatalogService()
     private let truckPoiRepository = OverpassTruckPoiRepository()
     private let crowdEventIngest = LocalCrowdEventIngest()
-    private let fleetStore = DiskFleetStore()
+    private let fleetStore: any FleetDispatchPort = FleetStoreFactory.makeStore()
     /// In-memory driver alert bus (HOS and related).
     public let hosAlertBus: InMemoryDriverAlertBus
     /// Advisory EU 561 hours-of-service clock.
@@ -418,6 +424,10 @@ public final class RouteViewModel {
         if let savedFleetVehicleId = FleetWorkspaceSettings.loadFleetVehicleId() {
             fleetVehicleId = savedFleetVehicleId
             fleetVehicleIdText = savedFleetVehicleId.uuidString
+        }
+        useRemoteFleetServer = FleetWorkspaceSettings.useRemoteFleetServer()
+        if let serverURL = FleetWorkspaceSettings.loadFleetServerURL() {
+            fleetServerURLText = serverURL.absoluteString
         }
         Task { @MainActor [weak self] in
             await self?.hosClock.loadPersistedLog()
@@ -1352,10 +1362,10 @@ public final class RouteViewModel {
         }
     }
 
-    /// Seeds a demo 3-stop UK job and applies it to the driver device (persisted via DiskFleetStore).
+    /// Seeds a demo 3-stop UK job and applies it to the driver device.
     public func acceptDemoFleetDispatch() async throws {
         do {
-            let seeded = try await fleetStore.seedDemoThreeStopJob()
+            let seeded = try await DiskFleetStore().seedDemoThreeStopJob()
             fleetVehicleId = seeded.vehicle.id
             fleetVehicleIdText = seeded.vehicle.id.uuidString
             FleetWorkspaceSettings.saveFleetVehicleId(seeded.vehicle.id)
@@ -1377,6 +1387,34 @@ public final class RouteViewModel {
         guard let vehicleId = UUID(uuidString: trimmed) else { return }
         fleetVehicleId = vehicleId
         FleetWorkspaceSettings.saveFleetVehicleId(vehicleId)
+    }
+
+    /// Persists fleet server settings from Settings text fields.
+    public func saveFleetServerURLFromSettings() {
+        let trimmed = fleetServerURLText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            FleetWorkspaceSettings.saveFleetServerURL(nil)
+        } else if let url = URL(string: trimmed) {
+            FleetWorkspaceSettings.saveFleetServerURL(url)
+            fleetServerURLText = url.absoluteString
+        }
+        FleetWorkspaceSettings.saveUseRemoteFleetServer(useRemoteFleetServer)
+    }
+
+    /// Tests connectivity to the configured fleet HTTP server.
+    public func testFleetServerConnection() async {
+        saveFleetServerURLFromSettings()
+        guard let url = FleetWorkspaceSettings.loadFleetServerURL() else {
+            fleetServerConnectionStatus = "Enter a fleet server URL first."
+            return
+        }
+        let client = HTTPFleetStore(baseURL: url)
+        do {
+            let health = try await client.checkHealth()
+            fleetServerConnectionStatus = health.ok ? "Connected to fleet server." : "Server responded but health check failed."
+        } catch {
+            fleetServerConnectionStatus = error.localizedDescription
+        }
     }
 
     /// Polls disk store for a newly pushed trip and applies it on the driver device.

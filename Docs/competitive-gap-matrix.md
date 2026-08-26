@@ -1,11 +1,11 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-26 (native dispatch console)  
+Last updated: 2026-08-27 (multi-device fleet sync)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then CarPlay parity, then fleet/dispatch, then advisory tacho + offline packs.
 
 > Parallel API refresh was attempted via `parallel-cli` but the API was unreachable from this environment (`APIConnectionError`). This matrix is maintained from the competitive plan’s live web sources plus a post-implementation codebase inventory. Re-run Parallel when `api.parallel.ai` is reachable.
 
-## Programme status (Phases 0–8)
+## Programme status (Phases 0–10)
 
 | Phase | Focus | Status |
 |---|---|---|
@@ -19,6 +19,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **7** | Layby prediction v2 — fused HOS + company breaks + physics + occupancy | **Done** — `LaybyPredictionEngine` + `CompanyBreakAllocation` on `FleetTrip` |
 | **8** | Native dispatch console — macOS window + iPad split + driver poll loop | **Done** — geocoded stops, ORS preview, push toast, iPad driver default |
 | **9** | Shareable predictive trip brief — unified telemetry + HOS + layby + fleet | **Done** — `TripBriefContext` + ShareLink on driver and dispatch |
+| **10** | Multi-device fleet sync — Hummingbird LAN server + HTTPFleetStore | **Done** — `RouteFinderFleetServer` + Settings remote URL |
 
 ### Remaining gaps (explicitly not claiming parity)
 
@@ -27,7 +28,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 - **Android Auto**
 - **In-process planet PBF** parser (pipeline uses osmium + `PBFPreprocessor` / tile scripts instead)
 - Paid live fuel-price API / SNAP booking
-- **Hosted fleet web portal** (native macOS/iPad dispatch console shipped; Hummingbird/OpenAPI deferred until multi-device sync)
+- **Hosted fleet web portal / TLS / auth** (native dispatch + LAN Hummingbird server shipped; SaaS portal deferred)
 
 ## Competitor strengths (reference)
 
@@ -54,7 +55,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | Multi-stop optimize | Shipped | Shipped | Strong | Existing |
 | Live traffic affecting route choice | **TomTom flow → ORS avoid_polygons reroute** | Strong | Strong | Phase 2 |
 | HOS / tacho | **Advisory EU 561 + JSON/DDD import + Can-I-drive** (VU remains legal) | Weak | **Strong** | Phase 1 + 5; partner port stubbed |
-| Fleet dispatch / shared physics ETA | **Shipped** (native dispatch console + `DiskFleetStore` push/poll + predicted layby) | Weak | **Strong** | Phase 8 |
+| Fleet dispatch / shared physics ETA | **Shipped** (native dispatch + LAN sync + trip brief ShareLink) | Weak | **Strong** | Phase 8–10 |
 | Predictive layby / break stop | **Strong** (fused HOS + company window + physics + occupancy; $0 APIs) | Weak (CoPilot: HOS breaks + paid parking hold) | Weak | **Wedge vs CoPilot** — no parking booking fee |
 | Driver community dock/parking intel | Hazard / crowd confidence on POIs | Garmin community | Crowdsource | Partial |
 | Walkaround inspection | **Local DVSA checklist + disk store** | Varies | Strong | Glass UI |

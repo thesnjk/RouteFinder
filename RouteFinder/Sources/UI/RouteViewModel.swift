@@ -187,6 +187,8 @@ public final class RouteViewModel {
     public var fleetVehicleIdText: String = ""
     /// Text binding for Settings fleet server URL entry.
     public var fleetServerURLText: String = ""
+    /// Text binding for Settings fleet server API key entry.
+    public var fleetServerAPIKeyText: String = ""
     /// Whether Settings uses the remote fleet HTTP server.
     public var useRemoteFleetServer: Bool = false
     /// Last fleet server connection test result for Settings UI.
@@ -431,6 +433,7 @@ public final class RouteViewModel {
         if let serverURL = FleetWorkspaceSettings.loadFleetServerURL() {
             fleetServerURLText = serverURL.absoluteString
         }
+        fleetServerAPIKeyText = (try? FleetServerCredentials.loadAPIKey()) ?? ""
         fleetStoreConfigurationObserver = NotificationCenter.default.addObserver(
             forName: .fleetStoreConfigurationDidChange,
             object: nil,
@@ -1418,6 +1421,7 @@ public final class RouteViewModel {
             useRemote: useRemoteFleetServer,
             serverURL: serverURL
         )
+        try? FleetServerCredentials.saveAPIKey(fleetServerAPIKeyText)
     }
 
     /// Replaces the active fleet store from current workspace settings.
@@ -1438,7 +1442,9 @@ public final class RouteViewModel {
             fleetServerConnectionStatus = "Enter a fleet server URL first."
             return
         }
-        let client = HTTPFleetStore(baseURL: url)
+        let trimmedKey = fleetServerAPIKeyText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let apiKey = trimmedKey.isEmpty ? nil : trimmedKey
+        let client = HTTPFleetStore(baseURL: url, apiKey: apiKey)
         do {
             let health = try await client.checkHealth()
             fleetServerConnectionStatus = health.ok ? "Connected to fleet server." : "Server responded but health check failed."

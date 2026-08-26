@@ -24,3 +24,14 @@ public struct FleetServerHealthResponse: Codable, Sendable, Equatable {
         self.version = version
     }
 }
+
+/// JSON error payload returned by the fleet HTTP server.
+public struct FleetErrorResponse: Codable, Sendable, Equatable {
+    /// Human-readable error message.
+    public let error: String
+
+    /// Creates a fleet error payload.
+    public init(error: String) {
+        self.error = error
+    }
+}

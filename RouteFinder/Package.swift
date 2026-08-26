@@ -246,6 +246,7 @@ let package = Package(
                 "Contracts",
                 "DataLayer",
                 .product(name: "Hummingbird", package: "hummingbird"),
+                .product(name: "HummingbirdTLS", package: "hummingbird"),
             ]
         ),
 
@@ -255,6 +256,7 @@ let package = Package(
                 "FleetServerCore",
                 "DataLayer",
                 .product(name: "Hummingbird", package: "hummingbird"),
+                .product(name: "HummingbirdTLS", package: "hummingbird"),
             ]
         ),
 

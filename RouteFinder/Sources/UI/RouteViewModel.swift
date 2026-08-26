@@ -179,6 +179,8 @@ public final class RouteViewModel {
 
     /// Active fleet trip id when the driver device is working a dispatch.
     public var activeDispatchTripId: UUID?
+    /// Company break windows from the active dispatched trip.
+    private var activeDispatchCompanyBreaks: [CompanyBreakAllocation] = []
     /// Shared fleet vehicle id for polling dispatched jobs (demo / MVP).
     public var fleetVehicleId: UUID?
     /// Last published fleet snapshot for dispatch console visibility.
@@ -1175,7 +1177,7 @@ public final class RouteViewModel {
             pathDurationsSeconds: durations,
             pathArcLengthsMeters: arcs,
             upcomingTruckPois: upcomingTruckPois,
-            kineticStress: nil
+            kineticStress: hosPathKineticStress()
         )
         let base = await hosClock.forecast(pathDurationsSeconds: durations)
         hosForecast = HosRestInsertionResult(
@@ -1212,6 +1214,52 @@ public final class RouteViewModel {
             return durations
         }
         return Array(repeating: total / Double(segmentCount), count: segmentCount)
+    }
+
+    private func hosPathArcLengthsMeters() -> [Double]? {
+        guard routeCumulativeLengths.count >= 2 else { return nil }
+        let durations = hosPathDurationsSeconds()
+        if routeCumulativeLengths.count == durations.count + 1 {
+            return Array(routeCumulativeLengths.dropFirst())
+        }
+        if routeCumulativeLengths.count == durations.count {
+            return routeCumulativeLengths
+        }
+        return nil
+    }
+
+    private func hosPathKineticStress() -> [SegmentKineticStress]? {
+        guard routeCoordinates.count >= 2 else { return nil }
+        let path = routeCoordinates.map {
+            GeoCoordinate3D(latitude: $0.latitude, longitude: $0.longitude, elevationMeters: nil)
+        }
+        let weightTons = VehicleDimensionParser.parseOptional(vehicleWeight) ?? 44
+        let segments = KineticGradientAnalyzer.analyzeTopology(path: path, weightTons: weightTons)
+        guard !segments.isEmpty else { return nil }
+        return segments
+    }
+
+    private func laybyPredictionInput(
+        currentArcLengthMeters: Double,
+        speedMps: Double
+    ) -> LaybyPredictionInput {
+        let hosRemainingContinuous = hosEnabled ? hosSnapshot?.remainingContinuousDriveSeconds : nil
+        let hosRemainingDaily = hosEnabled ? hosSnapshot?.remainingDailyDriveSeconds : nil
+        let trafficFactor = trafficRerouteAvailable
+            ? LaybyPredictionEngine.defaultTrafficInflationFactor
+            : nil
+        return LaybyPredictionInput(
+            candidates: upcomingLaybys,
+            currentArcLengthMeters: currentArcLengthMeters,
+            speedMps: speedMps,
+            pathDurationsSeconds: hosPathDurationsSeconds(),
+            pathArcLengthsMeters: hosPathArcLengthsMeters(),
+            remainingContinuousDriveSeconds: hosRemainingContinuous,
+            remainingDailyDriveSeconds: hosRemainingDaily,
+            companyBreaks: activeDispatchCompanyBreaks,
+            kineticStress: hosPathKineticStress(),
+            trafficInflationFactor: trafficFactor
+        )
     }
 
     /// Reorders intermediate stops for minimum travel time, then optionally recalculates the route.
@@ -1266,6 +1314,7 @@ public final class RouteViewModel {
     public func applyDispatchedTrip(_ trip: FleetTrip) async {
         activeDispatchTripId = trip.id
         fleetVehicleId = trip.vehicleId
+        activeDispatchCompanyBreaks = trip.companyBreaks
         if let profile = trip.vehicleProfile {
             applyProfile(profile)
             isHGVMode = true
@@ -1335,7 +1384,8 @@ public final class RouteViewModel {
             status: resolvedStatus,
             orderedStopIds: routeWaypoints.map(\.id),
             physicsETASeconds: journeyPhysicsETASeconds ?? physicsPredictedDurationSeconds,
-            predictiveReport: simulationEngine.telemetryReport
+            predictiveReport: simulationEngine.telemetryReport,
+            predictedLayby: laybyAdvisory
         )
         lastPublishedFleetSnapshot = snapshot
         _ = try? await fleetStore.applySnapshot(snapshot)
@@ -2180,18 +2230,37 @@ public final class RouteViewModel {
 
     /// Refreshes the layby advisory from the current simulation position.
     public func refreshLaybyAdvisory() async {
+        if hosEnabled {
+            hosSnapshot = await hosClock.snapshot()
+        }
         let arcLength = simulationEngine.currentArcLengthMeters
         let speedMps = max(simulationEngine.currentSpeedKmh / 3.6, 1.0)
-        laybyAdvisory = await laybyAdvisor.upcomingAdvisory(
+        let input = laybyPredictionInput(
             currentArcLengthMeters: arcLength,
             speedMps: speedMps
+        )
+        await laybyAdvisor.updatePredictionContext(input)
+        laybyAdvisory = await laybyAdvisor.upcomingAdvisory(
+            currentArcLengthMeters: arcLength,
+            speedMps: speedMps,
+            predictionInput: input
         )
     }
 
     /// Marks the current layby as full and advances to the next candidate.
     public func markCurrentLaybyFull() {
         Task { @MainActor in
-            _ = await laybyAdvisor.markCurrentFull()
+            let arcLength = simulationEngine.currentArcLengthMeters
+            let speedMps = max(simulationEngine.currentSpeedKmh / 3.6, 1.0)
+            let input = laybyPredictionInput(
+                currentArcLengthMeters: arcLength,
+                speedMps: speedMps
+            )
+            _ = await laybyAdvisor.markCurrentFull(
+                currentArcLengthMeters: arcLength,
+                speedMps: speedMps,
+                predictionInput: input
+            )
             await refreshLaybyAdvisory()
         }
     }

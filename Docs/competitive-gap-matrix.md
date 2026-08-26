@@ -1,6 +1,6 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-26  
+Last updated: 2026-08-26 (layby prediction v2)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then CarPlay parity, then fleet/dispatch, then advisory tacho + offline packs.
 
 > Parallel API refresh was attempted via `parallel-cli` but the API was unreachable from this environment (`APIConnectionError`). This matrix is maintained from the competitive plan’s live web sources plus a post-implementation codebase inventory. Re-run Parallel when `api.parallel.ai` is reachable.
@@ -16,6 +16,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **4** | Offline map packs in MapLibre WKWebView | **Done** — local HTTP pack server + bundled MapLibre preference |
 | **5** | Advisory tacho — DDD/JSON import, Can-I-drive, partner stub | **Done** |
 | **6** | Product hygiene — README, this matrix, glass surfaces | **Done** |
+| **7** | Layby prediction v2 — fused HOS + company breaks + physics + occupancy | **Done** — `LaybyPredictionEngine` + `CompanyBreakAllocation` on `FleetTrip` |
 
 ### Remaining gaps (explicitly not claiming parity)
 
@@ -24,7 +25,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 - **Android Auto**
 - **In-process planet PBF** parser (pipeline uses osmium + `PBFPreprocessor` / tile scripts instead)
 - Paid live fuel-price API / SNAP booking
-- Pre-built UK continent tile CDN hosting (app downloads packs; you still need to publish tiles)
+- **Fleet web portal** (native macOS/iPad dispatch console next; no hosted portal yet)
 
 ## Competitor strengths (reference)
 
@@ -51,7 +52,8 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | Multi-stop optimize | Shipped | Shipped | Strong | Existing |
 | Live traffic affecting route choice | **TomTom flow → ORS avoid_polygons reroute** | Strong | Strong | Phase 2 |
 | HOS / tacho | **Advisory EU 561 + JSON/DDD import + Can-I-drive** (VU remains legal) | Weak | **Strong** | Phase 1 + 5; partner port stubbed |
-| Fleet dispatch / shared physics ETA | **MVP** (disk-backed org→trip→snapshot) | Weak | **Strong** | Phase 2 |
+| Fleet dispatch / shared physics ETA | **MVP** (`DiskFleetStore` org→trip→snapshot + predicted layby) | Weak | **Strong** | Phase 2 + layby v2 |
+| Predictive layby / break stop | **Strong** (fused HOS + company window + physics + occupancy; $0 APIs) | Weak (CoPilot: HOS breaks + paid parking hold) | Weak | **Wedge vs CoPilot** — no parking booking fee |
 | Driver community dock/parking intel | Hazard / crowd confidence on POIs | Garmin community | Crowdsource | Partial |
 | Walkaround inspection | **Local DVSA checklist + disk store** | Varies | Strong | Glass UI |
 
@@ -63,6 +65,19 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 4. UK plate → dims + DVLA registry chain
 5. Physics ETA published back to dispatch on fleet trips
 6. Honest advisory tacho (import + clock) that never claims to replace the VU
+7. **Predictive layby ranker** — last feasible stop before advisory HOS / company break window, with physics upstream bias (CoPilot has HOS breaks; we add UK OSM laybys + physics at $0/hosting)
+
+### vs Trimble CoPilot (Aug 2026)
+
+| | CoPilot | RouteFinder |
+|---|---|---|
+| HOS break planning | ELD sync + rest stops on route | Advisory EU 561 + company `CompanyBreakAllocation` |
+| Predictive parking | Truck Parking Club booking (paid) | OSM layby + hour-of-day occupancy prior (free) |
+| Fleet portal | FleetPortal / Account Manager (per-seat SaaS) | `DiskFleetStore` MVP; native dispatch next |
+| Physics rehearsal | Absent | Pre-trip kinetic sim + physics ETA |
+| Cost at 1k drivers | Quote-only fleet seats | ORS free tier + optional TomTom; ranker is on-device |
+
+**Do not chase:** CoPilot parking booking, ELD vendor lock-in, Android-first CoPilot 11 parity yet.
 
 ## 90-day bar checklist
 
@@ -73,7 +88,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 - [x] Single-fleet MVP push trip + physics ETA snapshot
 - [x] Advisory HOS clock + rest forecast + DDD/JSON import
 - [x] Offline routing tiles + local map-pack path (Phase 3–4)
-- [x] Traffic-aware reroute + driving bans + walkaround inspection
+- [x] Fused layby prediction v2 (HOS + company breaks + physics + occupancy)
 - [ ] Parallel deep-research refresh (blocked: API unreachable)
 - [ ] Full Samsara-class remote VU (partner, don’t rebuild)
 
@@ -85,9 +100,10 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | Physics wedge differentiation | PhysicsWedge | Done |
 | CarPlay TBT + background GPS | CarPlayNav | Done |
 | UK truck living layer | UKLivingLayer | Done |
-| Fleet dispatch MVP | FleetBackend | Done (in-memory) |
+| Fleet dispatch MVP | FleetBackend | Done (`DiskFleetStore`) |
+| Predictive layby v2 | LaybyIntel | Done |
 | Advisory tacho + Can-I-drive | AdvisoryTacho | Done (Phase 5) |
-| Offline map packs | OfflineMaps | Pending |
+| Offline map packs | OfflineMaps | Done (Phase 4) |
 | Competitive intel refresh | CompetitiveIntel | Pending Parallel API |
 
 ## Sources

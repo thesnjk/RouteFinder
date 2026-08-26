@@ -1,6 +1,12 @@
 import Contracts
 import Foundation
 import Testing
+#if canImport(AppKit)
+import AppKit
+#endif
+#if canImport(UIKit)
+import UIKit
+#endif
 @testable import UI
 
 @Test func tripBriefFormatterSectionsIncludeExpectedTitles() {
@@ -116,4 +122,59 @@ private func fullTripBriefFixture() -> TripBriefContext {
 @Test func tripBriefPDFRendererProducesNonTrivialPayload() {
     let data = TripBriefPDFRenderer.pdfData(from: fullTripBriefFixture())
     #expect(data.count > 512)
+}
+
+@Test func tripBriefPDFRendererWithMapImageIsLargerThanTextOnly() throws {
+    let context = fullTripBriefFixture()
+    let textOnly = TripBriefPDFRenderer.pdfData(from: context)
+    let mapPNG = try #require(minimalPNGData())
+    let withMap = TripBriefPDFRenderer.pdfData(from: context, mapImagePNG: mapPNG)
+    #expect(withMap.count > textOnly.count)
+    let prefix = String(decoding: withMap.prefix(4), as: UTF8.self)
+    #expect(prefix == "%PDF")
+}
+
+@Test func tripBriefPDFRendererWithoutMapOmitsMapBlock() {
+    let context = fullTripBriefFixture()
+    let textOnly = TripBriefPDFRenderer.pdfData(from: context)
+    let withoutMap = TripBriefPDFRenderer.pdfData(from: context, mapImagePNG: nil)
+    #expect(withoutMap.count == textOnly.count)
+    let prefix = String(decoding: withoutMap.prefix(4), as: UTF8.self)
+    #expect(prefix == "%PDF")
+}
+
+#if os(macOS) || os(iOS)
+@Test func routeMapSnapshotRendererReturnsPNGForUKRoute() async {
+    let coordinates = [
+        Coordinate(latitude: 52.2053, longitude: 0.1218),
+        Coordinate(latitude: 52.4862, longitude: -1.8904),
+    ]
+    let png = await RouteMapSnapshotRenderer.snapshot(routeCoordinates: coordinates)
+    #expect(png != nil)
+    #expect((png?.count ?? 0) > 100)
+}
+#endif
+
+private func minimalPNGData() -> Data? {
+    #if canImport(UIKit)
+    let renderer = UIGraphicsImageRenderer(size: CGSize(width: 10, height: 10))
+    let image = renderer.image { context in
+        UIColor.systemBlue.setFill()
+        context.fill(CGRect(x: 0, y: 0, width: 10, height: 10))
+    }
+    return image.pngData()
+    #elseif canImport(AppKit)
+    let image = NSImage(size: NSSize(width: 10, height: 10))
+    image.lockFocus()
+    NSColor.systemBlue.setFill()
+    NSRect(x: 0, y: 0, width: 10, height: 10).fill()
+    image.unlockFocus()
+    guard let tiff = image.tiffRepresentation,
+          let bitmap = NSBitmapImageRep(data: tiff) else {
+        return nil
+    }
+    return bitmap.representation(using: .png, properties: [:])
+    #else
+    return nil
+    #endif
 }

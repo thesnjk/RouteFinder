@@ -7,7 +7,7 @@ Built as a Swift 6 Swift Package with SwiftUI, MapLibre (WKWebView), and HeiGIT 
 ## What it does
 
 - **Constraint routing** — length / width / height / weight / axle / hazmat / ADR tunnel codes via OpenRouteService
-- **Physics rehearsal** — pre-trip kinetic risk (grade, brake fade, slip) with a shareable trip brief (plain text or PDF)
+- **Physics rehearsal** — pre-trip kinetic risk (grade, brake fade, slip) with a shareable trip brief (plain text or PDF with route map when geometry is available)
 - **Hours of service (advisory)** — EU Regulation 561 / Working Time Directive clock, rest insertion suggestions, driver-card JSON/DDD import, “Can I drive now?”
 - **CarPlay** — turn-by-turn templates with voice coexistence hooks (iOS)
 - **UK living layer** — plate → vehicle profile (RegCheck + DVLA), truck POIs (fuel / parking / weigh / layby), LEZ / restriction banners

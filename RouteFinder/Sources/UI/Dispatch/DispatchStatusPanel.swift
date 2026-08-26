@@ -1,14 +1,32 @@
 import Contracts
+import CoreLocation
 import SwiftUI
 
 /// Dispatch detail: trip status, physics ETA, telemetry, predicted layby.
 struct DispatchStatusPanel: View {
     let trip: FleetTrip?
     let vehicleLabel: String?
+    let previewCoordinates: [CLLocationCoordinate2D]
 
-    init(trip: FleetTrip?, vehicleLabel: String? = nil) {
+    init(
+        trip: FleetTrip?,
+        vehicleLabel: String? = nil,
+        previewCoordinates: [CLLocationCoordinate2D] = []
+    ) {
         self.trip = trip
         self.vehicleLabel = vehicleLabel
+        self.previewCoordinates = previewCoordinates
+    }
+
+    private func tripBriefContext(for trip: FleetTrip) -> TripBriefContext {
+        let preview = previewCoordinates.map {
+            Coordinate(latitude: $0.latitude, longitude: $0.longitude)
+        }
+        return TripBriefContext.from(
+            fleetTrip: trip,
+            vehicleLabel: vehicleLabel,
+            previewCoordinates: preview
+        )
     }
 
     var body: some View {
@@ -23,7 +41,7 @@ struct DispatchStatusPanel: View {
                     if let report = trip.predictiveReport {
                         PredictiveTelemetryReportView(
                             report: report,
-                            briefContext: TripBriefContext.from(fleetTrip: trip, vehicleLabel: vehicleLabel)
+                            briefContext: tripBriefContext(for: trip)
                         )
                     }
                     if let layby = trip.predictedLayby {
@@ -47,7 +65,7 @@ struct DispatchStatusPanel: View {
             Spacer()
             if trip.predictiveReport != nil || trip.physicsETASeconds != nil {
                 TripBriefShareMenu(
-                    context: TripBriefContext.from(fleetTrip: trip, vehicleLabel: vehicleLabel),
+                    context: tripBriefContext(for: trip),
                     labelStyle: .caption
                 )
             }

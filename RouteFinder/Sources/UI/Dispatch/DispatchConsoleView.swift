@@ -25,7 +25,8 @@ public struct DispatchConsoleView: View {
                 .frame(minHeight: 280)
                 DispatchStatusPanel(
                     trip: viewModel.activeTrip,
-                    vehicleLabel: viewModel.selectedVehicleLabel
+                    vehicleLabel: viewModel.selectedVehicleLabel,
+                    previewCoordinates: viewModel.previewCoordinates
                 )
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

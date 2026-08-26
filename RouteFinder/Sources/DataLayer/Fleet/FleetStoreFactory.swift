@@ -7,7 +7,8 @@ public enum FleetStoreFactory {
     public static func makeStore(defaults: UserDefaults = .standard) -> any FleetDispatchPort {
         if FleetWorkspaceSettings.useRemoteFleetServer(defaults: defaults),
            let url = FleetWorkspaceSettings.loadFleetServerURL(defaults: defaults) {
-            return HTTPFleetStore(baseURL: url)
+            let apiKey = try? FleetServerCredentials.loadAPIKey()
+            return HTTPFleetStore(baseURL: url, apiKey: apiKey)
         }
         return DiskFleetStore()
     }

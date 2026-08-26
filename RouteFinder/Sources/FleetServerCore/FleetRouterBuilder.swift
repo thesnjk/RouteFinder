@@ -6,11 +6,15 @@ import Hummingbird
 /// Builds Hummingbird routes for the fleet dispatch REST API.
 public enum FleetRouterBuilder {
     /// Registers fleet API routes backed by the given store.
-    public static func buildRouter(store: DiskFleetStore) -> Router<BasicRequestContext> {
+    public static func buildRouter(store: DiskFleetStore, apiKey: String? = nil) -> Router<BasicRequestContext> {
         let router = Router(context: BasicRequestContext.self)
 
         router.get("health") { _, _ async throws -> Response in
             try jsonResponse(FleetServerHealthResponse(ok: true, version: "1"))
+        }
+
+        if let apiKey, !apiKey.isEmpty {
+            router.add(middleware: FleetAuthMiddleware(apiKey: apiKey))
         }
 
         router.get("v1/orgs") { _, _ async throws -> Response in

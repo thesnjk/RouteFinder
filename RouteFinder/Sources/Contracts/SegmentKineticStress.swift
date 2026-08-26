@@ -1,7 +1,7 @@
 import Foundation
 
 /// Pre-computed kinetic stress for a single route segment derived from 3D topology.
-public struct SegmentKineticStress: Codable, Sendable, Equatable {
+public struct SegmentKineticStress: Codable, Sendable, Equatable, Hashable {
     /// Road grade as a percentage (rise over run × 100).
     public let gradePercentage: Double
     /// Normalized brake thermal stress from 0.0 to 1.0 on descending grades.

@@ -224,10 +224,15 @@ public actor LaybyCatalogService {
     }
 }
 
+import Contracts
+import CostModel
+import Foundation
+
 /// Tracks upcoming laybys and advances past ones marked full.
 public actor LaybyAdvisor {
     private var candidates: [LaybyStop] = []
     private var skippedIds: Set<String> = []
+    private var lastPredictionInput: LaybyPredictionInput?
 
     /// Creates an empty advisor.
     public init() {}
@@ -238,47 +243,113 @@ public actor LaybyAdvisor {
             ($0.arcLengthAlongRouteMeters ?? 0) < ($1.arcLengthAlongRouteMeters ?? 0)
         }
         skippedIds.removeAll()
+        lastPredictionInput = nil
     }
 
     /// Clears candidates and skip state.
     public func reset() {
         candidates = []
         skippedIds.removeAll()
+        lastPredictionInput = nil
     }
 
-    /// Returns the next layby advisory ahead of the vehicle, if any.
+    /// Updates fused prediction context (HOS, company breaks, physics, traffic).
+    public func updatePredictionContext(_ input: LaybyPredictionInput) {
+        lastPredictionInput = LaybyPredictionInput(
+            candidates: candidates.isEmpty ? input.candidates : candidates,
+            skippedIds: skippedIds,
+            currentArcLengthMeters: input.currentArcLengthMeters,
+            speedMps: input.speedMps,
+            pathDurationsSeconds: input.pathDurationsSeconds,
+            pathArcLengthsMeters: input.pathArcLengthsMeters,
+            remainingContinuousDriveSeconds: input.remainingContinuousDriveSeconds,
+            remainingDailyDriveSeconds: input.remainingDailyDriveSeconds,
+            companyBreaks: input.companyBreaks,
+            kineticStress: input.kineticStress,
+            trafficInflationFactor: input.trafficInflationFactor,
+            now: input.now
+        )
+    }
+
+    /// Returns the next fused layby advisory ahead of the vehicle, if any.
     public func upcomingAdvisory(
         currentArcLengthMeters: Double,
-        speedMps: Double
+        speedMps: Double,
+        predictionInput: LaybyPredictionInput? = nil
     ) -> LaybyAdvisory? {
-        let ahead = candidates.first { stop in
-            guard !skippedIds.contains(stop.id) else { return false }
-            guard let arc = stop.arcLengthAlongRouteMeters else { return false }
-            return arc >= currentArcLengthMeters - 50
-        }
-        guard let stop = ahead, let arc = stop.arcLengthAlongRouteMeters else { return nil }
-        let remaining = max(0, arc - currentArcLengthMeters)
-        let eta = speedMps > 0.5 ? remaining / speedMps : nil
-        return LaybyAdvisory(
-            stop: stop,
-            distanceRemainingMeters: remaining,
-            estimatedArrivalSeconds: eta
+        let input = resolvedInput(
+            currentArcLengthMeters: currentArcLengthMeters,
+            speedMps: speedMps,
+            predictionInput: predictionInput
         )
+        return LaybyPredictionEngine.predict(input).primary
     }
 
     /// Marks the current upcoming layby as full and returns the next advisory if available.
     @discardableResult
     public func markCurrentFull(
         currentArcLengthMeters: Double = 0,
-        speedMps: Double = 1
+        speedMps: Double = 1,
+        predictionInput: LaybyPredictionInput? = nil
     ) -> LaybyAdvisory? {
-        if let current = candidates.first(where: { stop in
-            guard !skippedIds.contains(stop.id) else { return false }
-            guard let arc = stop.arcLengthAlongRouteMeters else { return false }
-            return arc >= currentArcLengthMeters - 50
-        }) {
-            skippedIds.insert(current.id)
+        let input = resolvedInput(
+            currentArcLengthMeters: currentArcLengthMeters,
+            speedMps: speedMps,
+            predictionInput: predictionInput
+        )
+        if let current = LaybyPredictionEngine.predict(input).primary {
+            skippedIds.insert(current.stop.id)
         }
-        return upcomingAdvisory(currentArcLengthMeters: currentArcLengthMeters, speedMps: speedMps)
+        let refreshed = resolvedInput(
+            currentArcLengthMeters: currentArcLengthMeters,
+            speedMps: speedMps,
+            predictionInput: predictionInput
+        )
+        return LaybyPredictionEngine.predict(refreshed).primary
+    }
+
+    private func resolvedInput(
+        currentArcLengthMeters: Double,
+        speedMps: Double,
+        predictionInput: LaybyPredictionInput?
+    ) -> LaybyPredictionInput {
+        if let predictionInput {
+            return LaybyPredictionInput(
+                candidates: candidates.isEmpty ? predictionInput.candidates : candidates,
+                skippedIds: skippedIds,
+                currentArcLengthMeters: currentArcLengthMeters,
+                speedMps: speedMps,
+                pathDurationsSeconds: predictionInput.pathDurationsSeconds,
+                pathArcLengthsMeters: predictionInput.pathArcLengthsMeters,
+                remainingContinuousDriveSeconds: predictionInput.remainingContinuousDriveSeconds,
+                remainingDailyDriveSeconds: predictionInput.remainingDailyDriveSeconds,
+                companyBreaks: predictionInput.companyBreaks,
+                kineticStress: predictionInput.kineticStress,
+                trafficInflationFactor: predictionInput.trafficInflationFactor,
+                now: predictionInput.now
+            )
+        }
+        if let lastPredictionInput {
+            return LaybyPredictionInput(
+                candidates: candidates,
+                skippedIds: skippedIds,
+                currentArcLengthMeters: currentArcLengthMeters,
+                speedMps: speedMps,
+                pathDurationsSeconds: lastPredictionInput.pathDurationsSeconds,
+                pathArcLengthsMeters: lastPredictionInput.pathArcLengthsMeters,
+                remainingContinuousDriveSeconds: lastPredictionInput.remainingContinuousDriveSeconds,
+                remainingDailyDriveSeconds: lastPredictionInput.remainingDailyDriveSeconds,
+                companyBreaks: lastPredictionInput.companyBreaks,
+                kineticStress: lastPredictionInput.kineticStress,
+                trafficInflationFactor: lastPredictionInput.trafficInflationFactor,
+                now: Date()
+            )
+        }
+        return LaybyPredictionInput(
+            candidates: candidates,
+            skippedIds: skippedIds,
+            currentArcLengthMeters: currentArcLengthMeters,
+            speedMps: speedMps
+        )
     }
 }

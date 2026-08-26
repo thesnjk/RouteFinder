@@ -26,18 +26,51 @@ public enum ParkingOccupancyPrior: Sendable {
     ) -> [TruckPoi] {
         let hour = calendar.component(.hour, from: date)
         let occupancyAdjusted = pois.map { poi -> TruckPoi in
-            guard poi.kind == .overnightSecureParking else { return poi }
-            let base = poi.confidence ?? 0.8
-            let multiplier: Double
-            if eveningPeakHours.contains(hour) {
-                multiplier = eveningPeakMultiplier
-            } else if (8...16).contains(hour) {
-                multiplier = daytimeMultiplier
-            } else {
-                multiplier = 1.0
+            switch poi.kind {
+            case .overnightSecureParking:
+                let base = poi.confidence ?? 0.8
+                let multiplier = secureParkingMultiplier(forHour: hour)
+                return poi.withConfidence(base * multiplier)
+            case .layby:
+                let base = poi.confidence ?? 0.75
+                let multiplier = laybyAvailabilityMultiplier(forHour: hour)
+                return poi.withConfidence(base * multiplier)
+            default:
+                return poi
             }
-            return poi.withConfidence(base * multiplier)
         }
         return PoiConfidenceAdjuster.adjust(pois: occupancyAdjusted, reports: reports)
+    }
+
+    /// Returns a layby occupancy prior for the given arrival instant.
+    public static func laybyOccupancyPrior(
+        at date: Date,
+        calendar: Calendar = .current
+    ) -> LaybyOccupancyPrior {
+        let hour = calendar.component(.hour, from: date)
+        let multiplier = laybyAvailabilityMultiplier(forHour: hour)
+        if multiplier >= 0.95 { return .low }
+        if multiplier >= 0.75 { return .moderate }
+        return .high
+    }
+
+    private static func secureParkingMultiplier(forHour hour: Int) -> Double {
+        if eveningPeakHours.contains(hour) {
+            return eveningPeakMultiplier
+        }
+        if (8...16).contains(hour) {
+            return daytimeMultiplier
+        }
+        return 1.0
+    }
+
+    private static func laybyAvailabilityMultiplier(forHour hour: Int) -> Double {
+        if eveningPeakHours.contains(hour) {
+            return 0.55
+        }
+        if (7...16).contains(hour) {
+            return 0.78
+        }
+        return 0.95
     }
 }

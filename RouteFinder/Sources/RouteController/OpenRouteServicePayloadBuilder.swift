@@ -25,11 +25,8 @@ public enum OpenRouteServicePayloadBuilder {
 
         let extraInfo = includeExtraInfo(for: request) ? ["maxspeed"] : nil
         let avoidFeatures = avoidFeatures(from: request.preferences)
-<<<<<<< HEAD
 
         let avoidPolygons = request.avoidPolygons.flatMap { $0.isEmpty ? nil : $0 }
-=======
->>>>>>> 131ad0b45323f7aa6d871049cbbcf4238fd0ed3b
 
         if request.preferences.isHGVMode {
             let vehicle = request.vehicle

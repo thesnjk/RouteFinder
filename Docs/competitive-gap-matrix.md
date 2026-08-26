@@ -1,11 +1,11 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-27 (trip brief PDF export)  
+Last updated: 2026-08-27 (fleet store hot-reload)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then CarPlay parity, then fleet/dispatch, then advisory tacho + offline packs.
 
 > Parallel API refresh was attempted via `parallel-cli` but the API was unreachable from this environment (`APIConnectionError`). This matrix is maintained from the competitive plan’s live web sources plus a post-implementation codebase inventory. Re-run Parallel when `api.parallel.ai` is reachable.
 
-## Programme status (Phases 0–11)
+## Programme status (Phases 0–12)
 
 | Phase | Focus | Status |
 |---|---|---|
@@ -19,8 +19,9 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **7** | Layby prediction v2 — fused HOS + company breaks + physics + occupancy | **Done** — `LaybyPredictionEngine` + `CompanyBreakAllocation` on `FleetTrip` |
 | **8** | Native dispatch console — macOS window + iPad split + driver poll loop | **Done** — geocoded stops, ORS preview, push toast, iPad driver default |
 | **9** | Shareable predictive trip brief — unified telemetry + HOS + layby + fleet | **Done** — `TripBriefContext` + ShareLink on driver and dispatch |
-| **10** | Multi-device fleet sync — Hummingbird LAN server + HTTPFleetStore | **Done** — `RouteFinderFleetServer` + Settings remote URL |
+| **10** | Multi-device fleet sync — Hummingbird LAN server + HTTPFleetStore | **Done** — `RouteFinderFleetServer` + Settings remote URL; hot-reload in Phase 12 |
 | **11** | Shareable trip brief PDF export — office-ready PDF from same context | **Done** — `TripBriefPDFRenderer` + share menu on driver and dispatch |
+| **12** | Fleet store hot-reload — switch disk/HTTP without app restart | **Done** — `fleetStoreConfigurationDidChange` + VM reload |
 
 ### Remaining gaps (explicitly not claiming parity)
 

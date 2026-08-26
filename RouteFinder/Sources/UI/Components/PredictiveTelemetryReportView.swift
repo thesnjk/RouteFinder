@@ -5,10 +5,18 @@ import SwiftUI
 /// Post-route InsurTech telematics dashboard comparing kinetic vs static ETA.
 public struct PredictiveTelemetryReportView: View {
     let report: PredictiveTelemetryReport
+    let briefContext: TripBriefContext?
 
     /// Creates a predictive telemetry report view.
-    public init(report: PredictiveTelemetryReport) {
+    public init(report: PredictiveTelemetryReport, briefContext: TripBriefContext? = nil) {
         self.report = report
+        self.briefContext = briefContext
+    }
+
+    private var shareText: String {
+        TripBriefFormatter.plainText(
+            from: briefContext ?? TripBriefContext(predictiveReport: report)
+        )
     }
 
     public var body: some View {
@@ -30,7 +38,7 @@ public struct PredictiveTelemetryReportView: View {
             Text("Predictive Telemetry")
                 .font(RFFont.sectionTitle)
             Spacer()
-            ShareLink(item: TripBriefFormatter.plainText(from: report)) {
+            ShareLink(item: shareText) {
                 Image(systemName: "square.and.arrow.up")
                     .font(.body.weight(.semibold))
             }

@@ -8,8 +8,8 @@ public enum MapLibreConfiguration {
     /// MapLibre GL JS version loaded by the embedded web map.
     ///
     /// To vendor offline: copy `maplibre-gl.js` and `maplibre-gl.css` from
-    /// `maplibre-gl@4.7.1` into `Sources/MapLibreUI/Resources/` (see
-    /// `Resources/VENDOR_MAPLIBRE.md`), then rebuild so `Bundle.module` resolves them.
+    /// `maplibre-gl@4.7.1` into the app target bundle (see
+    /// `VENDOR_MAPLIBRE.md`), then rebuild so `Bundle.main` resolves them.
     public static let mapLibreJSVersion = "4.7.1"
 
     /// Custom URL scheme reserved for future WKURLSchemeHandler tile serving.
@@ -41,11 +41,6 @@ public enum MapLibreConfiguration {
     public static let nominatimPolicyURL = URL(string: "https://operations.osmfoundation.org/policies/nominatim/")!
 
     private static func bundledResourceURL(named name: String, extension ext: String) -> URL? {
-        #if SWIFT_PACKAGE
-        if let url = Bundle.module.url(forResource: name, withExtension: ext) {
-            return url
-        }
-        #endif
-        return Bundle.main.url(forResource: name, withExtension: ext)
+        Bundle.main.url(forResource: name, withExtension: ext)
     }
 }

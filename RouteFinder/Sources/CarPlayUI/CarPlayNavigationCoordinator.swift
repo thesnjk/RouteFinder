@@ -71,7 +71,7 @@ public final class CarPlayNavigationCoordinator: NavigationSessionDelegate {
         case .completed, .idle:
             sessionAdapter.cancel()
             tripStarted = false
-        case .routeLoaded, .constraintRecalcPending, .rerouteRequired, .stopSafe:
+        case .routeLoaded:
             break
         }
     }

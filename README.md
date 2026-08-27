@@ -22,7 +22,11 @@ Built as a Swift 6 Swift Package with SwiftUI, MapLibre (WKWebView), and HeiGIT 
 
 ## API keys
 
-Keys are stored in the macOS/iOS **data-protection** Keychain for the local signed-in account (Settings sheet). After updating RouteFinder, log in once and choose **Always Allow** if macOS prompts; re-save the ORS key in Settings if it still shows empty. Prefer the signed Xcode `RouteFinderMacApp` / `RouteFinderApp` schemes over ad-hoc `swift run` for day-to-day use (rebuilds of unsigned CLI binaries used to re-prompt on the legacy Keychain ACL).
+Keys are stored in the macOS/iOS **data-protection** Keychain for the local signed-in account (Settings sheet).
+
+**Mac day-to-day:** open [`RouteFinderApp.xcodeproj`](RouteFinderApp.xcodeproj) and run the **`RouteFinderMac`** scheme (signed `.app` with Keychain entitlements). After switching to that app, log in once, choose **Always Allow** if prompted for any leftover login-Keychain items, then re-save the ORS key in Settings if it still shows empty. If prompts persist, delete old `com.routefinder.vault.*` items in Keychain Access and re-save keys.
+
+Bare `swift run RouteFinderMacApp` has no Keychain entitlements — **Always Allow will not stick** across rebuilds (legacy login Keychain ACL). Use `./Scripts/package-macos-app.sh open` only if you need a packaged bundle without Xcode.
 
 | Key | Purpose | Required? |
 |---|---|---|
@@ -47,14 +51,27 @@ swift test
 swift run RouteFinder -- help
 ```
 
-### macOS app
+### macOS app (preferred)
+
+```bash
+# From repo root — signed .app, data-protection Keychain
+open RouteFinderApp.xcodeproj
+# Scheme: RouteFinderMac  →  Run
+```
+
+Packaged SPM bundle (codesigned with entitlements):
+
+```bash
+cd RouteFinder
+./Scripts/package-macos-app.sh open
+```
+
+Dev-only bare executable (Keychain Always Allow will re-prompt on every rebuild):
 
 ```bash
 cd RouteFinder
 swift run RouteFinderMacApp
 ```
-
-Or open the package in Xcode and run the `RouteFinderMacApp` scheme.
 
 ### Fleet LAN server (multi-device sync)
 

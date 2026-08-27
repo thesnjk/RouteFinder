@@ -5,7 +5,7 @@ import Foundation
 public actor FleetEventHub {
     private var subscribers: [UUID: [UUID: AsyncStream<FleetDispatchEvent>.Continuation]] = [:]
     /// Interval between heartbeat events on open SSE connections.
-    public let heartbeatIntervalSeconds: TimeInterval
+    public nonisolated let heartbeatIntervalSeconds: TimeInterval
 
     /// Creates a fleet event hub.
     public init(heartbeatIntervalSeconds: TimeInterval = 15) {

@@ -24,7 +24,7 @@ Built as a Swift 6 Swift Package with SwiftUI, MapLibre (WKWebView), and HeiGIT 
 
 Keys are stored in the macOS/iOS **data-protection** Keychain for the local signed-in account (Settings sheet).
 
-**Mac day-to-day:** open [`RouteFinderApp.xcodeproj`](RouteFinderApp.xcodeproj) and run the **`RouteFinderMac`** scheme (signed `.app` with Keychain entitlements). After switching to that app, log in once, choose **Always Allow** if prompted for any leftover login-Keychain items, then re-save the ORS key in Settings if it still shows empty. If prompts persist, delete old `com.routefinder.vault.*` items in Keychain Access and re-save keys.
+**Mac day-to-day:** open [`RouteFinderApp.xcodeproj`](RouteFinderApp.xcodeproj) and run the **`RouteFinderMac`** scheme (signed `.app` with Keychain access group). After updating, log in once — allow any leftover login-Keychain prompt **once**, then re-save the ORS key in Settings if empty. Later launches must not re-prompt. If they do, Keychain Access → delete `com.routefinder.vault.*` (login keychain) → re-save keys.
 
 Bare `swift run RouteFinderMacApp` has no Keychain entitlements — **Always Allow will not stick** across rebuilds (legacy login Keychain ACL). Use `./Scripts/package-macos-app.sh open` only if you need a packaged bundle without Xcode.
 

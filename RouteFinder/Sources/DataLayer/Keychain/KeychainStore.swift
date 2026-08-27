@@ -3,10 +3,13 @@ import Security
 
 /// Thin wrapper around Keychain generic-password items (data-protection Keychain).
 ///
-/// Uses ``kSecUseDataProtectionKeychain`` so items are not bound to the creating
-/// binary’s legacy Keychain ACL (which breaks across debug / ad-hoc rebuilds).
-/// Falls back to the legacy Keychain only for non-app hosts (e.g. `swift test`);
-/// signed `.app` bundles must use data-protection Keychain.
+/// Uses ``kSecUseDataProtectionKeychain`` and, inside a signed `.app`, the app’s
+/// ``keychain-access-groups`` entitlement as ``kSecAttrAccessGroup`` so sandboxed
+/// macOS builds can read/write their own items without falling through to the
+/// legacy login Keychain (which re-prompts on every launch).
+///
+/// Legacy login-Keychain I/O is reserved for non-app hosts (`swift test`, bare
+/// `swift run`) and for one-shot migration helpers.
 public enum KeychainStore: Sendable {
     /// `errSecMissingEntitlement` — data-protection Keychain unavailable in this process.
     private static let missingEntitlementStatus: OSStatus = -34018
@@ -69,6 +72,16 @@ public enum KeychainStore: Sendable {
         !isAppBundleHost
     }
 
+    /// First `keychain-access-groups` entitlement entry, if any (nil outside entitled `.app`).
+    public static var keychainAccessGroup: String? {
+        resolvedAccessGroup
+    }
+
+    private static let resolvedAccessGroup: String? = {
+        guard isAppBundleHost else { return nil }
+        return firstKeychainAccessGroupFromEntitlements()
+    }()
+
     /// Stores UTF-8 string data for the given service/account pair.
     public static func set(_ value: String, service: String, account: String) throws {
         guard let data = value.data(using: .utf8) else {
@@ -81,7 +94,9 @@ public enum KeychainStore: Sendable {
     public static func setData(_ data: Data, service: String, account: String) throws {
         do {
             try setData(data, service: service, account: account, useDataProtection: true)
-            try? deleteLegacyItem(service: service, account: account)
+            if allowsLegacyKeychainFallback {
+                try? deleteLegacyItem(service: service, account: account)
+            }
         } catch Error.unexpectedStatus(let status) where status == missingEntitlementStatus {
             guard allowsLegacyKeychainFallback else { throw Error.unexpectedStatus(status) }
             try setData(data, service: service, account: account, useDataProtection: false)
@@ -99,7 +114,10 @@ public enum KeychainStore: Sendable {
         return string
     }
 
-    /// Loads raw data, preferring the data-protection Keychain and migrating legacy items.
+    /// Loads raw data from the data-protection Keychain.
+    ///
+    /// Inside a signed `.app`, never touches the legacy login Keychain (avoids
+    /// recurring password prompts). Non-app hosts may fall back and migrate.
     public static func getData(service: String, account: String) throws -> Data? {
         do {
             if let data = try copyMatching(
@@ -118,7 +136,11 @@ public enum KeychainStore: Sendable {
             )
         }
 
-        // One-shot migration from legacy file Keychain (ACL-bound to old code signatures).
+        // Signed .app: miss means empty — do not probe legacy (that re-prompts forever).
+        guard allowsLegacyKeychainFallback else {
+            return nil
+        }
+
         guard let legacy = try copyMatching(
             service: service,
             account: account,
@@ -131,14 +153,50 @@ public enum KeychainStore: Sendable {
             try setData(legacy, service: service, account: account, useDataProtection: true)
             try? deleteLegacyItem(service: service, account: account)
         } catch Error.unexpectedStatus(let status) where status == missingEntitlementStatus {
-            guard allowsLegacyKeychainFallback else { throw Error.unexpectedStatus(status) }
             // Keep serving legacy until a signed app can migrate.
         }
 
         return legacy
     }
 
-    /// Deletes the item for the given service/account pair (DP and legacy).
+    /// Reads a single legacy login-Keychain item (no data-protection / access group).
+    ///
+    /// Used only for one-shot migration into the data-protection Keychain.
+    public static func getLegacyData(service: String, account: String) throws -> Data? {
+        try copyMatching(service: service, account: account, useDataProtection: false)
+    }
+
+    /// One-shot: copy a legacy item into DP (with access group) and delete the legacy copy.
+    ///
+    /// No-op if DP already has data or legacy is empty. Safe to call repeatedly.
+    public static func migrateLegacyItemIfNeeded(service: String, account: String) throws {
+        do {
+            if let existing = try copyMatching(
+                service: service,
+                account: account,
+                useDataProtection: true
+            ), !existing.isEmpty {
+                try? deleteLegacyItem(service: service, account: account)
+                return
+            }
+        } catch Error.unexpectedStatus(let status) where status == missingEntitlementStatus {
+            // Non-app host cannot use DP — leave legacy alone.
+            return
+        }
+
+        guard let legacy = try getLegacyData(service: service, account: account),
+              !legacy.isEmpty else {
+            return
+        }
+        do {
+            try setData(legacy, service: service, account: account, useDataProtection: true)
+            try? deleteLegacyItem(service: service, account: account)
+        } catch Error.unexpectedStatus(let status) where status == missingEntitlementStatus {
+            // Non-app host: already on legacy.
+        }
+    }
+
+    /// Deletes the item for the given service/account pair (DP and, when allowed, legacy).
     public static func delete(service: String, account: String) throws {
         do {
             try deleteItem(service: service, account: account, useDataProtection: true)
@@ -180,8 +238,29 @@ public enum KeychainStore: Sendable {
         }
         if useDataProtection {
             query[kSecUseDataProtectionKeychain as String] = true
+            if let group = keychainAccessGroup {
+                query[kSecAttrAccessGroup as String] = group
+            }
         }
         return query
+    }
+
+    private static func firstKeychainAccessGroupFromEntitlements() -> String? {
+        guard let task = SecTaskCreateFromSelf(nil) else { return nil }
+        guard let value = SecTaskCopyValueForEntitlement(
+            task,
+            "keychain-access-groups" as CFString,
+            nil
+        ) else {
+            return nil
+        }
+        if let groups = value as? [String], let first = groups.first, !first.isEmpty {
+            return first
+        }
+        if let single = value as? String, !single.isEmpty {
+            return single
+        }
+        return nil
     }
 
     private static func setData(

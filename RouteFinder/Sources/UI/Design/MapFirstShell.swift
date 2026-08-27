@@ -145,6 +145,10 @@ struct MapFirstShell: View {
                 cloudRoutingBannerView(banner)
             }
 
+            if let dispatchToast = viewModel.fleetDispatchToast {
+                fleetDispatchToastView(dispatchToast)
+            }
+
             if let advisory = viewModel.laybyAdvisory {
                 LaybyAdvisoryBanner(advisory: advisory) {
                     viewModel.markCurrentLaybyFull()
@@ -188,6 +192,21 @@ struct MapFirstShell: View {
                 .font(RFFont.caption)
                 .foregroundStyle(.primary)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, RFSpacing.md)
+        .padding(.vertical, RFSpacing.sm)
+        .frame(maxWidth: 420, alignment: .leading)
+        .controlSheetStyle()
+    }
+
+    private func fleetDispatchToastView(_ message: String) -> some View {
+        HStack(spacing: RFSpacing.sm) {
+            Image(systemName: "truck.box.fill")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.green)
+            Text(message)
+                .font(RFFont.caption.weight(.semibold))
+                .foregroundStyle(.primary)
         }
         .padding(.horizontal, RFSpacing.md)
         .padding(.vertical, RFSpacing.sm)

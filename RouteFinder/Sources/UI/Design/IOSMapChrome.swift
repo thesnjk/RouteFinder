@@ -146,6 +146,9 @@ struct IOSMapChrome: View {
             if viewModel.cloudRoutingBanner != nil, !isCloudBannerDismissed {
                 compactCloudBanner
             }
+            if let dispatchToast = viewModel.fleetDispatchToast {
+                fleetDispatchToastBanner(dispatchToast)
+            }
             if let advisory = viewModel.laybyAdvisory {
                 LaybyAdvisoryBanner(advisory: advisory) {
                     viewModel.markCurrentLaybyFull()
@@ -200,6 +203,21 @@ struct IOSMapChrome: View {
                     .frame(width: 28, height: 28)
             }
             .buttonStyle(.plain)
+        }
+        .padding(.horizontal, RFSpacing.md)
+        .padding(.vertical, RFSpacing.sm)
+        .glassPanel(cornerRadius: 12)
+    }
+
+    private func fleetDispatchToastBanner(_ message: String) -> some View {
+        HStack(spacing: RFSpacing.sm) {
+            Image(systemName: "truck.box.fill")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.green)
+            Text(message)
+                .font(RFFont.caption.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(2)
         }
         .padding(.horizontal, RFSpacing.md)
         .padding(.vertical, RFSpacing.sm)

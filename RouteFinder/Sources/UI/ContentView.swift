@@ -79,10 +79,7 @@ public struct ContentView: View {
             viewModel.bindVault(session.vault)
         }
         .task {
-            while !Task.isCancelled {
-                await viewModel.pollAndApplyFleetDispatch()
-                try? await Task.sleep(nanoseconds: 10_000_000_000)
-            }
+            await viewModel.startFleetDispatchListener()
         }
     }
     #endif
@@ -119,10 +116,7 @@ public struct ContentView: View {
             viewModel.environmentalContext = weatherViewModel.effectiveCondition
             viewModel.refreshSimulationEnvironment()
             await viewModel.startLocationServicesIfNeeded()
-            while !Task.isCancelled {
-                await viewModel.pollAndApplyFleetDispatch()
-                try? await Task.sleep(nanoseconds: 10_000_000_000)
-            }
+            await viewModel.startFleetDispatchListener()
         }
     }
     #endif

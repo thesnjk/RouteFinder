@@ -98,7 +98,7 @@ Personal (free) Apple teams: `RouteFinderApp` ships without WeatherKit or CarPla
 - Confirm [`RouteFinderApp/RouteFinderApp.entitlements`](../RouteFinderApp/RouteFinderApp.entitlements) is an empty plist — the signed app should contain only `application-identifier`, `com.apple.developer.team-identifier`, and `get-task-allow` (no WeatherKit or CarPlay).
 - Expect **no signing/provisioning errors** for `com.apple.developer.weatherkit` or `com.apple.developer.carplay-maps`.
 - **Runtime limitations on personal team:** Without an OpenWeather key, WeatherKit auto-fetch fails gracefully (`WeatherViewModel.lastError` includes a Settings hint). Saving an OpenWeather key in Settings (or `OPENWEATHER_API_KEY`) switches live auto weather to OpenWeather immediately — no app restart. CarPlay scene wiring is present in `Info.plist` but in-car UI will not connect without a paid-team CarPlay entitlement.
-- `swift test` (362 tests) and `xcodebuild -scheme RouteFinderApp` succeed with zero app-target Swift compiler warnings.
+- `swift test` (372 tests) and `xcodebuild -scheme RouteFinderApp` succeed with zero app-target Swift compiler warnings. Phase 20 claim inventory + QA log: [`Docs/phase20-verification.md`](Docs/phase20-verification.md); competitive matrix: [`Docs/competitive-gap-matrix.md`](Docs/competitive-gap-matrix.md).
 - Swift Testing `@Test` / `@Suite` deprecation messages during `swift test` are upstream framework noise and do not affect the app target build.
 
 Optional CLI build (requires full Xcode selected, not Command Line Tools only):

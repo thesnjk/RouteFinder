@@ -1,11 +1,11 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-27 (driver layby occupancy report)  
+Last updated: 2026-08-27 (Phase 20 competitive refresh + verification)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then CarPlay parity, then fleet/dispatch, then advisory tacho + offline packs.
 
-> Parallel API refresh was attempted via `parallel-cli` but the API was unreachable from this environment (`APIConnectionError`). This matrix is maintained from the competitive plan’s live web sources plus a post-implementation codebase inventory. Re-run Parallel when `api.parallel.ai` is reachable.
+> Phase 20 refreshed competitor intel from public product pages (2026-08-27). Parallel deep-research remains blocked (`APIConnectionError` / `api.parallel.ai` unreachable). Firecrawl CLI was unavailable in-session; sources below are live web pages.
 
-## Programme status (Phases 0–19)
+## Programme status (Phases 0–20)
 
 | Phase | Focus | Status |
 |---|---|---|
@@ -29,6 +29,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **17** | OpenWeather weather fallback — live auto road conditions without WeatherKit | **Done** — `DefaultWeatherService` prefers OpenWeather when key present |
 | **18** | Weather backend hot-reload — OpenWeather key save switches live weather without restart | **Done** — `weatherConfigurationDidChange` + `WeatherViewModel.replaceWeatherService` |
 | **19** | Driver layby occupancy report — Looks full / Has spaces feeds on-device crowd prior | **Done** — `LaybyOccupancyReport` + disk `LocalCrowdEventIngest` |
+| **20** | Competitive refresh + product verification | **Done** — see [`phase20-verification.md`](phase20-verification.md); intel below; Phase 21 backlog |
 
 ### Remaining gaps (explicitly not claiming parity)
 
@@ -38,20 +39,21 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 - **In-process planet PBF** parser (pipeline uses osmium + `PBFPreprocessor` / tile scripts instead)
 - Paid live fuel-price API / SNAP booking
 - **Hosted fleet web portal / multi-tenant SaaS** (native dispatch + secured LAN server shipped; hosted portal deferred)
+- **LEZ avoid-on-route** (banners shipped; Sygic/TomTom-class avoid still open — Phase 21)
 
-## Competitor strengths (reference)
+## Competitor strengths (Phase 20 refresh — 2026-08-27)
 
-| Competitor | Form | Notable strengths |
-|---|---|---|
-| [Sygic Truck](https://www.sygic.com/truck) | Phone app | Offline maps; full dims; multi-stop; truck POIs; [CarPlay/AA](https://www.sygic.com/what-is/sygic-gps-truck-caravan-androidauto-carplay-us) |
-| [TomTom GO Professional](https://www.tomtom.com/en_gb/navigation/truck-gps-sat-nav/go-professional/) | Hardware | L/W/H, axle, hazmat, ADR tunnels, LEZ avoid, truck POIs |
-| [Garmin dēzl OTR](https://www.garmin.com/en-US/newsroom/press-release/automotive/garmin-introduces-refreshed-dezl-otr-navigator-series-with-insights-from-fellow-truck-drivers/) | Hardware | Truckstops/parking/weigh; community dock/parking ratings |
-| [PTV Navigator](https://www.ptvlogistics.com/en-us/products/ptv-navigator/features) | Fleet app + API | Full truck attrs + ADR; remote profile sync; telematics |
-| [Trimble CoPilot](https://transportation.trimble.com/en/solutions/mapping-and-routing/copilot) | Fleet nav | PC\*Miler; planned=driven=billed; HOS; fleet portal |
-| [HERE Pro Nav](https://www.here.com/solutions/professional-navigation) | Platform | Commercial routing; multi-stop fleet optimization |
-| [Samsara](https://www.samsara.com/uk/products/telematics/tachograph) / [Geotab](https://www.geotab.com/uk/fleet-management-solutions/smart-digital-tachograph/) | Telematics | UK/EU tacho — not consumer truck GPS |
+| Competitor | Form | Notable strengths (2026 public pages) | Delta vs prior matrix |
+|---|---|---|---|
+| [Sygic Truck](https://www.sygic.com/truck) | Phone app | Offline truck maps; dims/hazmat; [LEZ alerts + emit-profile reroute](https://www.sygic.com/what-is/low-emission-zones); fuel prices; [CarPlay/AA as premium add-on](https://help.sygic.com/hc/en-us/articles/38176591980434-Android-Auto-Apple-CarPlay-in-Sygic-Truck-Caravan-Navigation); Route Sender | LEZ avoid depth + paid CarPlay add-on clarified |
+| [TomTom GO Professional](https://www.tomtom.com/en_gb/navigation/truck-gps-sat-nav/go-professional/) | Hardware | L/W/H, axle, hazmat, ADR tunnels, truck POIs, TomTom Traffic; LEZ map + avoid on NDS devices ([manual](https://download.tomtom.com/open/manuals/TomTom_GO_Prof2ndGen/refman/TomTom-GO-PROFESSIONAL-2nd-Gen-EU-UM-en-gb.pdf)) | Unchanged core; LEZ avoid still a hardware strength |
+| [Garmin dēzl OTR](https://www.garmin.com/en-US/newsroom/press-release/automotive/garmin-introduces-refreshed-dezl-otr-navigator-series-with-insights-from-fellow-truck-drivers/) | Hardware | Truckstops/parking/weigh; community dock/parking ratings; satellite arrival imagery | Community parking still the wedge they own on hardware |
+| [PTV Navigator](https://www.ptvlogistics.com/en-us/products/ptv-navigator/features) | Fleet app + API | Full truck attrs + ADR; remote profile sync; telematics | Unchanged — enterprise remote profiles |
+| [Trimble CoPilot](https://transportation.trimble.com/en/solutions/mapping-and-routing/copilot) | Fleet nav | PC\*Miler; [CoPilot 11](https://developer.trimblemaps.com/copilot-navigation/release-notes/introduction-copilot-11/): predictive parking + HOS clocks (US/CA + ELD); Book Parking (TPC/BTP US; select EU); Android Auto; Account Manager (ex-FleetPortal) | Book Parking → EU select sites; HOS still US-shaped ELD |
+| [HERE Pro Nav](https://www.here.com/solutions/professional-navigation) | Platform | Commercial routing; multi-stop fleet optimization | Unchanged |
+| [Samsara](https://www.samsara.com/uk/products/telematics/tachograph) / [Geotab](https://www.geotab.com/uk/fleet-management-solutions/smart-digital-tachograph/) | Telematics | UK/EU remote VU / driver-card download | Still partner territory — do not rebuild |
 
-## Capability matrix (RouteFinder after Phases 0–5)
+## Capability matrix (RouteFinder after Phases 0–20)
 
 | Capability | RouteFinder | Typical truck GPS | Fleet telematics | Notes |
 |---|---|---|---|---|
@@ -60,43 +62,55 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | Truck POI network | **Fuel / parking / weigh / layby along-route** (+ disk cache + occupancy prior) | Strong | Weak as nav | Living layer |
 | Physics pre-trip + kinetic risk | **Strong** (Rehearse + live HUD/voice + shareable brief) | Absent | Absent | Wedge |
 | Plate → auto vehicle profile (UK) | **Strong** (RegCheck + DVLA chain) | Manual | Asset registry | UK first |
-| CarPlay production quality | **Hardened TBT + Always GPS path + voice ducking + HOS advisory alert** | Strong (Sygic) | Varies | Shipped |
+| CarPlay production quality | **Hardened in code**; personal-team builds **inactive** | Strong (Sygic) | Varies | Paid team / entitlements for device QA |
 | Multi-stop optimize | Shipped | Shipped | Strong | Existing |
 | Live traffic affecting route choice | **TomTom flow → ORS avoid_polygons reroute** | Strong | Strong | Phase 2 |
 | HOS / tacho | **Advisory EU 561 + JSON/DDD import + Can-I-drive** (VU remains legal) | Weak | **Strong** | Phase 1 + 5; partner port stubbed |
-| Fleet dispatch / shared physics ETA | **Shipped** (native dispatch + LAN sync + trip brief ShareLink) | Weak | **Strong** | Phase 8–10 |
+| Fleet dispatch / shared physics ETA | **Shipped** (native dispatch + LAN sync + SSE + trip brief) | Weak | **Strong** | Phase 8–16 |
 | Predictive layby / break stop | **Strong** (fused HOS + company window + physics + occupancy; $0 APIs) | Weak (CoPilot: HOS breaks + paid parking hold) | Weak | **Wedge vs CoPilot** — no parking booking fee |
 | Driver community dock/parking intel | **On-device layby Full/Spaces reports** → occupancy prior + POI confidence | Garmin community | Crowdsource | Phase 19 |
+| LEZ compliance | **Along-route banners** (UK catalog) | Strong avoid (Sygic/TomTom) | Varies | **Gap** — avoid-on-route is Phase 21 |
 | Walkaround inspection | **Local DVSA checklist + disk store** | Varies | Strong | Glass UI |
+| Live weather road conditions | **OpenWeather preferred** + WeatherKit fallback | Varies | Strong | Phase 17–18; WeatherKit needs paid team |
 
 ## White space RouteFinder owns
 
 1. Pre-trip physics rehearsal of the constrained route (“Rehearse Route”)
 2. Live kinetic advisories (brake fade / grade / slip) fused with voice
-3. Shareable predictive trip brief / risk index — **shipped** (unified plain-text brief + ShareLink)
+3. Shareable predictive trip brief / risk index — **shipped** (unified plain-text brief + ShareLink + PDF)
 4. UK plate → dims + DVLA registry chain
 5. Physics ETA published back to dispatch on fleet trips
 6. Honest advisory tacho (import + clock) that never claims to replace the VU
 7. **Predictive layby ranker** — last feasible stop before advisory HOS / company break window, with physics upstream bias (CoPilot has HOS breaks; we add UK OSM laybys + physics at $0/hosting)
+8. **$0 fleet LAN** — Bonjour + optional API key/TLS vs CoPilot Account Manager seats
 
-### vs Trimble CoPilot (Aug 2026)
+### vs Trimble CoPilot (Aug 2026 refresh)
 
-| | CoPilot | RouteFinder |
+| | CoPilot 11.x | RouteFinder |
 |---|---|---|
-| HOS break planning | ELD sync + rest stops on route | Advisory EU 561 + company `CompanyBreakAllocation` |
-| Predictive parking | Truck Parking Club booking (paid) | OSM layby + hour-of-day occupancy prior (free) |
-| Fleet portal | FleetPortal / Account Manager (per-seat SaaS) | Native macOS window + iPad split dispatch at **$0** (`DiskFleetStore`) |
+| HOS break planning | ELD sync + rest stops (US/CA; Trip Management license) | Advisory EU 561 + company `CompanyBreakAllocation` |
+| Predictive parking | Live insights + driver Plenty/Limited/None feedback (US/CA); Book Parking TPC/BTP (+ select EU) | OSM layby + hour-of-day prior + **Looks full / Has spaces** (free, UK-first) |
+| Fleet portal | Account Manager (per-seat SaaS) | Native macOS/iPad dispatch + LAN HTTP at **$0** |
 | Physics rehearsal | Absent | Pre-trip kinetic sim + physics ETA |
-| Cost at 1k drivers | Quote-only fleet seats | ORS free tier + optional TomTom; ranker is on-device |
+| Android Auto | Shipped in CoPilot 11 | Deferred |
+| Cost at 1k drivers | Quote-only fleet seats | ORS free tier + optional TomTom/OpenWeather; ranker on-device |
 
-**Do not chase:** CoPilot parking booking, ELD vendor lock-in, Android-first CoPilot 11 parity yet.
+**Do not chase:** CoPilot parking booking fees, ELD vendor lock-in, Android Auto, hosted multi-tenant SaaS — unless an urgent UK wedge appears.
 
+## Phase 21+ backlog (ranked)
+
+Evidence: Phase 20 intel + verification (no critical bugs). Hygiene not required first.
+
+1. **Phase 21 (recommended):** UK **LEZ / CAZ avoid-on-route** — use vehicle `EmissionClass` + `UKLowEmissionZoneCatalog` polygons → ORS `avoid_polygons` (same path as traffic). Closes the clearest Sygic/TomTom UK compliance gap at **$0** recurring. Keep banners for non-avoidable destinations.
+2. **Phase 22:** Expand layby community signals (multi-report decay, optional “last seen” copy) — deepen Garmin-style wedge already started in Phase 19.
+3. **Phase 23:** Paid-team CarPlay entitlement restore + device QA checklist (only when signing allows).
+4. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs.
 
 ## 90-day bar checklist
 
 - [x] Routes legally respect full vehicle profile on ORS
 - [x] Pre-trip physics rehearsal + live kinetic voice
-- [x] CarPlay continuous TBT with voice coexistence hooks
+- [x] CarPlay continuous TBT with voice coexistence hooks *(code; personal-team inactive)*
 - [x] Truck fuel/parking/weigh along-route (20 mi) + UK LEZ banners
 - [x] Single-fleet MVP push trip + physics ETA snapshot
 - [x] Advisory HOS clock + rest forecast + DDD/JSON import
@@ -104,8 +118,9 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 - [x] Fused layby prediction v2 (HOS + company breaks + physics + occupancy)
 - [x] Shareable predictive trip brief (driver + dispatch ShareLink)
 - [x] Shareable trip brief PDF export (driver + dispatch)
-- [ ] Parallel deep-research refresh (blocked: API unreachable)
+- [x] Competitive intel refresh (Phase 20 public-web; Parallel still blocked)
 - [ ] Full Samsara-class remote VU (partner, don’t rebuild)
+- [ ] LEZ avoid-on-route (Phase 21)
 
 ## Quarterly parity checklist vs Sygic / TomTom / PTV / CoPilot
 
@@ -113,25 +128,30 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 |---|---|---|
 | Dimensional + hazmat/ADR routing parity | ConstraintParity | Done |
 | Physics wedge differentiation | PhysicsWedge | Done |
-| CarPlay TBT + background GPS | CarPlayNav | Done |
+| CarPlay TBT + background GPS | CarPlayNav | Done *(code; personal-team signing inactive)* |
 | UK truck living layer | UKLivingLayer | Done |
-| Fleet dispatch MVP | FleetBackend | Done (`DiskFleetStore`) |
+| Fleet dispatch MVP | FleetBackend | Done (`DiskFleetStore` + LAN) |
 | Predictive layby v2 | LaybyIntel | Done |
 | Advisory tacho + Can-I-drive | AdvisoryTacho | Done (Phase 5) |
 | Offline map packs | OfflineMaps | Done (Phase 4) |
-| Competitive intel refresh | CompetitiveIntel | Pending Parallel API |
+| Competitive intel refresh | CompetitiveIntel | **Partial** — Phase 20 public-web Done; Parallel API still Pending |
+| LEZ avoid-on-route | UKLivingLayer | **Next** (Phase 21) |
 
 ## Sources
 
 - [Sygic Truck](https://www.sygic.com/truck)
-- [Sygic Truck features guide](https://help.sygic.com/hc/en-us/articles/37948287320338-Features-and-user-guide-for-Sygic-Truck-Caravan-Navigation)
-- [Sygic CarPlay/Android Auto](https://www.sygic.com/what-is/sygic-gps-truck-caravan-androidauto-carplay-us)
+- [Sygic Truck features guide](https://help.sygic.com/hc/en-us/articles/37948287320338-Features-and-user-guide-for-Sygic-Truck-Caravan-Navigation) *(updated ~2026-08)*
+- [Sygic LEZ](https://www.sygic.com/what-is/low-emission-zones)
+- [Sygic CarPlay/Android Auto](https://help.sygic.com/hc/en-us/articles/38176591980434-Android-Auto-Apple-CarPlay-in-Sygic-Truck-Caravan-Navigation) *(updated 2026-08-18)*
 - [TomTom GO Professional](https://www.tomtom.com/en_gb/navigation/truck-gps-sat-nav/go-professional/)
-- [TomTom GO Professional EU manual](https://download.tomtom.com/open/manuals/GO_Professional/refman/TomTom-GO_PROFESSIONAL-EU-UM-en-gb.pdf)
+- [TomTom GO Professional 2nd Gen EU manual](https://download.tomtom.com/open/manuals/TomTom_GO_Prof2ndGen/refman/TomTom-GO-PROFESSIONAL-2nd-Gen-EU-UM-en-gb.pdf)
 - [Garmin dēzl OTR press](https://www.garmin.com/en-US/newsroom/press-release/automotive/garmin-introduces-refreshed-dezl-otr-navigator-series-with-insights-from-fellow-truck-drivers/)
 - [PTV Navigator features](https://www.ptvlogistics.com/en-us/products/ptv-navigator/features)
-- [Trimble CoPilot](https://transportation.trimble.com/en/solutions/mapping-and-routing/copilot)
+- [Trimble CoPilot product](https://transportation.trimble.com/en/solutions/mapping-and-routing/copilot)
+- [CoPilot 11 introduction](https://developer.trimblemaps.com/copilot-navigation/release-notes/introduction-copilot-11/)
+- [CoPilot 11.0 / Book Parking notes](https://developer.trimblemaps.com/copilot-navigation/release-notes/v11_0/)
+- [CoPilot upgrade notes (incl. Jan 2026 11.3)](https://developer.trimblemaps.com/copilot-navigation/release-notes/upgrade-copilot/)
 - [HERE Professional Navigation](https://www.here.com/solutions/professional-navigation)
-- [State of Truck Navigation 2025](https://local-eyes.nl/the-state-of-truck-navigation-in-2025-what-fleets-need-who-delivers/)
 - [Samsara tachograph](https://www.samsara.com/uk/products/telematics/tachograph)
 - [Geotab digital tachograph](https://www.geotab.com/uk/fleet-management-solutions/smart-digital-tachograph/)
+- Verification: [`Docs/phase20-verification.md`](phase20-verification.md)

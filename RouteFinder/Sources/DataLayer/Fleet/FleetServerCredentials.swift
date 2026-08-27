@@ -5,10 +5,12 @@ import Foundation
 public enum FleetServerCredentials {
     private static let service = "com.routefinder.fleet"
     private static let account = "fleetServerAPIKey"
+    private static let legacyMigrationFlagKey = "RouteFinder.legacyFleetCredentialsMigrated"
 
     /// Loads the fleet server API key from the Keychain.
     public static func loadAPIKey() throws -> String? {
-        try KeychainStore.get(service: service, account: account)
+        try migrateLegacyKeychainIfNeeded()
+        return try KeychainStore.get(service: service, account: account)
     }
 
     /// Persists or clears the fleet server API key and notifies store listeners.
@@ -20,5 +22,14 @@ public enum FleetServerCredentials {
             try KeychainStore.delete(service: service, account: account)
         }
         NotificationCenter.default.post(name: .fleetStoreConfigurationDidChange, object: nil)
+    }
+
+    /// One-shot copy of the fleet API key from the legacy login Keychain into data-protection storage.
+    private static func migrateLegacyKeychainIfNeeded(defaults: UserDefaults = .standard) throws {
+        if defaults.bool(forKey: legacyMigrationFlagKey) {
+            return
+        }
+        try KeychainStore.migrateLegacyItemIfNeeded(service: service, account: account)
+        defaults.set(true, forKey: legacyMigrationFlagKey)
     }
 }

@@ -87,6 +87,9 @@ let package = Package(
             dependencies: [
                 "RouteController",
                 "NavigationCore",
+            ],
+            exclude: [
+                "VENDOR_MAPLIBRE.md",
             ]
         ),
 

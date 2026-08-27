@@ -1,11 +1,11 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-27 (fleet dispatch SSE push)  
+Last updated: 2026-08-27 (OpenWeather weather fallback)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then CarPlay parity, then fleet/dispatch, then advisory tacho + offline packs.
 
 > Parallel API refresh was attempted via `parallel-cli` but the API was unreachable from this environment (`APIConnectionError`). This matrix is maintained from the competitive plan’s live web sources plus a post-implementation codebase inventory. Re-run Parallel when `api.parallel.ai` is reachable.
 
-## Programme status (Phases 0–16)
+## Programme status (Phases 0–17)
 
 | Phase | Focus | Status |
 |---|---|---|
@@ -26,6 +26,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **14** | Bonjour fleet server discovery — advertise + Settings LAN picker | **Done** — `_routefinder-fleet._tcp` + Discover in Settings |
 | **15** | PDF trip brief route map snapshot — MapKit overview in PDF export | **Done** — `RouteMapSnapshotRenderer` + async PDF share |
 | **16** | Fleet dispatch SSE push — instant driver notification on trip push | **Done** — `FleetEventHub` + `FleetSSEClient` + driver toast |
+| **17** | OpenWeather weather fallback — live auto road conditions without WeatherKit | **Done** — `DefaultWeatherService` prefers OpenWeather when key present |
 
 ### Remaining gaps (explicitly not claiming parity)
 

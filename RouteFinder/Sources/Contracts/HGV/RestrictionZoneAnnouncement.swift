@@ -126,6 +126,10 @@ public enum PoiConfidenceAdjuster: Sendable {
                     confidence -= 0.15
                 case .camera:
                     confidence -= 0.05
+                case .laybyFull:
+                    confidence -= 0.35
+                case .laybySpaces:
+                    confidence = min(1, confidence + 0.2)
                 case .weather, .crowdReport, .other:
                     confidence -= 0.1
                 }

@@ -150,9 +150,11 @@ struct IOSMapChrome: View {
                 fleetDispatchToastBanner(dispatchToast)
             }
             if let advisory = viewModel.laybyAdvisory {
-                LaybyAdvisoryBanner(advisory: advisory) {
-                    viewModel.markCurrentLaybyFull()
-                }
+                LaybyAdvisoryBanner(
+                    advisory: advisory,
+                    onLaybyFull: { viewModel.markCurrentLaybyFull() },
+                    onLaybyHasSpaces: { viewModel.markCurrentLaybyHasSpaces() }
+                )
             }
             if viewModel.hosEnabled, let hos = viewModel.hosSnapshot {
                 HosClockBanner(snapshot: hos)

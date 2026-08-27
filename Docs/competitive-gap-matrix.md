@@ -1,11 +1,11 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-27 (Phase 21 UK LEZ / CAZ avoid-on-route)  
+Last updated: 2026-08-27 (Phase 22 layby community signal expansion)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then CarPlay parity, then fleet/dispatch, then advisory tacho + offline packs.
 
 > Phase 20 refreshed competitor intel from public product pages (2026-08-27). Parallel deep-research remains blocked (`APIConnectionError` / `api.parallel.ai` unreachable). Firecrawl CLI was unavailable in-session; sources below are live web pages.
 
-## Programme status (Phases 0–21)
+## Programme status (Phases 0–22)
 
 | Phase | Focus | Status |
 |---|---|---|
@@ -31,6 +31,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **19** | Driver layby occupancy report — Looks full / Has spaces feeds on-device crowd prior | **Done** — `LaybyOccupancyReport` + disk `LocalCrowdEventIngest` |
 | **20** | Competitive refresh + product verification | **Done** — see [`phase20-verification.md`](phase20-verification.md) |
 | **21** | UK LEZ / CAZ avoid-on-route — EmissionClass + ORS `avoid_polygons` | **Done** — `LEZAvoidPolicy` + Settings toggle; destination-inside zones still allowed |
+| **22** | Layby community signal expansion — age-weighted multi-report prior + last-seen banner | **Done** — `ParkingOccupancyPrior` fusion + `LaybyAdvisory` last-seen fields |
 
 ### Remaining gaps (explicitly not claiming parity)
 
@@ -69,7 +70,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | HOS / tacho | **Advisory EU 561 + JSON/DDD import + Can-I-drive** (VU remains legal) | Weak | **Strong** | Phase 1 + 5; partner port stubbed |
 | Fleet dispatch / shared physics ETA | **Shipped** (native dispatch + LAN sync + SSE + trip brief) | Weak | **Strong** | Phase 8–16 |
 | Predictive layby / break stop | **Strong** (fused HOS + company window + physics + occupancy; $0 APIs) | Weak (CoPilot: HOS breaks + paid parking hold) | Weak | **Wedge vs CoPilot** — no parking booking fee |
-| Driver community dock/parking intel | **On-device layby Full/Spaces reports** → occupancy prior + POI confidence | Garmin community | Crowdsource | Phase 19 |
+| Driver community dock/parking intel | **Age-weighted multi-report Full/Spaces** + last-seen banner copy | Garmin community | Crowdsource | Phase 19–22 |
 | LEZ compliance | **Banners + avoid-on-route** (approx. UK catalog → ORS `avoid_polygons`; Euro 6 exempt; destination-inside allowed) | Strong avoid (Sygic/TomTom) | Varies | Phase 21 |
 | Walkaround inspection | **Local DVSA checklist + disk store** | Varies | Strong | Glass UI |
 | Live weather road conditions | **OpenWeather preferred** + WeatherKit fallback | Varies | Strong | Phase 17–18; WeatherKit needs paid team |
@@ -98,11 +99,10 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 
 **Do not chase:** CoPilot parking booking fees, ELD vendor lock-in, Android Auto, hosted multi-tenant SaaS — unless an urgent UK wedge appears.
 
-## Phase 22+ backlog (ranked)
+## Phase 23+ backlog (ranked)
 
-1. **Phase 22:** Expand layby community signals (multi-report decay, optional “last seen” copy) — deepen Garmin-style wedge already started in Phase 19.
-2. **Phase 23:** Paid-team CarPlay entitlement restore + device QA checklist (only when signing allows).
-3. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs, exact LEZ boundary polygons.
+1. **Phase 23:** Paid-team CarPlay entitlement restore + device QA checklist (only when signing allows).
+2. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs, exact LEZ boundary polygons.
 
 ## 90-day bar checklist
 

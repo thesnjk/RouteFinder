@@ -400,6 +400,10 @@ public enum LaybyPredictionEngine: Sendable {
         reasonCodes: [LaybyReasonCode],
         isAdvisory: Bool
     ) -> LaybyAdvisory {
+        let latestSignal = ParkingOccupancyPrior.latestOccupancySignal(
+            for: stop,
+            reports: input.crowdReports
+        )
         guard let arc = stop.arcLengthAlongRouteMeters else {
             return LaybyAdvisory(
                 stop: stop,
@@ -408,7 +412,9 @@ public enum LaybyPredictionEngine: Sendable {
                 occupancyPrior: occupancyPrior,
                 breakWindowOpensAt: breakWindowOpensAt,
                 reasonCodes: reasonCodes,
-                isAdvisory: isAdvisory
+                isAdvisory: isAdvisory,
+                lastOccupancyReportAt: latestSignal?.createdAt,
+                lastOccupancyKind: latestSignal?.kind
             )
         }
         let remaining = max(0, arc - input.currentArcLengthMeters)
@@ -430,7 +436,9 @@ public enum LaybyPredictionEngine: Sendable {
             occupancyPrior: occupancyPrior,
             breakWindowOpensAt: breakWindowOpensAt,
             reasonCodes: reasonCodes,
-            isAdvisory: isAdvisory
+            isAdvisory: isAdvisory,
+            lastOccupancyReportAt: latestSignal?.createdAt,
+            lastOccupancyKind: latestSignal?.kind
         )
     }
 

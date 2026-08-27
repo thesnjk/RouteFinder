@@ -67,7 +67,40 @@ struct LaybyAdvisoryBanner: View {
             parts.append("break window opens at \(formattedTime(opensAt))")
         }
         parts.append("occupancy prior: \(advisory.occupancyPrior.displayLabel)")
+        if let lastSeen = lastSeenLine {
+            parts.append(lastSeen)
+        }
         return parts.joined(separator: "; ")
+    }
+
+    private var lastSeenLine: String? {
+        guard let at = advisory.lastOccupancyReportAt,
+              let kind = advisory.lastOccupancyKind else {
+            return nil
+        }
+        let kindLabel: String
+        switch kind {
+        case .full: kindLabel = "full"
+        case .spacesAvailable: kindLabel = "spaces"
+        }
+        return "last seen \(kindLabel) · \(relativeAge(since: at))"
+    }
+
+    private func relativeAge(since date: Date, now: Date = Date()) -> String {
+        let seconds = max(0, now.timeIntervalSince(date))
+        if seconds < 60 {
+            return "just now"
+        }
+        let minutes = Int(seconds / 60)
+        if minutes < 60 {
+            return "\(minutes) min ago"
+        }
+        let hours = Int(seconds / 3_600)
+        if hours < 24 {
+            return hours == 1 ? "1 h ago" : "\(hours) h ago"
+        }
+        let days = Int(seconds / 86_400)
+        return days == 1 ? "1 day ago" : "\(days) days ago"
     }
 
     private var formattedDistance: String {

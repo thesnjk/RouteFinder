@@ -2544,16 +2544,20 @@ public final class RouteViewModel {
             kind: kind,
             reporterId: currentVaultUserID ?? "local-driver"
         )
-        crowdReports.removeAll { $0.note == stop.id && ($0.type == .laybyFull || $0.type == .laybySpaces) }
+        // Keep same-stop history so age-weighted fusion can corroborate / contradict.
         crowdReports.append(report)
         try? await crowdEventIngest.submit(report)
+        let peers = crowdReports.filter {
+            $0.note == stop.id && ($0.type == .laybyFull || $0.type == .laybySpaces)
+        }
+        let uniqueReporters = Set(peers.map(\.reporterId)).count
         _ = await crowdEventIngest.score(
             reportId: report.id,
             inputs: CrowdConfidenceInputs(
-                uniqueVehiclesNearby: 1,
+                uniqueVehiclesNearby: max(1, uniqueReporters),
                 ageSeconds: 0,
                 reporterReputation: 0.85,
-                corroborationCount: 1
+                corroborationCount: max(0, peers.count - 1)
             )
         )
         upcomingTruckPois = PoiConfidenceAdjuster.adjust(pois: upcomingTruckPois, reports: crowdReports)

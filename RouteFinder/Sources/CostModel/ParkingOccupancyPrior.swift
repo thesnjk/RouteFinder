@@ -9,6 +9,30 @@ public enum ParkingOccupancyPrior: Sendable {
     public static let eveningPeakMultiplier: Double = 0.65
     /// Mild daytime reduction outside the evening peak (still busy yards).
     public static let daytimeMultiplier: Double = 0.9
+    /// Exponential age decay time constant for occupancy report weights (hours).
+    public static let occupancyDecayTauHours: Double = 2.5
+    /// Minimum total weight before crowd reports override the hour-of-day prior.
+    public static let minimumCrowdWeight: Double = 0.2
+
+    /// Latest driver occupancy observation for a layby (for HUD “last seen” copy).
+    public struct LatestOccupancySignal: Sendable, Hashable, Equatable {
+        public let kind: LaybyOccupancyReport.Kind
+        public let createdAt: Date
+
+        /// Creates a latest occupancy signal.
+        public init(kind: LaybyOccupancyReport.Kind, createdAt: Date) {
+            self.kind = kind
+            self.createdAt = createdAt
+        }
+
+        /// Short driver-facing label (`full` / `spaces`).
+        public var displayKind: String {
+            switch kind {
+            case .full: return "full"
+            case .spacesAvailable: return "spaces"
+            }
+        }
+    }
 
     /// Adjusts POI confidence using hour-of-day occupancy priors, then crowd reports.
     ///
@@ -50,7 +74,12 @@ public enum ParkingOccupancyPrior: Sendable {
         calendar: Calendar = .current,
         radiusMeters: Double = 250
     ) -> LaybyOccupancyPrior {
-        if let stop, let crowdPrior = crowdOccupancyPrior(for: stop, reports: reports, radiusMeters: radiusMeters) {
+        if let stop, let crowdPrior = crowdOccupancyPrior(
+            for: stop,
+            reports: reports,
+            radiusMeters: radiusMeters,
+            now: date
+        ) {
             return crowdPrior
         }
         let hour = calendar.component(.hour, from: date)
@@ -60,28 +89,67 @@ public enum ParkingOccupancyPrior: Sendable {
         return .high
     }
 
-    /// Maps nearby driver occupancy reports onto a layby prior (`full` → high occupancy, `spaces` → low).
-    public static func crowdOccupancyPrior(
+    /// Newest occupancy report for a stop (any age), used for banner last-seen copy.
+    public static func latestOccupancySignal(
         for stop: LaybyStop,
         reports: [CrowdReport],
         radiusMeters: Double = 250
+    ) -> LatestOccupancySignal? {
+        let nearby = matchingOccupancyReports(for: stop, reports: reports, radiusMeters: radiusMeters)
+        guard let newest = nearby.max(by: { $0.createdAt < $1.createdAt }) else { return nil }
+        let kind: LaybyOccupancyReport.Kind = newest.type == .laybyFull ? .full : .spacesAvailable
+        return LatestOccupancySignal(kind: kind, createdAt: newest.createdAt)
+    }
+
+    /// Maps nearby driver occupancy reports onto a layby prior using age-weighted multi-report fusion.
+    ///
+    /// Each report is weighted by `exp(-ageHours / τ)`. Full reports push toward `.high`, spaces toward `.low`.
+    /// When total weight is below ``minimumCrowdWeight``, returns `nil` so the hour-of-day prior applies.
+    public static func crowdOccupancyPrior(
+        for stop: LaybyStop,
+        reports: [CrowdReport],
+        radiusMeters: Double = 250,
+        now: Date = Date()
     ) -> LaybyOccupancyPrior? {
-        let nearby = reports.filter { report in
+        let nearby = matchingOccupancyReports(for: stop, reports: reports, radiusMeters: radiusMeters)
+        guard !nearby.isEmpty else { return nil }
+
+        var fullWeight = 0.0
+        var spacesWeight = 0.0
+        for report in nearby {
+            let ageHours = max(0, now.timeIntervalSince(report.createdAt) / 3_600)
+            let weight = exp(-ageHours / occupancyDecayTauHours)
+            switch report.type {
+            case .laybyFull:
+                fullWeight += weight
+            case .laybySpaces:
+                spacesWeight += weight
+            default:
+                continue
+            }
+        }
+
+        let total = fullWeight + spacesWeight
+        guard total >= minimumCrowdWeight else { return nil }
+
+        let net = (fullWeight - spacesWeight) / total
+        if net >= 0.25 { return .high }
+        if net <= -0.25 { return .low }
+        return .moderate
+    }
+
+    private static func matchingOccupancyReports(
+        for stop: LaybyStop,
+        reports: [CrowdReport],
+        radiusMeters: Double
+    ) -> [CrowdReport] {
+        reports.filter { report in
+            guard report.type == .laybyFull || report.type == .laybySpaces else { return false }
             if report.note == stop.id { return true }
             return haversineMeters(
                 stop.coordinate,
                 Coordinate(latitude: report.latitude, longitude: report.longitude)
             ) <= radiusMeters
-        }
-        guard !nearby.isEmpty else { return nil }
-        let newest = nearby.max(by: { $0.createdAt < $1.createdAt })
-        switch newest?.type {
-        case .laybyFull:
-            return .high
-        case .laybySpaces:
-            return .low
-        default:
-            return nil
         }
     }
 

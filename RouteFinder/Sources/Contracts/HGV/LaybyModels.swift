@@ -65,6 +65,10 @@ public struct LaybyAdvisory: Sendable, Hashable, Codable, Equatable {
     public let reasonCodes: [LaybyReasonCode]
     /// True when HOS and/or company policy contributed (planning aid — not legal tacho).
     public let isAdvisory: Bool
+    /// Timestamp of the newest on-device occupancy tap for this stop, if any.
+    public let lastOccupancyReportAt: Date?
+    /// Kind of the newest occupancy tap (full / spaces).
+    public let lastOccupancyKind: LaybyOccupancyReport.Kind?
 
     /// Creates a layby advisory.
     public init(
@@ -75,7 +79,9 @@ public struct LaybyAdvisory: Sendable, Hashable, Codable, Equatable {
         occupancyPrior: LaybyOccupancyPrior = .moderate,
         breakWindowOpensAt: Date? = nil,
         reasonCodes: [LaybyReasonCode] = [],
-        isAdvisory: Bool = false
+        isAdvisory: Bool = false,
+        lastOccupancyReportAt: Date? = nil,
+        lastOccupancyKind: LaybyOccupancyReport.Kind? = nil
     ) {
         self.stop = stop
         self.distanceRemainingMeters = distanceRemainingMeters
@@ -85,6 +91,8 @@ public struct LaybyAdvisory: Sendable, Hashable, Codable, Equatable {
         self.breakWindowOpensAt = breakWindowOpensAt
         self.reasonCodes = reasonCodes
         self.isAdvisory = isAdvisory
+        self.lastOccupancyReportAt = lastOccupancyReportAt
+        self.lastOccupancyKind = lastOccupancyKind
     }
 }
 

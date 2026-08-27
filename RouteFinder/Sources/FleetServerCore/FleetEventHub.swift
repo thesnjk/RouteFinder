@@ -39,7 +39,7 @@ public actor FleetEventHub {
         vehicleId: UUID,
         id: UUID,
         continuation: AsyncStream<FleetDispatchEvent>.Continuation
-    ) {
+    ) async {
         subscribers[vehicleId, default: [:]][id] = continuation
     }
 

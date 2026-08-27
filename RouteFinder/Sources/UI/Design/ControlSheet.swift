@@ -160,6 +160,7 @@ private struct AvoidanceSection: View {
             Toggle("Avoid Tolls", isOn: $viewModel.avoidTolls)
             Toggle("Avoid Ferries", isOn: $viewModel.avoidFerries)
             Toggle("Avoid Tunnels", isOn: $viewModel.avoidTunnels)
+            Toggle("Avoid non-compliant LEZ / CAZ", isOn: $viewModel.avoidNonCompliantLEZ)
             Toggle("Hurry Mode", isOn: $viewModel.hurryMode)
                 .tint(RFColor.hazard)
             if viewModel.hurryMode { HurryModeBadge() }

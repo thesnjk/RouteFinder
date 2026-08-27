@@ -1,11 +1,11 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-27 (Phase 20 competitive refresh + verification)  
+Last updated: 2026-08-27 (Phase 21 UK LEZ / CAZ avoid-on-route)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then CarPlay parity, then fleet/dispatch, then advisory tacho + offline packs.
 
 > Phase 20 refreshed competitor intel from public product pages (2026-08-27). Parallel deep-research remains blocked (`APIConnectionError` / `api.parallel.ai` unreachable). Firecrawl CLI was unavailable in-session; sources below are live web pages.
 
-## Programme status (Phases 0–20)
+## Programme status (Phases 0–21)
 
 | Phase | Focus | Status |
 |---|---|---|
@@ -29,7 +29,8 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **17** | OpenWeather weather fallback — live auto road conditions without WeatherKit | **Done** — `DefaultWeatherService` prefers OpenWeather when key present |
 | **18** | Weather backend hot-reload — OpenWeather key save switches live weather without restart | **Done** — `weatherConfigurationDidChange` + `WeatherViewModel.replaceWeatherService` |
 | **19** | Driver layby occupancy report — Looks full / Has spaces feeds on-device crowd prior | **Done** — `LaybyOccupancyReport` + disk `LocalCrowdEventIngest` |
-| **20** | Competitive refresh + product verification | **Done** — see [`phase20-verification.md`](phase20-verification.md); intel below; Phase 21 backlog |
+| **20** | Competitive refresh + product verification | **Done** — see [`phase20-verification.md`](phase20-verification.md) |
+| **21** | UK LEZ / CAZ avoid-on-route — EmissionClass + ORS `avoid_polygons` | **Done** — `LEZAvoidPolicy` + Settings toggle; destination-inside zones still allowed |
 
 ### Remaining gaps (explicitly not claiming parity)
 
@@ -39,7 +40,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 - **In-process planet PBF** parser (pipeline uses osmium + `PBFPreprocessor` / tile scripts instead)
 - Paid live fuel-price API / SNAP booking
 - **Hosted fleet web portal / multi-tenant SaaS** (native dispatch + secured LAN server shipped; hosted portal deferred)
-- **LEZ avoid-on-route** (banners shipped; Sygic/TomTom-class avoid still open — Phase 21)
+- Exact legal LEZ polygon boundaries / diesel vs petrol nuance (approximate circular catalog zones)
 
 ## Competitor strengths (Phase 20 refresh — 2026-08-27)
 
@@ -69,7 +70,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | Fleet dispatch / shared physics ETA | **Shipped** (native dispatch + LAN sync + SSE + trip brief) | Weak | **Strong** | Phase 8–16 |
 | Predictive layby / break stop | **Strong** (fused HOS + company window + physics + occupancy; $0 APIs) | Weak (CoPilot: HOS breaks + paid parking hold) | Weak | **Wedge vs CoPilot** — no parking booking fee |
 | Driver community dock/parking intel | **On-device layby Full/Spaces reports** → occupancy prior + POI confidence | Garmin community | Crowdsource | Phase 19 |
-| LEZ compliance | **Along-route banners** (UK catalog) | Strong avoid (Sygic/TomTom) | Varies | **Gap** — avoid-on-route is Phase 21 |
+| LEZ compliance | **Banners + avoid-on-route** (approx. UK catalog → ORS `avoid_polygons`; Euro 6 exempt; destination-inside allowed) | Strong avoid (Sygic/TomTom) | Varies | Phase 21 |
 | Walkaround inspection | **Local DVSA checklist + disk store** | Varies | Strong | Glass UI |
 | Live weather road conditions | **OpenWeather preferred** + WeatherKit fallback | Varies | Strong | Phase 17–18; WeatherKit needs paid team |
 
@@ -97,14 +98,11 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 
 **Do not chase:** CoPilot parking booking fees, ELD vendor lock-in, Android Auto, hosted multi-tenant SaaS — unless an urgent UK wedge appears.
 
-## Phase 21+ backlog (ranked)
+## Phase 22+ backlog (ranked)
 
-Evidence: Phase 20 intel + verification (no critical bugs). Hygiene not required first.
-
-1. **Phase 21 (recommended):** UK **LEZ / CAZ avoid-on-route** — use vehicle `EmissionClass` + `UKLowEmissionZoneCatalog` polygons → ORS `avoid_polygons` (same path as traffic). Closes the clearest Sygic/TomTom UK compliance gap at **$0** recurring. Keep banners for non-avoidable destinations.
-2. **Phase 22:** Expand layby community signals (multi-report decay, optional “last seen” copy) — deepen Garmin-style wedge already started in Phase 19.
-3. **Phase 23:** Paid-team CarPlay entitlement restore + device QA checklist (only when signing allows).
-4. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs.
+1. **Phase 22:** Expand layby community signals (multi-report decay, optional “last seen” copy) — deepen Garmin-style wedge already started in Phase 19.
+2. **Phase 23:** Paid-team CarPlay entitlement restore + device QA checklist (only when signing allows).
+3. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs, exact LEZ boundary polygons.
 
 ## 90-day bar checklist
 
@@ -120,7 +118,7 @@ Evidence: Phase 20 intel + verification (no critical bugs). Hygiene not required
 - [x] Shareable trip brief PDF export (driver + dispatch)
 - [x] Competitive intel refresh (Phase 20 public-web; Parallel still blocked)
 - [ ] Full Samsara-class remote VU (partner, don’t rebuild)
-- [ ] LEZ avoid-on-route (Phase 21)
+- [x] LEZ avoid-on-route (Phase 21)
 
 ## Quarterly parity checklist vs Sygic / TomTom / PTV / CoPilot
 
@@ -135,7 +133,7 @@ Evidence: Phase 20 intel + verification (no critical bugs). Hygiene not required
 | Advisory tacho + Can-I-drive | AdvisoryTacho | Done (Phase 5) |
 | Offline map packs | OfflineMaps | Done (Phase 4) |
 | Competitive intel refresh | CompetitiveIntel | **Partial** — Phase 20 public-web Done; Parallel API still Pending |
-| LEZ avoid-on-route | UKLivingLayer | **Next** (Phase 21) |
+| LEZ avoid-on-route | UKLivingLayer | **Done** (Phase 21) |
 
 ## Sources
 

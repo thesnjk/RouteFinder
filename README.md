@@ -22,7 +22,7 @@ Built as a Swift 6 Swift Package with SwiftUI, MapLibre (WKWebView), and HeiGIT 
 
 ## API keys
 
-Keys are stored in the macOS/iOS Keychain for the local signed-in account (Settings sheet).
+Keys are stored in the macOS/iOS **data-protection** Keychain for the local signed-in account (Settings sheet). After updating RouteFinder, log in once and choose **Always Allow** if macOS prompts; re-save the ORS key in Settings if it still shows empty. Prefer the signed Xcode `RouteFinderMacApp` / `RouteFinderApp` schemes over ad-hoc `swift run` for day-to-day use (rebuilds of unsigned CLI binaries used to re-prompt on the legacy Keychain ACL).
 
 | Key | Purpose | Required? |
 |---|---|---|

@@ -30,10 +30,13 @@ public final class WeatherViewModel: ObservableObject {
         self.locationService = locationService
     }
 
-    /// Creates a view model with the default WeatherKit-backed service stack.
+    /// Creates a view model with the preferred live weather stack.
+    ///
+    /// Prefers OpenWeather when an API key is stored or set in the environment;
+    /// otherwise uses WeatherKit (paid-team entitlement required at runtime).
     public static func makeDefault() -> WeatherViewModel {
         WeatherViewModel(
-            weatherService: WeatherKitWeatherService(),
+            weatherService: DefaultWeatherService.make(),
             locationService: LocationService()
         )
     }
@@ -107,7 +110,11 @@ public final class WeatherViewModel: ObservableObject {
             publishEffectiveCondition()
         } catch {
             guard !Task.isCancelled else { return }
-            lastError = error.localizedDescription
+            var message = error.localizedDescription
+            if DefaultWeatherService.selectBackend() == .weatherKit {
+                message += " — \(DefaultWeatherService.openWeatherSettingsHint)"
+            }
+            lastError = message
         }
     }
 

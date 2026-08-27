@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		84F64BFF303B221100803C6E /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = 84F064C42FF9D37C00F1F49E /* UI */; };
 		84F64C00303B221100803C6E /* CarPlayUI in Frameworks */ = {isa = PBXBuildFile; productRef = 84F064C52FF9D37C00F1F49E /* CarPlayUI */; };
+		A1RFMAC00000000100000009 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = A1RFMAC00000000100000008 /* UI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -32,6 +33,7 @@
 		84F064992FF9D36900F1F49E /* RouteFinderApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RouteFinderApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		84F064A62FF9D36A00F1F49E /* RouteFinderAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RouteFinderAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		84F064B02FF9D36A00F1F49E /* RouteFinderAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RouteFinderAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1RFMAC00000000100000001 /* RouteFinderMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RouteFinderMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -41,6 +43,13 @@
 				Info.plist,
 			);
 			target = 84F064982FF9D36900F1F49E /* RouteFinderApp */;
+		};
+		A1RFMAC00000000100000003 /* Exceptions for "RouteFinderMac" folder in "RouteFinderMac" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = A1RFMAC00000000100000007 /* RouteFinderMac */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -61,6 +70,14 @@
 		84F064B32FF9D36A00F1F49E /* RouteFinderAppUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = RouteFinderAppUITests;
+			sourceTree = "<group>";
+		};
+		A1RFMAC00000000100000002 /* RouteFinderMac */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A1RFMAC00000000100000003 /* Exceptions for "RouteFinderMac" folder in "RouteFinderMac" target */,
+			);
+			path = RouteFinderMac;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -89,6 +106,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1RFMAC00000000100000004 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1RFMAC00000000100000009 /* UI in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -96,6 +121,7 @@
 			isa = PBXGroup;
 			children = (
 				84F0649B2FF9D36900F1F49E /* RouteFinderApp */,
+				A1RFMAC00000000100000002 /* RouteFinderMac */,
 				84F064A92FF9D36A00F1F49E /* RouteFinderAppTests */,
 				84F064B32FF9D36A00F1F49E /* RouteFinderAppUITests */,
 				84F0649A2FF9D36900F1F49E /* Products */,
@@ -106,6 +132,7 @@
 			isa = PBXGroup;
 			children = (
 				84F064992FF9D36900F1F49E /* RouteFinderApp.app */,
+				A1RFMAC00000000100000001 /* RouteFinderMac.app */,
 				84F064A62FF9D36A00F1F49E /* RouteFinderAppTests.xctest */,
 				84F064B02FF9D36A00F1F49E /* RouteFinderAppUITests.xctest */,
 			);
@@ -185,6 +212,29 @@
 			productReference = 84F064B02FF9D36A00F1F49E /* RouteFinderAppUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		A1RFMAC00000000100000007 /* RouteFinderMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1RFMAC0000000010000000C /* Build configuration list for PBXNativeTarget "RouteFinderMac" */;
+			buildPhases = (
+				A1RFMAC00000000100000005 /* Sources */,
+				A1RFMAC00000000100000004 /* Frameworks */,
+				A1RFMAC00000000100000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A1RFMAC00000000100000002 /* RouteFinderMac */,
+			);
+			name = RouteFinderMac;
+			packageProductDependencies = (
+				A1RFMAC00000000100000008 /* UI */,
+			);
+			productName = RouteFinderMac;
+			productReference = A1RFMAC00000000100000001 /* RouteFinderMac.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -226,6 +276,7 @@
 			projectRoot = "";
 			targets = (
 				84F064982FF9D36900F1F49E /* RouteFinderApp */,
+				A1RFMAC00000000100000007 /* RouteFinderMac */,
 				84F064A52FF9D36A00F1F49E /* RouteFinderAppTests */,
 				84F064AF2FF9D36A00F1F49E /* RouteFinderAppUITests */,
 			);
@@ -254,6 +305,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1RFMAC00000000100000006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -272,6 +330,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		84F064AC2FF9D36A00F1F49E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1RFMAC00000000100000005 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -590,6 +655,68 @@
 			};
 			name = Release;
 		};
+		A1RFMAC0000000010000000A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = RouteFinderMac/RouteFinderMac.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GHBHLM9UAX;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = RouteFinderMac/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.routefinder.macos;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A1RFMAC0000000010000000B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = RouteFinderMac/RouteFinderMac.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GHBHLM9UAX;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = RouteFinderMac/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.routefinder.macos;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -629,6 +756,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		A1RFMAC0000000010000000C /* Build configuration list for PBXNativeTarget "RouteFinderMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1RFMAC0000000010000000A /* Debug */,
+				A1RFMAC0000000010000000B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -648,6 +784,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 84F064C32FF9D37C00F1F49E /* XCLocalSwiftPackageReference "RouteFinder" */;
 			productName = CarPlayUI;
+		};
+		A1RFMAC00000000100000008 /* UI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 84F064C32FF9D37C00F1F49E /* XCLocalSwiftPackageReference "RouteFinder" */;
+			productName = UI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

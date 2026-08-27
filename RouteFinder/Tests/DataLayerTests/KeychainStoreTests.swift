@@ -34,3 +34,12 @@ import Testing
     #expect(denied.isAccessDenied)
     #expect(denied.localizedDescription.contains("Always Allow"))
 }
+
+@Test func keychainLegacyFallbackAllowedOutsideAppBundle() {
+    // `swift test` host is not a .app — legacy fallback must remain for CI Keychain I/O.
+    #expect(!KeychainStore.isAppBundleHost)
+    #expect(KeychainStore.allowsLegacyKeychainFallback)
+
+    let missing = KeychainStore.Error.unexpectedStatus(-34018)
+    #expect(missing.localizedDescription.contains("RouteFinderMac"))
+}

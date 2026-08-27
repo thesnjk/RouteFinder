@@ -1,12 +1,16 @@
 #!/bin/bash
 set -euo pipefail
 
-# Package the macOS GUI as RouteFinder.app for proper keyboard focus and Dock launch.
+# Package the macOS GUI as a signed RouteFinder.app (data-protection Keychain).
 #
 # Usage:
-#   ./Scripts/package-macos-app.sh          # debug build
-#   ./Scripts/package-macos-app.sh release  # release build
-#   ./Scripts/package-macos-app.sh open     # build debug and launch via open(1)
+#   ./Scripts/package-macos-app.sh          # debug build + codesign
+#   ./Scripts/package-macos-app.sh release  # release build + codesign
+#   ./Scripts/package-macos-app.sh open     # build debug, codesign, and launch
+#
+# Prefer the Xcode RouteFinderMac scheme for day-to-day use (stable signing).
+# Bare `swift run RouteFinderMacApp` has no entitlements — Keychain Always Allow
+# will not stick across rebuilds.
 #
 # If you see "module compiled with Swift X cannot be imported by Swift Y", run:
 #   rm -rf .build && ./Scripts/package-macos-app.sh open
@@ -29,6 +33,9 @@ PRODUCT_DIR=".build/arm64-apple-macosx/${CONFIG}"
 BUNDLE="${ROOT}/${BUNDLE_NAME}.app"
 STALE_BUNDLE="${ROOT}/RouteFinderApp.app"
 STALE_MAC_BUNDLE="${ROOT}/RouteFinderMacApp.app"
+ENTITLEMENTS_SRC="${ROOT}/RouteFinder.entitlements"
+# Team ID from RouteFinderApp.xcodeproj (Automatic signing).
+TEAM_ID="${ROUTEFINDER_DEVELOPMENT_TEAM:-GHBHLM9UAX}"
 
 if [[ -f "${PRODUCT_DIR}/${BUILD_PRODUCT}" ]]; then
     BINARY="${PRODUCT_DIR}/${BUILD_PRODUCT}"
@@ -67,8 +74,30 @@ plutil -replace CFBundleExecutable -string "${EXEC_NAME}" "${BUNDLE}/Contents/In
 cp "${BINARY}" "${BUNDLE}/Contents/MacOS/${EXEC_NAME}"
 chmod +x "${BUNDLE}/Contents/MacOS/${EXEC_NAME}"
 
+# Expand $(AppIdentifierPrefix) for codesign (Xcode does this automatically).
+ENTITLEMENTS_EXPANDED="$(mktemp -t routefinder-entitlements).plist"
+sed "s/\$(AppIdentifierPrefix)/${TEAM_ID}./g" "${ENTITLEMENTS_SRC}" > "${ENTITLEMENTS_EXPANDED}"
+
+CODESIGN_ID="${ROUTEFINDER_CODESIGN_IDENTITY:--}"
+if [[ "${CODESIGN_ID}" == "-" ]]; then
+    # Prefer a development cert when available so keychain-access-groups is honored.
+    DETECTED="$(security find-identity -v -p codesigning 2>/dev/null | awk -F'\"' '/Apple Development|Developer ID Application/ {print $2; exit}')"
+    if [[ -n "${DETECTED}" ]]; then
+        CODESIGN_ID="${DETECTED}"
+    fi
+fi
+
+echo "Codesigning with identity: ${CODESIGN_ID}"
+codesign --force --deep --sign "${CODESIGN_ID}" \
+    --entitlements "${ENTITLEMENTS_EXPANDED}" \
+    --identifier com.routefinder.macos \
+    "${BUNDLE}"
+rm -f "${ENTITLEMENTS_EXPANDED}"
+codesign --verify --verbose=2 "${BUNDLE}" || true
+
 echo "Created ${BUNDLE}"
 echo "Launch with: open \"${BUNDLE}\""
+echo "Day-to-day: open RouteFinderApp.xcodeproj → scheme RouteFinderMac"
 
 if [[ "${LAUNCH}" == true ]]; then
     open "${BUNDLE}"

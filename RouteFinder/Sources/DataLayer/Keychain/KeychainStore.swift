@@ -5,8 +5,8 @@ import Security
 ///
 /// Uses ``kSecUseDataProtectionKeychain`` so items are not bound to the creating
 /// binary’s legacy Keychain ACL (which breaks across debug / ad-hoc rebuilds).
-/// Falls back to the legacy Keychain when the process lacks Keychain entitlements
-/// (e.g. `swift test` host), still migrating legacy → DP when DP is available.
+/// Falls back to the legacy Keychain only for non-app hosts (e.g. `swift test`);
+/// signed `.app` bundles must use data-protection Keychain.
 public enum KeychainStore: Sendable {
     /// `errSecMissingEntitlement` — data-protection Keychain unavailable in this process.
     private static let missingEntitlementStatus: OSStatus = -34018
@@ -49,7 +49,7 @@ public enum KeychainStore: Sendable {
             case errSecInteractionNotAllowed:
                 return "Unlock your Mac and try again (Keychain is locked)."
             case -34018: // errSecMissingEntitlement
-                return "Keychain access is unavailable for this build. Try rebuilding, or use Forgot password to reset."
+                return "Keychain access is unavailable for this build. Run the signed RouteFinderMac app (not bare swift run), or use Forgot password to reset."
             default:
                 if let system, !system.isEmpty {
                     return "Keychain error: \(system) (\(status))."
@@ -57,6 +57,16 @@ public enum KeychainStore: Sendable {
                 return "Keychain error (\(status))."
             }
         }
+    }
+
+    /// True when running inside a real `.app` bundle (Xcode RouteFinderMac / packaged app).
+    public static var isAppBundleHost: Bool {
+        Bundle.main.bundleURL.pathExtension.lowercased() == "app"
+    }
+
+    /// Legacy login-Keychain fallback is only for test / bare-executable hosts.
+    public static var allowsLegacyKeychainFallback: Bool {
+        !isAppBundleHost
     }
 
     /// Stores UTF-8 string data for the given service/account pair.
@@ -73,6 +83,7 @@ public enum KeychainStore: Sendable {
             try setData(data, service: service, account: account, useDataProtection: true)
             try? deleteLegacyItem(service: service, account: account)
         } catch Error.unexpectedStatus(let status) where status == missingEntitlementStatus {
+            guard allowsLegacyKeychainFallback else { throw Error.unexpectedStatus(status) }
             try setData(data, service: service, account: account, useDataProtection: false)
         }
     }
@@ -99,7 +110,7 @@ public enum KeychainStore: Sendable {
                 return data
             }
         } catch Error.unexpectedStatus(let status) where status == missingEntitlementStatus {
-            // DP unavailable in this process — read legacy only.
+            guard allowsLegacyKeychainFallback else { throw Error.unexpectedStatus(status) }
             return try copyMatching(
                 service: service,
                 account: account,
@@ -120,6 +131,7 @@ public enum KeychainStore: Sendable {
             try setData(legacy, service: service, account: account, useDataProtection: true)
             try? deleteLegacyItem(service: service, account: account)
         } catch Error.unexpectedStatus(let status) where status == missingEntitlementStatus {
+            guard allowsLegacyKeychainFallback else { throw Error.unexpectedStatus(status) }
             // Keep serving legacy until a signed app can migrate.
         }
 
@@ -131,9 +143,9 @@ public enum KeychainStore: Sendable {
         do {
             try deleteItem(service: service, account: account, useDataProtection: true)
         } catch Error.unexpectedStatus(let status) where status == missingEntitlementStatus {
-            // Ignore; delete legacy below.
+            guard allowsLegacyKeychainFallback else { throw Error.unexpectedStatus(status) }
         }
-        try deleteLegacyItem(service: service, account: account)
+        try? deleteLegacyItem(service: service, account: account)
     }
 
     /// Deletes all generic-password items for the given service (DP and legacy).
@@ -141,8 +153,13 @@ public enum KeychainStore: Sendable {
         do {
             try deleteAllItems(service: service, useDataProtection: true)
         } catch Error.unexpectedStatus(let status) where status == missingEntitlementStatus {
-            // Ignore; delete legacy below.
+            guard allowsLegacyKeychainFallback else { throw Error.unexpectedStatus(status) }
         }
+        try deleteAllLegacyItems(service: service)
+    }
+
+    /// Removes only legacy (non–data-protection) items for the service.
+    public static func deleteAllLegacyItems(service: String) throws {
         try deleteAllItems(service: service, useDataProtection: false)
     }
 

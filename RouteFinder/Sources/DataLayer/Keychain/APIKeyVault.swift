@@ -47,6 +47,15 @@ public struct APIKeyVault: Sendable {
         return result
     }
 
+    /// Migrates every vault account from the legacy login Keychain into data-protection storage.
+    ///
+    /// Call once after login so a single Allow session clears `com.routefinder.vault.<userID>`
+    /// leftovers instead of re-prompting per key on later launches.
+    public func migrateLegacyKeychainIfNeeded() throws {
+        _ = try loadAll()
+        try? KeychainStore.deleteAllLegacyItems(service: service)
+    }
+
     /// Saves a secret for the kind. Empty values delete the item.
     public func save(_ value: String, for kind: APIKeyKind) throws {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)

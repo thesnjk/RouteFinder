@@ -20,4 +20,9 @@ public struct H3TileIndex: Sendable {
         (try? FileManager.default.contentsOfDirectory(at: tilesDirectory, includingPropertiesForKeys: nil))?
             .filter { $0.pathExtension == "graphjson" } ?? []
     }
+
+    /// Whether any `*.graphjson` tiles exist in the directory.
+    public func hasGraphJSONTiles() -> Bool {
+        !allTileURLs().isEmpty
+    }
 }

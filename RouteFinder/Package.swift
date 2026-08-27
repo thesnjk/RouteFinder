@@ -87,9 +87,6 @@ let package = Package(
             dependencies: [
                 "RouteController",
                 "NavigationCore",
-            ],
-            resources: [
-                .copy("Resources"),
             ]
         ),
 

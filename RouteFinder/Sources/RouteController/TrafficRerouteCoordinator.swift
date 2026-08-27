@@ -225,7 +225,9 @@ public struct TrafficRerouteCoordinator: Sendable {
         }
 
         do {
-            let alternateRequest = request.withAvoidPolygons(polygons)
+            // Preserve LEZ / other avoid polygons already on the request.
+            let merged = (request.avoidPolygons ?? []) + polygons
+            let alternateRequest = request.withAvoidPolygons(merged)
             let alternate = try await routingClient.route(request: alternateRequest)
             let isBetter = alternate.durationSeconds + 30 < original.durationSeconds
                 || (alternate.durationSeconds <= original.durationSeconds

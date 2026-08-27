@@ -156,6 +156,8 @@ struct SettingsSheet: View {
             Toggle("Avoid Tolls", isOn: $viewModel.avoidTolls)
             Toggle("Avoid Ferries", isOn: $viewModel.avoidFerries)
             Toggle("Avoid Tunnels", isOn: $viewModel.avoidTunnels)
+            Toggle("Avoid non-compliant LEZ / CAZ", isOn: $viewModel.avoidNonCompliantLEZ)
+                .help("Routes around UK ULEZ/CAZ zones when emission class is missing or below Euro 6. Destinations inside a zone are still allowed.")
             Toggle("Hurry Mode", isOn: $viewModel.hurryMode)
                 .tint(RFColor.hazard)
             Toggle("Avoid speed cameras", isOn: $viewModel.avoidCameras)

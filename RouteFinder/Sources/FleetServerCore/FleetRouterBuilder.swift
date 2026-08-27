@@ -2,11 +2,16 @@ import Contracts
 import DataLayer
 import Foundation
 import Hummingbird
+import NIOCore
 
 /// Builds Hummingbird routes for the fleet dispatch REST API.
 public enum FleetRouterBuilder {
     /// Registers fleet API routes backed by the given store.
-    public static func buildRouter(store: DiskFleetStore, apiKey: String? = nil) -> Router<BasicRequestContext> {
+    public static func buildRouter(
+        store: DiskFleetStore,
+        apiKey: String? = nil,
+        eventHub: FleetEventHub = FleetEventHub()
+    ) -> Router<BasicRequestContext> {
         let router = Router(context: BasicRequestContext.self)
 
         router.get("health") { _, _ async throws -> Response in
@@ -38,7 +43,16 @@ public enum FleetRouterBuilder {
 
         router.post("v1/trips") { request, context async throws -> Response in
             let trip = try await request.decode(as: FleetTrip.self, context: context)
-            return try jsonResponse(try await store.pushTrip(trip))
+            let pushed = try await store.pushTrip(trip)
+            await eventHub.publish(
+                FleetDispatchEvent(
+                    kind: .tripPushed,
+                    vehicleId: pushed.vehicleId,
+                    tripId: pushed.id,
+                    timestamp: Date()
+                )
+            )
+            return try jsonResponse(pushed)
         }
 
         router.get("v1/vehicles/:vehicleId/active-trip") { _, context async throws -> Response in
@@ -47,6 +61,11 @@ public enum FleetRouterBuilder {
                 return Response(status: .noContent)
             }
             return try jsonResponse(trip)
+        }
+
+        router.get("v1/vehicles/:vehicleId/events") { _, context async throws -> Response in
+            let vehicleId = try requireUUID(context, parameter: "vehicleId")
+            return sseResponse(for: vehicleId, eventHub: eventHub)
         }
 
         router.get("v1/trips/:tripId") { _, context async throws -> Response in
@@ -67,6 +86,60 @@ public enum FleetRouterBuilder {
         }
 
         return router
+    }
+
+    private static func sseResponse(for vehicleId: UUID, eventHub: FleetEventHub) -> Response {
+        var headers = HTTPFields()
+        headers[.contentType] = "text/event-stream; charset=utf-8"
+        headers[.cacheControl] = "no-cache"
+        headers[.connection] = "keep-alive"
+
+        return Response(status: .ok, headers: headers, body: ResponseBody(contentLength: nil) { writer in
+            let eventStream = await eventHub.events(for: vehicleId)
+            let heartbeatNanos = UInt64(await eventHub.heartbeatIntervalSeconds * 1_000_000_000)
+
+            let mergedEvents = AsyncStream<FleetDispatchEvent> { continuation in
+                let heartbeatTask = Task {
+                    while !Task.isCancelled {
+                        try? await Task.sleep(nanoseconds: heartbeatNanos)
+                        continuation.yield(
+                            FleetDispatchEvent(
+                                kind: .heartbeat,
+                                vehicleId: vehicleId,
+                                tripId: nil,
+                                timestamp: Date()
+                            )
+                        )
+                    }
+                }
+                let eventsTask = Task {
+                    for await event in eventStream {
+                        continuation.yield(event)
+                    }
+                    heartbeatTask.cancel()
+                    continuation.finish()
+                }
+                continuation.onTermination = { @Sendable _ in
+                    heartbeatTask.cancel()
+                    eventsTask.cancel()
+                }
+            }
+
+            for await event in mergedEvents {
+                try await writer.write(try sseFrame(event))
+            }
+            try await writer.finish(nil)
+        })
+    }
+
+    private static func sseFrame(_ event: FleetDispatchEvent) throws -> ByteBuffer {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let data = try encoder.encode(event)
+        let json = String(decoding: data, as: UTF8.self)
+        var buffer = ByteBuffer()
+        buffer.writeString("data: \(json)\n\n")
+        return buffer
     }
 
     private static func requireUUID(_ context: BasicRequestContext, parameter: String) throws -> UUID {

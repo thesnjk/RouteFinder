@@ -11,7 +11,7 @@ private func startFleetServer(
     apiKey: String?
 ) -> Task<Void, Never> {
     let store = DiskFleetStore(storageDirectory: storageDirectory)
-    let router = FleetRouterBuilder.buildRouter(store: store, apiKey: apiKey)
+    let router = FleetRouterBuilder.buildRouter(store: store, apiKey: apiKey, eventHub: FleetEventHub())
     let app = Application(
         router: router,
         configuration: .init(address: .hostname("127.0.0.1", port: port))

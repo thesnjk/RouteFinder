@@ -199,6 +199,8 @@ public final class RouteViewModel {
     public var isDiscoveringFleetServers = false
     /// Status text for Bonjour fleet discovery in Settings.
     public var fleetDiscoveryStatus: String?
+    /// Driver banner when a remote dispatch arrives via SSE.
+    public var fleetDispatchToast: String?
     /// Last published fleet snapshot for dispatch console visibility.
     public var lastPublishedFleetSnapshot: FleetTripSnapshot?
 
@@ -388,6 +390,7 @@ public final class RouteViewModel {
     #endif
     private let kineticAdvisoryCoordinator = KineticAdvisoryCoordinator()
     private var rehearseTask: Task<Void, Never>?
+    private var fleetDispatchToastDismissTask: Task<Void, Never>?
 
     private var apiKeyVault: APIKeyVault?
 
@@ -1491,6 +1494,64 @@ public final class RouteViewModel {
         guard let trip = try? await fleetStore.activeTrip(forVehicleId: vehicleId) else { return }
         guard trip.id != activeDispatchTripId else { return }
         await applyDispatchedTrip(trip)
+    }
+
+    /// Subscribes to fleet SSE events with fallback polling until the task is cancelled.
+    public func startFleetDispatchListener() async {
+        await runFleetDispatchListener()
+    }
+
+    private func runFleetDispatchListener() async {
+        var backoffSeconds: UInt64 = 1
+        while !Task.isCancelled {
+            guard FleetWorkspaceSettings.useRemoteFleetServer(),
+                  let baseURL = FleetWorkspaceSettings.loadFleetServerURL(),
+                  let vehicleId = fleetVehicleId else {
+                await pollAndApplyFleetDispatch()
+                try? await Task.sleep(nanoseconds: 30_000_000_000)
+                continue
+            }
+
+            let trimmedKey = fleetServerAPIKeyText.trimmingCharacters(in: .whitespacesAndNewlines)
+            let apiKey = trimmedKey.isEmpty ? (try? FleetServerCredentials.loadAPIKey()) : trimmedKey
+            let stream = FleetSSEClient.events(baseURL: baseURL, apiKey: apiKey, vehicleId: vehicleId)
+
+            await withTaskGroup(of: Void.self) { group in
+                group.addTask { [weak self] in
+                    for await event in stream {
+                        guard event.kind == .tripPushed else { continue }
+                        await self?.handleRemoteTripPushed()
+                    }
+                }
+                group.addTask { [weak self] in
+                    while !Task.isCancelled {
+                        try? await Task.sleep(nanoseconds: 30_000_000_000)
+                        await self?.pollAndApplyFleetDispatch()
+                    }
+                }
+                await group.next()
+                group.cancelAll()
+            }
+
+            guard !Task.isCancelled else { return }
+            try? await Task.sleep(nanoseconds: backoffSeconds * 1_000_000_000)
+            backoffSeconds = min(backoffSeconds * 2, 30)
+        }
+    }
+
+    private func handleRemoteTripPushed() async {
+        showFleetDispatchToast("New dispatch received — loading route…")
+        await pollAndApplyFleetDispatch()
+    }
+
+    private func showFleetDispatchToast(_ message: String) {
+        fleetDispatchToast = message
+        fleetDispatchToastDismissTask?.cancel()
+        fleetDispatchToastDismissTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            guard !Task.isCancelled else { return }
+            self?.fleetDispatchToast = nil
+        }
     }
 
     /// Applies a pending traffic-aware alternate route when available.

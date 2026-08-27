@@ -43,6 +43,9 @@ public enum RouteFailureMapper {
         vehicle: VehicleProfile,
         isHGVMode: Bool
     ) -> RouteFailurePresentation {
+        if let offline = error as? OfflineGraphStoreError {
+            return mapOfflineError(offline)
+        }
         if let routing = error as? RoutingError {
             return mapRoutingError(routing, vehicle: vehicle, isHGVMode: isHGVMode)
         }
@@ -55,6 +58,32 @@ public enum RouteFailureMapper {
             message: error.localizedDescription,
             detail: nil
         )
+    }
+
+    private static func mapOfflineError(_ error: OfflineGraphStoreError) -> RouteFailurePresentation {
+        switch error {
+        case .noTilesAvailable:
+            return RouteFailurePresentation(
+                kind: .coverage,
+                title: "Routing Unavailable",
+                message: OfflineGraphStoreError.missingBackendUserMessage,
+                detail: nil
+            )
+        case .invalidTileServerURL:
+            return RouteFailurePresentation(
+                kind: .coverage,
+                title: "Route Failed",
+                message: error.localizedDescription ?? "Tile server URL is invalid.",
+                detail: nil
+            )
+        case .downloadFailed, .decodeFailed:
+            return RouteFailurePresentation(
+                kind: .coverage,
+                title: "Offline Tiles Failed",
+                message: error.localizedDescription ?? "Could not load offline graph tiles.",
+                detail: "Add an OpenRouteService key in Settings to route online, or fix the tile cache."
+            )
+        }
     }
 
     private static func mapRoutingError(
@@ -83,6 +112,13 @@ public enum RouteFailureMapper {
                 kind: .snapFailed,
                 title: "Cannot Snap to Road",
                 message: error.localizedDescription,
+                detail: nil
+            )
+        case .graphNotLoaded:
+            return RouteFailurePresentation(
+                kind: .coverage,
+                title: "Routing Unavailable",
+                message: OfflineGraphStoreError.missingBackendUserMessage,
                 detail: nil
             )
         default:

@@ -167,6 +167,8 @@ public final class RouteViewModel {
     public var result: SearchResult?
     public var errorMessage: String?
     public var routeFailure: RouteFailurePresentation?
+    /// Incremented when a route failure should collapse the bottom sheet detail.
+    public var routeDetailCollapseTick: Int = 0
     public var cloudRoutingBanner: String?
     public var routeCoordinates: [CLLocationCoordinate2D] = []
     public var routeCumulativeLengths: [Double] = []
@@ -2058,14 +2060,20 @@ public final class RouteViewModel {
             avoidPolygons: lezAvoidPolygons(destination: end.waypoint.routingCoordinate)
         )
 
+        let offlineAvailable = await offlineGraphStore.hasOfflineTilesAvailable()
         let policy = HybridRoutingPolicy(
             preferOfflineRouting: preferOfflineRouting,
             offlineRoutingEnabled: offlineRoutingEnabled,
-            hasORSAPIKey: hasORSAPIKey
+            hasORSAPIKey: hasORSAPIKey,
+            hasOfflineTilesAvailable: offlineAvailable
         )
 
-        // Pure offline path or no ORS key: route on tiles without constructing an ORS client.
-        if policy.preferredSource == .offlineTiles || !hasORSAPIKey {
+        if policy.lacksAnyRoutingBackend {
+            throw OfflineGraphStoreError.noTilesAvailable
+        }
+
+        // Offline primary (tiles actually available).
+        if policy.preferredSource == .offlineTiles {
             let (searchResult, coordinates, _) = try await planner.calculateHybridRoute(
                 request: request,
                 policy: policy,
@@ -2084,7 +2092,8 @@ public final class RouteViewModel {
                 policy: HybridRoutingPolicy(
                     preferOfflineRouting: true,
                     offlineRoutingEnabled: true,
-                    hasORSAPIKey: false
+                    hasORSAPIKey: false,
+                    hasOfflineTilesAvailable: offlineAvailable
                 ),
                 offlineStore: offlineGraphStore
             )
@@ -2636,13 +2645,15 @@ public final class RouteViewModel {
     }
 
     private func presentRouteError(_ error: Error, preferences: RoutingPreferences) {
-        errorMessage = (error as? LocalizedError)?.errorDescription
-            ?? DecodingDiagnostics.userMessage(for: error)
-        routeFailure = RouteFailureMapper.map(
+        let presentation = RouteFailureMapper.map(
             error,
             vehicle: preferences.vehicle,
             isHGVMode: preferences.isHGVMode
         )
+        // Prefer the modal message; keep a short inline hint only when the sheet is dismissed later.
+        errorMessage = presentation.message
+        routeFailure = presentation
+        routeDetailCollapseTick &+= 1
         result = nil
         clearRouteGeometry()
     }

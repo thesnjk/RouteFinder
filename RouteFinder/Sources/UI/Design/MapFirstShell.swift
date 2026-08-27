@@ -122,6 +122,9 @@ struct MapFirstShell: View {
                 viewModel.routeFailure = nil
             }
         }
+        .onChange(of: viewModel.routeDetailCollapseTick) { _, _ in
+            isDetailExpanded = false
+        }
         .sheet(isPresented: $viewModel.presentHazardReportSheet) {
             HazardReportSheet(viewModel: viewModel)
         }
@@ -266,6 +269,12 @@ struct MapFirstShell: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
+            if viewModel.routeFailure != nil {
+                Text("Route failed — see details")
+                    .font(RFFont.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             HStack {
                 Button("Add Stop") { viewModel.addWaypoint() }
                     .buttonStyle(.borderless)
@@ -380,7 +389,8 @@ struct RouteSearchFields: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: RFSpacing.sm) {
-            if let error = viewModel.errorMessage {
+            // While the failure modal is up, avoid duplicating the long error here.
+            if viewModel.routeFailure == nil, let error = viewModel.errorMessage {
                 if viewModel.isRouteDimensionBlocked {
                     RouteBlockedOverlay()
                 } else if viewModel.showsHGVRouteFailureBanner {
@@ -389,6 +399,7 @@ struct RouteSearchFields: View {
                     Label(error, systemImage: "exclamationmark.triangle.fill")
                         .font(RFFont.caption)
                         .foregroundStyle(.red)
+                        .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -455,8 +466,17 @@ struct RouteBottomSheet: View {
     var maxAvailableHeight: CGFloat = 560
     @State private var dragOffset: CGFloat = 0
 
+    private var isErrorOnly: Bool {
+        viewModel.errorMessage != nil && viewModel.result == nil && !viewModel.isCalculating
+    }
+
     private var shouldShow: Bool {
-        viewModel.originWaypoint.resolved != nil || viewModel.result != nil || viewModel.isCalculating || viewModel.errorMessage != nil
+        // Prefer the modal for failures; keep a compact residual only after dismiss.
+        if viewModel.routeFailure != nil { return false }
+        return viewModel.originWaypoint.resolved != nil
+            || viewModel.result != nil
+            || viewModel.isCalculating
+            || viewModel.errorMessage != nil
     }
 
     private var showsSimulationControls: Bool {
@@ -468,8 +488,18 @@ struct RouteBottomSheet: View {
         return min(preferred, maxAvailableHeight)
     }
 
-            private var collapsedMaxHeight: CGFloat {
-        min(200, maxAvailableHeight)
+    private var collapsedMaxHeight: CGFloat {
+        if isErrorOnly {
+            return min(120, maxAvailableHeight)
+        }
+        return min(200, maxAvailableHeight)
+    }
+
+    private var activeMaxHeight: CGFloat {
+        if isErrorOnly {
+            return collapsedMaxHeight
+        }
+        return isDetailExpanded ? sheetExpandedHeight : collapsedMaxHeight
     }
 
     var body: some View {
@@ -489,6 +519,10 @@ struct RouteBottomSheet: View {
                             dragOffset = value.translation.height
                         }
                         .onEnded { value in
+                            guard !isErrorOnly else {
+                                dragOffset = 0
+                                return
+                            }
                             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                                 if value.translation.height < -20 {
                                     isDetailExpanded = true
@@ -506,13 +540,17 @@ struct RouteBottomSheet: View {
                     HGVRouteFailureBanner()
                 }
 
-                RouteSummaryCard(viewModel: viewModel, embeddedInBottomSheet: true, isExpanded: $isDetailExpanded)
+                RouteSummaryCard(
+                    viewModel: viewModel,
+                    embeddedInBottomSheet: true,
+                    isExpanded: isErrorOnly ? .constant(false) : $isDetailExpanded
+                )
             }
             .padding(.top, RFSpacing.sm)
             .padding(.horizontal, RFSpacing.md)
             .padding(.bottom, RFSpacing.md)
             .frame(maxWidth: 560)
-            .frame(maxHeight: isDetailExpanded ? sheetExpandedHeight : collapsedMaxHeight, alignment: .top)
+            .frame(maxHeight: activeMaxHeight, alignment: .top)
             .clipped()
             .controlSheetStyle()
             .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -520,6 +558,7 @@ struct RouteBottomSheet: View {
             .frame(maxWidth: .infinity)
             .offset(y: dragOffset > 0 ? min(dragOffset, 40) : 0)
             .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isDetailExpanded)
+            .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isErrorOnly)
         }
     }
 }

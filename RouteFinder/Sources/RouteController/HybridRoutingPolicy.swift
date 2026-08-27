@@ -12,16 +12,20 @@ public struct HybridRoutingPolicy: Sendable, Hashable {
     public var offlineRoutingEnabled: Bool
     /// Whether an ORS API key is configured.
     public var hasORSAPIKey: Bool
+    /// Whether local `*.graphjson` tiles exist and/or a tile server URL is configured.
+    public var hasOfflineTilesAvailable: Bool
 
     /// Creates a hybrid routing policy.
     public init(
         preferOfflineRouting: Bool = false,
         offlineRoutingEnabled: Bool = true,
-        hasORSAPIKey: Bool = false
+        hasORSAPIKey: Bool = false,
+        hasOfflineTilesAvailable: Bool = false
     ) {
         self.preferOfflineRouting = preferOfflineRouting
         self.offlineRoutingEnabled = offlineRoutingEnabled
         self.hasORSAPIKey = hasORSAPIKey
+        self.hasOfflineTilesAvailable = hasOfflineTilesAvailable
     }
 
     /// Routing backend selection.
@@ -30,15 +34,20 @@ public struct HybridRoutingPolicy: Sendable, Hashable {
         case offlineTiles
     }
 
+    /// Offline may be used when the toggle is on and tiles (or a tile server) exist.
+    public var canUseOffline: Bool {
+        offlineRoutingEnabled && hasOfflineTilesAvailable
+    }
+
     /// Preferred primary source before attempting a fallback.
     public var preferredSource: Source {
-        if preferOfflineRouting, offlineRoutingEnabled {
+        if preferOfflineRouting, canUseOffline {
             return .offlineTiles
         }
         if hasORSAPIKey {
             return .openRouteService
         }
-        if offlineRoutingEnabled {
+        if canUseOffline {
             return .offlineTiles
         }
         return .openRouteService
@@ -46,7 +55,12 @@ public struct HybridRoutingPolicy: Sendable, Hashable {
 
     /// Whether ORS failure should fall back to offline tiles.
     public var shouldFallbackToOfflineOnORSFailure: Bool {
-        offlineRoutingEnabled && !preferOfflineRouting && hasORSAPIKey
+        canUseOffline && !preferOfflineRouting && hasORSAPIKey
+    }
+
+    /// Neither ORS key nor offline tiles are usable.
+    public var lacksAnyRoutingBackend: Bool {
+        !hasORSAPIKey && !canUseOffline
     }
 }
 
@@ -97,6 +111,10 @@ extension RoutePlanner {
         policy: HybridRoutingPolicy,
         offlineStore: DiskOfflineGraphStore
     ) async throws -> (SearchResult, [Coordinate], HybridRoutingPolicy.Source) {
+        if policy.lacksAnyRoutingBackend {
+            throw OfflineGraphStoreError.noTilesAvailable
+        }
+
         switch policy.preferredSource {
         case .offlineTiles:
             do {

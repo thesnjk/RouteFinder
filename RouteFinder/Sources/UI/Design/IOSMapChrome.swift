@@ -22,6 +22,9 @@ struct IOSMapChrome: View {
         Color.clear
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .allowsHitTesting(false)
+            .onChange(of: viewModel.routeDetailCollapseTick) { _, _ in
+                isDetailExpanded = false
+            }
             .overlay(alignment: .top) {
                 topChrome
                     .padding(.horizontal, RFSpacing.md)
@@ -439,6 +442,12 @@ private struct IOSRouteSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
+            if viewModel.routeFailure != nil {
+                Text("Route failed — see details")
+                    .font(RFFont.caption)
+                    .foregroundStyle(.secondary)
+            }
+
                 HStack {
                     Button("Add Stop") { viewModel.addWaypoint() }
                         .buttonStyle(.borderless)
@@ -458,19 +467,21 @@ private struct IOSRouteSheet: View {
             RouteFailureSheet(presentation: failure) {
                 viewModel.routeFailure = nil
             }
-        }
+        } else {
+            if viewModel.isRouteDimensionBlocked {
+                RouteBlockedOverlay()
+            } else if viewModel.showsHGVRouteFailureBanner {
+                HGVRouteFailureBanner()
+            }
 
-        if viewModel.isRouteDimensionBlocked {
-            RouteBlockedOverlay()
-        } else if viewModel.showsHGVRouteFailureBanner {
-            HGVRouteFailureBanner()
+            RouteSummaryCard(
+                viewModel: viewModel,
+                embeddedInBottomSheet: true,
+                isExpanded: (viewModel.errorMessage != nil && viewModel.result == nil)
+                    ? .constant(false)
+                    : $isDetailExpanded
+            )
         }
-
-        RouteSummaryCard(
-            viewModel: viewModel,
-            embeddedInBottomSheet: true,
-            isExpanded: $isDetailExpanded
-        )
     }
 }
 

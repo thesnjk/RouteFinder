@@ -57,7 +57,8 @@ struct RouteFailureSheet: View {
             }
         }
         .padding(RFSpacing.lg)
-        .frame(minWidth: 340)
+        .frame(minWidth: 340, maxWidth: 480)
+        .fixedSize(horizontal: false, vertical: true)
         .controlSheetStyle()
         .padding(RFSpacing.md)
     }

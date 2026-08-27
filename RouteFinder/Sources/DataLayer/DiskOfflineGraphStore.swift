@@ -9,10 +9,14 @@ public enum OfflineGraphStoreError: Error, Sendable, LocalizedError {
     case decodeFailed(cell: String, underlying: Error)
     case invalidTileServerURL
 
+    /// Shared actionable copy when neither ORS nor offline tiles can route.
+    public static let missingBackendUserMessage =
+        "No offline map tiles and no OpenRouteService key. Add an ORS key in Settings, or install *.graphjson under Application Support/RouteFinder/tiles/."
+
     public var errorDescription: String? {
         switch self {
         case .noTilesAvailable:
-            return "No offline graph tiles found. Pre-place *.graphjson under Application Support/RouteFinder/tiles/ or configure a tile server URL."
+            return Self.missingBackendUserMessage
         case .downloadFailed(let cell, let status):
             return "Failed to download tile \(cell) (HTTP \(status))."
         case .decodeFailed(let cell, _):
@@ -98,6 +102,21 @@ public actor DiskOfflineGraphStore: OfflineGraphStorePort {
     /// Number of H3 cells currently held in memory.
     public func loadedTileCount() -> Int {
         loadedCells.count
+    }
+
+    /// Whether any `*.graphjson` files exist in the local tiles directory.
+    public func hasLocalTiles() -> Bool {
+        H3TileIndex(tilesDirectory: tilesDirectory).hasGraphJSONTiles()
+    }
+
+    /// Whether a remote tile CDN base URL is configured.
+    public func hasTileServerURL() -> Bool {
+        tileBaseURL != nil
+    }
+
+    /// Offline routing is usable when local tiles exist or a tile server URL is set.
+    public func hasOfflineTilesAvailable() -> Bool {
+        hasLocalTiles() || hasTileServerURL()
     }
 
     /// Ensures graph tiles covering the bounding box are on disk and assembled in memory.

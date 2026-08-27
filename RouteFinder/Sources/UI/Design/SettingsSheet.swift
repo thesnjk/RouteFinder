@@ -228,6 +228,7 @@ struct SettingsSheet: View {
                 .onChange(of: viewModel.offlineRoutingEnabled) { _, _ in
                     viewModel.persistOfflineRoutingEnabled()
                 }
+                .help("Only used when local *.graphjson tiles exist or a tile server URL is set. Otherwise ORS is used when keyed.")
 
             Toggle("Prefer offline routing", isOn: $viewModel.preferOfflineRouting)
                 .onChange(of: viewModel.preferOfflineRouting) { _, _ in

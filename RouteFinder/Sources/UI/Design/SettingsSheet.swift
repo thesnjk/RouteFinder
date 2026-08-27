@@ -415,7 +415,7 @@ struct SettingsSheet: View {
                 .textFieldStyle(GlassTextFieldStyle())
                 .onSubmit { viewModel.persistOpenWeatherAPIKey() }
 
-            Text("Optional. Used for live weather-aware routing when --weather is not set. Get a key at openweathermap.org.")
+            Text("Optional. Used for live weather-aware road conditions. Takes effect immediately after save (no restart). Get a key at openweathermap.org.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 

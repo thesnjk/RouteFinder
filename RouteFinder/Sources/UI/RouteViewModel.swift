@@ -5,6 +5,7 @@ import DataLayer
 import MapLibreUI
 import NavigationCore
 import RouteController
+import SharedCore
 import SwiftUI
 
 /// Pending geocode disambiguation request.
@@ -547,7 +548,9 @@ public final class RouteViewModel {
         // Always mirror registry credentials for VehicleRegistryCoordinator.makeDefault().
         switch kind {
         case .ors: VehicleProfileStore.saveORSAPIKey(value)
-        case .openWeather: VehicleProfileStore.saveOpenWeatherAPIKey(value)
+        case .openWeather:
+            VehicleProfileStore.saveOpenWeatherAPIKey(value)
+            DefaultWeatherService.notifyConfigurationDidChange()
         case .dvla: VehicleProfileStore.saveDVLAAPIKey(value)
         case .tomTom: VehicleProfileStore.saveTomTomAPIKey(value)
         case .regCheckUsername: VehicleProfileStore.saveRegCheckUsername(value)

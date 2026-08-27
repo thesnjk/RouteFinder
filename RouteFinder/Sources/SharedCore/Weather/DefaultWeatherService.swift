@@ -1,6 +1,13 @@
 import DataLayer
 import Foundation
 
+extension Notification.Name {
+    /// Posted when the OpenWeather API key is saved or cleared so live weather can hot-reload.
+    public static let weatherConfigurationDidChange = Notification.Name(
+        "RouteFinder.weatherConfigurationDidChange"
+    )
+}
+
 /// Chooses the live weather backend for road-condition automation.
 public enum WeatherBackendKind: String, Sendable, Equatable {
     /// OpenWeather HTTP API (works without WeatherKit entitlement).
@@ -29,6 +36,11 @@ public enum DefaultWeatherService {
     /// Settings hint shown when live weather fails without an OpenWeather key.
     public static let openWeatherSettingsHint =
         "Add an OpenWeather API key in Settings for live auto weather without WeatherKit."
+
+    /// Posts `weatherConfigurationDidChange` after OpenWeather credentials change.
+    public static func notifyConfigurationDidChange() {
+        NotificationCenter.default.post(name: .weatherConfigurationDidChange, object: nil)
+    }
 
     #if os(iOS)
     /// Builds the preferred weather service for automatic road-condition updates.

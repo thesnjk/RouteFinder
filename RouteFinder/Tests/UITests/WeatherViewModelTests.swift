@@ -59,5 +59,21 @@ struct WeatherViewModelTests {
         #expect(viewModel.isAutomatic)
         #expect(viewModel.effectiveCondition == .rain)
     }
+
+    @Test @MainActor func replaceWeatherServiceRefetchesWithNewBackend() async {
+        let first = MockWeatherService(result: .dry)
+        let second = MockWeatherService(result: .rain)
+        let locationService = LocationService()
+        let viewModel = WeatherViewModel(weatherService: first, locationService: locationService)
+
+        viewModel.processLocationUpdateForTesting(CLLocationCoordinate2D(latitude: 51.5, longitude: -0.12))
+        try? await Task.sleep(for: .milliseconds(300))
+        #expect(viewModel.effectiveCondition == .dry)
+
+        viewModel.replaceWeatherService(second)
+        try? await Task.sleep(for: .milliseconds(300))
+        #expect(viewModel.effectiveCondition == .rain)
+        #expect(viewModel.lastError == nil)
+    }
 }
 #endif

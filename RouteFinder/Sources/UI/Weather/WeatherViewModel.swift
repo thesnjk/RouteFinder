@@ -15,11 +15,12 @@ public final class WeatherViewModel: ObservableObject {
 
     public var isAutomatic: Bool { manualOverride == nil }
 
-    private let weatherService: any WeatherService
+    private var weatherService: any WeatherService
     private let locationService: LocationService
     private var lastWeatherFetchLocation: CLLocation?
     private var fetchTask: Task<Void, Never>?
     private var isMonitoring = false
+    private let weatherConfigurationObserver = FleetStoreConfigurationObserver()
 
     /// Creates a weather view model with injectable services.
     public init(
@@ -28,6 +29,15 @@ public final class WeatherViewModel: ObservableObject {
     ) {
         self.weatherService = weatherService
         self.locationService = locationService
+        weatherConfigurationObserver.token = NotificationCenter.default.addObserver(
+            forName: .weatherConfigurationDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.reloadPreferredWeatherService()
+            }
+        }
     }
 
     /// Creates a view model with the preferred live weather stack.
@@ -39,6 +49,26 @@ public final class WeatherViewModel: ObservableObject {
             weatherService: DefaultWeatherService.make(),
             locationService: LocationService()
         )
+    }
+
+    /// Swaps the live weather backend (e.g. after OpenWeather key save) and refetches if possible.
+    public func replaceWeatherService(_ service: any WeatherService) {
+        fetchTask?.cancel()
+        fetchTask = nil
+        weatherService = service
+        lastError = nil
+        let previous = lastWeatherFetchLocation
+        lastWeatherFetchLocation = nil
+        if let previous {
+            fetchTask = Task { [weak self] in
+                await self?.fetchWeather(at: previous)
+            }
+        }
+    }
+
+    /// Rebuilds the preferred backend from Settings / environment and applies it immediately.
+    public func reloadPreferredWeatherService() {
+        replaceWeatherService(DefaultWeatherService.make())
     }
 
     /// Begins location monitoring and weather refresh on significant movement.

@@ -10,7 +10,7 @@ Built as a Swift 6 Swift Package with SwiftUI, MapLibre (WKWebView), and HeiGIT 
 - **Physics rehearsal** — pre-trip kinetic risk (grade, brake fade, slip) with a shareable trip brief (plain text or PDF with route map when geometry is available)
 - **Hours of service (advisory)** — EU Regulation 561 / Working Time Directive clock, rest insertion suggestions, driver-card JSON/DDD import, “Can I drive now?”
 - **CarPlay** — turn-by-turn templates with voice coexistence hooks (iOS)
-- **UK living layer** — plate → vehicle profile (RegCheck + DVLA), truck POIs (fuel / parking / weigh / layby), LEZ / CAZ banners **and avoid-on-route** for non-compliant emission classes (Settings toggle), on-device layby occupancy taps with age-weighted priors and last-seen banner copy (Looks full / Has spaces)
+- **UK living layer** — plate → vehicle profile (RegCheck + DVLA), truck POIs (fuel / parking / weigh / layby), LEZ / CAZ banners **and avoid-on-route** using simplified authored zone rings for non-compliant emission classes (Settings toggle; envelopes are approximate, not legal cadastral), on-device layby occupancy taps with age-weighted priors and last-seen banner copy (Looks full / Has spaces)
 - **Fleet MVP** — native dispatch console + disk-backed org → trip → physics ETA; optional **LAN sync** via `RouteFinderFleetServer`
 - **Offline routing & maps** — H3 graph tiles + hybrid ORS/offline policy; optional local MapLibre map pack via on-device HTTP
 - **Live traffic reroute** — TomTom flow sampling can trigger an ORS `avoid_polygons` recalculation
@@ -98,7 +98,7 @@ Personal (free) Apple teams: `RouteFinderApp` ships without WeatherKit or CarPla
 - Confirm [`RouteFinderApp/RouteFinderApp.entitlements`](../RouteFinderApp/RouteFinderApp.entitlements) is an empty plist — the signed app should contain only `application-identifier`, `com.apple.developer.team-identifier`, and `get-task-allow` (no WeatherKit or CarPlay).
 - Expect **no signing/provisioning errors** for `com.apple.developer.weatherkit` or `com.apple.developer.carplay-maps`.
 - **Runtime limitations on personal team:** Without an OpenWeather key, WeatherKit auto-fetch fails gracefully (`WeatherViewModel.lastError` includes a Settings hint). Saving an OpenWeather key in Settings (or `OPENWEATHER_API_KEY`) switches live auto weather to OpenWeather immediately — no app restart. CarPlay scene wiring is present in `Info.plist` but in-car UI will not connect without a paid-team CarPlay entitlement.
-- `swift test` (384 tests) and `xcodebuild -scheme RouteFinderApp` succeed with zero app-target Swift compiler warnings. Phase 20 claim inventory + QA log: [`Docs/phase20-verification.md`](Docs/phase20-verification.md); competitive matrix: [`Docs/competitive-gap-matrix.md`](Docs/competitive-gap-matrix.md).
+- `swift test` (387 tests) and `xcodebuild -scheme RouteFinderApp` succeed with zero app-target Swift compiler warnings. Phase 20 claim inventory + QA log: [`Docs/phase20-verification.md`](Docs/phase20-verification.md); competitive matrix: [`Docs/competitive-gap-matrix.md`](Docs/competitive-gap-matrix.md).
 - Swift Testing `@Test` / `@Suite` deprecation messages during `swift test` are upstream framework noise and do not affect the app target build.
 
 Optional CLI build (requires full Xcode selected, not Command Line Tools only):

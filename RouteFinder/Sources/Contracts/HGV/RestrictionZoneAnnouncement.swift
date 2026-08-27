@@ -35,16 +35,21 @@ public struct RestrictionZoneAnnouncement: Sendable, Hashable, Codable, Equatabl
 
 /// Seed catalog of major UK low-emission / clean-air zones for along-route alerts and ORS avoidance.
 public enum UKLowEmissionZoneCatalog: Sendable {
-    /// Approximate circular UK LEZ / CAZ for corridor checks and avoid polygons.
+    /// Approximate UK LEZ / CAZ for corridor checks and avoid polygons.
+    ///
+    /// Prefer ``boundaryRing`` (hand-authored simplified envelope) when present; otherwise a circle.
+    /// Rings are **not** legal survey boundaries.
     public struct Zone: Sendable, Hashable {
         public let id: String
         public let label: String
         public let latitude: Double
         public let longitude: Double
-        /// Approximate zone radius in meters for corridor intersection.
+        /// Approximate zone radius in meters (corridor envelope / circle fallback).
         public let radiusMeters: Double
         /// Lowest emission class treated as compliant for avoid-on-route.
         public let minimumCompliantClass: EmissionClass
+        /// Optional closed GeoJSON-style `[lon, lat]` ring (preferred over circle).
+        public let boundaryRing: [[Double]]?
 
         /// Creates a catalog zone.
         public init(
@@ -53,7 +58,8 @@ public enum UKLowEmissionZoneCatalog: Sendable {
             latitude: Double,
             longitude: Double,
             radiusMeters: Double,
-            minimumCompliantClass: EmissionClass = .euro6
+            minimumCompliantClass: EmissionClass = .euro6,
+            boundaryRing: [[Double]]? = nil
         ) {
             self.id = id
             self.label = label
@@ -61,6 +67,7 @@ public enum UKLowEmissionZoneCatalog: Sendable {
             self.longitude = longitude
             self.radiusMeters = radiusMeters
             self.minimumCompliantClass = minimumCompliantClass
+            self.boundaryRing = Self.ensureClosed(boundaryRing)
         }
 
         /// Geographic center of the approximate zone.
@@ -68,15 +75,27 @@ public enum UKLowEmissionZoneCatalog: Sendable {
             Coordinate(latitude: latitude, longitude: longitude)
         }
 
-        /// Whether `point` falls inside the approximate circular zone.
+        /// Whether `point` falls inside the zone (polygon ring when present, else circle).
         public func contains(_ point: Coordinate) -> Bool {
-            haversineMeters(center, point) <= radiusMeters
+            if let boundaryRing {
+                return pointInPolygon(point, ring: boundaryRing)
+            }
+            return haversineMeters(center, point) <= radiusMeters
         }
 
-        /// Closed GeoJSON-style `[lon, lat]` ring approximating the zone as an N-gon.
+        /// Closed GeoJSON-style `[lon, lat]` ring for ORS `avoid_polygons`.
         ///
-        /// - Parameter pointCount: Number of vertices before closing (minimum 3).
+        /// Returns the authored ``boundaryRing`` when present; otherwise an N-gon circle.
+        ///
+        /// - Parameter pointCount: Number of vertices before closing for circle fallback (minimum 3).
         public func avoidPolygonRing(pointCount: Int = 16) -> [[Double]] {
+            if let boundaryRing {
+                return boundaryRing
+            }
+            return circlePolygonRing(pointCount: pointCount)
+        }
+
+        private func circlePolygonRing(pointCount: Int) -> [[Double]] {
             let count = max(3, pointCount)
             let earthRadius = 6_371_000.0
             let angularDistance = radiusMeters / earthRadius
@@ -102,15 +121,65 @@ public enum UKLowEmissionZoneCatalog: Sendable {
             }
             return ring
         }
+
+        private static func ensureClosed(_ ring: [[Double]]?) -> [[Double]]? {
+            guard var ring, let first = ring.first else { return ring }
+            if ring.last != first {
+                ring.append(first)
+            }
+            return ring
+        }
     }
 
     public static let zones: [Zone] = [
-        Zone(id: "london-ulez", label: "London ULEZ", latitude: 51.5074, longitude: -0.1278, radiusMeters: 18_000),
-        Zone(id: "birmingham-caz", label: "Birmingham CAZ", latitude: 52.4862, longitude: -1.8904, radiusMeters: 4_000),
-        Zone(id: "bristol-caz", label: "Bristol CAZ", latitude: 51.4545, longitude: -2.5879, radiusMeters: 3_500),
-        Zone(id: "sheffield-caz", label: "Sheffield CAZ", latitude: 53.3811, longitude: -1.4701, radiusMeters: 3_500),
-        Zone(id: "bath-caz", label: "Bath CAZ", latitude: 51.3811, longitude: -2.3590, radiusMeters: 2_500),
-        Zone(id: "newcastle-caz", label: "Newcastle CAZ", latitude: 54.9783, longitude: -1.6178, radiusMeters: 3_000),
+        Zone(
+            id: "london-ulez",
+            label: "London ULEZ",
+            latitude: 51.5074,
+            longitude: -0.1278,
+            radiusMeters: 18_000,
+            boundaryRing: UKLowEmissionZoneBoundaries.londonULEZ
+        ),
+        Zone(
+            id: "birmingham-caz",
+            label: "Birmingham CAZ",
+            latitude: 52.4862,
+            longitude: -1.8904,
+            radiusMeters: 4_000,
+            boundaryRing: UKLowEmissionZoneBoundaries.birminghamCAZ
+        ),
+        Zone(
+            id: "bristol-caz",
+            label: "Bristol CAZ",
+            latitude: 51.4545,
+            longitude: -2.5879,
+            radiusMeters: 3_500,
+            boundaryRing: UKLowEmissionZoneBoundaries.bristolCAZ
+        ),
+        Zone(
+            id: "sheffield-caz",
+            label: "Sheffield CAZ",
+            latitude: 53.3811,
+            longitude: -1.4701,
+            radiusMeters: 3_500,
+            boundaryRing: UKLowEmissionZoneBoundaries.sheffieldCAZ
+        ),
+        Zone(
+            id: "bath-caz",
+            label: "Bath CAZ",
+            latitude: 51.3811,
+            longitude: -2.3590,
+            radiusMeters: 2_500,
+            boundaryRing: UKLowEmissionZoneBoundaries.bathCAZ
+        ),
+        Zone(
+            id: "newcastle-caz",
+            label: "Newcastle CAZ",
+            latitude: 54.9783,
+            longitude: -1.6178,
+            radiusMeters: 3_000,
+            boundaryRing: UKLowEmissionZoneBoundaries.newcastleCAZ
+        ),
     ]
 
     /// Returns LEZ announcements where the route polyline intersects known UK zones.
@@ -135,9 +204,7 @@ public enum UKLowEmissionZoneCatalog: Sendable {
             let to = route[index + 1]
             let segment = haversineMeters(from, to)
             for zone in zones {
-                let dFrom = haversineMeters(from, zone.center)
-                let dTo = haversineMeters(to, zone.center)
-                if min(dFrom, dTo) <= zone.radiusMeters {
+                if zone.intersectsCorridor(from: from, to: to) {
                     let already = results.contains { $0.zoneId == zone.id }
                     if !already {
                         results.append(
@@ -176,6 +243,23 @@ public enum UKLowEmissionZoneCatalog: Sendable {
             return "Avoiding \(zone.label) (vehicle emission below zone requirement)."
         }
         return "\(zone.label) ahead. Check vehicle compliance before entry."
+    }
+}
+
+extension UKLowEmissionZoneCatalog.Zone {
+    /// Whether a route segment intersects this zone (polygon membership or circle envelope).
+    fileprivate func intersectsCorridor(from: Coordinate, to: Coordinate) -> Bool {
+        if contains(from) || contains(to) { return true }
+        // Midpoint sample catches short chords that clip a corner of the ring.
+        let mid = Coordinate(
+            latitude: (from.latitude + to.latitude) / 2,
+            longitude: (from.longitude + to.longitude) / 2
+        )
+        if contains(mid) { return true }
+        // Circle envelope remains a cheap outer hit-test for corridor alerts.
+        let dFrom = haversineMeters(from, center)
+        let dTo = haversineMeters(to, center)
+        return min(dFrom, dTo) <= radiusMeters
     }
 }
 
@@ -249,6 +333,34 @@ public enum PoiConfidenceAdjuster: Sendable {
             return poi.withConfidence(confidence)
         }
     }
+}
+
+/// Ray-casting point-in-polygon for a closed `[lon, lat]` ring.
+func pointInPolygon(_ point: Coordinate, ring: [[Double]]) -> Bool {
+    let vertexCount = (ring.count >= 2 && ring.first == ring.last) ? ring.count - 1 : ring.count
+    guard vertexCount >= 3 else { return false }
+
+    let x = point.longitude
+    let y = point.latitude
+    var inside = false
+    var j = vertexCount - 1
+    for i in 0..<vertexCount {
+        let xi = ring[i][0]
+        let yi = ring[i][1]
+        let xj = ring[j][0]
+        let yj = ring[j][1]
+        if (yi > y) != (yj > y) {
+            let denom = yj - yi
+            if abs(denom) > 1e-12 {
+                let xCross = (xj - xi) * (y - yi) / denom + xi
+                if x < xCross {
+                    inside.toggle()
+                }
+            }
+        }
+        j = i
+    }
+    return inside
 }
 
 private func haversineMeters(_ a: Coordinate, _ b: Coordinate) -> Double {

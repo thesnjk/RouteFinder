@@ -1,11 +1,11 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-27 (Phase 22 layby community signal expansion)  
+Last updated: 2026-08-27 (Phase 23 UK LEZ / CAZ geometry upgrade)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then CarPlay parity, then fleet/dispatch, then advisory tacho + offline packs.
 
 > Phase 20 refreshed competitor intel from public product pages (2026-08-27). Parallel deep-research remains blocked (`APIConnectionError` / `api.parallel.ai` unreachable). Firecrawl CLI was unavailable in-session; sources below are live web pages.
 
-## Programme status (Phases 0–22)
+## Programme status (Phases 0–23)
 
 | Phase | Focus | Status |
 |---|---|---|
@@ -32,6 +32,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **20** | Competitive refresh + product verification | **Done** — see [`phase20-verification.md`](phase20-verification.md) |
 | **21** | UK LEZ / CAZ avoid-on-route — EmissionClass + ORS `avoid_polygons` | **Done** — `LEZAvoidPolicy` + Settings toggle; destination-inside zones still allowed |
 | **22** | Layby community signal expansion — age-weighted multi-report prior + last-seen banner | **Done** — `ParkingOccupancyPrior` fusion + `LaybyAdvisory` last-seen fields |
+| **23** | UK LEZ / CAZ geometry upgrade — hand-authored simplified boundary rings | **Done** — `UKLowEmissionZoneBoundaries` (approximate envelopes, not legal cadastral) |
 
 ### Remaining gaps (explicitly not claiming parity)
 
@@ -41,7 +42,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 - **In-process planet PBF** parser (pipeline uses osmium + `PBFPreprocessor` / tile scripts instead)
 - Paid live fuel-price API / SNAP booking
 - **Hosted fleet web portal / multi-tenant SaaS** (native dispatch + secured LAN server shipped; hosted portal deferred)
-- Exact legal LEZ polygon boundaries / diesel vs petrol nuance (approximate circular catalog zones)
+- Legal cadastral LEZ polygons / diesel vs petrol nuance (authored rings are simplified envelopes)
 
 ## Competitor strengths (Phase 20 refresh — 2026-08-27)
 
@@ -71,7 +72,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | Fleet dispatch / shared physics ETA | **Shipped** (native dispatch + LAN sync + SSE + trip brief) | Weak | **Strong** | Phase 8–16 |
 | Predictive layby / break stop | **Strong** (fused HOS + company window + physics + occupancy; $0 APIs) | Weak (CoPilot: HOS breaks + paid parking hold) | Weak | **Wedge vs CoPilot** — no parking booking fee |
 | Driver community dock/parking intel | **Age-weighted multi-report Full/Spaces** + last-seen banner copy | Garmin community | Crowdsource | Phase 19–22 |
-| LEZ compliance | **Banners + avoid-on-route** (approx. UK catalog → ORS `avoid_polygons`; Euro 6 exempt; destination-inside allowed) | Strong avoid (Sygic/TomTom) | Varies | Phase 21 |
+| LEZ compliance | **Banners + avoid-on-route** with **simplified authored rings** (Euro 6 exempt; destination-inside allowed) | Strong avoid (Sygic/TomTom) | Varies | Phase 21–23 |
 | Walkaround inspection | **Local DVSA checklist + disk store** | Varies | Strong | Glass UI |
 | Live weather road conditions | **OpenWeather preferred** + WeatherKit fallback | Varies | Strong | Phase 17–18; WeatherKit needs paid team |
 
@@ -99,10 +100,10 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 
 **Do not chase:** CoPilot parking booking fees, ELD vendor lock-in, Android Auto, hosted multi-tenant SaaS — unless an urgent UK wedge appears.
 
-## Phase 23+ backlog (ranked)
+## Phase 24+ backlog (ranked)
 
-1. **Phase 23:** Paid-team CarPlay entitlement restore + device QA checklist (only when signing allows).
-2. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs, exact LEZ boundary polygons.
+1. **Phase 24:** Paid-team CarPlay entitlement restore + device QA checklist (only when signing allows).
+2. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs, legal cadastral LEZ polygons.
 
 ## 90-day bar checklist
 
@@ -134,6 +135,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | Offline map packs | OfflineMaps | Done (Phase 4) |
 | Competitive intel refresh | CompetitiveIntel | **Partial** — Phase 20 public-web Done; Parallel API still Pending |
 | LEZ avoid-on-route | UKLivingLayer | **Done** (Phase 21) |
+| LEZ simplified geometry | UKLivingLayer | **Done** (Phase 23) |
 
 ## Sources
 

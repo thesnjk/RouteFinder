@@ -57,13 +57,50 @@ import Testing
 @Test func ukLezZoneAvoidPolygonRingIsClosed() {
     let zone = try! #require(UKLowEmissionZoneCatalog.zones.first { $0.id == "london-ulez" })
     let ring = zone.avoidPolygonRing(pointCount: 16)
-    #expect(ring.count == 17)
+    #expect(ring.count >= 4)
     #expect(ring.first == ring.last)
+    #expect(ring == UKLowEmissionZoneBoundaries.londonULEZ)
     for point in ring {
         #expect(point.count == 2)
         #expect((-180...180).contains(point[0]))
         #expect((-90...90).contains(point[1]))
     }
+}
+
+@Test func ukLezAllZonesUseAuthoredBoundaryRings() {
+    for zone in UKLowEmissionZoneCatalog.zones {
+        #expect(zone.boundaryRing != nil)
+        #expect(zone.avoidPolygonRing() == zone.boundaryRing)
+        #expect(zone.avoidPolygonRing().first == zone.avoidPolygonRing().last)
+    }
+}
+
+@Test func ukLezPolygonContainsCentralPointsAndExcludesFarAway() {
+    let london = try! #require(UKLowEmissionZoneCatalog.zones.first { $0.id == "london-ulez" })
+    #expect(london.contains(Coordinate(latitude: 51.5074, longitude: -0.1278)))
+    #expect(london.contains(Coordinate(latitude: 51.45, longitude: -0.20)))
+    // Outside Greater London envelope (roughly Oxford).
+    #expect(!london.contains(Coordinate(latitude: 51.7520, longitude: -1.2577)))
+
+    let bath = try! #require(UKLowEmissionZoneCatalog.zones.first { $0.id == "bath-caz" })
+    #expect(bath.contains(Coordinate(latitude: 51.3811, longitude: -2.3590)))
+    #expect(!bath.contains(Coordinate(latitude: 51.45, longitude: -2.60)))
+}
+
+@Test func ukLezCircleFallbackWhenNoBoundaryRing() {
+    let circleOnly = UKLowEmissionZoneCatalog.Zone(
+        id: "test-circle",
+        label: "Test",
+        latitude: 51.5,
+        longitude: -0.1,
+        radiusMeters: 1_000,
+        boundaryRing: nil
+    )
+    let ring = circleOnly.avoidPolygonRing(pointCount: 8)
+    #expect(ring.count == 9)
+    #expect(ring.first == ring.last)
+    #expect(circleOnly.contains(Coordinate(latitude: 51.5, longitude: -0.1)))
+    #expect(!circleOnly.contains(Coordinate(latitude: 52.0, longitude: -0.1)))
 }
 
 @Test func lezAvoidPolicyEuro6ProducesNoPolygons() {

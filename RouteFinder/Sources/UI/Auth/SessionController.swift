@@ -135,12 +135,20 @@ public final class SessionController {
 
     private func unlock(_ record: LocalAccountRecord) throws {
         let keyVault = APIKeyVault(userID: record.userID)
-        try keyVault.migrateFromUserDefaultsIfNeeded()
+        var keychainMessage: String?
+        do {
+            try keyVault.migrateFromUserDefaultsIfNeeded()
+            _ = try keyVault.loadAll()
+        } catch let error as KeychainStore.Error {
+            keychainMessage = error.localizedDescription
+        } catch {
+            keychainMessage = error.localizedDescription
+        }
         vault = keyVault
         currentUserID = record.userID
         currentEmail = record.email
         accountExists = true
         phase = .authenticated
-        errorMessage = nil
+        errorMessage = keychainMessage
     }
 }

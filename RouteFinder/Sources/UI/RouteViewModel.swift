@@ -412,7 +412,8 @@ public final class RouteViewModel {
         let tileBase = tileURLString.flatMap { URL(string: $0) }
         offlineGraphStore = DiskOfflineGraphStore(tileBaseURL: tileBase)
         fleetStore = FleetStoreFactory.makeStore()
-        let secrets = Self.loadSecretsSnapshot(from: vault)
+        let snapshot = Self.loadSecretsSnapshot(from: vault)
+        let secrets = snapshot.secrets
         let savedTomTomKey = secrets[.tomTom] ?? VehicleProfileStore.loadTomTomAPIKey()
         let engine = RouteSimulationEngine(tomTomAPIKey: savedTomTomKey)
         simulationEngine = engine
@@ -432,6 +433,9 @@ public final class RouteViewModel {
             tomTom: savedTomTomKey,
             openWeather: secrets[.openWeather] ?? VehicleProfileStore.loadOpenWeatherAPIKey()
         )
+        if let vaultLoadError = snapshot.loadError {
+            errorMessage = vaultLoadError
+        }
         #if os(macOS)
         if orsAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             useAppleSearchFallback = true
@@ -479,20 +483,31 @@ public final class RouteViewModel {
            hasORSAPIKey || hasDVLAAPIKey || hasTomTomAPIKey || hasOpenWeatherAPIKey || hasRegCheckUsername {
             return
         }
-        let secrets = Self.loadSecretsSnapshot(from: vault)
+        let snapshot = Self.loadSecretsSnapshot(from: vault)
         applyLoadedSecrets(
-            ors: secrets[.ors],
-            dvla: secrets[.dvla],
-            regCheck: secrets[.regCheckUsername],
-            tomTom: secrets[.tomTom],
-            openWeather: secrets[.openWeather]
+            ors: snapshot.secrets[.ors],
+            dvla: snapshot.secrets[.dvla],
+            regCheck: snapshot.secrets[.regCheckUsername],
+            tomTom: snapshot.secrets[.tomTom],
+            openWeather: snapshot.secrets[.openWeather]
         )
+        if let vaultLoadError = snapshot.loadError {
+            errorMessage = vaultLoadError
+        }
         updateCloudRoutingBanner()
     }
 
-    private static func loadSecretsSnapshot(from vault: APIKeyVault?) -> [APIKeyKind: String] {
-        guard let vault else { return [:] }
-        return (try? vault.loadAll()) ?? [:]
+    private static func loadSecretsSnapshot(
+        from vault: APIKeyVault?
+    ) -> (secrets: [APIKeyKind: String], loadError: String?) {
+        guard let vault else { return ([:], nil) }
+        do {
+            return (try vault.loadAll(), nil)
+        } catch let error as KeychainStore.Error {
+            return ([:], error.localizedDescription)
+        } catch {
+            return ([:], error.localizedDescription)
+        }
     }
 
     private func applyLoadedSecrets(
@@ -548,7 +563,11 @@ public final class RouteViewModel {
 
     private func persistSecret(_ value: String, kind: APIKeyKind) {
         if let apiKeyVault {
-            try? apiKeyVault.save(value, for: kind)
+            do {
+                try apiKeyVault.save(value, for: kind)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
         // Always mirror registry credentials for VehicleRegistryCoordinator.makeDefault().
         switch kind {

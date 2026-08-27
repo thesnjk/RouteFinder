@@ -265,6 +265,13 @@ extension UKLowEmissionZoneCatalog.Zone {
 
 /// Builds ORS `avoid_polygons` rings for UK LEZ / CAZ zones the vehicle is not compliant with.
 public enum LEZAvoidPolicy: Sendable {
+    /// HeiGIT ORS maximum area for a single avoid polygon (~200 km²).
+    public static let orsMaxAvoidPolygonAreaSquareMeters: Double = 2.0e8
+
+    /// Soft cap used when sending rings (leave headroom under the hard ORS limit).
+    public static let avoidPolygonAreaCapSquareMeters: Double =
+        orsMaxAvoidPolygonAreaSquareMeters * 0.9
+
     /// Whether the vehicle should avoid `zone` based on emission class.
     ///
     /// Missing emission class is treated as non-compliant (avoid when the toggle is on).
@@ -279,6 +286,8 @@ public enum LEZAvoidPolicy: Sendable {
     /// Returns closed `[lon, lat]` rings for zones to avoid on the next ORS request.
     ///
     /// Zones that contain `destination` are omitted so routing can still reach the stop.
+    /// Rings whose approximate area exceeds ``avoidPolygonAreaCapSquareMeters`` are omitted
+    /// (ORS rejects them with error 2003); oversized zones still appear in along-route announcements.
     public static func polygons(
         emissionClass: EmissionClass?,
         avoidEnabled: Bool,
@@ -290,9 +299,38 @@ public enum LEZAvoidPolicy: Sendable {
         for zone in zones {
             guard shouldAvoid(zone: zone, emissionClass: emissionClass) else { continue }
             if let destination, zone.contains(destination) { continue }
-            rings.append(zone.avoidPolygonRing())
+            let ring = zone.avoidPolygonRing()
+            guard approximateRingAreaSquareMeters(ring) <= avoidPolygonAreaCapSquareMeters else {
+                continue
+            }
+            rings.append(ring)
         }
         return rings
+    }
+
+    /// Approximate geodesic area of a closed `[lon, lat]` ring in square meters.
+    public static func approximateRingAreaSquareMeters(_ ring: [[Double]]) -> Double {
+        let vertexCount = (ring.count >= 2 && ring.first == ring.last) ? ring.count - 1 : ring.count
+        guard vertexCount >= 3 else { return 0 }
+
+        var latSum = 0.0
+        for i in 0..<vertexCount {
+            latSum += ring[i][1]
+        }
+        let meanLat = latSum / Double(vertexCount)
+        let metersPerDegLat = 111_320.0
+        let metersPerDegLon = 111_320.0 * cos(meanLat * .pi / 180)
+
+        var area = 0.0
+        for i in 0..<vertexCount {
+            let j = (i + 1) % vertexCount
+            let xi = ring[i][0] * metersPerDegLon
+            let yi = ring[i][1] * metersPerDegLat
+            let xj = ring[j][0] * metersPerDegLon
+            let yj = ring[j][1] * metersPerDegLat
+            area += xi * yj - xj * yi
+        }
+        return abs(area) * 0.5
     }
 }
 

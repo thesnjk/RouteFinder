@@ -138,7 +138,7 @@ public final class SessionController {
         var keychainMessage: String?
         do {
             try keyVault.migrateFromUserDefaultsIfNeeded()
-            _ = try keyVault.loadAll()
+            try keyVault.migrateLegacyKeychainIfNeeded()
         } catch let error as KeychainStore.Error {
             keychainMessage = error.localizedDescription
         } catch {

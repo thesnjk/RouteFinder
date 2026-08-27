@@ -392,7 +392,7 @@ struct SettingsSheet: View {
                 .textFieldStyle(GlassTextFieldStyle())
                 .onSubmit { viewModel.persistORSAPIKey() }
 
-            Text("Required for geocoding (`api.heigit.org/pelias/v1`) and HGV routing (`api.heigit.org/openrouteservice/v2`). Obtain a key from HeiGIT. Stored in this Mac’s Keychain for your local account — choose Always Allow if prompted; re-save once after an app update if the key looks empty.")
+            Text("Required for geocoding (`api.heigit.org/pelias/v1`) and HGV routing (`api.heigit.org/openrouteservice/v2`). Obtain a key from HeiGIT. Use the signed RouteFinderMac app (Xcode scheme). If Keychain still prompts or the key looks empty, choose Always Allow once, then re-save here. Old login-Keychain leftovers: delete `com.routefinder.vault.*` in Keychain Access if prompts persist.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 

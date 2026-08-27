@@ -10,7 +10,12 @@ struct FleetServerApp {
     static func main() async throws {
         let config = FleetServerConfig.parse()
         let store = DiskFleetStore(storageDirectory: config.storageDirectory)
-        let router = FleetRouterBuilder.buildRouter(store: store, apiKey: config.apiKey)
+        let eventHub = FleetEventHub()
+        let router = FleetRouterBuilder.buildRouter(
+            store: store,
+            apiKey: config.apiKey,
+            eventHub: eventHub
+        )
 
         let serverBuilder: HTTPServerBuilder
         if let certificatePath = config.tlsCertificatePath,

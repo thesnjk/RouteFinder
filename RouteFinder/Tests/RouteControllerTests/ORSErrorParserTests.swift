@@ -24,6 +24,17 @@ import Testing
     #expect(message?.contains("{") == false)
 }
 
+@Test func orsErrorParserExtractsCode2004AvoidDistanceMessage() {
+    let body = """
+    {"error":{"code":2004,"message":"Request parameters exceed the server configuration limits. With avoid areas, the approximated route distance must not be greater than 150000.0 meters."}}
+    """
+
+    let message = ORSErrorParser.userFacingMessage(status: 400, body: body)
+
+    #expect(message?.contains("too long for LEZ avoid") == true)
+    #expect(message?.contains("{") == false)
+}
+
 @Test func orsErrorParserExtractsGenericMessage() {
     let body = """
     {"error":{"code":2004,"message":"Distance exceeds maximum."}}

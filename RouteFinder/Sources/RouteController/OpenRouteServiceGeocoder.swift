@@ -115,13 +115,16 @@ public actor OpenRouteServiceGeocoder {
             "ireland", "dublin", "netherlands", "amsterdam", "belgium", "brussels",
             "portugal", "lisbon", "poland", "warsaw", "usa", "united states", "new york",
             "canada", "toronto", "australia", "sydney", "europe", "eu ",
-            "norway", "oslo", "sweden", "stockholm", "denmark", "copenhagen",
+            "norway", "oslo", "ålesund", "alesund", "sweden", "stockholm", "denmark", "copenhagen",
         ]
         if overseasMarkers.contains(where: { lowered.contains($0) }) {
             return true
         }
-        // Nordic / Euro street suffixes (e.g. "33 samesvegen").
-        let streetMarkers = ["vegen", "gata", "strasse", "straße", " rue ", " via "]
+        // Nordic / Euro street suffixes (incl. common typos like "wegen").
+        let streetMarkers = [
+            "vegen", "wegen", "veg", "vei", "väg", "gate", "gata",
+            "strasse", "straße", "allee", "platz", " rue ", " via ",
+        ]
         if streetMarkers.contains(where: { lowered.contains($0) }) {
             return true
         }
@@ -244,13 +247,15 @@ public actor OpenRouteServiceGeocoder {
         return items
     }
 
-    /// Builds global Pelias query items (no country lock; focus still ranks near the map). Exposed for tests.
+    /// Builds global Pelias query items (no country lock, no map focus). Exposed for tests.
+    ///
+    /// Omitting ``focus.point`` prevents UK-map bias from ranking domestic “33 …” hits
+    /// ahead of overseas matches.
     public static func globalQueryItems(query: String, near coordinate: Coordinate, limit: Int) -> [URLQueryItem] {
-        [
+        _ = coordinate
+        return [
             URLQueryItem(name: "text", value: query.trimmingCharacters(in: .whitespaces)),
             URLQueryItem(name: "size", value: String(limit)),
-            URLQueryItem(name: "focus.point.lat", value: String(coordinate.latitude)),
-            URLQueryItem(name: "focus.point.lon", value: String(coordinate.longitude)),
         ]
     }
 

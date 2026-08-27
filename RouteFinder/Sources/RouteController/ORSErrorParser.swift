@@ -34,6 +34,9 @@ enum ORSErrorParser {
         if code == 2003 {
             return "Routing failed: an avoid zone is too large for the routing service. Turn off LEZ avoid or set a compliant emission class, then try again."
         }
+        if code == 2004, let message, message.localizedCaseInsensitiveContains("avoid") {
+            return "Routing failed: this trip is too long for LEZ avoid areas on the current OpenRouteService plan (max ~150 km with avoids). Turn off LEZ avoid or set a compliant emission class, then try again."
+        }
         if let message, !message.isEmpty {
             return "Routing failed: \(message)"
         }

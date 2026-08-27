@@ -65,7 +65,7 @@ public enum FleetRouterBuilder {
 
         router.get("v1/vehicles/:vehicleId/events") { _, context async throws -> Response in
             let vehicleId = try requireUUID(context, parameter: "vehicleId")
-            let heartbeatInterval = await eventHub.heartbeatIntervalSeconds
+            let heartbeatInterval = eventHub.heartbeatIntervalSeconds
             return sseResponse(
                 for: vehicleId,
                 eventHub: eventHub,

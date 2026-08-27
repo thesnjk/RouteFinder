@@ -89,7 +89,7 @@ cd RouteFinder
 
 CarPlay entitlements live next to the RouteFinderIOS Swift package target. Use a development team with CarPlay capability for in-car device testing.
 
-Personal (free) Apple teams: `RouteFinderApp` ships without WeatherKit or CarPlay entitlements. Add an **OpenWeather** API key in Settings for live auto weather (preferred when present); otherwise use manual road-condition override. In-car CarPlay UI stays disabled without a paid-team entitlement. Fleet dispatch and routing work normally. Restore WeatherKit/CarPlay entitlements in [`RouteFinderApp/RouteFinderApp.entitlements`](../RouteFinderApp/RouteFinderApp.entitlements) when using a paid Developer Program team with the required capabilities.
+Personal (free) Apple teams: `RouteFinderApp` ships without WeatherKit or CarPlay entitlements. Add an **OpenWeather** API key in Settings for live auto weather (preferred when present; takes effect immediately after save, no restart); otherwise use manual road-condition override. In-car CarPlay UI stays disabled without a paid-team entitlement. Fleet dispatch and routing work normally. Restore WeatherKit/CarPlay entitlements in [`RouteFinderApp/RouteFinderApp.entitlements`](../RouteFinderApp/RouteFinderApp.entitlements) when using a paid Developer Program team with the required capabilities.
 
 **Personal team verification checklist** (verified 2026-08-27 on Xcode 26 / iOS 26.5 SDK):
 
@@ -97,7 +97,7 @@ Personal (free) Apple teams: `RouteFinderApp` ships without WeatherKit or CarPla
 - **Product → Clean Build Folder**, then build for **iOS Simulator** or a registered device with **Signing → Automatic** and your personal team.
 - Confirm [`RouteFinderApp/RouteFinderApp.entitlements`](../RouteFinderApp/RouteFinderApp.entitlements) is an empty plist — the signed app should contain only `application-identifier`, `com.apple.developer.team-identifier`, and `get-task-allow` (no WeatherKit or CarPlay).
 - Expect **no signing/provisioning errors** for `com.apple.developer.weatherkit` or `com.apple.developer.carplay-maps`.
-- **Runtime limitations on personal team:** Without an OpenWeather key, WeatherKit auto-fetch fails gracefully (`WeatherViewModel.lastError` includes a Settings hint). With an OpenWeather key stored in Settings (or `OPENWEATHER_API_KEY`), live auto weather uses OpenWeather instead. CarPlay scene wiring is present in `Info.plist` but in-car UI will not connect without a paid-team CarPlay entitlement.
+- **Runtime limitations on personal team:** Without an OpenWeather key, WeatherKit auto-fetch fails gracefully (`WeatherViewModel.lastError` includes a Settings hint). Saving an OpenWeather key in Settings (or `OPENWEATHER_API_KEY`) switches live auto weather to OpenWeather immediately — no app restart. CarPlay scene wiring is present in `Info.plist` but in-car UI will not connect without a paid-team CarPlay entitlement.
 - `swift test` (362 tests) and `xcodebuild -scheme RouteFinderApp` succeed with zero app-target Swift compiler warnings.
 - Swift Testing `@Test` / `@Suite` deprecation messages during `swift test` are upstream framework noise and do not affect the app target build.
 

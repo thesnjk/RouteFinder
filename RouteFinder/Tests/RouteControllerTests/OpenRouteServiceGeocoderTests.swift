@@ -171,6 +171,28 @@ struct OpenRouteServiceGeocoderTests {
             }
         }
     }
+
+    @Test("global query items omit UK country boundary")
+    func globalQueryOmitsCountryBoundary() {
+        let near = Coordinate(latitude: 52.6, longitude: 1.3)
+        let items = OpenRouteServiceGeocoder.globalQueryItems(query: "Oslo", near: near, limit: 8)
+        #expect(!items.contains(where: { $0.name == "boundary.country" }))
+        #expect(items.contains(where: { $0.name == "focus.point.lat" }))
+    }
+
+    @Test("biased query items lock to GBR")
+    func biasedQueryIncludesGBR() {
+        let near = Coordinate(latitude: 52.6, longitude: 1.3)
+        let items = OpenRouteServiceGeocoder.biasedQueryItems(query: "Norwich", near: near, limit: 8)
+        #expect(items.contains(where: { $0.name == "boundary.country" && $0.value == "GBR" }))
+    }
+
+    @Test("overseas heuristic detects Nordic street names")
+    func overseasHeuristicNordicStreet() {
+        #expect(OpenRouteServiceGeocoder.querySuggestsOutsideUnitedKingdom("33 samesvegen"))
+        #expect(OpenRouteServiceGeocoder.querySuggestsOutsideUnitedKingdom("Karl Johans gate Oslo"))
+        #expect(!OpenRouteServiceGeocoder.querySuggestsOutsideUnitedKingdom("3 Doris Road Norwich"))
+    }
 }
 
 // MARK: - Mock URL session

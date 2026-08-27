@@ -13,6 +13,17 @@ import Testing
     #expect(ORSErrorParser.isUnsupportedExtraInfoError(body: body))
 }
 
+@Test func orsErrorParserExtractsCode2003AvoidAreaMessage() {
+    let body = """
+    {"error":{"code":2003,"message":"The area of a polygon to avoid must not exceed 2.0E8 square meters."}}
+    """
+
+    let message = ORSErrorParser.userFacingMessage(status: 400, body: body)
+
+    #expect(message?.contains("avoid zone is too large") == true)
+    #expect(message?.contains("{") == false)
+}
+
 @Test func orsErrorParserExtractsGenericMessage() {
     let body = """
     {"error":{"code":2004,"message":"Distance exceeds maximum."}}

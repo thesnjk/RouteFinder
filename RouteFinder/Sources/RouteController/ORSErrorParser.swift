@@ -31,6 +31,9 @@ enum ORSErrorParser {
         if code == 2012 {
             return "Routing service does not support this request option. Try again or check for an app update."
         }
+        if code == 2003 {
+            return "Routing failed: an avoid zone is too large for the routing service. Turn off LEZ avoid or set a compliant emission class, then try again."
+        }
         if let message, !message.isEmpty {
             return "Routing failed: \(message)"
         }

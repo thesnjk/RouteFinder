@@ -112,14 +112,22 @@ import Testing
     #expect(rings.isEmpty)
 }
 
-@Test func lezAvoidPolicyEuro4ProducesPolygons() {
+@Test func lezAvoidPolicyEuro4ProducesUnderCapPolygons() {
     let rings = LEZAvoidPolicy.polygons(
         emissionClass: .euro4,
         avoidEnabled: true,
         destination: Coordinate(latitude: 52.0, longitude: -1.0)
     )
-    #expect(rings.count == UKLowEmissionZoneCatalog.zones.count)
+    let expected = UKLowEmissionZoneCatalog.zones.filter { zone in
+        LEZAvoidPolicy.approximateRingAreaSquareMeters(zone.avoidPolygonRing())
+            <= LEZAvoidPolicy.avoidPolygonAreaCapSquareMeters
+    }
+    #expect(rings.count == expected.count)
+    #expect(rings.count < UKLowEmissionZoneCatalog.zones.count) // London ULEZ exceeds ORS cap
     #expect(rings.allSatisfy { $0.first == $0.last })
+    #expect(rings.allSatisfy {
+        LEZAvoidPolicy.approximateRingAreaSquareMeters($0) <= LEZAvoidPolicy.avoidPolygonAreaCapSquareMeters
+    })
 }
 
 @Test func lezAvoidPolicyOmitsDestinationZone() {
@@ -129,7 +137,12 @@ import Testing
         avoidEnabled: true,
         destination: london
     )
-    #expect(rings.count == UKLowEmissionZoneCatalog.zones.count - 1)
+    let expectedWithoutLondon = UKLowEmissionZoneCatalog.zones.filter { zone in
+        !zone.contains(london)
+            && LEZAvoidPolicy.approximateRingAreaSquareMeters(zone.avoidPolygonRing())
+            <= LEZAvoidPolicy.avoidPolygonAreaCapSquareMeters
+    }
+    #expect(rings.count == expectedWithoutLondon.count)
 }
 
 @Test func lezAvoidPolicyDisabledProducesNoPolygons() {
@@ -141,13 +154,32 @@ import Testing
     #expect(rings.isEmpty)
 }
 
-@Test func lezAvoidPolicyUnknownEmissionAvoidsZones() {
+@Test func lezAvoidPolicyUnknownEmissionOmitsOversizedZones() {
     let rings = LEZAvoidPolicy.polygons(
         emissionClass: nil,
         avoidEnabled: true,
         destination: Coordinate(latitude: 55.0, longitude: -3.0)
     )
-    #expect(rings.count == UKLowEmissionZoneCatalog.zones.count)
+    let expected = UKLowEmissionZoneCatalog.zones.filter {
+        LEZAvoidPolicy.approximateRingAreaSquareMeters($0.avoidPolygonRing())
+            <= LEZAvoidPolicy.avoidPolygonAreaCapSquareMeters
+    }
+    #expect(rings.count == expected.count)
+    #expect(!rings.isEmpty)
+}
+
+@Test func lezAvoidPolicyOmitsLondonAreaOverORSCap() {
+    let london = UKLowEmissionZoneCatalog.zones.first { $0.id == "london-ulez" }!
+    let area = LEZAvoidPolicy.approximateRingAreaSquareMeters(london.avoidPolygonRing())
+    #expect(area > LEZAvoidPolicy.avoidPolygonAreaCapSquareMeters)
+
+    let rings = LEZAvoidPolicy.polygons(
+        emissionClass: .euro4,
+        avoidEnabled: true,
+        destination: Coordinate(latitude: 55.0, longitude: -3.0),
+        zones: [london]
+    )
+    #expect(rings.isEmpty)
 }
 
 @Test func lezAnnouncementCopyForAvoidedAndDestinationInside() {

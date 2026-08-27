@@ -62,11 +62,11 @@ public actor OpenRouteServiceGeocoder {
             query: query,
             apiKey: apiKey,
             cacheKey: GeocoderCache.cacheKey(query: query, near: coordinate),
-            queryItems: biasedQueryItems(query: query, near: coordinate, limit: limit)
+            queryItems: Self.biasedQueryItems(query: query, near: coordinate, limit: limit)
         )
     }
 
-    /// Searches globally without a viewport bias.
+    /// Searches globally without a country boundary lock (focus still ranks near the map).
     public func searchGlobal(
         query: String,
         near coordinate: Coordinate,
@@ -77,7 +77,7 @@ public actor OpenRouteServiceGeocoder {
             query: query,
             apiKey: apiKey,
             cacheKey: GeocoderCache.cacheKeyGlobal(query: query, near: coordinate),
-            queryItems: globalQueryItems(query: query, near: coordinate, limit: limit)
+            queryItems: Self.globalQueryItems(query: query, near: coordinate, limit: limit)
         )
     }
 
@@ -115,8 +115,18 @@ public actor OpenRouteServiceGeocoder {
             "ireland", "dublin", "netherlands", "amsterdam", "belgium", "brussels",
             "portugal", "lisbon", "poland", "warsaw", "usa", "united states", "new york",
             "canada", "toronto", "australia", "sydney", "europe", "eu ",
+            "norway", "oslo", "sweden", "stockholm", "denmark", "copenhagen",
         ]
         if overseasMarkers.contains(where: { lowered.contains($0) }) {
+            return true
+        }
+        // Nordic / Euro street suffixes (e.g. "33 samesvegen").
+        let streetMarkers = ["vegen", "gata", "strasse", "straße", " rue ", " via "]
+        if streetMarkers.contains(where: { lowered.contains($0) }) {
+            return true
+        }
+        // Leading "rue "/"via " when query starts with the marker.
+        if lowered.hasPrefix("rue ") || lowered.hasPrefix("via ") {
             return true
         }
         // Continental-style postcodes (digits-first) often indicate non-UK addresses.
@@ -222,7 +232,8 @@ public actor OpenRouteServiceGeocoder {
         )
     }
 
-    private func biasedQueryItems(query: String, near coordinate: Coordinate, limit: Int) -> [URLQueryItem] {
+    /// Builds UK-biased Pelias query items (`boundary.country=GBR`). Exposed for tests.
+    public static func biasedQueryItems(query: String, near coordinate: Coordinate, limit: Int) -> [URLQueryItem] {
         var items = [
             URLQueryItem(name: "text", value: query.trimmingCharacters(in: .whitespaces)),
             URLQueryItem(name: "size", value: String(limit)),
@@ -233,18 +244,17 @@ public actor OpenRouteServiceGeocoder {
         return items
     }
 
-    private func globalQueryItems(query: String, near coordinate: Coordinate, limit: Int) -> [URLQueryItem] {
-        var items = [
+    /// Builds global Pelias query items (no country lock; focus still ranks near the map). Exposed for tests.
+    public static func globalQueryItems(query: String, near coordinate: Coordinate, limit: Int) -> [URLQueryItem] {
+        [
             URLQueryItem(name: "text", value: query.trimmingCharacters(in: .whitespaces)),
             URLQueryItem(name: "size", value: String(limit)),
             URLQueryItem(name: "focus.point.lat", value: String(coordinate.latitude)),
             URLQueryItem(name: "focus.point.lon", value: String(coordinate.longitude)),
         ]
-        items.append(contentsOf: ukBoundaryQueryItems())
-        return items
     }
 
-    private func ukBoundaryQueryItems() -> [URLQueryItem] {
+    private static func ukBoundaryQueryItems() -> [URLQueryItem] {
         [URLQueryItem(name: "boundary.country", value: "GBR")]
     }
 

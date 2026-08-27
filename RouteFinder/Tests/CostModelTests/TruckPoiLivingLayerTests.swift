@@ -182,6 +182,33 @@ import Testing
     #expect(rings.isEmpty)
 }
 
+@Test func lezAvoidPolicyOmitsPolygonsOnLongHaul() {
+    let norwich = Coordinate(latitude: 52.63, longitude: 1.30)
+    let alesund = Coordinate(latitude: 62.47, longitude: 6.15)
+    let rings = LEZAvoidPolicy.polygons(
+        emissionClass: .euro4,
+        avoidEnabled: true,
+        destination: alesund,
+        origin: norwich
+    )
+    #expect(rings.isEmpty)
+}
+
+@Test func lezAvoidPolicyKeepsPolygonsOnShortUKHop() {
+    let norwich = Coordinate(latitude: 52.63, longitude: 1.30)
+    let nearby = Coordinate(latitude: 52.65, longitude: 1.28)
+    let rings = LEZAvoidPolicy.polygons(
+        emissionClass: .euro4,
+        avoidEnabled: true,
+        destination: nearby,
+        origin: norwich
+    )
+    #expect(!rings.isEmpty)
+    #expect(rings.allSatisfy {
+        LEZAvoidPolicy.approximateRingAreaSquareMeters($0) <= LEZAvoidPolicy.avoidPolygonAreaCapSquareMeters
+    })
+}
+
 @Test func lezAnnouncementCopyForAvoidedAndDestinationInside() {
     let route = [
         Coordinate(latitude: 51.45, longitude: -0.2),

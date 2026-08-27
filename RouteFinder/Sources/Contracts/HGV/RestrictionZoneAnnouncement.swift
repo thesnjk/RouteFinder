@@ -272,6 +272,12 @@ public enum LEZAvoidPolicy: Sendable {
     public static let avoidPolygonAreaCapSquareMeters: Double =
         orsMaxAvoidPolygonAreaSquareMeters * 0.9
 
+    /// HeiGIT ORS max approximate route distance when any avoid areas are present.
+    public static let orsMaxRouteDistanceWithAvoidsMeters: Double = 150_000
+
+    /// Soft haversine cap: omit all LEZ avoids on longer hauls (headroom under 150 km).
+    public static let avoidPolygonsMaxHaversineMeters: Double = 140_000
+
     /// Whether the vehicle should avoid `zone` based on emission class.
     ///
     /// Missing emission class is treated as non-compliant (avoid when the toggle is on).
@@ -288,13 +294,20 @@ public enum LEZAvoidPolicy: Sendable {
     /// Zones that contain `destination` are omitted so routing can still reach the stop.
     /// Rings whose approximate area exceeds ``avoidPolygonAreaCapSquareMeters`` are omitted
     /// (ORS rejects them with error 2003); oversized zones still appear in along-route announcements.
+    /// When both `origin` and `destination` are set and haversine exceeds
+    /// ``avoidPolygonsMaxHaversineMeters``, returns empty (ORS error 2004 on long routes with avoids).
     public static func polygons(
         emissionClass: EmissionClass?,
         avoidEnabled: Bool,
         destination: Coordinate?,
+        origin: Coordinate? = nil,
         zones: [UKLowEmissionZoneCatalog.Zone] = UKLowEmissionZoneCatalog.zones
     ) -> [[[Double]]] {
         guard avoidEnabled else { return [] }
+        if let origin, let destination,
+           haversineMeters(origin, destination) > avoidPolygonsMaxHaversineMeters {
+            return []
+        }
         var rings: [[[Double]]] = []
         for zone in zones {
             guard shouldAvoid(zone: zone, emissionClass: emissionClass) else { continue }

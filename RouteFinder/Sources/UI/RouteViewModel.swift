@@ -2076,7 +2076,10 @@ public final class RouteViewModel {
             waypoints: waypointCoords,
             vehicle: preferences.vehicle,
             preferences: preferences,
-            avoidPolygons: lezAvoidPolygons(destination: end.waypoint.routingCoordinate)
+            avoidPolygons: lezAvoidPolygons(
+                origin: start.waypoint.routingCoordinate,
+                destination: end.waypoint.routingCoordinate
+            )
         )
 
         let offlineAvailable = await offlineGraphStore.hasOfflineTilesAvailable()
@@ -2175,7 +2178,10 @@ public final class RouteViewModel {
             waypoints: waypointCoords,
             vehicle: preferences.vehicle,
             preferences: preferences,
-            avoidPolygons: lezAvoidPolygons(destination: end.waypoint.routingCoordinate)
+            avoidPolygons: lezAvoidPolygons(
+                origin: start.waypoint.routingCoordinate,
+                destination: end.waypoint.routingCoordinate
+            )
         )
         lastExternalRouteRequest = request
 
@@ -2186,11 +2192,17 @@ public final class RouteViewModel {
     }
 
     /// ORS avoid rings for non-compliant UK LEZ / CAZ zones (nil when empty / disabled).
-    private func lezAvoidPolygons(destination: RoutingCoordinate) -> [[[Double]]]? {
+    ///
+    /// Long hauls omit avoids (ORS rejects avoid areas when route distance exceeds ~150 km).
+    private func lezAvoidPolygons(
+        origin: RoutingCoordinate,
+        destination: RoutingCoordinate
+    ) -> [[[Double]]]? {
         let rings = LEZAvoidPolicy.polygons(
             emissionClass: emissionClass,
             avoidEnabled: avoidNonCompliantLEZ,
-            destination: Coordinate(latitude: destination.latitude, longitude: destination.longitude)
+            destination: Coordinate(latitude: destination.latitude, longitude: destination.longitude),
+            origin: Coordinate(latitude: origin.latitude, longitude: origin.longitude)
         )
         return rings.isEmpty ? nil : rings
     }
@@ -2775,6 +2787,7 @@ public final class RouteViewModel {
         var deduped = results.filter { seen.insert($0.id).inserted }
 
         #if os(macOS) || os(iOS)
+        // Empty Pelias (incl. overseas) → Apple worldwide; also when Settings toggle is on.
         if useAppleSearchFallback || deduped.isEmpty {
             let appleResults = await appleGeocodeSearch.search(
                 query: trimmed,

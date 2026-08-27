@@ -61,6 +61,8 @@ public final class RouteViewModel {
     public var avoidTolls = false
     public var avoidFerries = false
     public var avoidTunnels = false
+    /// When on, ORS avoids UK LEZ/CAZ zones the vehicle emission class does not meet (default on).
+    public var avoidNonCompliantLEZ = true
     public var hurryMode = false
     public var isHGVMode = false
     public var avoidResidential = true
@@ -2052,7 +2054,8 @@ public final class RouteViewModel {
             destination: end.waypoint.routingCoordinate,
             waypoints: waypointCoords,
             vehicle: preferences.vehicle,
-            preferences: preferences
+            preferences: preferences,
+            avoidPolygons: lezAvoidPolygons(destination: end.waypoint.routingCoordinate)
         )
 
         let policy = HybridRoutingPolicy(
@@ -2143,7 +2146,8 @@ public final class RouteViewModel {
             destination: end.waypoint.routingCoordinate,
             waypoints: waypointCoords,
             vehicle: preferences.vehicle,
-            preferences: preferences
+            preferences: preferences,
+            avoidPolygons: lezAvoidPolygons(destination: end.waypoint.routingCoordinate)
         )
         lastExternalRouteRequest = request
 
@@ -2151,6 +2155,16 @@ public final class RouteViewModel {
         let (_, response) = try await externalPlanner.calculateExternalRoute(request: request)
         try await applyExternalRouteResponse(response, preferences: preferences)
         scheduleTrafficRerouteEvaluation(request: request, original: response)
+    }
+
+    /// ORS avoid rings for non-compliant UK LEZ / CAZ zones (nil when empty / disabled).
+    private func lezAvoidPolygons(destination: RoutingCoordinate) -> [[[Double]]]? {
+        let rings = LEZAvoidPolicy.polygons(
+            emissionClass: emissionClass,
+            avoidEnabled: avoidNonCompliantLEZ,
+            destination: Coordinate(latitude: destination.latitude, longitude: destination.longitude)
+        )
+        return rings.isEmpty ? nil : rings
     }
 
     /// Applies an external route response to map, simulation, and HGV living-layer hooks.
@@ -2442,7 +2456,18 @@ public final class RouteViewModel {
 
     /// Refreshes LEZ / restriction / driving-ban announcements for the given route coordinates.
     public func refreshRestrictionAnnouncements(for coordinates: [Coordinate]) {
-        let lez = UKLowEmissionZoneCatalog.announcements(along: coordinates)
+        let destination = destinationWaypoint.resolved.map {
+            Coordinate(
+                latitude: $0.waypoint.routingCoordinate.latitude,
+                longitude: $0.waypoint.routingCoordinate.longitude
+            )
+        }
+        let lez = UKLowEmissionZoneCatalog.announcements(
+            along: coordinates,
+            emissionClass: emissionClass,
+            avoidEnabled: avoidNonCompliantLEZ,
+            destination: destination
+        )
         let bans = UKDrivingBanCatalog.announcements(along: coordinates, at: Date())
         restrictionAnnouncements = (lez + bans).sorted {
             $0.distanceAlongRouteMeters < $1.distanceAlongRouteMeters

@@ -366,7 +366,7 @@ public final class RouteViewModel {
     private let truckPoiRepository = OverpassTruckPoiRepository()
     private let crowdEventIngest = LocalCrowdEventIngest()
     private var fleetStore: any FleetDispatchPort
-    nonisolated(unsafe) private var fleetStoreConfigurationObserver: NSObjectProtocol?
+    @ObservationIgnored private let fleetStoreConfigurationObserver = FleetStoreConfigurationObserver()
     /// In-memory driver alert bus (HOS and related).
     public let hosAlertBus: InMemoryDriverAlertBus
     /// Advisory EU 561 hours-of-service clock.
@@ -443,7 +443,7 @@ public final class RouteViewModel {
             fleetServerURLText = serverURL.absoluteString
         }
         fleetServerAPIKeyText = (try? FleetServerCredentials.loadAPIKey()) ?? ""
-        fleetStoreConfigurationObserver = NotificationCenter.default.addObserver(
+        fleetStoreConfigurationObserver.token = NotificationCenter.default.addObserver(
             forName: .fleetStoreConfigurationDidChange,
             object: nil,
             queue: .main
@@ -460,12 +460,6 @@ public final class RouteViewModel {
             await self?.refreshCanIDriveStatus()
             await self?.refreshOfflineMapPackStatus()
             try? await self?.offlineGraphStore.loadLocalTiles()
-        }
-    }
-
-    deinit {
-        if let fleetStoreConfigurationObserver {
-            NotificationCenter.default.removeObserver(fleetStoreConfigurationObserver)
         }
     }
 

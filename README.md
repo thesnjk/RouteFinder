@@ -87,9 +87,9 @@ cd RouteFinder
 # Prefer Xcode: open Package.swift, select RouteFinderIOS + a simulator/device
 ```
 
-CarPlay entitlements live next to the iOS target. Use a development team with CarPlay capability for device testing.
+CarPlay entitlements live next to the RouteFinderIOS Swift package target. Use a development team with CarPlay capability for in-car device testing.
 
-Personal (free) Apple teams: `RouteFinderApp` ships without the WeatherKit entitlement; live weather auto-update is disabled but fleet dispatch and routing work normally. Restore WeatherKit in [`RouteFinderApp/RouteFinderApp.entitlements`](../RouteFinderApp/RouteFinderApp.entitlements) when using a paid Developer Program team.
+Personal (free) Apple teams: `RouteFinderApp` ships without WeatherKit or CarPlay entitlements; live weather auto-update and in-car CarPlay UI are disabled, but fleet dispatch and routing work normally. Restore those entitlements in [`RouteFinderApp/RouteFinderApp.entitlements`](../RouteFinderApp/RouteFinderApp.entitlements) when using a paid Developer Program team with the required capabilities.
 
 ### Scripts
 

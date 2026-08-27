@@ -29,7 +29,7 @@ public final class DispatchViewModel {
     public var searchFeedback: [UUID: String] = [:]
 
     private var store: any FleetDispatchPort
-    nonisolated(unsafe) private var fleetStoreConfigurationObserver: NSObjectProtocol?
+    @ObservationIgnored private let fleetStoreConfigurationObserver = FleetStoreConfigurationObserver()
     private let geocoder = OpenRouteServiceGeocoder()
     #if os(macOS) || os(iOS)
     private let appleGeocodeSearch = AppleGeocodeSearch()
@@ -42,7 +42,7 @@ public final class DispatchViewModel {
     /// Creates a dispatch view model backed by the shared disk store.
     public init(store: (any FleetDispatchPort)? = nil) {
         self.store = store ?? FleetStoreFactory.makeStore()
-        fleetStoreConfigurationObserver = NotificationCenter.default.addObserver(
+        fleetStoreConfigurationObserver.token = NotificationCenter.default.addObserver(
             forName: .fleetStoreConfigurationDidChange,
             object: nil,
             queue: .main
@@ -50,12 +50,6 @@ public final class DispatchViewModel {
             Task { @MainActor in
                 await self?.reloadFleetStore()
             }
-        }
-    }
-
-    deinit {
-        if let fleetStoreConfigurationObserver {
-            NotificationCenter.default.removeObserver(fleetStoreConfigurationObserver)
         }
     }
 

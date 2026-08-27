@@ -14,6 +14,7 @@ public struct APIKeyVault: Sendable {
     public let userID: String
 
     private static let servicePrefix = "com.routefinder.vault"
+    private static let migrationFlagPrefix = "RouteFinder.legacyVaultMigrated."
 
     public init(userID: String) {
         self.userID = userID
@@ -21,6 +22,10 @@ public struct APIKeyVault: Sendable {
 
     private var service: String {
         "\(Self.servicePrefix).\(userID)"
+    }
+
+    private var migrationDefaultsKey: String {
+        "\(Self.migrationFlagPrefix)\(userID)"
     }
 
     /// Returns whether a non-empty secret exists for the kind.
@@ -47,13 +52,23 @@ public struct APIKeyVault: Sendable {
         return result
     }
 
-    /// Migrates every vault account from the legacy login Keychain into data-protection storage.
+    /// One-shot migration of legacy login-Keychain vault items into data-protection storage.
     ///
-    /// Call once after login so a single Allow session clears `com.routefinder.vault.<userID>`
-    /// leftovers instead of re-prompting per key on later launches.
-    public func migrateLegacyKeychainIfNeeded() throws {
-        _ = try loadAll()
+    /// Gated by ``UserDefaults`` so a signed `.app` only touches legacy items once
+    /// (at most one prompt burst), then never again.
+    public func migrateLegacyKeychainIfNeeded(defaults: UserDefaults = .standard) throws {
+        if defaults.bool(forKey: migrationDefaultsKey) {
+            return
+        }
+
+        for kind in APIKeyKind.allCases {
+            try KeychainStore.migrateLegacyItemIfNeeded(
+                service: service,
+                account: kind.rawValue
+            )
+        }
         try? KeychainStore.deleteAllLegacyItems(service: service)
+        defaults.set(true, forKey: migrationDefaultsKey)
     }
 
     /// Saves a secret for the kind. Empty values delete the item.

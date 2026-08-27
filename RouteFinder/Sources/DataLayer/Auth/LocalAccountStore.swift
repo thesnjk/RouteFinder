@@ -53,6 +53,7 @@ public enum LocalAccountStore: Sendable {
     private static let service = "com.routefinder.account"
     private static let accountKey = "primary"
     private static let iterations: UInt32 = 210_000
+    private static let legacyMigrationFlagKey = "RouteFinder.legacyAccountMigrated"
 
     /// Returns whether a local account is registered on this Mac.
     public static func hasAccount() throws -> Bool {
@@ -61,11 +62,13 @@ public enum LocalAccountStore: Sendable {
 
     /// Returns whether a Keychain account item exists, even if it cannot be decoded.
     public static func accountItemExists() throws -> Bool {
-        try KeychainStore.getData(service: service, account: accountKey) != nil
+        try migrateLegacyKeychainIfNeeded()
+        return try KeychainStore.getData(service: service, account: accountKey) != nil
     }
 
     /// Loads the registered account, if any.
     public static func loadRecord() throws -> LocalAccountRecord? {
+        try migrateLegacyKeychainIfNeeded()
         guard let data = try KeychainStore.getData(service: service, account: accountKey) else {
             return nil
         }
@@ -74,6 +77,15 @@ public enum LocalAccountStore: Sendable {
         } catch {
             throw Error.encodingFailed
         }
+    }
+
+    /// One-shot copy of the account record from the legacy login Keychain into data-protection storage.
+    private static func migrateLegacyKeychainIfNeeded(defaults: UserDefaults = .standard) throws {
+        if defaults.bool(forKey: legacyMigrationFlagKey) {
+            return
+        }
+        try KeychainStore.migrateLegacyItemIfNeeded(service: service, account: accountKey)
+        defaults.set(true, forKey: legacyMigrationFlagKey)
     }
 
     /// Creates the first local account on this Mac.

@@ -9,7 +9,7 @@ RouteFinder embeds MapLibre via WKWebView. By default it loads JS/CSS from the C
 
 ```bash
 VERSION=4.7.1
-DEST="Sources/MapLibreUI/Resources"
+DEST="RouteFinderApp"  # or copy into the RouteFinderIOS app target resources
 mkdir -p "$DEST"
 curl -fsSL "https://unpkg.com/maplibre-gl@${VERSION}/dist/maplibre-gl.js" \
   -o "$DEST/maplibre-gl.js"

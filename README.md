@@ -91,6 +91,25 @@ CarPlay entitlements live next to the RouteFinderIOS Swift package target. Use a
 
 Personal (free) Apple teams: `RouteFinderApp` ships without WeatherKit or CarPlay entitlements; live weather auto-update and in-car CarPlay UI are disabled, but fleet dispatch and routing work normally. Restore those entitlements in [`RouteFinderApp/RouteFinderApp.entitlements`](../RouteFinderApp/RouteFinderApp.entitlements) when using a paid Developer Program team with the required capabilities.
 
+**Personal team verification checklist** (verified 2026-08-27 on Xcode 26 / iOS 26.5 SDK):
+
+- Open [`RouteFinderApp.xcodeproj`](../RouteFinderApp.xcodeproj) (not the SPM package alone).
+- **Product → Clean Build Folder**, then build for **iOS Simulator** or a registered device with **Signing → Automatic** and your personal team.
+- Confirm [`RouteFinderApp/RouteFinderApp.entitlements`](../RouteFinderApp/RouteFinderApp.entitlements) is an empty plist — the signed app should contain only `application-identifier`, `com.apple.developer.team-identifier`, and `get-task-allow` (no WeatherKit or CarPlay).
+- Expect **no signing/provisioning errors** for `com.apple.developer.weatherkit` or `com.apple.developer.carplay-maps`.
+- **Runtime limitations on personal team:** WeatherKit auto-fetch fails gracefully (`WeatherViewModel.lastError`); use manual road-condition override or an OpenWeather API key. CarPlay scene wiring is present in `Info.plist` but in-car UI will not connect without a paid-team CarPlay entitlement.
+- `swift test` (362 tests) and `xcodebuild -scheme RouteFinderApp` succeed with zero app-target Swift compiler warnings.
+- Swift Testing `@Test` / `@Suite` deprecation messages during `swift test` are upstream framework noise and do not affect the app target build.
+
+Optional CLI build (requires full Xcode selected, not Command Line Tools only):
+
+```bash
+sudo xcode-select -s /Applications/Xcode.app
+cd ~/Developer/RouteFinder
+xcodebuild build -project RouteFinderApp.xcodeproj -scheme RouteFinderApp \
+  -destination 'generic/platform=iOS Simulator' -configuration Debug
+```
+
 ### Scripts
 
 - `Scripts/preprocess-osm.sh` — synthetic or CSV → H3 tiles  

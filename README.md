@@ -10,7 +10,7 @@ Built as a Swift 6 Swift Package with SwiftUI, MapLibre (WKWebView), and HeiGIT 
 - **Physics rehearsal** — pre-trip kinetic risk (grade, brake fade, slip) with a shareable trip brief (plain text or PDF with route map when geometry is available)
 - **Hours of service (advisory)** — EU Regulation 561 / Working Time Directive clock, rest insertion suggestions, driver-card JSON/DDD import, “Can I drive now?”
 - **CarPlay** — turn-by-turn templates with voice coexistence hooks (iOS)
-- **UK living layer** — plate → vehicle profile (RegCheck + DVLA), truck POIs (fuel / parking / weigh / layby), LEZ / restriction banners
+- **UK living layer** — plate → vehicle profile (RegCheck + DVLA), truck POIs (fuel / parking / weigh / layby), LEZ / restriction banners, on-device layby occupancy taps (Looks full / Has spaces)
 - **Fleet MVP** — native dispatch console + disk-backed org → trip → physics ETA; optional **LAN sync** via `RouteFinderFleetServer`
 - **Offline routing & maps** — H3 graph tiles + hybrid ORS/offline policy; optional local MapLibre map pack via on-device HTTP
 - **Live traffic reroute** — TomTom flow sampling can trigger an ORS `avoid_polygons` recalculation

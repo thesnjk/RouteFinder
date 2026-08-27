@@ -1,10 +1,11 @@
 import Contracts
 import SwiftUI
 
-/// Banner announcing an upcoming layby with a driver feedback action.
+/// Banner announcing an upcoming layby with driver occupancy feedback actions.
 struct LaybyAdvisoryBanner: View {
     let advisory: LaybyAdvisory
     var onLaybyFull: () -> Void
+    var onLaybyHasSpaces: () -> Void = {}
 
     var body: some View {
         HStack(spacing: RFSpacing.md) {
@@ -31,15 +32,24 @@ struct LaybyAdvisoryBanner: View {
                         .font(RFFont.caption)
                         .foregroundStyle(.tertiary)
                 }
+
+                HStack(spacing: RFSpacing.sm) {
+                    Button("Looks full") {
+                        onLaybyFull()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+
+                    Button("Has spaces") {
+                        onLaybyHasSpaces()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                }
+                .padding(.top, 2)
             }
 
             Spacer(minLength: RFSpacing.sm)
-
-            Button("Layby full") {
-                onLaybyFull()
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
         }
         .padding(RFSpacing.md)
         .controlSheetStyle()

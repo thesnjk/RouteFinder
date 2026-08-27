@@ -461,6 +461,7 @@ public final class RouteViewModel {
             await self?.refreshCanIDriveStatus()
             await self?.refreshOfflineMapPackStatus()
             try? await self?.offlineGraphStore.loadLocalTiles()
+            await self?.hydrateCrowdReportsFromDisk()
         }
     }
 
@@ -1301,7 +1302,8 @@ public final class RouteViewModel {
             remainingDailyDriveSeconds: hosRemainingDaily,
             companyBreaks: activeDispatchCompanyBreaks,
             kineticStress: hosPathKineticStress(),
-            trafficInflationFactor: trafficFactor
+            trafficInflationFactor: trafficFactor,
+            crowdReports: crowdReports
         )
     }
 
@@ -2473,9 +2475,12 @@ public final class RouteViewModel {
         refreshTripBriefShareText()
     }
 
-    /// Marks the current layby as full and advances to the next candidate.
+    /// Marks the current layby as full, records an on-device occupancy report, and advances to the next candidate.
     public func markCurrentLaybyFull() {
         Task { @MainActor in
+            if let advisory = laybyAdvisory {
+                await submitLaybyOccupancyReport(stop: advisory.stop, kind: .full)
+            }
             let arcLength = simulationEngine.currentArcLengthMeters
             let speedMps = max(simulationEngine.currentSpeedKmh / 3.6, 1.0)
             let input = laybyPredictionInput(
@@ -2489,6 +2494,44 @@ public final class RouteViewModel {
             )
             await refreshLaybyAdvisory()
         }
+    }
+
+    /// Records that the recommended layby still has spaces and refreshes the advisory with the new prior.
+    public func markCurrentLaybyHasSpaces() {
+        Task { @MainActor in
+            guard let advisory = laybyAdvisory else { return }
+            await submitLaybyOccupancyReport(stop: advisory.stop, kind: .spacesAvailable)
+            await refreshLaybyAdvisory()
+        }
+    }
+
+    private func hydrateCrowdReportsFromDisk() async {
+        let stored = await crowdEventIngest.allReports()
+        crowdReports = stored
+        if !upcomingTruckPois.isEmpty {
+            upcomingTruckPois = PoiConfidenceAdjuster.adjust(pois: upcomingTruckPois, reports: crowdReports)
+        }
+    }
+
+    private func submitLaybyOccupancyReport(stop: LaybyStop, kind: LaybyOccupancyReport.Kind) async {
+        let report = LaybyOccupancyReport.make(
+            stop: stop,
+            kind: kind,
+            reporterId: currentVaultUserID ?? "local-driver"
+        )
+        crowdReports.removeAll { $0.note == stop.id && ($0.type == .laybyFull || $0.type == .laybySpaces) }
+        crowdReports.append(report)
+        try? await crowdEventIngest.submit(report)
+        _ = await crowdEventIngest.score(
+            reportId: report.id,
+            inputs: CrowdConfidenceInputs(
+                uniqueVehiclesNearby: 1,
+                ageSeconds: 0,
+                reporterReputation: 0.85,
+                corroborationCount: 1
+            )
+        )
+        upcomingTruckPois = PoiConfidenceAdjuster.adjust(pois: upcomingTruckPois, reports: crowdReports)
     }
 
     /// Fits after the MapLibre layer has ingested the new polyline (avoids empty-cache race).

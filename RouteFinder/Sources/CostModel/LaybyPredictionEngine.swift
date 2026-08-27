@@ -312,7 +312,11 @@ public enum LaybyPredictionEngine: Sendable {
                 trafficFactor: trafficFactor
             )
             let arrival = now.addingTimeInterval(eta)
-            let occupancy = ParkingOccupancyPrior.laybyOccupancyPrior(at: arrival)
+            let occupancy = ParkingOccupancyPrior.laybyOccupancyPrior(
+                at: arrival,
+                for: stop,
+                reports: input.crowdReports
+            )
             let occupancyScore = occupancyRankScore(occupancy)
             let bandPenalty = arc < mayStopFrom ? -0.25 : 0
             let positionScore = 1.0 - abs(arc - preferBeforeArc) / max(preferBeforeArc, 1)
@@ -375,7 +379,9 @@ public enum LaybyPredictionEngine: Sendable {
                         speedMps: input.speedMps,
                         trafficFactor: trafficFactor
                     )
-                )
+                ),
+                for: stop,
+                reports: input.crowdReports
             ),
             breakWindowOpensAt: nil,
             reasonCodes: [.geometryFallback],

@@ -106,6 +106,8 @@ public struct HazardReportSheet: View {
         case .camera: return "Camera"
         case .weather: return "Weather"
         case .crowdReport: return "Crowd"
+        case .laybyFull: return "Layby full"
+        case .laybySpaces: return "Layby spaces"
         case .other: return "Other"
         }
     }
@@ -117,6 +119,8 @@ public struct HazardReportSheet: View {
         case .camera: return "camera.fill"
         case .weather: return "cloud.rain.fill"
         case .crowdReport: return "person.3.fill"
+        case .laybyFull: return "parkingsign.circle.fill"
+        case .laybySpaces: return "parkingsign"
         case .other: return "exclamationmark.triangle.fill"
         }
     }

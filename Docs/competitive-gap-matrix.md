@@ -1,11 +1,11 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-27 (OpenWeather weather hot-reload)  
+Last updated: 2026-08-27 (driver layby occupancy report)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then CarPlay parity, then fleet/dispatch, then advisory tacho + offline packs.
 
 > Parallel API refresh was attempted via `parallel-cli` but the API was unreachable from this environment (`APIConnectionError`). This matrix is maintained from the competitive plan’s live web sources plus a post-implementation codebase inventory. Re-run Parallel when `api.parallel.ai` is reachable.
 
-## Programme status (Phases 0–18)
+## Programme status (Phases 0–19)
 
 | Phase | Focus | Status |
 |---|---|---|
@@ -28,6 +28,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **16** | Fleet dispatch SSE push — instant driver notification on trip push | **Done** — `FleetEventHub` + `FleetSSEClient` + driver toast |
 | **17** | OpenWeather weather fallback — live auto road conditions without WeatherKit | **Done** — `DefaultWeatherService` prefers OpenWeather when key present |
 | **18** | Weather backend hot-reload — OpenWeather key save switches live weather without restart | **Done** — `weatherConfigurationDidChange` + `WeatherViewModel.replaceWeatherService` |
+| **19** | Driver layby occupancy report — Looks full / Has spaces feeds on-device crowd prior | **Done** — `LaybyOccupancyReport` + disk `LocalCrowdEventIngest` |
 
 ### Remaining gaps (explicitly not claiming parity)
 
@@ -65,7 +66,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | HOS / tacho | **Advisory EU 561 + JSON/DDD import + Can-I-drive** (VU remains legal) | Weak | **Strong** | Phase 1 + 5; partner port stubbed |
 | Fleet dispatch / shared physics ETA | **Shipped** (native dispatch + LAN sync + trip brief ShareLink) | Weak | **Strong** | Phase 8–10 |
 | Predictive layby / break stop | **Strong** (fused HOS + company window + physics + occupancy; $0 APIs) | Weak (CoPilot: HOS breaks + paid parking hold) | Weak | **Wedge vs CoPilot** — no parking booking fee |
-| Driver community dock/parking intel | Hazard / crowd confidence on POIs | Garmin community | Crowdsource | Partial |
+| Driver community dock/parking intel | **On-device layby Full/Spaces reports** → occupancy prior + POI confidence | Garmin community | Crowdsource | Phase 19 |
 | Walkaround inspection | **Local DVSA checklist + disk store** | Varies | Strong | Glass UI |
 
 ## White space RouteFinder owns

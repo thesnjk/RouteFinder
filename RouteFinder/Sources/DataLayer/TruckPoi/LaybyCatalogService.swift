@@ -267,7 +267,8 @@ public actor LaybyAdvisor {
             companyBreaks: input.companyBreaks,
             kineticStress: input.kineticStress,
             trafficInflationFactor: input.trafficInflationFactor,
-            now: input.now
+            now: input.now,
+            crowdReports: input.crowdReports
         )
     }
 
@@ -326,7 +327,8 @@ public actor LaybyAdvisor {
                 companyBreaks: predictionInput.companyBreaks,
                 kineticStress: predictionInput.kineticStress,
                 trafficInflationFactor: predictionInput.trafficInflationFactor,
-                now: predictionInput.now
+                now: predictionInput.now,
+                crowdReports: predictionInput.crowdReports
             )
         }
         if let lastPredictionInput {
@@ -342,7 +344,8 @@ public actor LaybyAdvisor {
                 companyBreaks: lastPredictionInput.companyBreaks,
                 kineticStress: lastPredictionInput.kineticStress,
                 trafficInflationFactor: lastPredictionInput.trafficInflationFactor,
-                now: Date()
+                now: Date(),
+                crowdReports: lastPredictionInput.crowdReports
             )
         }
         return LaybyPredictionInput(

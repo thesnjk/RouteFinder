@@ -7,6 +7,10 @@ public enum HazardEventType: String, Sendable, Hashable, Codable, CaseIterable {
     case camera
     case weather
     case crowdReport
+    /// Driver reported the recommended layby as full.
+    case laybyFull
+    /// Driver reported the recommended layby still has spaces.
+    case laybySpaces
     case other
 }
 

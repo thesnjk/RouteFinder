@@ -102,6 +102,8 @@ public struct LaybyPredictionInput: Sendable, Hashable, Equatable {
     public let kineticStress: [SegmentKineticStress]?
     public let trafficInflationFactor: Double?
     public let now: Date
+    /// On-device crowd occupancy reports that bias layby ranking.
+    public let crowdReports: [CrowdReport]
 
     /// Creates layby prediction inputs.
     public init(
@@ -116,7 +118,8 @@ public struct LaybyPredictionInput: Sendable, Hashable, Equatable {
         companyBreaks: [CompanyBreakAllocation] = [],
         kineticStress: [SegmentKineticStress]? = nil,
         trafficInflationFactor: Double? = nil,
-        now: Date = Date()
+        now: Date = Date(),
+        crowdReports: [CrowdReport] = []
     ) {
         self.candidates = candidates
         self.skippedIds = skippedIds
@@ -130,6 +133,7 @@ public struct LaybyPredictionInput: Sendable, Hashable, Equatable {
         self.kineticStress = kineticStress
         self.trafficInflationFactor = trafficInflationFactor
         self.now = now
+        self.crowdReports = crowdReports
     }
 }
 

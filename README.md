@@ -89,6 +89,8 @@ cd RouteFinder
 
 CarPlay entitlements live next to the iOS target. Use a development team with CarPlay capability for device testing.
 
+Personal (free) Apple teams: `RouteFinderApp` ships without the WeatherKit entitlement; live weather auto-update is disabled but fleet dispatch and routing work normally. Restore WeatherKit in [`RouteFinderApp/RouteFinderApp.entitlements`](../RouteFinderApp/RouteFinderApp.entitlements) when using a paid Developer Program team.
+
 ### Scripts
 
 - `Scripts/preprocess-osm.sh` — synthetic or CSV → H3 tiles  

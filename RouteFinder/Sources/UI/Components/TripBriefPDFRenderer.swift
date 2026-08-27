@@ -172,7 +172,8 @@ public enum TripBriefPDFRenderer {
         let attributed = attributedString(text: text, font: font)
         let rect = attributed.boundingRect(
             with: CGSize(width: width, height: .greatestFiniteMagnitude),
-            options: [.usesLineFragmentOrigin, .usesFontLeading]
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            context: nil
         )
         return ceil(rect.height)
     }

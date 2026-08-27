@@ -65,7 +65,12 @@ public enum FleetRouterBuilder {
 
         router.get("v1/vehicles/:vehicleId/events") { _, context async throws -> Response in
             let vehicleId = try requireUUID(context, parameter: "vehicleId")
-            return sseResponse(for: vehicleId, eventHub: eventHub)
+            let heartbeatInterval = await eventHub.heartbeatIntervalSeconds
+            return sseResponse(
+                for: vehicleId,
+                eventHub: eventHub,
+                heartbeatInterval: heartbeatInterval
+            )
         }
 
         router.get("v1/trips/:tripId") { _, context async throws -> Response in
@@ -88,15 +93,20 @@ public enum FleetRouterBuilder {
         return router
     }
 
-    private static func sseResponse(for vehicleId: UUID, eventHub: FleetEventHub) -> Response {
+    private static func sseResponse(
+        for vehicleId: UUID,
+        eventHub: FleetEventHub,
+        heartbeatInterval: TimeInterval
+    ) -> Response {
         var headers = HTTPFields()
         headers[.contentType] = "text/event-stream; charset=utf-8"
         headers[.cacheControl] = "no-cache"
         headers[.connection] = "keep-alive"
 
+        let heartbeatNanos = UInt64(heartbeatInterval * 1_000_000_000)
+
         return Response(status: .ok, headers: headers, body: ResponseBody(contentLength: nil) { writer in
             let eventStream = await eventHub.events(for: vehicleId)
-            let heartbeatNanos = UInt64(await eventHub.heartbeatIntervalSeconds * 1_000_000_000)
 
             let mergedEvents = AsyncStream<FleetDispatchEvent> { continuation in
                 let heartbeatTask = Task {

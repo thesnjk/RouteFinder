@@ -19,33 +19,7 @@ struct SettingsSheet: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: RFSpacing.lg) {
-                    algorithmSection
-                    vehicleSection
-                    if viewModel.isHGVMode {
-                        TachoAdvisorySettingsSection(viewModel: viewModel)
-                        inspectionSection
-                    }
-                    avoidanceSection
-                    environmentSection
-                    searchLanguageSection
-                    navigationSection
-                    helpSection
-                    offlineRoutingSection
-                    offlineMapSection
-                    orsAPIKeySection
-                    openWeatherAPIKeySection
-                    regCheckUsernameSection
-                    dvlaAPIKeySection
-                    tomTomAPIKeySection
-                    fleetSection
-                    OSMAttributionFooter()
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(RFSpacing.lg)
-                .padding(.bottom, RFSpacing.xl)
-            }
+            settingsHub
             .navigationTitle("Settings")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -70,6 +44,93 @@ struct SettingsSheet: View {
         .onAppear {
             MacAppActivation.activateForTextInput()
         }
+        #endif
+    }
+
+    private var settingsHub: some View {
+        List {
+            NavigationLink {
+                settingsDetailPage(title: "Vehicle & HGV") {
+                    algorithmSection
+                    vehicleSection
+                    if viewModel.isHGVMode {
+                        TachoAdvisorySettingsSection(viewModel: viewModel)
+                        inspectionSection
+                    }
+                    avoidanceSection
+                }
+            } label: {
+                Label("Vehicle & HGV", systemImage: "truck.box.fill")
+            }
+
+            NavigationLink {
+                settingsDetailPage(title: "Navigation & Voice") {
+                    navigationSection
+                    environmentSection
+                }
+            } label: {
+                Label("Navigation & Voice", systemImage: "location.north.line.fill")
+            }
+
+            NavigationLink {
+                settingsDetailPage(title: "Search & Maps") {
+                    searchLanguageSection
+                    offlineMapSection
+                }
+            } label: {
+                Label("Search & Maps", systemImage: "map.fill")
+            }
+
+            NavigationLink {
+                settingsDetailPage(title: "API Keys") {
+                    orsAPIKeySection
+                    openWeatherAPIKeySection
+                    regCheckUsernameSection
+                    dvlaAPIKeySection
+                    tomTomAPIKeySection
+                }
+            } label: {
+                Label("API Keys", systemImage: "key.fill")
+            }
+
+            NavigationLink {
+                settingsDetailPage(title: "Fleet & Dispatch") {
+                    fleetSection
+                }
+            } label: {
+                Label("Fleet & Dispatch", systemImage: "antenna.radiowaves.left.and.right")
+            }
+
+            NavigationLink {
+                settingsDetailPage(title: "Offline Routing") {
+                    offlineRoutingSection
+                }
+            } label: {
+                Label("Offline Routing", systemImage: "arrow.triangle.branch")
+            }
+
+            Section {
+                helpSection
+                OSMAttributionFooter()
+            }
+        }
+    }
+
+    private func settingsDetailPage<Content: View>(
+        title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: RFSpacing.lg) {
+                content()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(RFSpacing.lg)
+            .padding(.bottom, RFSpacing.xl)
+        }
+        .navigationTitle(title)
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
         #endif
     }
 
@@ -309,6 +370,12 @@ struct SettingsSheet: View {
                         viewModel.persistLaybyVoiceAlertsEnabled()
                     }
                     .help("Speaks once when an upcoming layby enters the advisory window during navigation or simulation.")
+
+                Toggle("Closure & traffic alerts", isOn: $viewModel.hazardVoiceAlertsEnabled)
+                    .onChange(of: viewModel.hazardVoiceAlertsEnabled) { _, _ in
+                        viewModel.persistHazardVoiceAlertsEnabled()
+                    }
+                    .help("Speaks once when a reported closure or traffic hazard enters the advisory window during navigation.")
 
                 Picker("Fuel card provider", selection: $viewModel.fuelCardProvider) {
                     ForEach(FuelCardProvider.allCases) { provider in

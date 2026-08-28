@@ -1,11 +1,11 @@
 # Competitive Feature Scorecard — August 2026
 
-Last updated: 2026-08-28 (Phase 29 positioning refresh)
+Last updated: 2026-08-28 (Phase 33–35 refresh)
 
 Scoring: **0** Absent · **1** Weak · **2** Parity · **3** Lead  
 Personas: **OO** = UK owner-operator · **SF** = small fleet (2–20 vehicles)
 
-RouteFinder scores from code inventory + Phase 20/26/27 verification. Competitor scores from public sources only (`.firecrawl/`).
+RouteFinder scores from code inventory + Phase 20/26/27/30–35 verification. Competitor scores from public sources only (`.firecrawl/`).
 
 ---
 
@@ -16,10 +16,11 @@ RouteFinder scores from code inventory + Phase 20/26/27 verification. Competitor
 | Constraint routing (L/W/H/hazmat) | 20% | **3** | 2 | 3 | 3 | 3 | RF ORS + offline hybrid |
 | Offline UK maps | 15% | **2** | 3 | 3 | 2 | 3 | RF corridor packs; Sygic multi-country |
 | Physics rehearsal | 15% | **3** | 0 | 0 | 0 | 0 | RF wedge |
-| Layby / break intel | 15% | **3** | 1 | 2 | 2 | 2 | RF fused ranker + Break Now (Ph26) |
+| Layby / break intel | 15% | **3** | 1 | 2 | 2 | 2 | RF fused ranker + Break Now + voice (Ph26/30) |
 | LEZ compliance | 10% | **2** | 3 | 3 | 2 | 2 | RF 11 zones; Sygic/TomTom deeper |
 | Lane guidance | 10% | **2** | 3 | 3 | 2 | 2 | RF OSM + voice polish (Ph26) |
 | Plate → profile (UK) | 10% | **3** | 0 | 0 | 0 | 0 | RF RegCheck + DVLA |
+| Crowd hazard / closure ahead | 5% | **2** | 1 | 1 | 0 | 0 | RF Ph33 voice + banner; Waze deeper |
 | Price ($0 baseline) | 5% | **3** | 1 | 1 | 0 | 1 | RF $0; CoPilot quote-only |
 
 **Weighted OO score (approx.):** RouteFinder **2.55** · Sygic **2.05** · TomTom **2.15** · CoPilot **1.85**

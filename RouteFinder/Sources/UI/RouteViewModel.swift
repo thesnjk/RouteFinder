@@ -146,6 +146,12 @@ public final class RouteViewModel {
     public var laybyVoiceAlertsEnabled = NavigationWorkspaceSettings.loadLaybyVoiceAlertsEnabled()
     /// Selected fleet fuel card provider for ahead-of-route POI matching.
     public var fuelCardProvider = NavigationWorkspaceSettings.loadFuelCardProvider()
+    /// Whether spoken closure/traffic hazard-ahead alerts are enabled.
+    public var hazardVoiceAlertsEnabled = NavigationWorkspaceSettings.loadHazardVoiceAlertsEnabled()
+    /// Nearest proactive hazard announcement along the active route, if any.
+    public var activeHazardAheadAnnouncement: HazardAheadAnnouncement?
+    /// Nearest roadworks site ahead on the active route, if any.
+    public var activeRoadworksAhead: RoadworkSite?
     /// Preferred Pelias search language code (BCP-47).
     public var preferredSearchLanguage = LanguageWorkspaceSettings.loadPreferredSearchLanguage()
     /// When true, run a secondary English Pelias pass when localized results are sparse.
@@ -399,6 +405,7 @@ public final class RouteViewModel {
     private var hasCompletedCloudRoute = false
     private let laybyCatalogService = LaybyCatalogService()
     private let truckPoiRepository = OverpassTruckPoiRepository()
+    private let roadworksRepository = RoadworksAlongRouteRepository()
     private let crowdEventIngest = LocalCrowdEventIngest()
     private var fleetStore: any FleetDispatchPort
     @ObservationIgnored private let fleetStoreConfigurationObserver = FleetStoreConfigurationObserver()
@@ -416,6 +423,7 @@ public final class RouteViewModel {
     private let laybyAdvisor = LaybyAdvisor()
     private var laybyLoadTask: Task<Void, Never>?
     private var truckPoiLoadTask: Task<Void, Never>?
+    private var roadworksLoadTask: Task<Void, Never>?
     private var trafficRerouteTask: Task<Void, Never>?
     private var pendingTrafficAlternate: ExternalRouteResponse?
     private var lastExternalRouteRequest: ExternalRouteRequest?
@@ -430,8 +438,11 @@ public final class RouteViewModel {
     private var laneEnrichmentTask: Task<Void, Never>?
     private var activeRouteGeneration: UInt64 = 0
     private let laneGuidanceNavigationAdapter = LaneGuidanceNavigationAdapter()
-    private let laybyRefreshNavigationAdapter = LaybyRefreshNavigationAdapter()
+    private let navigationProgressRefreshAdapter = NavigationProgressRefreshAdapter()
     private var lastAnnouncedLaybyId: String?
+    private var lastAnnouncedHazardId: String?
+    private var activeHazards: [HazardEvent] = []
+    private var upcomingRoadworks: [RoadworkSite] = []
 
     private var apiKeyVault: APIKeyVault?
 
@@ -638,6 +649,8 @@ public final class RouteViewModel {
             self?.navigationCoordinator.emitSimulationPose()
             Task { @MainActor in
                 await self?.refreshLaybyAdvisory()
+                self?.refreshHazardAheadAnnouncement()
+                self?.refreshActiveRoadworksAhead()
                 self?.refreshActiveLaneGuidance()
             }
         }
@@ -664,13 +677,15 @@ public final class RouteViewModel {
         laneGuidanceNavigationAdapter.onProgress = { [weak self] in
             self?.refreshActiveLaneGuidance()
         }
-        laybyRefreshNavigationAdapter.onThrottledProgress = { [weak self] in
+        navigationProgressRefreshAdapter.onThrottledProgress = { [weak self] in
             Task { @MainActor in
                 await self?.refreshLaybyAdvisory()
+                self?.refreshHazardAheadAnnouncement()
+                self?.refreshActiveRoadworksAhead()
             }
         }
         navigationCoordinator.session.addDelegate(laneGuidanceNavigationAdapter)
-        navigationCoordinator.session.addDelegate(laybyRefreshNavigationAdapter)
+        navigationCoordinator.session.addDelegate(navigationProgressRefreshAdapter)
         kineticAdvisoryCoordinator.onAdvisory = { [weak self] advisory in
             self?.latestKineticAdvisory = advisory
             #if os(iOS)
@@ -1097,6 +1112,11 @@ public final class RouteViewModel {
     /// Persists fleet fuel card provider preference.
     public func persistFuelCardProvider() {
         NavigationWorkspaceSettings.saveFuelCardProvider(fuelCardProvider)
+    }
+
+    /// Persists hazard voice alert preference.
+    public func persistHazardVoiceAlertsEnabled() {
+        NavigationWorkspaceSettings.saveHazardVoiceAlertsEnabled(hazardVoiceAlertsEnabled)
     }
 
     /// Persists preferred search language and English fallback settings.
@@ -2472,6 +2492,7 @@ public final class RouteViewModel {
         scheduleFitMapToRoute()
         loadLaybysAlongRoute(response.coordinates)
         loadTruckPoisAlongRoute(response.coordinates)
+        loadRoadworksAlongRoute(response.coordinates)
         refreshRestrictionAnnouncements(for: response.coordinates)
         estimatePhysicsDuration(for: searchResult, canonical: canonical)
         if hosEnabled {
@@ -2699,6 +2720,11 @@ public final class RouteViewModel {
         laybyLoadTask?.cancel()
         laybyAdvisory = nil
         lastAnnouncedLaybyId = nil
+        lastAnnouncedHazardId = nil
+        activeHazardAheadAnnouncement = nil
+        activeHazards = []
+        upcomingRoadworks = []
+        activeRoadworksAhead = nil
         upcomingLaybys = []
         isLoadingLaybys = true
 
@@ -2752,6 +2778,32 @@ public final class RouteViewModel {
         }
     }
 
+    /// Searches OSM roadworks / construction nodes within ~20 miles ahead along the route.
+    public func loadRoadworksAlongRoute(_ coordinates: [Coordinate]) {
+        roadworksLoadTask?.cancel()
+        upcomingRoadworks = []
+        activeRoadworksAhead = nil
+
+        roadworksLoadTask = Task { @MainActor in
+            do {
+                let fromArc = simulationEngine.currentArcLengthMeters
+                let sites = try await roadworksRepository.queryAlongRoute(
+                    route: coordinates,
+                    aheadMeters: TruckPoiSearchDefaults.twentyMilesMeters,
+                    fromArcLengthMeters: fromArc,
+                    corridorHalfWidthMeters: TruckPoiSearchDefaults.corridorHalfWidthMeters
+                )
+                guard !Task.isCancelled else { return }
+                upcomingRoadworks = sites
+                refreshActiveRoadworksAhead()
+            } catch {
+                guard !Task.isCancelled else { return }
+                upcomingRoadworks = []
+                activeRoadworksAhead = nil
+            }
+        }
+    }
+
     /// Refreshes LEZ / restriction / driving-ban announcements for the given route coordinates.
     public func refreshRestrictionAnnouncements(for coordinates: [Coordinate]) {
         let destination = destinationWaypoint.resolved.map {
@@ -2799,6 +2851,51 @@ public final class RouteViewModel {
         refreshTripBriefShareText()
     }
 
+    /// Refreshes the nearest closure/traffic hazard ahead on the active route.
+    public func refreshHazardAheadAnnouncement() {
+        let coordinates = routeCoordinates.map {
+            Coordinate(latitude: $0.latitude, longitude: $0.longitude)
+        }
+        guard coordinates.count >= 2 else {
+            activeHazardAheadAnnouncement = nil
+            return
+        }
+        activeHazardAheadAnnouncement = HazardAheadFormatter.nearestAhead(
+            hazards: activeHazards,
+            crowdReports: crowdReports,
+            route: coordinates,
+            currentArcLengthMeters: currentRouteArcLengthMeters
+        )
+        processHazardVoiceAlertIfNeeded()
+    }
+
+    /// Updates the nearest roadworks site ahead from the cached corridor query.
+    public func refreshActiveRoadworksAhead() {
+        activeRoadworksAhead = RoadworksAheadFormatter.nearestAhead(
+            sites: upcomingRoadworks,
+            currentArcLengthMeters: currentRouteArcLengthMeters
+        )
+    }
+
+    #if os(iOS)
+    private func processHazardVoiceAlertIfNeeded() {
+        guard hazardVoiceAlertsEnabled, let announcement = activeHazardAheadAnnouncement else { return }
+        let threshold = NavigationWorkspaceSettings.loadHazardAlertDistanceMeters()
+        guard HazardAheadFormatter.shouldAnnounce(
+            announcement: announcement,
+            lastAnnouncedHazardId: lastAnnouncedHazardId,
+            alertDistanceMeters: threshold
+        ) else { return }
+        voiceGuidanceCoordinator.speakHazardAdvisory(
+            HazardAheadFormatter.spokenPrompt(for: announcement),
+            hazardId: announcement.id
+        )
+        lastAnnouncedHazardId = announcement.id
+    }
+    #else
+    private func processHazardVoiceAlertIfNeeded() {}
+    #endif
+
     #if os(iOS)
     private func processLaybyVoiceAlertIfNeeded() {
         guard laybyVoiceAlertsEnabled, let advisory = laybyAdvisory else { return }
@@ -2817,6 +2914,11 @@ public final class RouteViewModel {
     #else
     private func processLaybyVoiceAlertIfNeeded() {}
     #endif
+
+    /// Arc length along the active route for HUD distance labels.
+    public var currentRouteArcLengthForDisplay: Double {
+        currentRouteArcLengthMeters
+    }
 
     private var currentRouteArcLengthMeters: Double {
         if simulationEngine.isRunning {
@@ -2987,6 +3089,7 @@ public final class RouteViewModel {
         activeLaneDistanceMeters = nil
         laybyLoadTask?.cancel()
         truckPoiLoadTask?.cancel()
+        roadworksLoadTask?.cancel()
         physicsEstimateTask?.cancel()
         rehearseTask?.cancel()
         physicsPredictedDurationSeconds = nil
@@ -3004,6 +3107,11 @@ public final class RouteViewModel {
         isLoadingTruckPois = false
         restrictionAnnouncements = []
         activeRestrictionAnnouncement = nil
+        activeHazardAheadAnnouncement = nil
+        activeRoadworksAhead = nil
+        upcomingRoadworks = []
+        activeHazards = []
+        lastAnnouncedHazardId = nil
         trafficRerouteTask?.cancel()
         trafficRerouteAvailable = false
         isEvaluatingTrafficReroute = false
@@ -3362,6 +3470,8 @@ public final class RouteViewModel {
     }
 
     private func appendHazardOverlay(_ hazard: HazardEvent) {
+        activeHazards.append(hazard)
+        refreshHazardAheadAnnouncement()
         let feature = """
         {"type":"Feature","properties":{"id":"\(hazard.id)","color":"#ef4444","title":"\(hazard.type.rawValue)"},"geometry":{"type":"Point","coordinates":[\(hazard.longitude),\(hazard.latitude)]}}
         """
@@ -3382,7 +3492,7 @@ private final class LaneGuidanceNavigationAdapter: NavigationSessionDelegate {
     }
 }
 
-private final class LaybyRefreshNavigationAdapter: NavigationSessionDelegate {
+private final class NavigationProgressRefreshAdapter: NavigationSessionDelegate {
     var onThrottledProgress: (() -> Void)?
     private var lastRefresh: Date?
     private let minimumIntervalSeconds: TimeInterval = 10

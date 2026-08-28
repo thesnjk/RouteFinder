@@ -91,6 +91,10 @@ public struct FleetTrip: Sendable, Hashable, Codable, Equatable, Identifiable {
     public var companyBreaks: [CompanyBreakAllocation]
     /// Latest driver-predicted layby merged from snapshots.
     public var predictedLayby: LaybyAdvisory?
+    /// Latest walkaround summary pushed from the driver device.
+    public var latestInspectionSummary: TripBriefInspectionSummary?
+    /// Base64-encoded inspection PDF attachment for dispatch review.
+    public var inspectionReportPDFBase64: String?
     public var updatedAt: Date
 
     public init(
@@ -104,6 +108,8 @@ public struct FleetTrip: Sendable, Hashable, Codable, Equatable, Identifiable {
         predictiveReport: PredictiveTelemetryReport? = nil,
         companyBreaks: [CompanyBreakAllocation] = [],
         predictedLayby: LaybyAdvisory? = nil,
+        latestInspectionSummary: TripBriefInspectionSummary? = nil,
+        inspectionReportPDFBase64: String? = nil,
         updatedAt: Date = Date()
     ) {
         self.id = id
@@ -116,6 +122,8 @@ public struct FleetTrip: Sendable, Hashable, Codable, Equatable, Identifiable {
         self.predictiveReport = predictiveReport
         self.companyBreaks = companyBreaks
         self.predictedLayby = predictedLayby
+        self.latestInspectionSummary = latestInspectionSummary
+        self.inspectionReportPDFBase64 = inspectionReportPDFBase64
         self.updatedAt = updatedAt
     }
 }
@@ -129,6 +137,10 @@ public struct FleetTripSnapshot: Sendable, Hashable, Codable, Equatable {
     public var predictiveReport: PredictiveTelemetryReport?
     /// Driver device prediction of the layby the driver will need (fused ranker).
     public var predictedLayby: LaybyAdvisory?
+    /// Optional walkaround defect summary for dispatch.
+    public var latestInspectionSummary: TripBriefInspectionSummary?
+    /// Optional base64 inspection PDF for dispatch download.
+    public var inspectionReportPDFBase64: String?
     public var updatedAt: Date
 
     public init(
@@ -138,6 +150,8 @@ public struct FleetTripSnapshot: Sendable, Hashable, Codable, Equatable {
         physicsETASeconds: TimeInterval? = nil,
         predictiveReport: PredictiveTelemetryReport? = nil,
         predictedLayby: LaybyAdvisory? = nil,
+        latestInspectionSummary: TripBriefInspectionSummary? = nil,
+        inspectionReportPDFBase64: String? = nil,
         updatedAt: Date = Date()
     ) {
         self.tripId = tripId
@@ -146,6 +160,8 @@ public struct FleetTripSnapshot: Sendable, Hashable, Codable, Equatable {
         self.physicsETASeconds = physicsETASeconds
         self.predictiveReport = predictiveReport
         self.predictedLayby = predictedLayby
+        self.latestInspectionSummary = latestInspectionSummary
+        self.inspectionReportPDFBase64 = inspectionReportPDFBase64
         self.updatedAt = updatedAt
     }
 }

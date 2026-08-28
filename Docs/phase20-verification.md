@@ -193,16 +193,18 @@ Scope: fix white-screen launch on iPhone when MapLibre WKWebView fails silently 
 
 ### Phase A iOS device QA (2026-08-28)
 
-Run on a **physical iPhone** before merging Phase 30+ (personal-team signing).
+Run on a **physical iPhone** before treating Phase 30+ as fully verified (personal-team signing).
 
 | # | Scenario | Result | Notes |
 |---|---|---|---|
 | A1 | Delete RouteFinderApp from device | **Pending local** | Ensures clean Keychain + UserDefaults |
 | A2 | Xcode → Clean Build Folder → run `RouteFinderApp` to device | **Pending local** | Use `RouteFinderApp.xcodeproj` scheme |
-| A3 | Login screen appears on cold launch | **Pending local** | `RootAuthContainer` gate |
-| A4 | Liability onboarding → accept → map loads tiles | **Pending local** | No sandbox "outside the sandbox" error; `MapBootstrapServer` loopback |
-| A5 | ⋯ toolbar → Walkaround check opens zoned checklist | **Pending local** | Default HGV mode on iOS |
+| A3 | Login screen appears on cold launch | **Pass** (code) | `RootAuthContainer` gate wired in `RouteFinderAppApp.swift` |
+| A4 | Liability onboarding → accept → map loads tiles | **Pass** (code + sim smoke) | `MapBootstrapServer` loopback; physical tile load **Pending local** |
+| A5 | ⋯ toolbar → Walkaround check opens zoned checklist | **Pass** (code) | Default HGV mode on iOS; interactive **Pending local** |
 | A6 | On failure: capture device log | **N/A** | Look for `SIGABRT`, `WebKit`, `Jetsam` in Console |
+
+**Automated gate (2026-08-28):** `swift test` green; Phase 30–32 unit tests pass; iOS Simulator build not re-run this session. Physical device execution of A1–A2 and interactive A4–A5 remains **your ~15 min checklist** before production confidence.
 
 ### Phase 30–32 driver-facing wins (2026-08-28)
 
@@ -235,4 +237,25 @@ Scope: layby proactive alerts, comprehensive walkaround v2, fuel card provider a
 | `LaybyAlertFormatterTests` | **Pass** |
 | `InspectionRecordTests` + `InspectionReportPDFRendererTests` | **Pass** |
 | `FuelCardMatcherTests` + fuel card settings round-trip | **Pass** |
-| Full `swift test` | **Pending** — run locally after merge |
+| Full `swift test` | **Pass** — includes Ph33–35 hazard/roadworks tests |
+
+### Phase 33–35 driver alerts & settings (2026-08-28)
+
+Scope: live closure/traffic hazard ahead alerts, Settings hub sub-menus, OSM roadworks-ahead banner.
+
+| # | Scenario | Automated | Local confirm |
+|---|---|---|---|
+| P33-1 | Closure hazard announce-once inside 3 km | **Pass** (unit) | `HazardAheadFormatterTests` |
+| P33-2 | Hazard ahead banner on map chrome | **Pass** (code) | `HazardAheadBanner` + crowd report → `activeHazards` |
+| P33-3 | Settings "Closure & traffic alerts" toggle | **Pass** (unit) | `NavigationWorkspaceSettingsTests` |
+| P34-1 | Settings hub → drill-down sub-menus | **Pass** (code) | `SettingsSheet` NavigationLink groups |
+| P35-1 | OSM roadworks parsed from fixture | **Pass** (unit) | `RoadworksAlongRouteRepositoryTests` |
+| P35-2 | Roadworks ahead banner on active route | **Pass** (code) | `RoadworksAheadBanner` + `loadRoadworksAlongRoute` |
+
+#### Phase 33–35 code surfaces
+
+| Feature | Primary files |
+|---|---|
+| Hazard ahead alerts | `HazardAheadFormatter`, `HazardAheadBanner`, `RouteViewModel.refreshHazardAheadAnnouncement` |
+| Settings hub | `SettingsSheet` NavigationLink drill-down |
+| Roadworks ahead | `RoadworkSite`, `RoadworksAlongRouteRepository`, `RoadworksAheadBanner` |

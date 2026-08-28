@@ -108,6 +108,24 @@ struct NavigationWorkspaceSettingsTests {
         NavigationWorkspaceSettings.saveFuelCardProvider(.keyfuels, defaults: defaults)
         #expect(NavigationWorkspaceSettings.loadFuelCardProvider(defaults: defaults) == .keyfuels)
     }
+
+    @Test func hazardVoiceAlertsDefaultOnAndRoundTrip() {
+        let suiteName = "RouteFinder.NavigationTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { UserDefaults.standard.removeSuite(named: suiteName) }
+
+        #expect(NavigationWorkspaceSettings.loadHazardVoiceAlertsEnabled(defaults: defaults))
+        NavigationWorkspaceSettings.saveHazardVoiceAlertsEnabled(false, defaults: defaults)
+        #expect(!NavigationWorkspaceSettings.loadHazardVoiceAlertsEnabled(defaults: defaults))
+    }
+
+    @Test func hazardAlertDistanceDefaultsToThreeKm() {
+        let suiteName = "RouteFinder.NavigationTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { UserDefaults.standard.removeSuite(named: suiteName) }
+
+        #expect(NavigationWorkspaceSettings.loadHazardAlertDistanceMeters(defaults: defaults) == 3000)
+    }
 }
 
 struct LanguageWorkspaceSettingsTests {

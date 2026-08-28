@@ -1,7 +1,9 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-28 (Phase 30–32 driver-facing wins)  
+Last updated: 2026-08-28 (Phase 33–35 driver alerts & settings UX)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then advisory tacho + offline packs. **CarPlay deferred** until paid-team signing.
+
+> **Aug 28 Phase 33–35:** Live closure/traffic hazard ahead alerts; Settings hub sub-menus; OSM roadworks-ahead banner. See [`phase20-verification.md`](phase20-verification.md#phase-3335-driver-alerts--settings-2026-08-28).
 
 > **Aug 28 Phase 30–32:** Layby proactive voice + skip-to-next toast; zoned DVSA walkaround v2 with PDF share; fuel card provider advisory on ahead-of-route truck POIs. See [`phase20-verification.md`](phase20-verification.md#phase-3032-driver-facing-wins-2026-08-28).
 
@@ -49,6 +51,9 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **30** | Layby proactive alerts — voice + skip-to-next toast + GPS throttle | **Done** — `LaybyAlertFormatter`, Settings toggle, throttled GPS refresh |
 | **31** | Comprehensive walkaround v2 — zoned DVSA checklist + defect notes + PDF | **Done** — 7 zones, completion gate, `InspectionReportPDFRenderer` |
 | **32** | Fuel card provider advisory — brand match on ahead POIs | **Done** — Settings picker, `FuelCardMatcher`, ahead banner |
+| **33** | Live closure/traffic hazard ahead alerts during navigation | **Done** — `HazardAheadFormatter`, voice + banner, crowd + promoted hazards |
+| **34** | Settings hub sub-menus | **Done** — drill-down NavigationLink groups |
+| **35** | Roadworks ahead on route (OSM) | **Done** — `RoadworksAlongRouteRepository`, corridor banner |
 
 ### Remaining gaps (explicitly not claiming parity)
 
@@ -96,6 +101,8 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | Live weather road conditions | **OpenWeather preferred** + WeatherKit fallback | Varies | Strong | Phase 17–18; WeatherKit needs paid team |
 | Layby proactive driver notify | **Voice announce + skip-to-next toast** (Settings toggle) | Weak (CoPilot HOS breaks) | Weak | Phase 30 |
 | Fleet fuel card POI advisory | **OSM brand/name match banner** (Keyfuels, UK Fuels, AllStar, Esso, BP) | Fuel prices (Sygic) | Weak | Phase 32; no paid fuel API |
+| Live closure / hazard ahead alert | **Voice + banner during GPS nav** (crowd + promoted hazards) | Waze-style crowd | Weak | Phase 33 |
+| Roadworks ahead advisory | **OSM construction along corridor** | Varies | Weak | Phase 35; $0 Overpass |
 
 ## White space RouteFinder owns
 
@@ -139,7 +146,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 
 1. **Full quarterly competitive re-scrape** — target **2026-11**; re-scrape Sygic / CoPilot / TomTom public pages; update research doc and scorecard if competitor deltas appear.
 2. **CarPlay + WeatherKit entitlement restore** — same as Phase 28+ #1; blocked until paid team.
-3. **Road closures (B4), roadworks GPS (B5), settings sub-menus (B6), DVLA scrape (B7)** — deferred; larger or data-dependent.
+3. **Road closures (B4), roadworks GPS (B5), settings sub-menus (B6), DVLA scrape (B7)** — **B4/B5/B6 done** (Ph33–35); B7 DVLA scrape still deferred.
 4. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs, legal cadastral LEZ polygons, TRAVIS booking integration.
 
 ## 90-day bar checklist

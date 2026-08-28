@@ -176,6 +176,17 @@ struct MapFirstShell: View {
                 }
             }
 
+            if let hazard = viewModel.activeHazardAheadAnnouncement {
+                HazardAheadBanner(announcement: hazard)
+            }
+            if let roadworks = viewModel.activeRoadworksAhead,
+               let message = RoadworksAheadFormatter.bannerMessage(
+                   site: roadworks,
+                   currentArcLengthMeters: viewModel.currentRouteArcLengthForDisplay
+               ) {
+                RoadworksAheadBanner(message: message)
+            }
+
             if let restriction = viewModel.activeRestrictionAnnouncement {
                 RestrictionZoneBanner(announcement: restriction)
             }

@@ -108,6 +108,62 @@ struct TruckPoiAheadList: View {
     }
 }
 
+/// Banner for an upcoming closure or traffic hazard along the route.
+struct HazardAheadBanner: View {
+    let announcement: HazardAheadAnnouncement
+
+    var body: some View {
+        HStack(spacing: RFSpacing.sm) {
+            Image(systemName: iconName)
+                .foregroundStyle(iconColor)
+            Text(announcement.message)
+                .font(RFFont.caption.weight(.semibold))
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, RFSpacing.md)
+        .padding(.vertical, RFSpacing.sm)
+        .controlSheetStyle()
+        .accessibilityLabel(announcement.message)
+    }
+
+    private var iconName: String {
+        switch announcement.type {
+        case .closure: "road.lanes"
+        case .traffic: "car.2.fill"
+        default: "exclamationmark.triangle.fill"
+        }
+    }
+
+    private var iconColor: Color {
+        switch announcement.type {
+        case .closure: RFColor.hazard
+        case .traffic: .orange
+        default: RFColor.hazard
+        }
+    }
+}
+
+/// Banner for roadworks ahead on the active route.
+struct RoadworksAheadBanner: View {
+    let message: String
+
+    var body: some View {
+        HStack(spacing: RFSpacing.sm) {
+            Image(systemName: "cone.fill")
+                .foregroundStyle(.orange)
+            Text(message)
+                .font(RFFont.caption.weight(.semibold))
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, RFSpacing.md)
+        .padding(.vertical, RFSpacing.sm)
+        .controlSheetStyle()
+        .accessibilityLabel(message)
+    }
+}
+
 /// Banner for an upcoming LEZ / restriction zone.
 struct RestrictionZoneBanner: View {
     let announcement: RestrictionZoneAnnouncement

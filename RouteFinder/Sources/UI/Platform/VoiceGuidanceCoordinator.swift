@@ -81,13 +81,24 @@ public final class VoiceGuidanceCoordinator: NavigationSessionDelegate {
 
     /// Speaks an upcoming layby advisory when layby voice alerts are enabled.
     public func speakLaybyAdvisory(_ text: String, laybyId: String) {
-        guard isEnabled else { return }
         try? voiceService.configureAudioSession()
         let prompt = SpeechPrompt(
             text: text,
             priority: AnnouncementTier.prepare.priority,
             tier: .prepare,
             instructionID: "layby-\(laybyId)"
+        )
+        voiceService.speak(prompt)
+    }
+
+    /// Speaks an upcoming closure/traffic hazard when hazard voice alerts are enabled.
+    public func speakHazardAdvisory(_ text: String, hazardId: String) {
+        try? voiceService.configureAudioSession()
+        let prompt = SpeechPrompt(
+            text: text,
+            priority: AnnouncementTier.prepare.priority,
+            tier: .prepare,
+            instructionID: "hazard-\(hazardId)"
         )
         voiceService.speak(prompt)
     }

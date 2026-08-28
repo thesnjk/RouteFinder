@@ -85,7 +85,16 @@ Environment: macOS; `DEVELOPER_DIR=/Library/Developer/CommandLineTools` (full Xc
 | U4 | Center-anchored HGV polygon | `renderMode` forces polygon while tracking; cab/trailer `footprintParts` | Turn at zoom 15 — body pivots from center |
 | U5 | Lane banner | `TurnLanesParserTests`, `LaneGuidanceEnricher`, `LaneGuidanceBanner` on map chrome | Approach maneuver — lane strip on map top |
 
-`swift test`: **415 tests** green (includes lane parser + footprint part tests).
+`swift test`: **415+ tests** green (includes lane parser, footprint, and enricher cap/cache tests).
+
+### Lane guidance hardening (2026-08-28)
+
+| Check | Result | Notes |
+|---|---|---|
+| Route find latency | **Pass** (design) | Heuristics applied synchronously; Overpass capped to 8 maneuvers / 50 km in background |
+| Offline route parity | **Pass** (code) | `applyOfflineRouteResult` uses same heuristic + async enrichment path |
+| Overpass cache | **Pass** (unit) | `OverpassLaneGuidanceCache` + `LaneGuidanceEnricherTests` |
+| U1–U5 interactive | **Pending local** | Run **RouteFinderMac** in Xcode — automated coverage only in cloud agent |
 
 ## Critical bugs found
 

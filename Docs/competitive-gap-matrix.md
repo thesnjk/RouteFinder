@@ -1,7 +1,9 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-28 (post-Phase 23 hotfixes verified)  
+Last updated: 2026-08-28 (Sim UX + lane guidance hardening)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then CarPlay parity, then fleet/dispatch, then advisory tacho + offline packs.
+
+> **Aug 28 Sim UX:** session/workspace persistence, traffic cruise toggle (default off), center-anchored cab/trailer model, OSM `turn:lanes` lane banner with heuristic fallback + async Overpass enrichment (capped). See [`phase20-verification.md`](phase20-verification.md#sim-ux--lane-guidance-2026-08-28).
 
 > **Aug 28 hotfixes (verified):** data-protection Keychain persistence (`RouteFinderMac` + hardened packaged app), global Pelias geocode (`33 sørnesvegen` Ålesund), LEZ avoid long-haul cap (ORS 2004), simulation cruise feel (softened curve governor), camera follow on vehicle geometric center (zoom 15). Package script hardened for macOS 26 (`--options runtime`). See [`phase20-verification.md`](phase20-verification.md#post-fix-verification-2026-08-28).
 
@@ -35,6 +37,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **21** | UK LEZ / CAZ avoid-on-route — EmissionClass + ORS `avoid_polygons` | **Done** — `LEZAvoidPolicy` + Settings toggle; destination-inside zones still allowed |
 | **22** | Layby community signal expansion — age-weighted multi-report prior + last-seen banner | **Done** — `ParkingOccupancyPrior` fusion + `LaybyAdvisory` last-seen fields |
 | **23** | UK LEZ / CAZ geometry upgrade — hand-authored simplified boundary rings | **Done** — `UKLowEmissionZoneBoundaries` (approximate envelopes, not legal cadastral) |
+| **24** | Sim UX persistence + lane guidance hardening | **Done** — Touch ID session, workspace snapshot, traffic cruise toggle, cab/trailer model, map-top lane banner, capped async Overpass enrichment |
 
 ### Remaining gaps (explicitly not claiming parity)
 
@@ -75,6 +78,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | Predictive layby / break stop | **Strong** (fused HOS + company window + physics + occupancy; $0 APIs) | Weak (CoPilot: HOS breaks + paid parking hold) | Weak | **Wedge vs CoPilot** — no parking booking fee |
 | Driver community dock/parking intel | **Age-weighted multi-report Full/Spaces** + last-seen banner copy | Garmin community | Crowdsource | Phase 19–22 |
 | LEZ compliance | **Banners + avoid-on-route** with **simplified authored rings** (Euro 6 exempt; destination-inside allowed) | Strong avoid (Sygic/TomTom) | Varies | Phase 21–23 |
+| Lane-level junction guidance | **OSM `turn:lanes` + heuristic fallback**; map-top banner; async capped Overpass | Strong (TomTom/Sygic) | Weak | Phase 24 |
 | Walkaround inspection | **Local DVSA checklist + disk store** | Varies | Strong | Glass UI |
 | Live weather road conditions | **OpenWeather preferred** + WeatherKit fallback | Varies | Strong | Phase 17–18; WeatherKit needs paid team |
 
@@ -104,8 +108,8 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 
 ## Phase 24+ backlog (ranked)
 
-1. **Phase 24:** Paid-team CarPlay entitlement restore + device QA checklist (only when signing allows).
-2. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs, legal cadastral LEZ polygons.
+1. **Phase 25:** Paid-team CarPlay entitlement restore + device QA checklist (only when signing allows).
+2. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs, legal cadastral LEZ polygons, CarPlay junction images.
 
 ## 90-day bar checklist
 

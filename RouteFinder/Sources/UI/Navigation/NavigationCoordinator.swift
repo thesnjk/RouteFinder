@@ -122,6 +122,11 @@ public final class NavigationCoordinator: LocationProviderDelegate {
         session.updateStaticTotalTime(totalTimeSeconds)
     }
 
+    /// Replaces turn instructions after async lane enrichment.
+    public func updateTurnInstructions(_ instructions: [TurnInstruction]) {
+        session.updateTurnInstructions(instructions)
+    }
+
     /// Emits the current simulation pose through the navigation pipeline.
     public func emitSimulationPose() {
         telemetryRegistry.emitSimulationSample()

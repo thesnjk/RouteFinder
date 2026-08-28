@@ -8,10 +8,20 @@ public struct OverpassLaneGuidanceClient: Sendable {
     private static let requestTimeoutSeconds: TimeInterval = 15
 
     private let session: URLSession
+    private let cache: OverpassLaneGuidanceCache
 
     /// Creates an Overpass lane guidance client.
-    public init(session: URLSession = SecureURLSession.shared) {
+    public init(
+        session: URLSession = SecureURLSession.shared,
+        cache: OverpassLaneGuidanceCache = .shared
+    ) {
         self.session = session
+        self.cache = cache
+    }
+
+    /// Clears the shared in-memory lane guidance cache.
+    public static func clearCache() {
+        OverpassLaneGuidanceCache.shared.clear()
     }
 
     /// Fetches lane guidance near a maneuver coordinate.
@@ -19,6 +29,10 @@ public struct OverpassLaneGuidanceClient: Sendable {
         near coordinate: RoutingCoordinate,
         searchRadiusMeters: Double = 35
     ) async throws -> LaneGuidance? {
+        if let cached = cache.cachedGuidance(for: coordinate) {
+            return cached
+        }
+
         let query = """
         [out:json][timeout:15];
         way(around:\(Int(searchRadiusMeters)),\(coordinate.latitude),\(coordinate.longitude))["turn:lanes"];
@@ -48,13 +62,17 @@ public struct OverpassLaneGuidanceClient: Sendable {
         }
 
         let envelope = try JSONDecoder().decode(OverpassLaneResponse.self, from: data)
+        var guidance: LaneGuidance?
         for element in envelope.elements {
             if let turnLanes = element.tags?["turn:lanes"],
-               let guidance = TurnLanesParser.parse(turnLanes: turnLanes) {
-                return guidance
+               let parsed = TurnLanesParser.parse(turnLanes: turnLanes) {
+                guidance = parsed
+                break
             }
         }
-        return nil
+
+        cache.store(guidance, for: coordinate)
+        return guidance
     }
 }
 

@@ -403,6 +403,8 @@ public final class RouteViewModel {
     private var rehearseTask: Task<Void, Never>?
     private var fleetDispatchToastDismissTask: Task<Void, Never>?
     private var vehicleWorkspacePersistTask: Task<Void, Never>?
+    private var laneEnrichmentTask: Task<Void, Never>?
+    private var activeRouteGeneration: UInt64 = 0
     private let laneGuidanceNavigationAdapter = LaneGuidanceNavigationAdapter()
 
     private var apiKeyVault: APIKeyVault?
@@ -2217,7 +2219,21 @@ public final class RouteViewModel {
         coordinates: [Coordinate],
         preferences: RoutingPreferences
     ) {
-        result = searchResult
+        let heuristicInstructions = LaneGuidanceEnricher.enrichWithHeuristics(
+            instructions: searchResult.turnInstructions
+        )
+        let resultWithHeuristics = SearchResult(
+            path: searchResult.path,
+            totalDistance: searchResult.totalDistance,
+            totalTime: searchResult.totalTime,
+            nodesVisited: searchResult.nodesVisited,
+            runtime: searchResult.runtime,
+            explanation: searchResult.explanation,
+            turnInstructions: heuristicInstructions,
+            metrics: searchResult.metrics
+        )
+
+        result = resultWithHeuristics
         let canonical = RouteGeometryCanonicalizer.process(coordinates, speedLimitSource: nil)
         routeGeometry = .polyline(encoded: nil, precision: 6, coordinates: coordinates)
         routeEncodedPolyline = nil
@@ -2227,8 +2243,8 @@ public final class RouteViewModel {
 
         navigationCoordinator.loadRoute(
             canonical: canonical,
-            turnInstructions: searchResult.turnInstructions,
-            staticTotalTimeSeconds: searchResult.metrics.totalTime
+            turnInstructions: resultWithHeuristics.turnInstructions,
+            staticTotalTimeSeconds: resultWithHeuristics.metrics.totalTime
         )
 
         let physics = resolvedVehiclePhysics()
@@ -2236,10 +2252,10 @@ public final class RouteViewModel {
             route: coordinates,
             environmentalContext: environmentalContext,
             vehicle: resolvedVehicleProfile(),
-            totalDuration: searchResult.metrics.totalTime,
+            totalDuration: resultWithHeuristics.metrics.totalTime,
             enginePowerHP: configuredEnginePowerHP,
             maneuvers: [],
-            turnInstructions: searchResult.turnInstructions,
+            turnInstructions: resultWithHeuristics.turnInstructions,
             isPassengerCar: !preferences.isHGVMode,
             tomTomAPIKey: tomTomAPIKey.isEmpty ? nil : tomTomAPIKey,
             vehicleSpecificationProfile: currentVehicleSpecificationProfile(),
@@ -2249,6 +2265,10 @@ public final class RouteViewModel {
         )
         cloudRoutingBanner = "Offline tiled routing"
         fitMapToRoute()
+        scheduleLaneGuidanceEnrichment(
+            instructions: heuristicInstructions,
+            coordinates: coordinates
+        )
     }
 
     private func calculateExternalRoute(preferences: RoutingPreferences) async throws {
@@ -2313,9 +2333,8 @@ public final class RouteViewModel {
                 coordinates: response.coordinates
             )
         }
-        let enrichedInstructions = await LaneGuidanceEnricher.enrich(
-            instructions: turnInstructions,
-            coordinates: response.coordinates
+        let heuristicInstructions = LaneGuidanceEnricher.enrichWithHeuristics(
+            instructions: turnInstructions
         )
 
         let distanceLabel = response.distanceMeters >= 1000
@@ -2329,7 +2348,7 @@ public final class RouteViewModel {
             nodesVisited: response.coordinates.count,
             runtime: 0,
             explanation: "HeiGIT \(profileLabel) route · \(distanceLabel)",
-            turnInstructions: enrichedInstructions,
+            turnInstructions: heuristicInstructions,
             metrics: RouteMetrics(
                 totalDistance: response.distanceMeters,
                 totalTime: response.durationSeconds,
@@ -2386,6 +2405,46 @@ public final class RouteViewModel {
         if hosEnabled {
             Task { await refreshHosForecast() }
         }
+        scheduleLaneGuidanceEnrichment(
+            instructions: heuristicInstructions,
+            coordinates: response.coordinates
+        )
+    }
+
+    private func scheduleLaneGuidanceEnrichment(
+        instructions: [TurnInstruction],
+        coordinates: [Coordinate]
+    ) {
+        laneEnrichmentTask?.cancel()
+        OverpassLaneGuidanceClient.clearCache()
+        activeRouteGeneration &+= 1
+        let generation = activeRouteGeneration
+
+        laneEnrichmentTask = Task { @MainActor [weak self] in
+            let enriched = await LaneGuidanceEnricher.enrichWithOverpass(
+                instructions: instructions,
+                coordinates: coordinates
+            )
+            guard !Task.isCancelled,
+                  let self,
+                  self.activeRouteGeneration == generation else { return }
+            self.applyLaneGuidanceEnrichment(enriched)
+        }
+    }
+
+    private func applyLaneGuidanceEnrichment(_ instructions: [TurnInstruction]) {
+        guard let current = result else { return }
+        result = SearchResult(
+            path: current.path,
+            totalDistance: current.totalDistance,
+            totalTime: current.totalTime,
+            nodesVisited: current.nodesVisited,
+            runtime: current.runtime,
+            explanation: current.explanation,
+            turnInstructions: instructions,
+            metrics: current.metrics
+        )
+        navigationCoordinator.updateTurnInstructions(instructions)
     }
 
     /// Optionally samples TomTom along the route and prepares an avoid-polygon alternate.

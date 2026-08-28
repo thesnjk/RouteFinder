@@ -1,61 +1,134 @@
 import Contracts
 import Foundation
 
+/// Options controlling how lane guidance is enriched from OSM and heuristics.
+public struct LaneGuidanceEnrichmentOptions: Sendable, Equatable {
+    /// Maximum number of maneuvers that may trigger an Overpass query.
+    public var maxOverpassManeuvers: Int
+    /// Maximum arc-length from route start for Overpass queries.
+    public var maxOverpassDistanceMeters: Double
+    /// When false, only heuristics are applied (no network).
+    public var queryOverpass: Bool
+
+    /// Default enrichment limits for route find.
+    public static let `default` = LaneGuidanceEnrichmentOptions(
+        maxOverpassManeuvers: 8,
+        maxOverpassDistanceMeters: 50_000,
+        queryOverpass: true
+    )
+
+    /// Creates enrichment options.
+    public init(
+        maxOverpassManeuvers: Int = 8,
+        maxOverpassDistanceMeters: Double = 50_000,
+        queryOverpass: Bool = true
+    ) {
+        self.maxOverpassManeuvers = max(0, maxOverpassManeuvers)
+        self.maxOverpassDistanceMeters = max(0, maxOverpassDistanceMeters)
+        self.queryOverpass = queryOverpass
+    }
+}
+
+/// Fetches lane guidance for enrichment (Overpass-backed).
+public protocol LaneGuidanceFetching: Sendable {
+  /// Fetches lane guidance near a maneuver coordinate.
+  func fetchLaneGuidance(
+    near coordinate: RoutingCoordinate,
+    searchRadiusMeters: Double
+  ) async throws -> LaneGuidance?
+}
+
+extension OverpassLaneGuidanceClient: LaneGuidanceFetching {}
+
 /// Enriches turn instructions with OSM lane guidance and maneuver heuristics.
 public enum LaneGuidanceEnricher: Sendable {
-  private static let client = OverpassLaneGuidanceClient()
+  /// Applies heuristic lane guidance synchronously (no network).
+  public static func enrichWithHeuristics(
+    instructions: [TurnInstruction]
+  ) -> [TurnInstruction] {
+    guard !instructions.isEmpty else { return instructions }
 
-  /// Enriches instructions using Overpass `turn:lanes` near each maneuver coordinate.
-  public static func enrich(
-    instructions: [TurnInstruction],
-    coordinates: [Coordinate]
-  ) async -> [TurnInstruction] {
-    guard !instructions.isEmpty, coordinates.count >= 2 else { return instructions }
-
-  var cumulativeDistance = 0.0
-  var enriched: [TurnInstruction] = []
-  enriched.reserveCapacity(instructions.count)
-
-  for (index, instruction) in instructions.enumerated() {
-    if instruction.laneGuidance != nil {
-      enriched.append(instruction)
-      cumulativeDistance += instruction.distance
-      continue
-    }
-
-    let maneuverCoordinate = coordinate(
-      forDistance: cumulativeDistance,
-      coordinates: coordinates
-    )
-    let routingCoordinate = RoutingCoordinate(
-      latitude: maneuverCoordinate.latitude,
-      longitude: maneuverCoordinate.longitude
-    )
-
-    var laneGuidance: LaneGuidance?
-    if instruction.maneuver != .arrive, instruction.maneuver != .depart {
-      laneGuidance = try? await client.fetchLaneGuidance(near: routingCoordinate)
-      if laneGuidance == nil {
-        laneGuidance = TurnLanesParser.heuristic(for: instruction.maneuver)
+    return instructions.map { instruction in
+      guard instruction.laneGuidance == nil else { return instruction }
+      guard instruction.maneuver != .arrive, instruction.maneuver != .depart else {
+        return instruction
       }
-    }
-
-    enriched.append(
-      TurnInstruction(
-        id: instruction.id,
-        maneuver: instruction.maneuver,
-        roadName: instruction.roadName,
-        distance: instruction.distance,
-        bearing: instruction.bearing,
-        recommendedSpeedKmh: instruction.recommendedSpeedKmh,
-        laneGuidance: laneGuidance
+      return instruction.replacing(
+        laneGuidance: TurnLanesParser.heuristic(for: instruction.maneuver)
       )
-    )
-    cumulativeDistance += instruction.distance
-    _ = index
+    }
   }
 
-  return enriched
+  /// Enriches instructions using capped Overpass `turn:lanes` queries plus heuristics.
+  public static func enrichWithOverpass(
+    instructions: [TurnInstruction],
+    coordinates: [Coordinate],
+    options: LaneGuidanceEnrichmentOptions = .default,
+    client: any LaneGuidanceFetching = OverpassLaneGuidanceClient()
+  ) async -> [TurnInstruction] {
+    guard !instructions.isEmpty, coordinates.count >= 2 else { return instructions }
+    guard options.queryOverpass else {
+      return enrichWithHeuristics(instructions: instructions)
+    }
+
+    var cumulativeDistance = 0.0
+    var enriched: [TurnInstruction] = []
+    enriched.reserveCapacity(instructions.count)
+    var overpassQueries = 0
+
+    for instruction in instructions {
+      let maneuverCoordinate = coordinate(
+        forDistance: cumulativeDistance,
+        coordinates: coordinates
+      )
+      let routingCoordinate = RoutingCoordinate(
+        latitude: maneuverCoordinate.latitude,
+        longitude: maneuverCoordinate.longitude
+      )
+
+      let shouldQueryOverpass = instruction.maneuver != .arrive
+        && instruction.maneuver != .depart
+        && overpassQueries < options.maxOverpassManeuvers
+        && cumulativeDistance <= options.maxOverpassDistanceMeters
+
+      var laneGuidance = instruction.laneGuidance
+      if shouldQueryOverpass {
+        overpassQueries += 1
+        if let osmGuidance = try? await client.fetchLaneGuidance(
+          near: routingCoordinate,
+          searchRadiusMeters: 35
+        ) {
+          laneGuidance = osmGuidance ?? laneGuidance
+        }
+      }
+
+      if laneGuidance == nil,
+         instruction.maneuver != .arrive,
+         instruction.maneuver != .depart {
+        laneGuidance = TurnLanesParser.heuristic(for: instruction.maneuver)
+      }
+
+      enriched.append(instruction.replacing(laneGuidance: laneGuidance))
+      cumulativeDistance += instruction.distance
+    }
+
+    return enriched
+  }
+
+  /// Legacy entry point: heuristics first, then capped Overpass enrichment.
+  public static func enrich(
+    instructions: [TurnInstruction],
+    coordinates: [Coordinate],
+    options: LaneGuidanceEnrichmentOptions = .default,
+    client: any LaneGuidanceFetching = OverpassLaneGuidanceClient()
+  ) async -> [TurnInstruction] {
+    let heuristic = enrichWithHeuristics(instructions: instructions)
+    return await enrichWithOverpass(
+      instructions: heuristic,
+      coordinates: coordinates,
+      options: options,
+      client: client
+    )
   }
 
   private static func coordinate(forDistance distance: Double, coordinates: [Coordinate]) -> Coordinate {
@@ -81,5 +154,19 @@ public enum LaneGuidanceEnricher: Sendable {
     let sinDLon = sin(deltaLon / 2)
     let h = sinDLat * sinDLat + cos(lat1) * cos(lat2) * sinDLon * sinDLon
     return 2 * earthRadius * atan2(sqrt(h), sqrt(max(0, 1 - h)))
+  }
+}
+
+private extension TurnInstruction {
+  func replacing(laneGuidance: LaneGuidance?) -> TurnInstruction {
+    TurnInstruction(
+      id: id,
+      maneuver: maneuver,
+      roadName: roadName,
+      distance: distance,
+      bearing: bearing,
+      recommendedSpeedKmh: recommendedSpeedKmh,
+      laneGuidance: laneGuidance
+    )
   }
 }

@@ -68,6 +68,20 @@ public final class NavigationSession {
         setPhase(.routeLoaded)
     }
 
+    /// Replaces turn instructions without reloading geometry (e.g. after async lane enrichment).
+    public func updateTurnInstructions(_ instructions: [TurnInstruction]) {
+        guard let canonical = canonicalGeometry else { return }
+        let catalog = ManeuverAnchorCatalogBuilder.build(
+            instructions: instructions,
+            totalLengthMeters: canonical.totalLengthMeters
+        )
+        maneuverAnchorCatalog = catalog
+        maneuverTracker = ManeuverProgressTracker(
+            instructions: instructions,
+            cumulativeArcLengths: catalog.cumulativeArcLengths
+        )
+    }
+
     /// Begins active navigation tracking.
     public func startNavigation(crossTrackThresholdMeters: Double = RoutePolylineProjector.defaultGPSThresholdMeters) {
         self.crossTrackThresholdMeters = crossTrackThresholdMeters

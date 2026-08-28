@@ -1,11 +1,11 @@
 # Competitive Feature Scorecard — August 2026
 
-Last updated: 2026-08-29 (Phase 41–42 dispatch inspection visibility + CI)
+Last updated: 2026-08-29 (Phase 43–44 CI fix + dispatch defect toast)
 
 Scoring: **0** Absent · **1** Weak · **2** Parity · **3** Lead  
 Personas: **OO** = UK owner-operator · **SF** = small fleet (2–20 vehicles)
 
-RouteFinder scores from code inventory + Phase 20/26/27/30–42 verification. Competitor scores from public sources only (`.firecrawl/`).
+RouteFinder scores from code inventory + Phase 20/26/27/30–44 verification. Competitor scores from public sources only (`.firecrawl/`).
 
 ---
 
@@ -31,10 +31,10 @@ RouteFinder scores from code inventory + Phase 20/26/27/30–42 verification. Co
 
 | Capability | Weight | RF | CoPilot AM | PTV | Samsara | Notes |
 |---|---:|---:|---:|---:|---:|---|
-| Dispatch push | 20% | **3** | 2 | 2 | 3 | RF SSE + native console + walkaround PDF + dispatch defect card (Ph39–41) |
+| Dispatch push | 20% | **3** | 2 | 2 | 3 | RF SSE + native console + walkaround PDF + defect card + poll toast (Ph39–44) |
 | Physics ETA to depot | 15% | **3** | 1 | 2 | 2 | RF wedge |
 | Trip brief PDF | 15% | **3** | 1 | 2 | 2 | RF shipped Ph15; defect warning line Ph39 |
-| LAN sync / Bonjour | 15% | **3** | 0 | 1 | 0 | RF $0 LAN |
+| LAN sync / Bonjour | 15% | **3** | 0 | 1 | 0 | RF $0 LAN; repo-root CI Ph43 |
 | Layby on trip | 10% | **3** | 2 | 1 | 0 | RF prediction + Break Now |
 | Constraint routing | 10% | **3** | 3 | 3 | 2 | Parity |
 | Auth/TLS fleet server | 10% | **2** | 3 | 3 | 3 | RF API key + optional TLS |

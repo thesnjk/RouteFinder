@@ -38,6 +38,7 @@ public final class DispatchViewModel {
     private var previewTask: Task<Void, Never>?
     private var toastDismissTask: Task<Void, Never>?
     private var searchTasks: [UUID: Task<Void, Never>] = [:]
+    @ObservationIgnored private var lastAnnouncedInspectionSummary: TripBriefInspectionSummary?
 
     /// Creates a dispatch view model backed by the shared disk store.
     public init(store: (any FleetDispatchPort)? = nil) {
@@ -162,8 +163,28 @@ public final class DispatchViewModel {
             activeTrip = nil
             return
         }
+        let previousTrip = activeTrip
         activeTrip = try? await store.activeTrip(forVehicleId: vehicleId)
+        announceInspectionDefectsIfNeeded(
+            previousSummary: previousTrip?.latestInspectionSummary,
+            newSummary: activeTrip?.latestInspectionSummary
+        )
         await refreshRoutePreview()
+    }
+
+    private func announceInspectionDefectsIfNeeded(
+        previousSummary: TripBriefInspectionSummary?,
+        newSummary: TripBriefInspectionSummary?
+    ) {
+        guard DispatchInspectionAnnouncer.shouldAnnounce(
+            previousSummary: previousSummary,
+            newSummary: newSummary,
+            lastAnnounced: lastAnnouncedInspectionSummary
+        ), let summary = newSummary else {
+            return
+        }
+        showToast(DispatchInspectionAnnouncer.toastMessage(for: summary))
+        lastAnnouncedInspectionSummary = summary
     }
 
     /// Starts polling active trip status for dispatch visibility.

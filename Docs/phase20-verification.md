@@ -204,7 +204,26 @@ Run on a **physical iPhone** before treating Phase 30+ as fully verified (person
 | A5 | ⋯ toolbar → Walkaround check opens zoned checklist | **Pass** (code) | Default HGV mode on iOS; interactive **Pending local** |
 | A6 | On failure: capture device log | **N/A** | Look for `SIGABRT`, `WebKit`, `Jetsam` in Console |
 
-**Automated gate (2026-08-29):** `swift test` green; Ph38–40 unit/UI smoke pass on simulator. **Phase 41–42** adds dispatch inspection card + fleet E2E inspection snapshot + CI `RouteFinderAppUITests`. Physical device execution of **C1–C9** remains **your ~20 min checklist** before production confidence.
+**Automated gate (2026-08-29):** `swift test` green; Ph38–42 pass locally. **Phase 43–44** moves GitHub Actions to repo-root [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) with correct `RouteFinder/` working directory and adds dispatch toast on walkaround defects. Physical device execution of **C1–C9** remains **your ~20 min checklist** before production confidence.
+
+### Phase 43–44 CI fix + dispatch defect toast (2026-08-29)
+
+Scope: repo-root GitHub Actions workflow, dispatch poll toast when inspection defects arrive.
+
+| # | Scenario | Automated | Local confirm |
+|---|---|---|---|
+| P43-1 | CI workflow at repo root with `RouteFinder/` working directory | **Pass** (code) | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) |
+| P43-2 | `swift test` runs from package directory in CI | **Pass** (code) | macos job `working-directory: RouteFinder` |
+| P43-3 | RouteFinderApp UI smoke in CI with simulator fallback | **Pass** (code) | ios job `xcodebuild test` |
+| P44-1 | Dispatch toast when poll detects new walkaround defects | **Pass** (unit) | `DispatchInspectionAnnouncerTests` |
+| P44-2 | Dispatch console shows defect card + toast on LAN poll | **Pass** (code) | `DispatchViewModel.refreshActiveTrip` — **Pending local** Part B |
+
+#### Phase 43–44 code surfaces
+
+| Feature | Primary files |
+|---|---|
+| Repo-root CI | `.github/workflows/ci.yml` |
+| Dispatch defect toast | `DispatchInspectionAnnouncer`, `DispatchViewModel.announceInspectionDefectsIfNeeded` |
 
 ### Phase 41–42 dispatch inspection + CI (2026-08-29)
 
@@ -216,7 +235,7 @@ Scope: dispatch console walkaround defect visibility, fleet LAN inspection snaps
 | P41-2 | Dispatch PDF share from inspection base64 on trip | **Pass** (code) | ShareLink on defect card |
 | P41-3 | Trip brief share visible when inspection-only snapshot | **Pass** (code) | `showsTripBriefShare` in dispatch header |
 | P42-1 | Fleet E2E snapshot carries inspection summary + PDF | **Pass** (unit) | `fleetE2EWorkflowPushSnapshotAndSSE` |
-| P42-2 | RouteFinderApp UI smoke in CI | **Pass** (CI) | `.github/workflows/ci.yml` ios job |
+| P42-2 | RouteFinderApp UI smoke in CI | **Pass** (code) | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) ios job (repo root) |
 | P42-3 | Fleet Part B walkaround → dispatch inspection | **Pass** (doc) | [`fleet-e2e-qa.md`](fleet-e2e-qa.md) step 9 — **Pending local** |
 
 #### Phase 41–42 code surfaces
@@ -225,7 +244,7 @@ Scope: dispatch console walkaround defect visibility, fleet LAN inspection snaps
 |---|---|
 | Dispatch inspection UI | `DispatchStatusPanel`, `FleetTrip.latestInspectionSummary` |
 | Fleet inspection E2E | `FleetSSETests.fleetE2EWorkflowPushSnapshotAndSSE` |
-| CI UI smoke | `RouteFinder/.github/workflows/ci.yml`, `RouteFinderAppUITests` |
+| CI UI smoke | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml), `RouteFinderAppUITests` |
 
 ### Phase 38–40 automation & fleet handoff (2026-08-28)
 

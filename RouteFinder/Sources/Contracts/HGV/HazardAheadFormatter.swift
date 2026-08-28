@@ -59,6 +59,16 @@ public enum HazardAheadFormatter {
     /// Banner copy for the map HUD.
     public static func bannerMessage(for announcement: HazardAheadAnnouncement) -> String {
         let distance = formattedDistance(announcement.distanceRemainingMeters)
+        if announcement.source.hasPrefix("tomtom:") {
+            switch announcement.type {
+            case .closure:
+                return "Road closed ahead in \(distance)"
+            case .traffic:
+                return "Live traffic delay ahead in \(distance)"
+            default:
+                break
+            }
+        }
         switch announcement.type {
         case .closure:
             return "Closure ahead in \(distance)"
@@ -69,48 +79,106 @@ public enum HazardAheadFormatter {
         }
     }
 
+    /// Builds an ahead announcement from a TomTom live-traffic hit.
+    public static func tomTomStandstillAnnouncement(
+        hit: TomTomTrafficHazardHit,
+        currentArcLengthMeters: Double
+    ) -> HazardAheadAnnouncement? {
+        let remaining = hit.arcLengthAlongRouteMeters - currentArcLengthMeters
+        guard remaining > 0 else { return nil }
+        let type: HazardEventType = hit.isRoadClosed ? .closure : .traffic
+        let announcement = HazardAheadAnnouncement(
+            id: hit.id,
+            type: type,
+            distanceRemainingMeters: remaining,
+            message: "",
+            source: "tomtom:live"
+        )
+        return HazardAheadAnnouncement(
+            id: hit.id,
+            type: type,
+            distanceRemainingMeters: remaining,
+            message: bannerMessage(for: announcement),
+            source: "tomtom:live"
+        )
+    }
+
     /// Picks the nearest alertable hazard ahead of the current arc length on the route.
     public static func nearestAhead(
         hazards: [HazardEvent],
         crowdReports: [CrowdReport],
         route: [Coordinate],
         currentArcLengthMeters: Double,
+        tomTomHits: [TomTomTrafficHazardHit] = [],
         now: Date = Date(),
         maxCrossTrackMeters: Double = 500,
         maxAheadMeters: Double = 20_000
     ) -> HazardAheadAnnouncement? {
         let candidates = mergedCandidates(hazards: hazards, crowdReports: crowdReports, now: now)
-        guard route.count >= 2, !candidates.isEmpty else { return nil }
+        guard route.count >= 2 else { return nil }
 
         var best: HazardAheadAnnouncement?
         var bestDistance = Double.greatestFiniteMagnitude
 
-        for candidate in candidates {
-            guard Self.alertableTypes.contains(candidate.type) else { continue }
-            let point = Coordinate(latitude: candidate.latitude, longitude: candidate.longitude)
-            guard let projection = project(point: point, onto: route) else { continue }
-            guard projection.crossTrackMeters <= maxCrossTrackMeters else { continue }
-            let remaining = projection.arcLengthMeters - currentArcLengthMeters
-            guard remaining > 0, remaining <= maxAheadMeters else { continue }
-            if remaining < bestDistance {
-                bestDistance = remaining
-                best = HazardAheadAnnouncement(
-                    id: candidate.id,
-                    type: candidate.type,
-                    distanceRemainingMeters: remaining,
-                    message: bannerMessage(for: HazardAheadAnnouncement(
+        if !candidates.isEmpty {
+            for candidate in candidates {
+                guard Self.alertableTypes.contains(candidate.type) else { continue }
+                let point = Coordinate(latitude: candidate.latitude, longitude: candidate.longitude)
+                guard let projection = project(point: point, onto: route) else { continue }
+                guard projection.crossTrackMeters <= maxCrossTrackMeters else { continue }
+                let remaining = projection.arcLengthMeters - currentArcLengthMeters
+                guard remaining > 0, remaining <= maxAheadMeters else { continue }
+                if remaining < bestDistance {
+                    bestDistance = remaining
+                    best = HazardAheadAnnouncement(
                         id: candidate.id,
                         type: candidate.type,
                         distanceRemainingMeters: remaining,
-                        message: "",
+                        message: bannerMessage(for: HazardAheadAnnouncement(
+                            id: candidate.id,
+                            type: candidate.type,
+                            distanceRemainingMeters: remaining,
+                            message: "",
+                            source: candidate.source
+                        )),
                         source: candidate.source
-                    )),
-                    source: candidate.source
-                )
+                    )
+                }
+            }
+        }
+
+        for hit in tomTomHits {
+            guard let announcement = tomTomStandstillAnnouncement(
+                hit: hit,
+                currentArcLengthMeters: currentArcLengthMeters
+            ) else { continue }
+            guard announcement.distanceRemainingMeters <= maxAheadMeters else { continue }
+            if announcement.distanceRemainingMeters < bestDistance {
+                bestDistance = announcement.distanceRemainingMeters
+                best = announcement
             }
         }
 
         return best
+    }
+
+    /// Rebuilds in-memory hazard events from recent crowd closure/traffic reports.
+    public static func promotedHazards(from crowdReports: [CrowdReport], now: Date = Date()) -> [HazardEvent] {
+        let recentCutoff = now.addingTimeInterval(-45 * 60)
+        return crowdReports.compactMap { report in
+            guard alertableTypes.contains(report.type), report.createdAt >= recentCutoff else { return nil }
+            return HazardEvent(
+                id: "crowd-\(report.id)",
+                latitude: report.latitude,
+                longitude: report.longitude,
+                radiusMeters: 90,
+                type: report.type,
+                severity: .moderate,
+                validFrom: report.createdAt,
+                validTo: report.createdAt.addingTimeInterval(45 * 60),
+                source: "crowd:\(report.reporterId)"
+            )
+        }
     }
 
     private struct Candidate {

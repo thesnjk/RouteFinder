@@ -204,7 +204,23 @@ Run on a **physical iPhone** before treating Phase 30+ as fully verified (person
 | A5 | ⋯ toolbar → Walkaround check opens zoned checklist | **Pass** (code) | Default HGV mode on iOS; interactive **Pending local** |
 | A6 | On failure: capture device log | **N/A** | Look for `SIGABRT`, `WebKit`, `Jetsam` in Console |
 
-**Automated gate (2026-08-28):** `swift test` green; Phase 30–32 unit tests pass; iOS Simulator build not re-run this session. Physical device execution of A1–A2 and interactive A4–A5 remains **your ~15 min checklist** before production confidence.
+**Automated gate (2026-08-28):** `swift test` green; Ph30–35 unit tests pass. Physical device execution of A1–A2 and interactive rows below remains **your ~20 min checklist** before production confidence.
+
+### Consolidated iPhone device QA — Phase A + Ph30–35 (2026-08-28)
+
+Run once on a **physical iPhone** after each major driver-facing wave.
+
+| # | Scenario | Result | Notes |
+|---|---|---|---|
+| C1 | Delete app → Clean Build → run to device | **Pending local** | Same as A1–A2 |
+| C2 | Login → liability → map tiles (no sandbox error) | **Pending local** | Phase A |
+| C3 | Walkaround v2: zones, defect note, PDF share | **Pending local** | Phase 31 |
+| C4 | Layby voice alert on HGV route (Settings on) | **Pending local** | Phase 30 |
+| C5 | Fuel card picker → ahead banner on route | **Pending local** | Phase 32 |
+| C6 | Report closure → hazard ahead banner + voice | **Pending local** | Phase 33 |
+| C7 | Roadworks ahead banner (OSM construction corridor) | **Pending local** | Phase 35 |
+| C8 | Settings hub drill-down opens all sub-menus | **Pending local** | Phase 34 |
+| C9 | TomTom key set → live traffic hazard ahead during nav | **Pending local** | Phase 36; requires TomTom API key |
 
 ### Phase 30–32 driver-facing wins (2026-08-28)
 
@@ -259,3 +275,23 @@ Scope: live closure/traffic hazard ahead alerts, Settings hub sub-menus, OSM roa
 | Hazard ahead alerts | `HazardAheadFormatter`, `HazardAheadBanner`, `RouteViewModel.refreshHazardAheadAnnouncement` |
 | Settings hub | `SettingsSheet` NavigationLink drill-down |
 | Roadworks ahead | `RoadworkSite`, `RoadworksAlongRouteRepository`, `RoadworksAheadBanner` |
+
+### Phase 36 hazard hardening (2026-08-28)
+
+Scope: TomTom live traffic/closure ahead sampling, crowd hazard hydration, roadworks disk cache.
+
+| # | Scenario | Automated | Local confirm |
+|---|---|---|---|
+| P36-1 | TomTom hit merges with crowd hazard; nearest wins | **Pass** (unit) | `HazardAheadFormatterTests.tomTomHitWinsWhenCloserThanCrowdHazard` |
+| P36-2 | Live sampler throttled at 30 s | **Pass** (unit) | `LiveTrafficHazardSamplerTests.shouldPollRespectsInterval` |
+| P36-3 | Crowd reports hydrate into promoted hazards | **Pass** (unit) | `HazardAheadFormatter.promotedHazards` |
+| P36-4 | Roadworks disk cache round-trip | **Pass** (unit) | `RoadworksDiskCacheTests` |
+| P36-5 | TomTom key → live traffic banner during GPS nav | **Pass** (code) | **Pending local** — row C9 |
+
+#### Phase 36 code surfaces
+
+| Feature | Primary files |
+|---|---|
+| TomTom live hazard | `LiveTrafficHazardSampler`, `TomTomTrafficHazardHit`, `RouteViewModel.sampleTomTomHazardAheadIfNeeded` |
+| Crowd hydrate | `HazardAheadFormatter.promotedHazards`, `hydrateCrowdReportsFromDisk` |
+| Roadworks cache | `RoadworksDiskCache`, cached `RoadworksAlongRouteRepository` |

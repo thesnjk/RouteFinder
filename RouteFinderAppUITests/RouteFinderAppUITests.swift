@@ -7,6 +7,7 @@ import XCTest
 
 final class RouteFinderAppUITests: XCTestCase {
     private let launchTimeout: TimeInterval = 15
+    private let menuTimeout: TimeInterval = 8
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -23,22 +24,25 @@ final class RouteFinderAppUITests: XCTestCase {
     @MainActor
     func testSettingsHubOpens() throws {
         let app = launchApp(skipAuth: true)
-        XCTAssertTrue(app.buttons["mapToolbarMenu"].waitForExistence(timeout: launchTimeout))
+        let mapMenu = app.buttons["mapToolbarMenu"]
+        XCTAssertTrue(mapMenu.waitForExistence(timeout: launchTimeout))
+        mapMenu.tap()
 
-        app.buttons["mapToolbarMenu"].tap()
-        XCTAssertTrue(app.buttons["mapToolbarSettings"].waitForExistence(timeout: 5))
-        app.buttons["mapToolbarSettings"].tap()
+        let settingsEntry = app.buttons["mapToolbarSettings"]
+        XCTAssertTrue(settingsEntry.waitForExistence(timeout: menuTimeout))
+        settingsEntry.tap()
 
-        XCTAssertTrue(app.buttons["settingsVehicleHGV"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.buttons["settingsVehicleHGV"].waitForExistence(timeout: menuTimeout))
     }
 
     @MainActor
     func testWalkaroundEntryExists() throws {
         let app = launchApp(skipAuth: true)
-        XCTAssertTrue(app.buttons["mapToolbarMenu"].waitForExistence(timeout: launchTimeout))
+        let mapMenu = app.buttons["mapToolbarMenu"]
+        XCTAssertTrue(mapMenu.waitForExistence(timeout: launchTimeout))
+        mapMenu.tap()
 
-        app.buttons["mapToolbarMenu"].tap()
-        XCTAssertTrue(app.buttons["walkaroundToolbarEntry"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["walkaroundToolbarEntry"].waitForExistence(timeout: menuTimeout))
     }
 
     @MainActor

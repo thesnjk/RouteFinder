@@ -132,8 +132,14 @@ struct RouteSummaryCard: View {
 
                     if showsSimulationControls {
                         Divider()
-                        if let lane = viewModel.activeLaneGuidance {
-                            LaneGuidancePopup(message: lane)
+                        if let lane = viewModel.activeLaneGuidance,
+                           let maneuver = viewModel.activeLaneManeuver,
+                           let distance = viewModel.activeLaneDistanceMeters {
+                            LaneGuidanceBanner(
+                                guidance: lane,
+                                maneuver: maneuver,
+                                distanceMeters: distance
+                            )
                         }
                         SimulationControlRow(
                             viewModel: viewModel,
@@ -257,42 +263,28 @@ struct RouteSummaryCard: View {
         WazeSpeedDial(
             currentSpeed: values.current,
             speedLimit: values.limit,
+            effectiveSpeedLimit: values.effectiveLimit,
             unitLabel: values.unit,
             compact: compact
         )
     }
 
-    private var dialSpeedValues: (current: Double, limit: Double?, unit: String) {
+    private var dialSpeedValues: (current: Double, limit: Double?, effectiveLimit: Double?, unit: String) {
         let currentKmh = simulationEngine.currentSpeedKmh
         let limitKmh = simulationEngine.activeLegalSpeedLimitKmh
+        let effectiveKmh = simulationEngine.trafficAdjustedLimitKmh
         let system = viewModel.displayMeasurementSystem
         switch system {
         case .imperial:
-            return (currentKmh * 0.621371, limitKmh.map { $0 * 0.621371 }, "mph")
+            return (
+                currentKmh * 0.621371,
+                limitKmh.map { $0 * 0.621371 },
+                effectiveKmh.map { $0 * 0.621371 },
+                "mph"
+            )
         case .metric:
-            return (currentKmh, limitKmh, "km/h")
+            return (currentKmh, limitKmh, effectiveKmh, "km/h")
         }
-    }
-}
-
-private struct LaneGuidancePopup: View {
-    let message: String
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "road.lanes")
-                .foregroundStyle(RFColor.route)
-            Text(message)
-                .font(RFFont.caption.weight(.semibold))
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(RFColor.route.opacity(0.35), lineWidth: 1)
-        )
     }
 }
 
@@ -399,21 +391,31 @@ private struct SimulationControlRow: View {
     private var dialFromEngine: some View {
         let currentKmh = simulationEngine.currentSpeedKmh
         let limitKmh = simulationEngine.activeLegalSpeedLimitKmh
+        let effectiveKmh = simulationEngine.trafficAdjustedLimitKmh
         let system = viewModel.displayMeasurementSystem
         let current: Double
         let limit: Double?
+        let effective: Double?
         let unit: String
         switch system {
         case .imperial:
             current = currentKmh * 0.621371
             limit = limitKmh.map { $0 * 0.621371 }
+            effective = effectiveKmh.map { $0 * 0.621371 }
             unit = "mph"
         case .metric:
             current = currentKmh
             limit = limitKmh
+            effective = effectiveKmh
             unit = "km/h"
         }
-        return WazeSpeedDial(currentSpeed: current, speedLimit: limit, unitLabel: unit, compact: false)
+        return WazeSpeedDial(
+            currentSpeed: current,
+            speedLimit: limit,
+            effectiveSpeedLimit: effective,
+            unitLabel: unit,
+            compact: false
+        )
     }
 }
 

@@ -136,6 +136,8 @@ public final class RouteViewModel {
 
     /// Whether the advisory EU hours-of-service clock is enabled.
     public var hosEnabled = NavigationWorkspaceSettings.loadHosAdvisoryClockEnabled()
+    /// When true, TomTom congestion caps simulation cruise speed (default off).
+    public var applyTrafficToSimulation = NavigationWorkspaceSettings.loadApplyTrafficToSimulation()
     /// When true, tiled offline routing may be used (fallback or primary).
     public var offlineRoutingEnabled = VehicleProfileStore.loadOfflineRoutingEnabled()
     /// When true, prefer offline tiles over ORS even when online and keyed.
@@ -250,8 +252,12 @@ public final class RouteViewModel {
     public var simulationCameraZoom: Double = 15.0
     /// When true, auto camera tracking will not override the sim zoom slider.
     public var simulationZoomLockedByUser = false
-    /// Active lane-keep popup text near the upcoming maneuver.
-    public var activeLaneGuidance: String?
+    /// Active structured lane guidance near the upcoming maneuver.
+    public var activeLaneGuidance: LaneGuidance?
+    /// Maneuver associated with ``activeLaneGuidance``.
+    public var activeLaneManeuver: TurnManeuver?
+    /// Distance to the maneuver for ``activeLaneGuidance``.
+    public var activeLaneDistanceMeters: Double?
     /// Presents the Waze-style hazard report sheet.
     public var presentHazardReportSheet = false
     /// Pending “still there?” prompt for a recent crowd report.
@@ -396,6 +402,8 @@ public final class RouteViewModel {
     private let kineticAdvisoryCoordinator = KineticAdvisoryCoordinator()
     private var rehearseTask: Task<Void, Never>?
     private var fleetDispatchToastDismissTask: Task<Void, Never>?
+    private var vehicleWorkspacePersistTask: Task<Void, Never>?
+    private let laneGuidanceNavigationAdapter = LaneGuidanceNavigationAdapter()
 
     private var apiKeyVault: APIKeyVault?
 
@@ -442,6 +450,7 @@ public final class RouteViewModel {
         }
         #endif
         wireNavigationPipeline()
+        restoreVehicleWorkspace()
         updateCloudRoutingBanner()
         if let savedFleetVehicleId = FleetWorkspaceSettings.loadFleetVehicleId() {
             fleetVehicleId = savedFleetVehicleId
@@ -618,6 +627,10 @@ public final class RouteViewModel {
         simulationEngine.onUIStatePublished = { [weak self] uiState in
             self?.handleKineticUIState(uiState)
         }
+        laneGuidanceNavigationAdapter.onProgress = { [weak self] in
+            self?.refreshActiveLaneGuidance()
+        }
+        navigationCoordinator.session.addDelegate(laneGuidanceNavigationAdapter)
         kineticAdvisoryCoordinator.onAdvisory = { [weak self] advisory in
             self?.latestKineticAdvisory = advisory
             #if os(iOS)
@@ -762,6 +775,7 @@ public final class RouteViewModel {
         emissionClass = profile.emissionClass
         activeProfileName = profile.savedProfileName
         refreshMapVehicleFootprint()
+        scheduleVehicleWorkspacePersist()
         Task { await recalculateIfReady() }
     }
 
@@ -850,6 +864,7 @@ public final class RouteViewModel {
         let profile = spec.toRegistryProfile()
         applyRegistryProfile(profile)
         vehicleRegistration = displayRegistration
+        scheduleVehicleWorkspacePersist()
         validateRegistryStateAfterLookup(spec)
 
         if vehicleClassOverride != nil {
@@ -1016,6 +1031,80 @@ public final class RouteViewModel {
             hosSnapshot = nil
             hosForecast = nil
         }
+    }
+
+    /// Persists whether live traffic caps simulation cruise speed.
+    public func persistApplyTrafficToSimulation() {
+        NavigationWorkspaceSettings.saveApplyTrafficToSimulation(applyTrafficToSimulation)
+        simulationEngine.updateApplyTrafficToSimulation(applyTrafficToSimulation)
+    }
+
+    /// Restores sidebar vehicle fields from the last workspace snapshot.
+    public func restoreVehicleWorkspace() {
+        guard let snapshot = VehicleWorkspaceSettings.load() else { return }
+        vehicleRegistration = snapshot.vehicleRegistration
+        isHGVMode = snapshot.isHGVMode
+        vehicleHeight = snapshot.vehicleHeight
+        vehicleWeight = snapshot.vehicleWeight
+        vehicleWidth = snapshot.vehicleWidth
+        vehicleLength = snapshot.vehicleLength
+        vehicleAxleWeight = snapshot.vehicleAxleWeight
+        vehicleGroundClearance = snapshot.vehicleGroundClearance
+        vehicleTurningRadius = snapshot.vehicleTurningRadius
+        vehicleEnginePowerHP = snapshot.vehicleEnginePowerHP
+        activeProfileName = snapshot.activeProfileName
+        hazmatClass = snapshot.hazmatClassRaw.flatMap(HazmatClass.init(rawValue:))
+        emissionClass = snapshot.emissionClassRaw.flatMap(EmissionClass.init(rawValue:))
+        vehicleClassOverride = snapshot.vehicleClassOverrideRaw.flatMap(VehicleProfileClass.init(rawValue:))
+        avoidNonCompliantLEZ = snapshot.avoidNonCompliantLEZ
+        avoidResidential = snapshot.avoidResidential
+
+        if let profileName = snapshot.activeProfileName {
+            Task { @MainActor in
+                let store = VehicleProfileStore()
+                let profiles = await store.loadProfiles()
+                if let profile = profiles.first(where: { $0.savedProfileName == profileName }) {
+                    applyProfile(profile)
+                }
+            }
+        }
+
+        if !snapshot.vehicleRegistration.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            Task { await refreshPlateLibrary() }
+        }
+    }
+
+    /// Debounces persistence of sidebar vehicle workspace fields.
+    public func scheduleVehicleWorkspacePersist() {
+        vehicleWorkspacePersistTask?.cancel()
+        vehicleWorkspacePersistTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 350_000_000)
+            guard !Task.isCancelled else { return }
+            self?.persistVehicleWorkspace()
+        }
+    }
+
+    /// Persists the current sidebar vehicle workspace snapshot.
+    public func persistVehicleWorkspace() {
+        let snapshot = VehicleWorkspaceSnapshot(
+            vehicleRegistration: vehicleRegistration,
+            isHGVMode: isHGVMode,
+            vehicleHeight: vehicleHeight,
+            vehicleWeight: vehicleWeight,
+            vehicleWidth: vehicleWidth,
+            vehicleLength: vehicleLength,
+            vehicleAxleWeight: vehicleAxleWeight,
+            vehicleGroundClearance: vehicleGroundClearance,
+            vehicleTurningRadius: vehicleTurningRadius,
+            vehicleEnginePowerHP: vehicleEnginePowerHP,
+            activeProfileName: activeProfileName,
+            hazmatClassRaw: hazmatClass?.rawValue,
+            emissionClassRaw: emissionClass?.rawValue,
+            vehicleClassOverrideRaw: vehicleClassOverride?.rawValue,
+            avoidNonCompliantLEZ: avoidNonCompliantLEZ,
+            avoidResidential: avoidResidential
+        )
+        VehicleWorkspaceSettings.save(snapshot)
     }
 
     /// Persists offline routing toggle.
@@ -2155,7 +2244,8 @@ public final class RouteViewModel {
             tomTomAPIKey: tomTomAPIKey.isEmpty ? nil : tomTomAPIKey,
             vehicleSpecificationProfile: currentVehicleSpecificationProfile(),
             canonicalGeometry: canonical,
-            minimumTurnRadiusMeters: physics.turningRadiusMeters
+            minimumTurnRadiusMeters: physics.turningRadiusMeters,
+            applyTrafficToSimulation: applyTrafficToSimulation
         )
         cloudRoutingBanner = "Offline tiled routing"
         fitMapToRoute()
@@ -2223,6 +2313,10 @@ public final class RouteViewModel {
                 coordinates: response.coordinates
             )
         }
+        let enrichedInstructions = await LaneGuidanceEnricher.enrich(
+            instructions: turnInstructions,
+            coordinates: response.coordinates
+        )
 
         let distanceLabel = response.distanceMeters >= 1000
             ? String(format: "%.1f km", response.distanceMeters / 1000)
@@ -2235,7 +2329,7 @@ public final class RouteViewModel {
             nodesVisited: response.coordinates.count,
             runtime: 0,
             explanation: "HeiGIT \(profileLabel) route · \(distanceLabel)",
-            turnInstructions: turnInstructions,
+            turnInstructions: enrichedInstructions,
             metrics: RouteMetrics(
                 totalDistance: response.distanceMeters,
                 totalTime: response.durationSeconds,
@@ -2281,7 +2375,8 @@ public final class RouteViewModel {
             tomTomAPIKey: tomTomAPIKey.isEmpty ? nil : tomTomAPIKey,
             vehicleSpecificationProfile: currentVehicleSpecificationProfile(),
             canonicalGeometry: canonical,
-            minimumTurnRadiusMeters: physics.turningRadiusMeters
+            minimumTurnRadiusMeters: physics.turningRadiusMeters,
+            applyTrafficToSimulation: applyTrafficToSimulation
         )
         scheduleFitMapToRoute()
         loadLaybysAlongRoute(response.coordinates)
@@ -2860,6 +2955,8 @@ public final class RouteViewModel {
     public func refreshActiveLaneGuidance() {
         guard let result else {
             activeLaneGuidance = nil
+            activeLaneManeuver = nil
+            activeLaneDistanceMeters = nil
             return
         }
         let arcLength = simulationEngine.currentArcLengthMeters
@@ -2886,26 +2983,27 @@ public final class RouteViewModel {
 
         guard let instruction = upcoming, remainingToManeuver <= 250 else {
             activeLaneGuidance = nil
+            activeLaneManeuver = nil
+            activeLaneDistanceMeters = nil
             return
         }
+
+        activeLaneManeuver = instruction.maneuver
+        activeLaneDistanceMeters = remainingToManeuver
+
         if let lane = instruction.laneGuidance {
             activeLaneGuidance = lane
             return
         }
-        // Fall back to a short keep-left/right hint for turns without lane payload.
+
         if remainingToManeuver <= 180 {
-            switch instruction.maneuver {
-            case .slightLeft, .left, .sharpLeft:
-                activeLaneGuidance = "Keep left"
-                return
-            case .slightRight, .right, .sharpRight:
-                activeLaneGuidance = "Keep right"
-                return
-            default:
-                break
-            }
+            activeLaneGuidance = TurnLanesParser.heuristic(for: instruction.maneuver)
+            return
         }
+
         activeLaneGuidance = nil
+        activeLaneManeuver = nil
+        activeLaneDistanceMeters = nil
     }
 
     /// Submits a local crowd hazard report and optionally schedules a “still there?” prompt.
@@ -2993,6 +3091,14 @@ public final class RouteViewModel {
             let insertAt = hazardOverlayJSON.index(range.upperBound, offsetBy: 0)
             hazardOverlayJSON.insert(contentsOf: feature + ",", at: insertAt)
         }
+    }
+}
+
+private final class LaneGuidanceNavigationAdapter: NavigationSessionDelegate {
+    var onProgress: (() -> Void)?
+
+    func navigationSession(_ session: NavigationSession, didUpdateProgress snapshot: NavigationProgressSnapshot) {
+        onProgress?()
     }
 }
 

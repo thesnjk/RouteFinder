@@ -6,6 +6,7 @@ public enum NavigationWorkspaceSettings {
     private static let autoOptimizeOnRouteFindKey = "RouteFinder.autoOptimizeOnRouteFind"
     private static let voiceGuidanceEnabledKey = "RouteFinder.voiceGuidanceEnabled"
     private static let hosAdvisoryClockEnabledKey = "RouteFinder.hosAdvisoryClockEnabled"
+    private static let applyTrafficToSimulationKey = "RouteFinder.applyTrafficToSimulation"
 
     /// Loads the preferred telemetry source mode.
     public static func loadTelemetrySourceMode(defaults: UserDefaults = .standard) -> LocationProviderMode {
@@ -55,5 +56,15 @@ public enum NavigationWorkspaceSettings {
     /// Persists advisory HOS clock preference.
     public static func saveHosAdvisoryClockEnabled(_ enabled: Bool, defaults: UserDefaults = .standard) {
         defaults.set(enabled, forKey: hosAdvisoryClockEnabledKey)
+    }
+
+    /// Whether live traffic congestion caps simulation cruise speed (default off).
+    public static func loadApplyTrafficToSimulation(defaults: UserDefaults = .standard) -> Bool {
+        defaults.bool(forKey: applyTrafficToSimulationKey)
+    }
+
+    /// Persists whether traffic congestion affects simulation cruise speed.
+    public static func saveApplyTrafficToSimulation(_ enabled: Bool, defaults: UserDefaults = .standard) {
+        defaults.set(enabled, forKey: applyTrafficToSimulationKey)
     }
 }

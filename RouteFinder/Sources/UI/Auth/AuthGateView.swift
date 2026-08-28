@@ -11,6 +11,7 @@ public struct AuthGateView: View {
 
     public init(session: SessionController) {
         self.session = session
+        _email = State(initialValue: session.prefillEmail)
     }
 
     public var body: some View {
@@ -35,6 +36,11 @@ public struct AuthGateView: View {
         .task {
             if session.phase == .loading {
                 await session.bootstrap()
+            }
+        }
+        .onChange(of: session.prefillEmail) { _, newValue in
+            if email.isEmpty, !newValue.isEmpty {
+                email = newValue
             }
         }
         .confirmationDialog(

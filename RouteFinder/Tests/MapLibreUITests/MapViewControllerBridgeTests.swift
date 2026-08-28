@@ -5,10 +5,14 @@ import Testing
 struct MapViewControllerBridgeTests {
     @Test @MainActor func renderMode_switchesAtLODThreshold() {
         let bridge = MapViewControllerBridge()
+        bridge.isTrackingVehicle = false
 
         #expect(bridge.renderMode(for: 15.9) == .icon)
         #expect(bridge.renderMode(for: 16.0) == .polygon)
         #expect(bridge.renderMode(for: 17.5) == .polygon)
+
+        bridge.isTrackingVehicle = true
+        #expect(bridge.renderMode(for: 15.0) == .polygon)
     }
 
     @Test func cameraFollowCenter_offsetsForwardHalfLength() {

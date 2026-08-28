@@ -50,6 +50,7 @@ public struct VehicleProfileManager: View {
                         if viewModel.vehicleRegistration != formatted {
                             viewModel.vehicleRegistration = formatted
                         }
+                        viewModel.scheduleVehicleWorkspacePersist()
                     }
                 Button("Lookup") {
                     Task { await viewModel.applyRegistrationLookup() }

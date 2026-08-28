@@ -56,6 +56,9 @@ public enum ManeuverSpeechFormatter {
             if instruction.maneuver == .arrive {
                 return phrase
             }
+            if let laneText = instruction.laneGuidance?.guidanceText, !laneText.isEmpty {
+                return "\(laneText). \(phrase)"
+            }
             if let roadName = instruction.roadName, !roadName.isEmpty {
                 return "\(phrase) onto \(roadName)"
             }

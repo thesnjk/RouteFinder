@@ -1,5 +1,7 @@
+import Contracts
 import DataLayer
 import Foundation
+import LocalAuthentication
 import Observation
 
 /// Owns local login state for the macOS app session.
@@ -18,15 +20,31 @@ public final class SessionController {
     public private(set) var currentEmail: String?
     public private(set) var errorMessage: String?
     public private(set) var vault: APIKeyVault?
+    /// Email pre-filled on the login form after a cancelled auto-unlock.
+    public private(set) var prefillEmail: String = ""
 
     public init() {}
 
-    /// Boots splash state and detects whether a local account exists.
+    /// Boots splash state and attempts device auto-unlock when allowed.
     public func bootstrap() async {
         phase = .loading
         errorMessage = nil
+        prefillEmail = SessionWorkspaceSettings.loadLastEmail() ?? ""
         try? await Task.sleep(nanoseconds: 600_000_000)
         refreshAccountExists()
+
+        if accountExists,
+           !SessionWorkspaceSettings.loadRequireLoginEachLaunch(),
+           let record = try? LocalAccountStore.loadRecord(),
+           await deviceOwnerAuthenticated() {
+            do {
+                try unlock(record)
+                return
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+
         phase = .unauthenticated
     }
 
@@ -73,6 +91,7 @@ public final class SessionController {
         refreshAccountExists()
         phase = .unauthenticated
         errorMessage = nil
+        prefillEmail = SessionWorkspaceSettings.loadLastEmail() ?? ""
     }
 
     /// Deletes the local account and wipes the Keychain vault.
@@ -85,6 +104,8 @@ public final class SessionController {
             vault = nil
             accountExists = false
             phase = .unauthenticated
+            SessionWorkspaceSettings.clearRememberedSession()
+            prefillEmail = ""
         } catch {
             errorMessage = error.localizedDescription
             refreshAccountExists()
@@ -104,6 +125,8 @@ public final class SessionController {
             accountExists = false
             phase = .unauthenticated
             errorMessage = nil
+            SessionWorkspaceSettings.clearRememberedSession()
+            prefillEmail = ""
         } catch {
             errorMessage = error.localizedDescription
             refreshAccountExists()
@@ -123,7 +146,6 @@ public final class SessionController {
         do {
             accountExists = try LocalAccountStore.hasAccount()
         } catch {
-            // Corrupt or inaccessible record still blocks signup until wiped.
             accountExists = (try? LocalAccountStore.accountItemExists()) ?? false
             if accountExists {
                 errorMessage = "The local account on this Mac could not be read. Use Forgot password to erase it and create a new one."
@@ -150,5 +172,24 @@ public final class SessionController {
         accountExists = true
         phase = .authenticated
         errorMessage = keychainMessage
+        SessionWorkspaceSettings.saveLastUserID(record.userID)
+        SessionWorkspaceSettings.saveLastEmail(record.email)
+        prefillEmail = record.email
+    }
+
+    private func deviceOwnerAuthenticated() async -> Bool {
+        let context = LAContext()
+        var authError: NSError?
+        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &authError) else {
+            return false
+        }
+        return await withCheckedContinuation { continuation in
+            context.evaluatePolicy(
+                .deviceOwnerAuthentication,
+                localizedReason: "Unlock RouteFinder"
+            ) { success, _ in
+                continuation.resume(returning: success)
+            }
+        }
     }
 }

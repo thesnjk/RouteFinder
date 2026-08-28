@@ -178,6 +178,12 @@ struct MapFirstShell: View {
                 LiveKineticAdvisoryBanner(text: kinetic.spokenText)
             }
 
+            if let lane = viewModel.activeLaneGuidance,
+               let maneuver = viewModel.activeLaneManeuver,
+               let distance = viewModel.activeLaneDistanceMeters {
+                LaneGuidanceBanner(guidance: lane, maneuver: maneuver, distanceMeters: distance)
+            }
+
             if isSearchExpanded {
                 expandedSearchPanel
                     .transition(.move(edge: .top).combined(with: .opacity))
@@ -314,6 +320,7 @@ struct MapFirstShell: View {
             MapControlButton(icon: viewModel.isHGVMode ? "truck.box.fill" : "truck.box") {
                 viewModel.isHGVMode.toggle()
                 if viewModel.isHGVMode { viewModel.applyHGVPreset() }
+                viewModel.scheduleVehicleWorkspacePersist()
                 Task { await viewModel.recalculateIfReady() }
             }
 

@@ -85,6 +85,55 @@ struct HazardAheadFormatterTests {
         )
         #expect(result?.id == "near")
     }
+
+    @Test func tomTomHitWinsWhenCloserThanCrowdHazard() {
+        let route = [
+            Coordinate(latitude: 51.50, longitude: -0.10),
+            Coordinate(latitude: 51.55, longitude: -0.05),
+            Coordinate(latitude: 51.60, longitude: 0.00),
+        ]
+        let hazards = [
+            HazardEvent(
+                id: "crowd-far",
+                latitude: 51.58,
+                longitude: -0.02,
+                radiusMeters: 90,
+                type: .closure,
+                severity: .high,
+                validFrom: Date().addingTimeInterval(-60),
+                validTo: Date().addingTimeInterval(3600),
+                source: "crowd:a"
+            ),
+        ]
+        let tomTomHit = TomTomTrafficHazardHit(
+            id: "tomtom-near",
+            latitude: 51.51,
+            longitude: -0.09,
+            arcLengthAlongRouteMeters: 2500,
+            isRoadClosed: false
+        )
+        let result = HazardAheadFormatter.nearestAhead(
+            hazards: hazards,
+            crowdReports: [],
+            route: route,
+            currentArcLengthMeters: 0,
+            tomTomHits: [tomTomHit]
+        )
+        #expect(result?.id == "tomtom-near")
+        #expect(result?.source == "tomtom:live")
+    }
+
+    @Test func promotedHazardsRebuildsFromRecentCrowdReports() {
+        let report = CrowdReport(
+            latitude: 51.5,
+            longitude: -0.1,
+            type: .closure,
+            reporterId: "driver-1"
+        )
+        let hazards = HazardAheadFormatter.promotedHazards(from: [report])
+        #expect(hazards.count == 1)
+        #expect(hazards.first?.type == .closure)
+    }
 }
 
 struct RoadworksAheadFormatterTests {

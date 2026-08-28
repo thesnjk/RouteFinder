@@ -4,10 +4,13 @@ import Foundation
 /// Overpass-backed roadworks lookup along an active route corridor.
 public actor RoadworksAlongRouteRepository {
     private let session: URLSession
+    private let diskCache: RoadworksDiskCache
+    private var memoryCache: [String: [RoadworkSite]] = [:]
 
     /// Creates a roadworks repository.
-    public init(session: URLSession = .shared) {
+    public init(session: URLSession = .shared, diskCache: RoadworksDiskCache = RoadworksDiskCache()) {
         self.session = session
+        self.diskCache = diskCache
     }
 
     /// Queries construction / roadworks nodes along the route and projects them onto the spine.
@@ -18,19 +21,42 @@ public actor RoadworksAlongRouteRepository {
         corridorHalfWidthMeters: Double
     ) async throws -> [RoadworkSite] {
         guard route.count >= 2 else { return [] }
-        let bbox = corridorBoundingBox(for: route, paddingDegrees: 0.02)
-        let raw = try await fetchRoadworks(in: bbox)
-        let projected = projectAndFilter(
-            sites: raw,
-            route: route,
-            maxCrossTrackMeters: corridorHalfWidthMeters
-        )
+        let cacheKey = routeCacheKey(route)
+        let projected: [RoadworkSite]
+        if let memory = memoryCache[cacheKey] {
+            projected = memory
+        } else if let disk = await diskCache.load(key: cacheKey) {
+            memoryCache[cacheKey] = disk
+            projected = disk
+        } else {
+            let bbox = corridorBoundingBox(for: route, paddingDegrees: 0.02)
+            let raw = try await fetchRoadworks(in: bbox)
+            projected = projectAndFilter(
+                sites: raw,
+                route: route,
+                maxCrossTrackMeters: corridorHalfWidthMeters
+            )
+            memoryCache[cacheKey] = projected
+            await diskCache.store(projected, forKey: cacheKey)
+        }
         let end = fromArcLengthMeters + aheadMeters
         return projected.filter { site in
             guard let arc = site.arcLengthAlongRouteMeters else { return false }
             return arc >= fromArcLengthMeters && arc <= end
         }
         .sorted { ($0.arcLengthAlongRouteMeters ?? 0) < ($1.arcLengthAlongRouteMeters ?? 0) }
+    }
+
+    /// Builds a stable cache key from sampled route coordinates.
+    public static func routeCacheKey(_ route: [Coordinate]) -> String {
+        let sample = route.enumerated().compactMap { index, coord in
+            index % 8 == 0 ? "\(coord.latitude),\(coord.longitude)" : nil
+        }
+        return sample.joined(separator: "|") + "|roadworks"
+    }
+
+    private func routeCacheKey(_ route: [Coordinate]) -> String {
+        Self.routeCacheKey(route)
     }
 
     /// Parses Overpass JSON fixture data for unit tests.

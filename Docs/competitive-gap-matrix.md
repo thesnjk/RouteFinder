@@ -1,7 +1,9 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-28 (Phase 33–35 driver alerts & settings UX)  
+Last updated: 2026-08-28 (Phase 36 hazard hardening)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then advisory tacho + offline packs. **CarPlay deferred** until paid-team signing.
+
+> **Aug 28 Phase 36:** TomTom live traffic/closure ahead sampling during GPS nav; crowd hazard hydration on route load; roadworks disk cache. See [`phase20-verification.md`](phase20-verification.md#phase-36-hazard-hardening-2026-08-28).
 
 > **Aug 28 Phase 33–35:** Live closure/traffic hazard ahead alerts; Settings hub sub-menus; OSM roadworks-ahead banner. See [`phase20-verification.md`](phase20-verification.md#phase-3335-driver-alerts--settings-2026-08-28).
 
@@ -54,6 +56,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **33** | Live closure/traffic hazard ahead alerts during navigation | **Done** — `HazardAheadFormatter`, voice + banner, crowd + promoted hazards |
 | **34** | Settings hub sub-menus | **Done** — drill-down NavigationLink groups |
 | **35** | Roadworks ahead on route (OSM) | **Done** — `RoadworksAlongRouteRepository`, corridor banner |
+| **36** | TomTom live hazard ahead + crowd hydrate + roadworks cache | **Done** — `LiveTrafficHazardSampler`, `promotedHazards`, `RoadworksDiskCache` |
 
 ### Remaining gaps (explicitly not claiming parity)
 
@@ -101,7 +104,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | Live weather road conditions | **OpenWeather preferred** + WeatherKit fallback | Varies | Strong | Phase 17–18; WeatherKit needs paid team |
 | Layby proactive driver notify | **Voice announce + skip-to-next toast** (Settings toggle) | Weak (CoPilot HOS breaks) | Weak | Phase 30 |
 | Fleet fuel card POI advisory | **OSM brand/name match banner** (Keyfuels, UK Fuels, AllStar, Esso, BP) | Fuel prices (Sygic) | Weak | Phase 32; no paid fuel API |
-| Live closure / hazard ahead alert | **Voice + banner during GPS nav** (crowd + promoted hazards) | Waze-style crowd | Weak | Phase 33 |
+| Live closure / hazard ahead alert | **Voice + banner** (crowd + TomTom live + promoted hazards) | Waze-style crowd | Weak | Phase 33 + 36 |
 | Roadworks ahead advisory | **OSM construction along corridor** | Varies | Weak | Phase 35; $0 Overpass |
 
 ## White space RouteFinder owns

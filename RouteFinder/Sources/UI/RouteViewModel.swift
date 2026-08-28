@@ -442,6 +442,9 @@ public final class RouteViewModel {
     private var lastAnnouncedLaybyId: String?
     private var lastAnnouncedHazardId: String?
     private var activeHazards: [HazardEvent] = []
+    private var tomTomTrafficHazardHit: TomTomTrafficHazardHit?
+    private var lastTomTomHazardSampleDate: Date?
+    private var tomTomHazardSampleTask: Task<Void, Never>?
     private var upcomingRoadworks: [RoadworkSite] = []
 
     private var apiKeyVault: APIKeyVault?
@@ -650,6 +653,7 @@ public final class RouteViewModel {
             Task { @MainActor in
                 await self?.refreshLaybyAdvisory()
                 self?.refreshHazardAheadAnnouncement()
+                self?.sampleTomTomHazardAheadIfNeeded()
                 self?.refreshActiveRoadworksAhead()
                 self?.refreshActiveLaneGuidance()
             }
@@ -681,6 +685,7 @@ public final class RouteViewModel {
             Task { @MainActor in
                 await self?.refreshLaybyAdvisory()
                 self?.refreshHazardAheadAnnouncement()
+                self?.sampleTomTomHazardAheadIfNeeded()
                 self?.refreshActiveRoadworksAhead()
             }
         }
@@ -2723,6 +2728,10 @@ public final class RouteViewModel {
         lastAnnouncedHazardId = nil
         activeHazardAheadAnnouncement = nil
         activeHazards = []
+        tomTomTrafficHazardHit = nil
+        lastTomTomHazardSampleDate = nil
+        tomTomHazardSampleTask?.cancel()
+        tomTomHazardSampleTask = nil
         upcomingRoadworks = []
         activeRoadworksAhead = nil
         upcomingLaybys = []
@@ -2864,9 +2873,47 @@ public final class RouteViewModel {
             hazards: activeHazards,
             crowdReports: crowdReports,
             route: coordinates,
-            currentArcLengthMeters: currentRouteArcLengthMeters
+            currentArcLengthMeters: currentRouteArcLengthMeters,
+            tomTomHits: tomTomTrafficHazardHit.map { [$0] } ?? []
         )
         processHazardVoiceAlertIfNeeded()
+    }
+
+    /// Polls TomTom flow ahead of the vehicle when keyed and throttled.
+    public func sampleTomTomHazardAheadIfNeeded() {
+        guard hasTomTomAPIKey, result != nil else { return }
+        guard LiveTrafficHazardSampler.shouldPoll(lastSampleDate: lastTomTomHazardSampleDate) else { return }
+
+        let coordinates = routeCoordinates.map {
+            Coordinate(latitude: $0.latitude, longitude: $0.longitude)
+        }
+        guard coordinates.count >= 2 else { return }
+
+        let arcLength = currentRouteArcLengthMeters
+        let apiKey = tomTomAPIKey
+        let vehicleClass = resolvedVehicleClass
+        let measurementSystem = displayMeasurementSystem
+
+        tomTomHazardSampleTask?.cancel()
+        tomTomHazardSampleTask = Task { @MainActor in
+            do {
+                let client = try TomTomTrafficFlowClient(apiKey: apiKey)
+                let hit = await LiveTrafficHazardSampler.sampleAhead(
+                    route: coordinates,
+                    currentArcLengthMeters: arcLength,
+                    trafficClient: client,
+                    vehicleClass: vehicleClass,
+                    measurementSystem: measurementSystem
+                )
+                guard !Task.isCancelled else { return }
+                lastTomTomHazardSampleDate = Date()
+                tomTomTrafficHazardHit = hit
+                refreshHazardAheadAnnouncement()
+            } catch {
+                guard !Task.isCancelled else { return }
+                lastTomTomHazardSampleDate = Date()
+            }
+        }
     }
 
     /// Updates the nearest roadworks site ahead from the cached corridor query.
@@ -3009,8 +3056,12 @@ public final class RouteViewModel {
     private func hydrateCrowdReportsFromDisk() async {
         let stored = await crowdEventIngest.allReports()
         crowdReports = stored
+        activeHazards = HazardAheadFormatter.promotedHazards(from: crowdReports)
         if !upcomingTruckPois.isEmpty {
             upcomingTruckPois = PoiConfidenceAdjuster.adjust(pois: upcomingTruckPois, reports: crowdReports)
+        }
+        if result != nil {
+            refreshHazardAheadAnnouncement()
         }
     }
 
@@ -3112,6 +3163,10 @@ public final class RouteViewModel {
         upcomingRoadworks = []
         activeHazards = []
         lastAnnouncedHazardId = nil
+        tomTomTrafficHazardHit = nil
+        lastTomTomHazardSampleDate = nil
+        tomTomHazardSampleTask?.cancel()
+        tomTomHazardSampleTask = nil
         trafficRerouteTask?.cancel()
         trafficRerouteAvailable = false
         isEvaluatingTrafficReroute = false

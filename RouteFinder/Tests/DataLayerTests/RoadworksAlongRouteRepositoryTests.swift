@@ -23,4 +23,15 @@ struct RoadworksAlongRouteRepositoryTests {
         #expect(sites.first?.label == "A1 roadworks")
         #expect(sites.first?.id == "node/42")
     }
+
+    @Test func routeCacheKeyIsStableForSampledCoordinates() {
+        let route = [
+            Coordinate(latitude: 51.5, longitude: -0.1),
+            Coordinate(latitude: 51.6, longitude: -0.05),
+        ]
+        let key1 = RoadworksAlongRouteRepository.routeCacheKey(route)
+        let key2 = RoadworksAlongRouteRepository.routeCacheKey(route)
+        #expect(key1 == key2)
+        #expect(key1.hasSuffix("|roadworks"))
+    }
 }

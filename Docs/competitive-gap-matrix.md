@@ -1,7 +1,9 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-29 (Phase 41–42 dispatch inspection + CI UI smoke)  
+Last updated: 2026-08-29 (Phase 43–44 CI root fix + dispatch defect toast)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then advisory tacho + offline packs. **CarPlay deferred** until paid-team signing.
+
+> **Aug 29 Phase 43–44:** GitHub Actions moved to repo-root `.github/workflows/ci.yml` with correct package working directory; dispatch toast when walkaround defects arrive via poll. See [`phase20-verification.md`](phase20-verification.md#phase-4344-ci-fix--dispatch-defect-toast-2026-08-29).
 
 > **Aug 29 Phase 41–42:** Dispatch console walkaround defect card + PDF share; fleet LAN inspection snapshot E2E; CI `RouteFinderAppUITests`. See [`phase20-verification.md`](phase20-verification.md#phase-4142-dispatch-inspection--ci-2026-08-29).
 
@@ -66,6 +68,8 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **40** | Hazard map overlay rebuild on crowd hydrate | **Done** — `HazardOverlayBuilder` |
 | **41** | Dispatch console inspection defect card + PDF share | **Done** — `DispatchStatusPanel` |
 | **42** | Fleet E2E inspection snapshot + CI UI smoke | **Done** — `FleetSSETests`, `.github/workflows/ci.yml` |
+| **43** | GitHub Actions repo-root CI fix | **Done** — root `.github/workflows/ci.yml`, `RouteFinder/` working directory |
+| **44** | Dispatch toast on walkaround defects via poll | **Done** — `DispatchInspectionAnnouncer`, `DispatchViewModel` |
 
 ### Remaining gaps (explicitly not claiming parity)
 
@@ -104,7 +108,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | Multi-stop optimize | Shipped | Shipped | Strong | Existing |
 | Live traffic affecting route choice | **TomTom flow → ORS avoid_polygons reroute** | Strong | Strong | Phase 2 |
 | HOS / tacho | **Advisory EU 561 + JSON/DDD import + Can-I-drive** (VU remains legal) | Weak | **Strong** | Phase 1 + 5; partner port stubbed |
-| Fleet dispatch / shared physics ETA | **Shipped** (native dispatch + LAN sync + SSE + trip brief + inspection PDF + dispatch defect card) | Weak | **Strong** | Phase 8–16 + Ph39–41 |
+| Fleet dispatch / shared physics ETA | **Shipped** (native dispatch + LAN sync + SSE + trip brief + inspection PDF + defect card + poll toast) | Weak | **Strong** | Phase 8–16 + Ph39–44 |
 | Predictive layby / break stop | **Strong** (fused HOS + company window + physics + occupancy + **Break Now**; $0 APIs) | Weak (CoPilot: HOS breaks + TRAVIS booking) | Weak | **Wedge vs CoPilot** — no parking booking fee |
 | Driver community dock/parking intel | **Age-weighted multi-report Full/Spaces** + last-seen banner copy | Garmin community | Crowdsource | Phase 19–22 |
 | LEZ compliance | **Banners + avoid-on-route** with **11 zones** (6 authored rings + 5 circle envelopes); Euro-class copy | Strong avoid (Sygic/TomTom) | Varies | Phase 21–23, **26** |

@@ -145,7 +145,7 @@ public actor VehicleProfileStore {
     /// Whether MapLibre should use a local map pack style when present on disk.
     public static func loadUseLocalMapStyleWhenPackPresent(defaults: UserDefaults = .standard) -> Bool {
         if defaults.object(forKey: useLocalMapStyleWhenPackPresentKey) == nil {
-            return true
+            return false
         }
         return defaults.bool(forKey: useLocalMapStyleWhenPackPresentKey)
     }

@@ -10,6 +10,7 @@ public enum NavigationWorkspaceSettings {
     private static let avoidTrafficDelaysWhenRoutingKey = "RouteFinder.avoidTrafficDelaysWhenRouting"
     private static let breakNowQuickActionEnabledKey = "RouteFinder.breakNowQuickActionEnabled"
     private static let productOnboardingSeenKey = "RouteFinder.productOnboardingSeen"
+    private static let routingLiabilityAcceptedKey = "RouteFinder.routingLiabilityAccepted"
 
     /// Loads the preferred telemetry source mode.
     public static func loadTelemetrySourceMode(defaults: UserDefaults = .standard) -> LocationProviderMode {
@@ -105,5 +106,15 @@ public enum NavigationWorkspaceSettings {
     /// Persists that the driver has seen and dismissed product onboarding.
     public static func saveHasSeenProductOnboarding(_ seen: Bool, defaults: UserDefaults = .standard) {
         defaults.set(seen, forKey: productOnboardingSeenKey)
+    }
+
+    /// Whether the driver accepted the routing liability disclaimer.
+    public static func loadHasAcceptedRoutingLiability(defaults: UserDefaults = .standard) -> Bool {
+        defaults.bool(forKey: routingLiabilityAcceptedKey)
+    }
+
+    /// Persists acceptance of the routing liability disclaimer.
+    public static func saveHasAcceptedRoutingLiability(_ accepted: Bool, defaults: UserDefaults = .standard) {
+        defaults.set(accepted, forKey: routingLiabilityAcceptedKey)
     }
 }

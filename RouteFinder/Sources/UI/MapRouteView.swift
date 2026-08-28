@@ -26,6 +26,7 @@ public struct MapRouteView: View {
     let onMapClick: (CLLocationCoordinate2D) -> Void
     let onContextAction: (MapContextAction, CLLocationCoordinate2D) -> Void
     let onRegionChange: (CLLocationCoordinate2D) -> Void
+    let onUseOnlineMap: (() -> Void)?
 
     public init(
         coordinates: [CLLocationCoordinate2D],
@@ -43,7 +44,8 @@ public struct MapRouteView: View {
         mapBridge: MapViewControllerBridge? = nil,
         onMapClick: @escaping (CLLocationCoordinate2D) -> Void = { _ in },
         onContextAction: @escaping (MapContextAction, CLLocationCoordinate2D) -> Void = { _, _ in },
-        onRegionChange: @escaping (CLLocationCoordinate2D) -> Void = { _ in }
+        onRegionChange: @escaping (CLLocationCoordinate2D) -> Void = { _ in },
+        onUseOnlineMap: (() -> Void)? = nil
     ) {
         self.coordinates = coordinates
         self.encodedPolyline = encodedPolyline
@@ -62,6 +64,7 @@ public struct MapRouteView: View {
         self.onMapClick = onMapClick
         self.onContextAction = onContextAction
         self.onRegionChange = onRegionChange
+        self.onUseOnlineMap = onUseOnlineMap
     }
 
     public var body: some View {
@@ -88,7 +91,8 @@ public struct MapRouteView: View {
                     onContextAction(.setEnd, coordinate)
                     #endif
                 },
-                onRegionChange: onRegionChange
+                onRegionChange: onRegionChange,
+                onUseOnlineMap: onUseOnlineMap
             )
 
             MapAttributionOverlay()

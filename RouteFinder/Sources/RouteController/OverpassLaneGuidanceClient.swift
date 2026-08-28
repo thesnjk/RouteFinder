@@ -8,20 +8,39 @@ public struct OverpassLaneGuidanceClient: Sendable {
     private static let requestTimeoutSeconds: TimeInterval = 15
 
     private let session: URLSession
+    private let cache: OverpassLaneGuidanceCache
 
     /// Creates an Overpass lane guidance client.
-    public init(session: URLSession = SecureURLSession.shared) {
+    public init(
+        session: URLSession = SecureURLSession.shared,
+        cache: OverpassLaneGuidanceCache = .shared
+    ) {
         self.session = session
+        self.cache = cache
+    }
+
+    /// Clears the shared in-memory lane guidance cache.
+    public static func clearCache() {
+        OverpassLaneGuidanceCache.shared.clear()
     }
 
     /// Fetches lane guidance near a maneuver coordinate.
     public func fetchLaneGuidance(
         near coordinate: RoutingCoordinate,
-        searchRadiusMeters: Double = 35
+        searchRadiusMeters: Double = 35,
+        maneuver: TurnManeuver? = nil
     ) async throws -> LaneGuidance? {
+        if let cachedTurnLanes = cache.cachedTurnLanes(for: coordinate) {
+            guard let turnLanes = cachedTurnLanes else { return nil }
+            return TurnLanesParser.parse(turnLanes: turnLanes, forManeuver: maneuver)
+        }
+
         let query = """
         [out:json][timeout:15];
-        way(around:\(Int(searchRadiusMeters)),\(coordinate.latitude),\(coordinate.longitude))["turn:lanes"];
+        (
+          way(around:\(Int(searchRadiusMeters)),\(coordinate.latitude),\(coordinate.longitude))["turn:lanes"];
+          way(around:\(Int(searchRadiusMeters)),\(coordinate.latitude),\(coordinate.longitude))["turn:lanes:forward"];
+        );
         out tags;
         """
         guard let url = URL(string: Self.interpreterURL) else {
@@ -48,10 +67,22 @@ public struct OverpassLaneGuidanceClient: Sendable {
         }
 
         let envelope = try JSONDecoder().decode(OverpassLaneResponse.self, from: data)
-        for element in envelope.elements {
-            if let turnLanes = element.tags?["turn:lanes"],
-               let guidance = TurnLanesParser.parse(turnLanes: turnLanes) {
-                return guidance
+        let turnLanes = Self.firstTurnLanesTag(in: envelope.elements)
+        cache.store(turnLanes: turnLanes, for: coordinate)
+
+        guard let turnLanes else { return nil }
+        return TurnLanesParser.parse(turnLanes: turnLanes, forManeuver: maneuver)
+    }
+
+    private static func firstTurnLanesTag(in elements: [OverpassLaneElement]) -> String? {
+        for element in elements {
+            if let turnLanes = element.tags?["turn:lanes"] {
+                return turnLanes
+            }
+        }
+        for element in elements {
+            if let turnLanes = element.tags?["turn:lanes:forward"] {
+                return turnLanes
             }
         }
         return nil

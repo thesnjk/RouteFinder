@@ -7,7 +7,7 @@ public struct TrafficRerouteResult: Sendable {
     public let original: ExternalRouteResponse
     /// Optional alternate that avoids jammed polygons, when strictly better.
     public let alternate: ExternalRouteResponse?
-    /// `true` when heavy/severe congestion or a closure was detected on the original corridor.
+    /// `true` when standstill/closure was detected on the original corridor.
     public let trafficDelayDetected: Bool
     /// Avoid polygons used for the alternate request (rings of `[lon, lat]`).
     public let avoidPolygons: [[[Double]]]
@@ -23,6 +23,23 @@ public struct TrafficRerouteResult: Sendable {
         self.alternate = alternate
         self.trafficDelayDetected = trafficDelayDetected
         self.avoidPolygons = avoidPolygons
+    }
+}
+
+/// Context for vehicle-aware TomTom sampling during reroute evaluation.
+public struct TrafficRerouteEvaluationContext: Sendable {
+    /// Active vehicle profile for speed-ceiling classification.
+    public let vehicleProfile: VehicleSpecificationProfile
+    /// Regional measurement system for speed ceilings.
+    public let measurementSystem: RegionalMeasurementSystem
+
+    /// Creates reroute evaluation context.
+    public init(
+        vehicleProfile: VehicleSpecificationProfile,
+        measurementSystem: RegionalMeasurementSystem = .imperial
+    ) {
+        self.vehicleProfile = vehicleProfile
+        self.measurementSystem = measurementSystem
     }
 }
 
@@ -164,6 +181,14 @@ public enum TrafficAvoidPolygonBuilder: Sendable {
 public struct TrafficRerouteCoordinator: Sendable {
     /// Default spacing between TomTom sample points along the route.
     public static let defaultSampleIntervalMeters: Double = 7_500
+    /// Default wall-clock budget for a full-route traffic evaluation.
+    public static let defaultEvaluationTimeoutSeconds: TimeInterval = 30
+    /// Maximum concurrent TomTom samples per batch.
+    public static let defaultMaxConcurrentSamples = 3
+    /// Minimum time saved (seconds) for an alternate to qualify as better.
+    public static let minimumTimeSavingsSeconds: TimeInterval = 300
+    /// Minimum fractional improvement for an alternate to qualify as better.
+    public static let minimumFractionalImprovement = 0.10
 
     private let trafficClient: TomTomTrafficFlowClient
     private let routingClient: any ExternalRoutingClient
@@ -182,33 +207,60 @@ public struct TrafficRerouteCoordinator: Sendable {
 
     /// Evaluates the original route for congestion and returns an optional better alternate.
     ///
-    /// Keeps the original when the second ORS call fails or is not strictly faster.
+    /// Keeps the original when the second ORS call fails or is not meaningfully faster.
     public func evaluate(
         request: ExternalRouteRequest,
-        original: ExternalRouteResponse
+        original: ExternalRouteResponse,
+        context: TrafficRerouteEvaluationContext,
+        timeoutSeconds: TimeInterval = defaultEvaluationTimeoutSeconds,
+        maxConcurrentSamples: Int = defaultMaxConcurrentSamples
     ) async -> TrafficRerouteResult {
+        let deadline = ContinuousClock.now + .seconds(timeoutSeconds)
         let samples = Self.sampleCoordinates(along: original.coordinates, intervalMeters: sampleIntervalMeters)
         var jammed: [Coordinate] = []
+        let batchSize = max(1, maxConcurrentSamples)
 
-        for sample in samples {
-            let routingPoint = RoutingCoordinate(latitude: sample.latitude, longitude: sample.longitude)
-            do {
-                let flow = try await trafficClient.fetchFlowSegment(at: routingPoint)
-                if flow.roadClosed || isSevereCongestion(flow.congestionLevel) {
-                    jammed.append(sample)
+        for batchStart in stride(from: 0, to: samples.count, by: batchSize) {
+            if ContinuousClock.now >= deadline {
+                return Self.noDelayResult(original: original)
+            }
+
+            let batch = Array(samples[batchStart..<min(batchStart + batchSize, samples.count)])
+            await withTaskGroup(of: Coordinate?.self) { group in
+                for sample in batch {
+                    group.addTask {
+                        let routingPoint = RoutingCoordinate(latitude: sample.latitude, longitude: sample.longitude)
+                        do {
+                            let flow = try await self.trafficClient.fetchFlowSegment(at: routingPoint)
+                            let snapshot = VehicleAdjustedTrafficClassifier.snapshot(
+                                from: flow,
+                                vehicleClass: context.vehicleProfile.vehicleClass,
+                                measurementSystem: context.measurementSystem
+                            )
+                            if VehicleAdjustedTrafficClassifier.isRerouteWorthy(flow: flow, snapshot: snapshot) {
+                                return sample
+                            }
+                        } catch {
+                            return nil
+                        }
+                        return nil
+                    }
                 }
-            } catch {
-                continue
+
+                for await sample in group {
+                    if let sample {
+                        jammed.append(sample)
+                    }
+                }
             }
         }
 
         guard !jammed.isEmpty else {
-            return TrafficRerouteResult(
-                original: original,
-                alternate: nil,
-                trafficDelayDetected: false,
-                avoidPolygons: []
-            )
+            return Self.noDelayResult(original: original)
+        }
+
+        if ContinuousClock.now >= deadline {
+            return Self.noDelayResult(original: original)
         }
 
         let polygons = TrafficAvoidPolygonBuilder.polygons(
@@ -225,13 +277,10 @@ public struct TrafficRerouteCoordinator: Sendable {
         }
 
         do {
-            // Preserve LEZ / other avoid polygons already on the request.
             let merged = (request.avoidPolygons ?? []) + polygons
             let alternateRequest = request.withAvoidPolygons(merged)
             let alternate = try await routingClient.route(request: alternateRequest)
-            let isBetter = alternate.durationSeconds + 30 < original.durationSeconds
-                || (alternate.durationSeconds <= original.durationSeconds
-                    && alternate.distanceMeters < original.distanceMeters * 1.15)
+            let isBetter = Self.isMeaningfullyBetterAlternate(alternate: alternate, original: original)
             return TrafficRerouteResult(
                 original: original,
                 alternate: isBetter ? alternate : nil,
@@ -246,6 +295,20 @@ public struct TrafficRerouteCoordinator: Sendable {
                 avoidPolygons: polygons
             )
         }
+    }
+
+    /// Returns whether an alternate saves meaningful time compared to the original.
+    public static func isMeaningfullyBetterAlternate(
+        alternate: ExternalRouteResponse,
+        original: ExternalRouteResponse
+    ) -> Bool {
+        let timeSaved = original.durationSeconds - alternate.durationSeconds
+        if timeSaved >= minimumTimeSavingsSeconds { return true }
+        if original.durationSeconds > 0,
+           alternate.durationSeconds <= original.durationSeconds * (1.0 - minimumFractionalImprovement) {
+            return true
+        }
+        return false
     }
 
     /// Samples coordinates roughly every `intervalMeters` along a polyline.
@@ -280,13 +343,13 @@ public struct TrafficRerouteCoordinator: Sendable {
         return samples
     }
 
-    private func isSevereCongestion(_ level: TrafficCongestionLevel) -> Bool {
-        switch level {
-        case .heavy, .standstill:
-            return true
-        case .freeFlow, .light:
-            return false
-        }
+    private static func noDelayResult(original: ExternalRouteResponse) -> TrafficRerouteResult {
+        TrafficRerouteResult(
+            original: original,
+            alternate: nil,
+            trafficDelayDetected: false,
+            avoidPolygons: []
+        )
     }
 
     private static func haversineMeters(_ a: Coordinate, _ b: Coordinate) -> Double {

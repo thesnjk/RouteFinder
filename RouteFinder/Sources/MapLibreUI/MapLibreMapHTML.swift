@@ -541,7 +541,7 @@ enum MapLibreMapHTML {
               map.getSource('markers-source').setData({ type: 'FeatureCollection', features });
             };
 
-            window.updateVehicleSpatialFootprint = function(coordinates, bearing, renderMode, centerLng, centerLat, visible, partsJSON) {
+            window.updateVehicleSpatialFootprint = function(coordinates, bearing, renderMode, centerLng, centerLat, visible, partsJSON, isPassengerCar) {
               if (!map) return;
               ensureVehicleLayer();
               ensureVehicleIconLayer();
@@ -577,6 +577,10 @@ enum MapLibreMapHTML {
                 partFeatures = [];
               }
               if (usePolygon && partFeatures.length > 0) {
+                const passenger = isPassengerCar === true || isPassengerCar === 'true';
+                map.setPaintProperty('vehicle-part-0-fill', 'fill-color', passenger ? '#0ea5e9' : '#1d4ed8');
+                map.setPaintProperty('vehicle-part-0-fill', 'fill-opacity', passenger ? 0.82 : 0.72);
+                map.setPaintProperty('vehicle-part-1-fill', 'fill-color', '#3b82f6');
                 map.setLayoutProperty('vehicle-fill-layer', 'visibility', 'none');
                 map.setLayoutProperty('vehicle-outline-layer', 'visibility', 'none');
                 map.setLayoutProperty('vehicle-icon-layer', 'visibility', 'none');
@@ -619,14 +623,14 @@ enum MapLibreMapHTML {
               }
             };
 
-            window.setSimulatedVehicleFootprint = function(lng, lat, visible, bearing, footprintJSON, lengthM, widthM, renderMode, partsJSON) {
+            window.setSimulatedVehicleFootprint = function(lng, lat, visible, bearing, footprintJSON, lengthM, widthM, renderMode, partsJSON, isPassengerCar) {
               if (!map) return;
               window._vehicleLengthMeters = lengthM || 12;
               window._vehicleWidthMeters = widthM || 2.55;
               const show = visible === true || visible === 'true';
               if (!show) {
                 vehicleIconVisible = false;
-                updateVehicleSpatialFootprint([], 0, 'icon', 0, 0, false, '[]');
+                updateVehicleSpatialFootprint([], 0, 'icon', 0, 0, false, '[]', false);
                 return;
               }
               let footprintCoords = [];
@@ -641,7 +645,16 @@ enum MapLibreMapHTML {
                   return { lng: pair[0], lat: pair[1] };
                 });
               }
-              updateVehicleSpatialFootprint(footprintCoords, bearing || 0, renderMode, lng, lat, true, partsJSON || '[]');
+              updateVehicleSpatialFootprint(
+                footprintCoords,
+                bearing || 0,
+                renderMode,
+                lng,
+                lat,
+                true,
+                partsJSON || '[]',
+                isPassengerCar === true || isPassengerCar === 'true'
+              );
             };
 
             window.setSimulatedVehicle = function(lng, lat, visible, bearing, lengthM, widthM, renderMode) {

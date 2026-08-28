@@ -13,3 +13,6 @@ Packages/
 RouteFinder/RouteFinder.app/
 RouteFinder/RouteFinderApp.app/
 RouteFinder/RouteFinderMacApp.app/
+
+# Research scrape archive (summaries committed under Docs/)
+.firecrawl/

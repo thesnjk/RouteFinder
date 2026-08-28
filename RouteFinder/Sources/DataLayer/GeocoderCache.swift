@@ -49,21 +49,23 @@ public actor GeocoderCache {
     }
 
     /// Builds a stable cache key from query and viewport for biased search.
-    public static func cacheKey(query: String, near center: Coordinate) -> String {
+    public static func cacheKey(query: String, near center: Coordinate, language: String? = nil) -> String {
         let normalized = query.trimmingCharacters(in: .whitespaces).lowercased()
         let lat = String(format: "%.2f", center.latitude)
         let lon = String(format: "%.2f", center.longitude)
-        let raw = "biased|\(normalized)|\(lat)|\(lon)"
+        let lang = language?.lowercased() ?? "default"
+        let raw = "biased|\(normalized)|\(lat)|\(lon)|\(lang)"
         return raw.data(using: .utf8)?.base64EncodedString()
             .replacingOccurrences(of: "/", with: "_") ?? normalized
     }
 
     /// Builds a stable cache key for global search with viewport focus.
-    public static func cacheKeyGlobal(query: String, near center: Coordinate) -> String {
+    public static func cacheKeyGlobal(query: String, near center: Coordinate, language: String? = nil) -> String {
         let normalized = query.trimmingCharacters(in: .whitespaces).lowercased()
         let lat = String(format: "%.2f", center.latitude)
         let lon = String(format: "%.2f", center.longitude)
-        let raw = "global|\(normalized)|\(lat)|\(lon)"
+        let lang = language?.lowercased() ?? "default"
+        let raw = "global|\(normalized)|\(lat)|\(lon)|\(lang)"
         return raw.data(using: .utf8)?.base64EncodedString()
             .replacingOccurrences(of: "/", with: "_") ?? normalized
     }

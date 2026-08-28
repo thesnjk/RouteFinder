@@ -24,12 +24,15 @@ public enum PhysicsRouteDurationEstimator {
     public static func estimate(
         configuration: SimulationPhysicsConfiguration,
         tomTomAPIKey: String? = nil,
-        timeoutSeconds: TimeInterval = defaultTimeoutSeconds
+        timeoutSeconds: TimeInterval? = nil
     ) async -> PhysicsRouteDurationResult? {
+        let resolvedTimeout = timeoutSeconds ?? RouteRehearsalService.scaledTimeoutSeconds(
+            for: configuration.totalRouteLength
+        )
         guard let report = await RouteRehearsalService.rehearse(
             configuration: configuration,
             tomTomAPIKey: tomTomAPIKey,
-            timeoutSeconds: timeoutSeconds
+            timeoutSeconds: resolvedTimeout
         ) else {
             return nil
         }

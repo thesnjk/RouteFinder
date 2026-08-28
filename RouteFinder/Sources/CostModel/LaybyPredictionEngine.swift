@@ -148,6 +148,55 @@ public enum LaybyPredictionEngine: Sendable {
         return LaybyPredictionResult(ranked: advisories)
     }
 
+    /// Immediate break search: nearest eligible layby ahead on the active route (Break Now UX).
+    ///
+    /// Ignores HOS/company bands and ranks by shortest drive distance — mirrors CoPilot 11.3 Break Now.
+    public static func predictBreakNow(_ input: LaybyPredictionInput) -> LaybyPredictionResult {
+        let trafficFactor = max(1, input.trafficInflationFactor ?? 1)
+        let eligible = input.candidates.filter { stop in
+            guard !input.skippedIds.contains(stop.id) else { return false }
+            guard let arc = stop.arcLengthAlongRouteMeters else { return false }
+            return arc >= input.currentArcLengthMeters - arcLookbackMeters
+        }
+        guard !eligible.isEmpty else {
+            return LaybyPredictionResult(ranked: [])
+        }
+
+        let sorted = eligible.sorted { lhs, rhs in
+            let lhsArc = lhs.arcLengthAlongRouteMeters ?? .infinity
+            let rhsArc = rhs.arcLengthAlongRouteMeters ?? .infinity
+            return lhsArc < rhsArc
+        }
+
+        let ranked = sorted.enumerated().map { index, stop in
+            let occupancyPrior = ParkingOccupancyPrior.laybyOccupancyPrior(
+                at: input.now.addingTimeInterval(
+                    timeToReachArc(
+                        from: input.currentArcLengthMeters,
+                        to: stop.arcLengthAlongRouteMeters ?? input.currentArcLengthMeters,
+                        pathDurations: input.pathDurationsSeconds,
+                        pathArcs: input.pathArcLengthsMeters,
+                        speedMps: input.speedMps,
+                        trafficFactor: trafficFactor
+                    )
+                ),
+                for: stop,
+                reports: input.crowdReports
+            )
+            return makeAdvisory(
+                stop: stop,
+                input: input,
+                trafficFactor: trafficFactor,
+                confidence: index == 0 ? 0.75 : max(0.35, 0.75 - Double(index) * 0.1),
+                occupancyPrior: occupancyPrior,
+                breakWindowOpensAt: nil,
+                reasonCodes: [.breakNow, .occupancy],
+                isAdvisory: false
+            )
+        }
+        return LaybyPredictionResult(ranked: ranked, primary: ranked.first)
+    }
+
     // MARK: - Band computation
 
     private static func hosDriveBudgetSeconds(_ input: LaybyPredictionInput) -> TimeInterval? {

@@ -665,7 +665,7 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
             let escapedFootprint = escapeJS(footprintJSON)
             let escapedParts = escapeJS(partsJSON)
             webView.evaluateJavaScript(
-                "setSimulatedVehicleFootprint(\(vehicle.longitude),\(vehicle.latitude),true,\(vehicle.bearing),'\(escapedFootprint)',\(vehicle.lengthMeters),\(vehicle.widthMeters),'\(renderMode)','\(escapedParts)')"
+                "setSimulatedVehicleFootprint(\(vehicle.longitude),\(vehicle.latitude),true,\(vehicle.bearing),'\(escapedFootprint)',\(vehicle.lengthMeters),\(vehicle.widthMeters),'\(renderMode)','\(escapedParts)',\(vehicle.isPassengerCar))"
             ) { _, _ in
                 finish()
             }

@@ -206,6 +206,12 @@ struct RouteSummaryCard: View {
                 .foregroundStyle(.tertiary)
         }
 
+        if viewModel.isEstimatingPhysicsDuration {
+            Text("Refining physics ETA…")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+
         HStack {
             Label(String(format: "%.0f ms", result.runtime * 1000), systemImage: "speedometer")
             Label("\(result.nodesVisited) nodes", systemImage: "point.3.connected.trianglepath.dotted")

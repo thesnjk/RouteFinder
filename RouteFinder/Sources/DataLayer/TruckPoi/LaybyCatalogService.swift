@@ -286,6 +286,20 @@ public actor LaybyAdvisor {
         return LaybyPredictionEngine.predict(input).primary
     }
 
+    /// Nearest truck-safe layby ahead for Break Now quick action.
+    public func breakNowAdvisory(
+        currentArcLengthMeters: Double,
+        speedMps: Double,
+        predictionInput: LaybyPredictionInput? = nil
+    ) -> LaybyAdvisory? {
+        let input = resolvedInput(
+            currentArcLengthMeters: currentArcLengthMeters,
+            speedMps: speedMps,
+            predictionInput: predictionInput
+        )
+        return LaybyPredictionEngine.predictBreakNow(input).primary
+    }
+
     /// Marks the current upcoming layby as full and returns the next advisory if available.
     @discardableResult
     public func markCurrentFull(

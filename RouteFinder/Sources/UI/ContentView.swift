@@ -1,5 +1,6 @@
 import Contracts
 import MapLibreUI
+import RouteController
 import SwiftUI
 
 #if os(macOS)
@@ -154,7 +155,7 @@ private struct MapWorkspaceView: View {
                 encodedPolyline: viewModel.routeEncodedPolyline,
                 encodedPolylinePrecision: viewModel.routeEncodedPolylinePrecision,
                 routeCumulativeLengths: viewModel.routeCumulativeLengths,
-                pins: viewModel.mapPins,
+                pins: viewModel.displayMapPins,
                 hazardsGeoJSON: viewModel.hazardOverlayJSON,
                 simulatedVehicle: simulatedVehicleState,
                 interactionMode: viewModel.interactionMode,
@@ -200,13 +201,21 @@ private struct MapWorkspaceView: View {
         let profile = viewModel.resolvedSpecificationProfile ?? mapBridge.activeSpecificationProfile
         let length = profile?.lengthMeters ?? simulationEngine.vehicleLengthMeters
         let width = profile?.widthMeters ?? simulationEngine.vehicleWidthMeters
-        let footprint = mapBridge.updateVehicleSimulationLayer(
-            currentLocation: coordinate,
+        let isPassengerCar = !viewModel.isHGVMode
+        let parts = VehicleGeometryCalculator.generateFootprintParts(
+            rearAxle: coordinate,
             headingDegrees: simulationEngine.currentBearing,
-            activeProfile: profile,
             lengthMeters: length,
-            widthMeters: width
+            widthMeters: width,
+            isPassengerCar: isPassengerCar
         )
+        let footprint = parts.first
+            ?? VehicleGeometryCalculator.generateFootprint(
+                rearAxle: coordinate,
+                headingDegrees: simulationEngine.currentBearing,
+                lengthMeters: length,
+                widthMeters: width
+            )
         return SimulatedVehicleState(
             latitude: coordinate.latitude,
             longitude: coordinate.longitude,
@@ -216,8 +225,11 @@ private struct MapWorkspaceView: View {
             widthMeters: width,
             playbackRevision: simulationEngine.playbackRevision,
             dimensionRevision: simulationEngine.dimensionRevision,
-            renderMode: mapBridge.renderMode(for: mapBridge.currentMapZoom),
-            footprintCoordinates: footprint
+            renderMode: .polygon,
+            footprintCoordinates: footprint,
+            footprintParts: parts,
+            isPassengerCar: isPassengerCar,
+            wheelbaseMeters: isPassengerCar ? 2.7 : 6.5
         )
     }
 }

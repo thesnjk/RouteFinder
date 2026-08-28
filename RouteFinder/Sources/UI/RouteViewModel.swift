@@ -138,6 +138,14 @@ public final class RouteViewModel {
     public var hosEnabled = NavigationWorkspaceSettings.loadHosAdvisoryClockEnabled()
     /// When true, TomTom congestion caps simulation cruise speed (default off).
     public var applyTrafficToSimulation = NavigationWorkspaceSettings.loadApplyTrafficToSimulation()
+    /// When true, live traffic jams can trigger avoid-polygon reroute evaluation.
+    public var avoidTrafficDelaysWhenRouting = NavigationWorkspaceSettings.loadAvoidTrafficDelaysWhenRouting()
+    /// When true, show Break Now layby quick action on the map HUD (default on).
+    public var breakNowQuickActionEnabled = NavigationWorkspaceSettings.loadBreakNowQuickActionEnabled()
+    /// Preferred Pelias search language code (BCP-47).
+    public var preferredSearchLanguage = LanguageWorkspaceSettings.loadPreferredSearchLanguage()
+    /// When true, run a secondary English Pelias pass when localized results are sparse.
+    public var searchEnglishFallback = LanguageWorkspaceSettings.loadSearchEnglishFallback()
     /// When true, tiled offline routing may be used (fallback or primary).
     public var offlineRoutingEnabled = VehicleProfileStore.loadOfflineRoutingEnabled()
     /// When true, prefer offline tiles over ORS even when online and keyed.
@@ -351,6 +359,14 @@ public final class RouteViewModel {
         }
     }
 
+    /// Map pins with the start marker hidden during live simulation so the vehicle footprint is visible.
+    public var displayMapPins: [RoutePin] {
+        if simulationEngine.isRunning {
+            return mapPins.filter { $0.kind != .start }
+        }
+        return mapPins
+    }
+
     func resolutionStatus(for waypointID: UUID) -> EndpointResolutionStatus {
         guard let waypoint = routeWaypoints.first(where: { $0.id == waypointID }) else {
             return .empty
@@ -403,6 +419,8 @@ public final class RouteViewModel {
     private var rehearseTask: Task<Void, Never>?
     private var fleetDispatchToastDismissTask: Task<Void, Never>?
     private var vehicleWorkspacePersistTask: Task<Void, Never>?
+    private var laneEnrichmentTask: Task<Void, Never>?
+    private var activeRouteGeneration: UInt64 = 0
     private let laneGuidanceNavigationAdapter = LaneGuidanceNavigationAdapter()
 
     private var apiKeyVault: APIKeyVault?
@@ -1037,6 +1055,22 @@ public final class RouteViewModel {
     public func persistApplyTrafficToSimulation() {
         NavigationWorkspaceSettings.saveApplyTrafficToSimulation(applyTrafficToSimulation)
         simulationEngine.updateApplyTrafficToSimulation(applyTrafficToSimulation)
+    }
+
+    /// Persists whether traffic reroute evaluation runs after route find.
+    public func persistAvoidTrafficDelaysWhenRouting() {
+        NavigationWorkspaceSettings.saveAvoidTrafficDelaysWhenRouting(avoidTrafficDelaysWhenRouting)
+    }
+
+    /// Persists Break Now quick action preference.
+    public func persistBreakNowQuickActionEnabled() {
+        NavigationWorkspaceSettings.saveBreakNowQuickActionEnabled(breakNowQuickActionEnabled)
+    }
+
+    /// Persists preferred search language and English fallback settings.
+    public func persistLanguageWorkspaceSettings() {
+        LanguageWorkspaceSettings.savePreferredSearchLanguage(preferredSearchLanguage)
+        LanguageWorkspaceSettings.saveSearchEnglishFallback(searchEnglishFallback)
     }
 
     /// Restores sidebar vehicle fields from the last workspace snapshot.
@@ -2217,7 +2251,21 @@ public final class RouteViewModel {
         coordinates: [Coordinate],
         preferences: RoutingPreferences
     ) {
-        result = searchResult
+        let heuristicInstructions = LaneGuidanceEnricher.enrichWithHeuristics(
+            instructions: searchResult.turnInstructions
+        )
+        let resultWithHeuristics = SearchResult(
+            path: searchResult.path,
+            totalDistance: searchResult.totalDistance,
+            totalTime: searchResult.totalTime,
+            nodesVisited: searchResult.nodesVisited,
+            runtime: searchResult.runtime,
+            explanation: searchResult.explanation,
+            turnInstructions: heuristicInstructions,
+            metrics: searchResult.metrics
+        )
+
+        result = resultWithHeuristics
         let canonical = RouteGeometryCanonicalizer.process(coordinates, speedLimitSource: nil)
         routeGeometry = .polyline(encoded: nil, precision: 6, coordinates: coordinates)
         routeEncodedPolyline = nil
@@ -2227,8 +2275,9 @@ public final class RouteViewModel {
 
         navigationCoordinator.loadRoute(
             canonical: canonical,
-            turnInstructions: searchResult.turnInstructions,
-            staticTotalTimeSeconds: searchResult.metrics.totalTime
+            turnInstructions: resultWithHeuristics.turnInstructions,
+            staticTotalTimeSeconds: resultWithHeuristics.metrics.totalTime,
+            webRoutingETASeconds: resultWithHeuristics.metrics.totalTime
         )
 
         let physics = resolvedVehiclePhysics()
@@ -2236,10 +2285,10 @@ public final class RouteViewModel {
             route: coordinates,
             environmentalContext: environmentalContext,
             vehicle: resolvedVehicleProfile(),
-            totalDuration: searchResult.metrics.totalTime,
+            totalDuration: resultWithHeuristics.metrics.totalTime,
             enginePowerHP: configuredEnginePowerHP,
             maneuvers: [],
-            turnInstructions: searchResult.turnInstructions,
+            turnInstructions: resultWithHeuristics.turnInstructions,
             isPassengerCar: !preferences.isHGVMode,
             tomTomAPIKey: tomTomAPIKey.isEmpty ? nil : tomTomAPIKey,
             vehicleSpecificationProfile: currentVehicleSpecificationProfile(),
@@ -2249,6 +2298,11 @@ public final class RouteViewModel {
         )
         cloudRoutingBanner = "Offline tiled routing"
         fitMapToRoute()
+        scheduleLaneGuidanceEnrichment(
+            instructions: heuristicInstructions,
+            coordinates: coordinates,
+            queryOverpass: false
+        )
     }
 
     private func calculateExternalRoute(preferences: RoutingPreferences) async throws {
@@ -2313,9 +2367,8 @@ public final class RouteViewModel {
                 coordinates: response.coordinates
             )
         }
-        let enrichedInstructions = await LaneGuidanceEnricher.enrich(
-            instructions: turnInstructions,
-            coordinates: response.coordinates
+        let heuristicInstructions = LaneGuidanceEnricher.enrichWithHeuristics(
+            instructions: turnInstructions
         )
 
         let distanceLabel = response.distanceMeters >= 1000
@@ -2329,7 +2382,7 @@ public final class RouteViewModel {
             nodesVisited: response.coordinates.count,
             runtime: 0,
             explanation: "HeiGIT \(profileLabel) route · \(distanceLabel)",
-            turnInstructions: enrichedInstructions,
+            turnInstructions: heuristicInstructions,
             metrics: RouteMetrics(
                 totalDistance: response.distanceMeters,
                 totalTime: response.durationSeconds,
@@ -2359,7 +2412,8 @@ public final class RouteViewModel {
         navigationCoordinator.loadRoute(
             canonical: canonical,
             turnInstructions: searchResult.turnInstructions,
-            staticTotalTimeSeconds: searchResult.metrics.totalTime
+            staticTotalTimeSeconds: searchResult.metrics.totalTime,
+            webRoutingETASeconds: searchResult.metrics.totalTime
         )
 
         let physics = resolvedVehiclePhysics()
@@ -2386,6 +2440,51 @@ public final class RouteViewModel {
         if hosEnabled {
             Task { await refreshHosForecast() }
         }
+        scheduleLaneGuidanceEnrichment(
+            instructions: heuristicInstructions,
+            coordinates: response.coordinates
+        )
+    }
+
+    private func scheduleLaneGuidanceEnrichment(
+        instructions: [TurnInstruction],
+        coordinates: [Coordinate],
+        queryOverpass: Bool = true
+    ) {
+        laneEnrichmentTask?.cancel()
+        OverpassLaneGuidanceClient.clearCache()
+        activeRouteGeneration &+= 1
+        let generation = activeRouteGeneration
+        let options = LaneGuidanceEnrichmentOptions(queryOverpass: queryOverpass)
+
+        laneEnrichmentTask = Task { @MainActor [weak self] in
+            let enriched = await LaneGuidanceEnricher.enrichWithOverpass(
+                instructions: instructions,
+                coordinates: coordinates,
+                options: options
+            )
+            guard !Task.isCancelled,
+                  let self,
+                  self.activeRouteGeneration == generation else { return }
+            self.applyLaneGuidanceEnrichment(enriched)
+        }
+    }
+
+    private func applyLaneGuidanceEnrichment(_ instructions: [TurnInstruction]) {
+        guard let current = result else { return }
+        result = SearchResult(
+            path: current.path,
+            totalDistance: current.totalDistance,
+            totalTime: current.totalTime,
+            nodesVisited: current.nodesVisited,
+            runtime: current.runtime,
+            explanation: current.explanation,
+            turnInstructions: instructions,
+            metrics: current.metrics
+        )
+        navigationCoordinator.updateTurnInstructions(instructions)
+        simulationEngine.updateTurnInstructions(instructions)
+        refreshActiveLaneGuidance()
     }
 
     /// Optionally samples TomTom along the route and prepares an avoid-polygon alternate.
@@ -2396,12 +2495,16 @@ public final class RouteViewModel {
         trafficRerouteTask?.cancel()
         trafficRerouteAvailable = false
         pendingTrafficAlternate = nil
-        guard !tomTomAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+        guard avoidTrafficDelaysWhenRouting,
+              !tomTomAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               !orsAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            isEvaluatingTrafficReroute = false
             return
         }
 
         isEvaluatingTrafficReroute = true
+        let vehicleProfile = currentVehicleSpecificationProfile()
+        let measurementSystem = displayMeasurementSystem
         trafficRerouteTask = Task { @MainActor in
             defer { isEvaluatingTrafficReroute = false }
             do {
@@ -2411,11 +2514,22 @@ public final class RouteViewModel {
                     trafficClient: trafficClient,
                     routingClient: routingClient
                 )
-                let outcome = await coordinator.evaluate(request: request, original: original)
+                let context = TrafficRerouteEvaluationContext(
+                    vehicleProfile: vehicleProfile,
+                    measurementSystem: measurementSystem
+                )
+                let outcome = await coordinator.evaluate(
+                    request: request,
+                    original: original,
+                    context: context
+                )
                 guard !Task.isCancelled else { return }
-                if outcome.trafficDelayDetected, let alternate = outcome.alternate {
+                if let alternate = outcome.alternate {
                     pendingTrafficAlternate = alternate
                     trafficRerouteAvailable = true
+                } else {
+                    trafficRerouteAvailable = false
+                    pendingTrafficAlternate = nil
                 }
             } catch {
                 guard !Task.isCancelled else { return }
@@ -2443,16 +2557,25 @@ public final class RouteViewModel {
             let estimate = await simulationEngine.estimatePhysicsDuration()
             guard !Task.isCancelled else { return }
             if let estimate {
-                physicsPredictedDurationSeconds = estimate.kineticDurationSeconds
-                journeyPhysicsETASeconds = estimate.kineticDurationSeconds
+                let capped = cappedPhysicsETA(
+                    kinetic: estimate.kineticDurationSeconds,
+                    webETA: searchResult.metrics.totalTime
+                )
+                physicsPredictedDurationSeconds = capped
+                journeyPhysicsETASeconds = capped
                 journeyETAAnchorDate = Date()
-                navigationCoordinator.updateStaticTotalTime(estimate.kineticDurationSeconds)
+                navigationCoordinator.updateStaticTotalTime(capped)
             } else {
                 // Timeout / cancel / failure: keep web ETA visible; clear spinner via defer.
                 journeyPhysicsETASeconds = nil
                 journeyETAAnchorDate = nil
             }
         }
+    }
+
+    private func cappedPhysicsETA(kinetic: TimeInterval, webETA: TimeInterval) -> TimeInterval {
+        guard webETA > 0 else { return kinetic }
+        return min(kinetic, webETA * 3)
     }
 
     /// Runs a full pre-trip physics rehearsal and publishes a shareable predictive trip brief.
@@ -2466,10 +2589,12 @@ public final class RouteViewModel {
             let report = await simulationEngine.rehearseRoute()
             guard !Task.isCancelled else { return }
             if let report {
-                physicsPredictedDurationSeconds = report.kineticPhysicsETASeconds
-                journeyPhysicsETASeconds = report.kineticPhysicsETASeconds
+                let webETA = result?.metrics.totalTime ?? report.staticWebETASeconds
+                let capped = cappedPhysicsETA(kinetic: report.kineticPhysicsETASeconds, webETA: webETA)
+                physicsPredictedDurationSeconds = capped
+                journeyPhysicsETASeconds = capped
                 journeyETAAnchorDate = Date()
-                navigationCoordinator.updateStaticTotalTime(report.kineticPhysicsETASeconds)
+                navigationCoordinator.updateStaticTotalTime(capped)
                 tripBriefShareText = TripBriefFormatter.plainText(from: tripBriefContext())
                 if activeDispatchTripId != nil {
                     await publishDispatchSnapshot(status: .rehearsed)
@@ -2635,6 +2760,40 @@ public final class RouteViewModel {
         refreshTripBriefShareText()
     }
 
+    /// Break Now: rank nearest layby ahead and center the map on the top candidate.
+    public func findBreakNow() async {
+        guard breakNowQuickActionEnabled else { return }
+        guard !upcomingLaybys.isEmpty else { return }
+        if hosEnabled {
+            hosSnapshot = await hosClock.snapshot()
+        }
+        let arcLength = simulationEngine.currentArcLengthMeters
+        let speedMps = max(simulationEngine.currentSpeedKmh / 3.6, 1.0)
+        let input = laybyPredictionInput(
+            currentArcLengthMeters: arcLength,
+            speedMps: speedMps
+        )
+        await laybyAdvisor.updatePredictionContext(input)
+        guard let advisory = await laybyAdvisor.breakNowAdvisory(
+            currentArcLengthMeters: arcLength,
+            speedMps: speedMps,
+            predictionInput: input
+        ) else { return }
+        laybyAdvisory = advisory
+        focusMapOnLayby(advisory)
+        refreshTripBriefShareText()
+    }
+
+    /// Centers the map on a layby stop coordinate.
+    public func focusMapOnLayby(_ advisory: LaybyAdvisory) {
+        let coordinate = CLLocationCoordinate2D(
+            latitude: advisory.stop.coordinate.latitude,
+            longitude: advisory.stop.coordinate.longitude
+        )
+        mapBridge?.resumeTracking(at: coordinate)
+        mapRegion = MapRegion(center: coordinate, latitudeDelta: 0.012, longitudeDelta: 0.012)
+    }
+
     /// Marks the current layby as full, records an on-device occupancy report, and advances to the next candidate.
     public func markCurrentLaybyFull() {
         Task { @MainActor in
@@ -2741,6 +2900,11 @@ public final class RouteViewModel {
         routeEncodedPolyline = nil
         simulationEngine.stop()
         navigationCoordinator.clearRoute()
+        laneEnrichmentTask?.cancel()
+        laneEnrichmentTask = nil
+        activeLaneGuidance = nil
+        activeLaneManeuver = nil
+        activeLaneDistanceMeters = nil
         laybyLoadTask?.cancel()
         truckPoiLoadTask?.cancel()
         physicsEstimateTask?.cancel()
@@ -2866,20 +3030,55 @@ public final class RouteViewModel {
 
         var results: [GeocodeSuggestion] = []
         let preferGlobal = OpenRouteServiceGeocoder.querySuggestsOutsideUnitedKingdom(trimmed)
+        let language = preferredSearchLanguage
 
         try? await Task.sleep(for: .milliseconds(350))
         if !Task.isCancelled {
-            if let global = try? await geocoder.searchGlobal(query: trimmed, near: near, apiKey: apiKey) {
+            if let global = try? await geocoder.searchGlobal(
+                query: trimmed,
+                near: near,
+                apiKey: apiKey,
+                language: language
+            ) {
                 results.append(contentsOf: global)
             }
             if !preferGlobal,
-               let biased = try? await geocoder.searchBiased(query: trimmed, near: near, apiKey: apiKey) {
+               let biased = try? await geocoder.searchBiased(
+                query: trimmed,
+                near: near,
+                apiKey: apiKey,
+                language: language
+               ) {
                 results.append(contentsOf: biased)
             }
         }
 
         var seen = Set<String>()
         var deduped = results.filter { seen.insert($0.id).inserted }
+
+        if searchEnglishFallback, deduped.count < 3, language.lowercased() != "en" {
+            if let englishGlobal = try? await geocoder.searchGlobal(
+                query: trimmed,
+                near: near,
+                apiKey: apiKey,
+                language: "en"
+            ) {
+                for suggestion in englishGlobal where seen.insert(suggestion.id).inserted {
+                    deduped.append(suggestion)
+                }
+            }
+            if !preferGlobal,
+               let englishBiased = try? await geocoder.searchBiased(
+                query: trimmed,
+                near: near,
+                apiKey: apiKey,
+                language: "en"
+               ) {
+                for suggestion in englishBiased where seen.insert(suggestion.id).inserted {
+                    deduped.append(suggestion)
+                }
+            }
+        }
 
         #if os(macOS) || os(iOS)
         // Empty Pelias (incl. overseas) → Apple worldwide; also when Settings toggle is on.
@@ -2959,7 +3158,8 @@ public final class RouteViewModel {
             activeLaneDistanceMeters = nil
             return
         }
-        let arcLength = simulationEngine.currentArcLengthMeters
+        let arcLength = navigationMetrics.snapshot?.arcLengthMeters
+            ?? simulationEngine.currentArcLengthMeters
         let catalog = navigationCoordinator.session.maneuverAnchorCatalog
         let remainingToManeuver: Double
         if let distance = catalog?.distanceToNextManeuver(from: arcLength) {

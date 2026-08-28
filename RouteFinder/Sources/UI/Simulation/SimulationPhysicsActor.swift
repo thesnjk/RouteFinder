@@ -291,7 +291,6 @@ public actor SimulationPhysicsActor {
     defer { SimulationInstrumentation.endPhysicsTick(signpost) }
 
     let deltaSimulationTime = fixedDeltaTime * simulationSpeedMultiplier
-    simulationElapsedSeconds += deltaSimulationTime
     await telemetryRecorder.advanceElapsedTime(deltaSimulationTime)
 
     if environmentPollCounter % Self.environmentPollInterval == 0 {
@@ -442,6 +441,11 @@ public actor SimulationPhysicsActor {
     currentKineticStress = kineticStress
 
     var vTarget = min(vLegal, vCurve, vSignal)
+    if config.cruiseSpeedMps > 0 {
+      // Route-average cruise governs excess speed on unlimited segments,
+      // but must not prevent reaching posted limits (urban or motorway).
+      vTarget = min(vTarget, max(config.cruiseSpeedMps, vLegal))
+    }
     velocityCapReason = Self.velocityCapReason(
       vLegal: vLegal,
       vCurve: vCurve,
@@ -554,6 +558,9 @@ public actor SimulationPhysicsActor {
 
     if !isPausedForSignal {
       arcLengthPosition += speedMps * deltaTime
+      if speedMps > 0.1 {
+        simulationElapsedSeconds += deltaTime
+      }
     }
 
     await recordLateralDynamics(deltaTime: deltaTime, config: config)

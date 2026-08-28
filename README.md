@@ -4,6 +4,10 @@ Native **HGV / truck navigator** for Apple platforms (iOS 17+ / macOS 14+). Rout
 
 Built as a Swift 6 Swift Package with SwiftUI, MapLibre (WKWebView), and HeiGIT OpenRouteService for global HGV routing.
 
+## User guide
+
+- [Route simulation and rehearsal](Docs/user-guide-simulation.md) — Rehearse Route vs Play, traffic banner, lane guidance, vehicle footprint, search language
+
 ## What it does
 
 - **Constraint routing** — length / width / height / weight / axle / hazmat / ADR tunnel codes via OpenRouteService
@@ -15,6 +19,7 @@ Built as a Swift 6 Swift Package with SwiftUI, MapLibre (WKWebView), and HeiGIT 
 - **Offline routing & maps** — H3 graph tiles + hybrid ORS/offline policy; optional local MapLibre map pack via on-device HTTP
 - **Live traffic reroute** — TomTom flow sampling can trigger an ORS `avoid_polygons` recalculation
 - **Walkaround checks** — local DVSA-style inspection checklist
+- **Sim UX** — Touch ID session restore, vehicle workspace snapshot, traffic cruise toggle (default off), center-anchored cab/trailer map model, OSM lane guidance banner
 
 ## Legal notice (hours & tachograph)
 
@@ -124,7 +129,6 @@ Personal (free) Apple teams: `RouteFinderApp` ships without WeatherKit or CarPla
 - Expect **no signing/provisioning errors** for `com.apple.developer.weatherkit` or `com.apple.developer.carplay-maps`.
 - **Runtime limitations on personal team:** Without an OpenWeather key, WeatherKit auto-fetch fails gracefully (`WeatherViewModel.lastError` includes a Settings hint). Saving an OpenWeather key in Settings (or `OPENWEATHER_API_KEY`) switches live auto weather to OpenWeather immediately — no app restart. CarPlay scene wiring is present in `Info.plist` but in-car UI will not connect without a paid-team CarPlay entitlement.
 - `swift test` (409 tests) and `xcodebuild -scheme RouteFinderApp` succeed with zero app-target Swift compiler warnings. Phase 20 claim inventory + QA log: [`Docs/phase20-verification.md`](Docs/phase20-verification.md); competitive matrix: [`Docs/competitive-gap-matrix.md`](Docs/competitive-gap-matrix.md).
-- Swift Testing `@Test` / `@Suite` deprecation messages during `swift test` are upstream framework noise and do not affect the app target build.
 
 Optional CLI build (requires full Xcode selected, not Command Line Tools only):
 
@@ -176,7 +180,36 @@ Serve packs from a CDN or local path. Attribution for OpenStreetMap data must re
 
 - Swift 5.9+ / tools version 6.0, strict concurrency
 - UI surfaces use `GlassmorphicModifiers` (`glassPanel`, `controlSheetStyle`, …)
-- Tests use [Swift Testing](https://github.com/apple/swift-testing)
+- Tests use Swift Testing (`import Testing`) from the **Swift 6 / Xcode 16+ built-in module**. Do not add the `swift-testing` package — the 0.99.x release is a deprecation shim that still requires the toolchain copy and causes `_TestingInternals` link failures when Command Line Tools are selected.
+
+### Swift Testing troubleshooting
+
+`swift test` requires a full Xcode installation. **Command Line Tools alone are insufficient** — they do not ship `_TestingInternals`.
+
+Point `xcode-select` at your Xcode app (release or beta):
+
+```bash
+cd ~/Developer/RouteFinder/RouteFinder
+xcode-select -p
+# Must NOT be: /Library/Developer/CommandLineTools
+
+# Example: Xcode in Applications
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+# Example: Xcode beta in Downloads
+sudo xcode-select -s ~/Downloads/Xcode-beta.app/Contents/Developer
+
+which swift
+swift --version
+# Must report Swift 6.x from Xcode, not Command Line Tools
+
+rm -rf .build
+swift package clean
+swift package resolve
+swift test
+```
+
+If built-in Testing still fails after switching to full Xcode, pin `swift-testing` to a **pre-0.99** tag (e.g. `0.10.0`) as a last resort — not 0.99.x.
 
 ### Git, Xcode, and iCloud
 

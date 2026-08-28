@@ -48,6 +48,8 @@ public enum LaybyReasonCode: String, Sendable, Hashable, Codable, CaseIterable {
     case occupancy
     case trafficInflation
     case geometryFallback
+    /// Driver-initiated immediate break search (Break Now quick action).
+    case breakNow
 }
 
 /// Upcoming layby advisory for the driver HUD.

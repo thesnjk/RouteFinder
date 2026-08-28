@@ -5,9 +5,24 @@ import SwiftUI
 struct TruckPoiAheadList: View {
     let pois: [TruckPoi]
     let isLoading: Bool
+    let fuelCardProvider: FuelCardProvider
 
     var body: some View {
         VStack(alignment: .leading, spacing: RFSpacing.sm) {
+            if let banner = fuelCardBannerMessage {
+                HStack(spacing: RFSpacing.sm) {
+                    Image(systemName: "creditcard.fill")
+                        .foregroundStyle(RFColor.route)
+                    Text(banner)
+                        .font(RFFont.caption.weight(.semibold))
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, RFSpacing.sm)
+                .padding(.vertical, RFSpacing.xs)
+                .controlSheetStyle()
+            }
+
             HStack {
                 Text("Truck stops ahead")
                     .font(RFFont.sectionTitle)
@@ -29,9 +44,17 @@ struct TruckPoiAheadList: View {
                             .foregroundStyle(RFColor.route)
                             .frame(width: 20)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(poi.label)
-                                .font(RFFont.caption.weight(.semibold))
-                                .lineLimit(1)
+                            HStack(spacing: 4) {
+                                Text(poi.label)
+                                    .font(RFFont.caption.weight(.semibold))
+                                    .lineLimit(1)
+                                if acceptsFuelCard(poi) {
+                                    Image(systemName: "checkmark.seal.fill")
+                                        .font(.caption2)
+                                        .foregroundStyle(RFColor.route)
+                                        .accessibilityLabel("Accepts your fuel card")
+                                }
+                            }
                             Text(subtitle(for: poi))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
@@ -48,6 +71,15 @@ struct TruckPoiAheadList: View {
         }
         .padding(RFSpacing.sm)
         .controlSheetStyle()
+    }
+
+    private var fuelCardBannerMessage: String? {
+        let matching = pois.filter { acceptsFuelCard($0) }.count
+        return FuelCardMatcher.aheadBannerMessage(provider: fuelCardProvider, matchingCount: matching)
+    }
+
+    private func acceptsFuelCard(_ poi: TruckPoi) -> Bool {
+        FuelCardMatcher.accepts(provider: fuelCardProvider, poi: poi)
     }
 
     private func icon(for kind: TruckPoiKind) -> String {

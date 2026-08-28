@@ -79,6 +79,19 @@ public final class VoiceGuidanceCoordinator: NavigationSessionDelegate {
         voiceService.speak(prompt)
     }
 
+    /// Speaks an upcoming layby advisory when layby voice alerts are enabled.
+    public func speakLaybyAdvisory(_ text: String, laybyId: String) {
+        guard isEnabled else { return }
+        try? voiceService.configureAudioSession()
+        let prompt = SpeechPrompt(
+            text: text,
+            priority: AnnouncementTier.prepare.priority,
+            tier: .prepare,
+            instructionID: "layby-\(laybyId)"
+        )
+        voiceService.speak(prompt)
+    }
+
     private func evaluateDistanceTiers(
         session: NavigationSession,
         snapshot: NavigationProgressSnapshot

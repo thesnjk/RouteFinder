@@ -142,6 +142,10 @@ public final class RouteViewModel {
     public var avoidTrafficDelaysWhenRouting = NavigationWorkspaceSettings.loadAvoidTrafficDelaysWhenRouting()
     /// When true, show Break Now layby quick action on the map HUD (default on).
     public var breakNowQuickActionEnabled = NavigationWorkspaceSettings.loadBreakNowQuickActionEnabled()
+    /// Whether spoken layby-ahead alerts are enabled.
+    public var laybyVoiceAlertsEnabled = NavigationWorkspaceSettings.loadLaybyVoiceAlertsEnabled()
+    /// Selected fleet fuel card provider for ahead-of-route POI matching.
+    public var fuelCardProvider = NavigationWorkspaceSettings.loadFuelCardProvider()
     /// Preferred Pelias search language code (BCP-47).
     public var preferredSearchLanguage = LanguageWorkspaceSettings.loadPreferredSearchLanguage()
     /// When true, run a secondary English Pelias pass when localized results are sparse.
@@ -426,6 +430,8 @@ public final class RouteViewModel {
     private var laneEnrichmentTask: Task<Void, Never>?
     private var activeRouteGeneration: UInt64 = 0
     private let laneGuidanceNavigationAdapter = LaneGuidanceNavigationAdapter()
+    private let laybyRefreshNavigationAdapter = LaybyRefreshNavigationAdapter()
+    private var lastAnnouncedLaybyId: String?
 
     private var apiKeyVault: APIKeyVault?
 
@@ -658,7 +664,13 @@ public final class RouteViewModel {
         laneGuidanceNavigationAdapter.onProgress = { [weak self] in
             self?.refreshActiveLaneGuidance()
         }
+        laybyRefreshNavigationAdapter.onThrottledProgress = { [weak self] in
+            Task { @MainActor in
+                await self?.refreshLaybyAdvisory()
+            }
+        }
         navigationCoordinator.session.addDelegate(laneGuidanceNavigationAdapter)
+        navigationCoordinator.session.addDelegate(laybyRefreshNavigationAdapter)
         kineticAdvisoryCoordinator.onAdvisory = { [weak self] advisory in
             self?.latestKineticAdvisory = advisory
             #if os(iOS)
@@ -1077,6 +1089,16 @@ public final class RouteViewModel {
         NavigationWorkspaceSettings.saveBreakNowQuickActionEnabled(breakNowQuickActionEnabled)
     }
 
+    /// Persists layby voice alert preference.
+    public func persistLaybyVoiceAlertsEnabled() {
+        NavigationWorkspaceSettings.saveLaybyVoiceAlertsEnabled(laybyVoiceAlertsEnabled)
+    }
+
+    /// Persists fleet fuel card provider preference.
+    public func persistFuelCardProvider() {
+        NavigationWorkspaceSettings.saveFuelCardProvider(fuelCardProvider)
+    }
+
     /// Persists preferred search language and English fallback settings.
     public func persistLanguageWorkspaceSettings() {
         LanguageWorkspaceSettings.savePreferredSearchLanguage(preferredSearchLanguage)
@@ -1318,16 +1340,12 @@ public final class RouteViewModel {
     /// Persists the active walkaround inspection to disk.
     public func saveActiveInspection() async {
         guard var record = activeInspection else { return }
-        let allChecked = record.items.allSatisfy { $0.status != .notChecked }
-        if allChecked {
-            record.completedAt = Date()
-        }
+        guard record.isReadyToSave else { return }
+        record.completedAt = Date()
         activeInspection = record
         do {
             try await inspectionStore.save(record)
-            if allChecked {
-                try await inspectionStore.enqueueSync(record)
-            }
+            try await inspectionStore.enqueueSync(record)
         } catch {
             errorMessage = "Could not save inspection: \(error.localizedDescription)"
         }
@@ -2680,6 +2698,7 @@ public final class RouteViewModel {
     public func loadLaybysAlongRoute(_ coordinates: [Coordinate]) {
         laybyLoadTask?.cancel()
         laybyAdvisory = nil
+        lastAnnouncedLaybyId = nil
         upcomingLaybys = []
         isLoadingLaybys = true
 
@@ -2764,8 +2783,8 @@ public final class RouteViewModel {
         if hosEnabled {
             hosSnapshot = await hosClock.snapshot()
         }
-        let arcLength = simulationEngine.currentArcLengthMeters
-        let speedMps = max(simulationEngine.currentSpeedKmh / 3.6, 1.0)
+        let arcLength = currentRouteArcLengthMeters
+        let speedMps = max(currentRouteSpeedMps, 1.0)
         let input = laybyPredictionInput(
             currentArcLengthMeters: arcLength,
             speedMps: speedMps
@@ -2776,7 +2795,47 @@ public final class RouteViewModel {
             speedMps: speedMps,
             predictionInput: input
         )
+        processLaybyVoiceAlertIfNeeded()
         refreshTripBriefShareText()
+    }
+
+    #if os(iOS)
+    private func processLaybyVoiceAlertIfNeeded() {
+        guard laybyVoiceAlertsEnabled, let advisory = laybyAdvisory else { return }
+        let threshold = NavigationWorkspaceSettings.loadLaybyAlertDistanceMeters()
+        guard LaybyAlertFormatter.shouldAnnounce(
+            advisory: advisory,
+            lastAnnouncedLaybyId: lastAnnouncedLaybyId,
+            alertDistanceMeters: threshold
+        ) else { return }
+        voiceGuidanceCoordinator.speakLaybyAdvisory(
+            LaybyAlertFormatter.spokenPrompt(for: advisory),
+            laybyId: advisory.stop.id
+        )
+        lastAnnouncedLaybyId = advisory.stop.id
+    }
+    #else
+    private func processLaybyVoiceAlertIfNeeded() {}
+    #endif
+
+    private var currentRouteArcLengthMeters: Double {
+        if simulationEngine.isRunning {
+            return simulationEngine.currentArcLengthMeters
+        }
+        if let arcLength = navigationCoordinator.session.progressSnapshot?.arcLengthMeters {
+            return arcLength
+        }
+        return simulationEngine.currentArcLengthMeters
+    }
+
+    private var currentRouteSpeedMps: Double {
+        if simulationEngine.isRunning {
+            return max(simulationEngine.currentSpeedKmh / 3.6, 1.0)
+        }
+        if let speedMps = navigationCoordinator.session.latestPosition?.speedMps, speedMps > 0 {
+            return speedMps
+        }
+        return max(simulationEngine.currentSpeedKmh / 3.6, 1.0)
     }
 
     /// Break Now: rank nearest layby ahead and center the map on the top candidate.
@@ -2830,7 +2889,9 @@ public final class RouteViewModel {
                 speedMps: speedMps,
                 predictionInput: input
             )
+            lastAnnouncedLaybyId = nil
             await refreshLaybyAdvisory()
+            showFleetDispatchToast(LaybyAlertFormatter.nextLaybyToast(next: laybyAdvisory))
         }
     }
 
@@ -3318,6 +3379,21 @@ private final class LaneGuidanceNavigationAdapter: NavigationSessionDelegate {
 
     func navigationSession(_ session: NavigationSession, didUpdateProgress snapshot: NavigationProgressSnapshot) {
         onProgress?()
+    }
+}
+
+private final class LaybyRefreshNavigationAdapter: NavigationSessionDelegate {
+    var onThrottledProgress: (() -> Void)?
+    private var lastRefresh: Date?
+    private let minimumIntervalSeconds: TimeInterval = 10
+
+    func navigationSession(_ session: NavigationSession, didUpdateProgress snapshot: NavigationProgressSnapshot) {
+        let now = Date()
+        if let lastRefresh, now.timeIntervalSince(lastRefresh) < minimumIntervalSeconds {
+            return
+        }
+        self.lastRefresh = now
+        onThrottledProgress?()
     }
 }
 

@@ -4,9 +4,10 @@ import Foundation
 /// Ackermann- and geometry-aware curve speed governor with polyline noise filtering.
 public enum CentripetalSpeedGovernor: Sendable {
     /// Minimum bearing change between segments to treat as a meaningful curve (degrees).
-    public static let minimumSignificantBearingDeltaDeg = 2.5
+    /// Raised above densify noise on 5 m simulation spines.
+    public static let minimumSignificantBearingDeltaDeg = 6.0
     /// Radius above which the corridor is treated as straight (meters).
-    public static let straightCorridorRadiusMeters = 500.0
+    public static let straightCorridorRadiusMeters = 250.0
     /// Radius below which full lateral-G cap applies (meters).
     public static let tightCurveRadiusMeters = 50.0
 

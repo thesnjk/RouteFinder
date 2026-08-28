@@ -61,14 +61,15 @@ RouteFinder draws your vehicle as a **2D oriented footprint** (not a 3D model):
 
 During simulation the **green start pin is hidden** so the vehicle footprint is not confused with the origin marker. Zoom in while tracking to see the full polygon; at low zoom a blue circle may be used when not tracking.
 
-## Search language (Settings)
+## Language (Settings)
 
-**Settings → Search language**:
+**Settings → Language**:
 
-- **Display language** — passed to Pelias geocoding (`lang` parameter)
-- **English name fallback** — when few localized results are found, also searches in English (helpful for Warsaw, Paris, etc.)
+- **Search display language** — passed to Pelias geocoding (`lang` parameter)
+- **Map label language** — OpenFreeMap basemap road and place names (OSM `name:*` tags)
+- **English name fallback** — when few localized search results are found, also searches in English (helpful for Warsaw, Paris, etc.)
 
-Characters you type (e.g. `Sørnesvegen`, `Ålesund`) are preserved in search results and pin labels. Basemap road names still follow the OpenFreeMap tile language.
+Characters you type (e.g. `Sørnesvegen`, `Ålesund`) are preserved in search results and pin labels. Map labels update immediately when you change the map label picker — no restart required.
 
 ## Quick reference
 

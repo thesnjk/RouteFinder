@@ -21,6 +21,7 @@ public struct SearchLanguageOption: Sendable, Hashable, Identifiable {
 public enum LanguageWorkspaceSettings {
     private static let preferredSearchLanguageKey = "RouteFinder.preferredSearchLanguage"
     private static let searchEnglishFallbackKey = "RouteFinder.searchEnglishFallback"
+    private static let preferredMapLabelLanguageKey = "RouteFinder.preferredMapLabelLanguage"
 
     /// Common Pelias language options exposed in Settings.
     public static let supportedOptions: [SearchLanguageOption] = [
@@ -55,5 +56,29 @@ public enum LanguageWorkspaceSettings {
     /// Persists the English fallback preference.
     public static func saveSearchEnglishFallback(_ enabled: Bool, defaults: UserDefaults = .standard) {
         defaults.set(enabled, forKey: searchEnglishFallbackKey)
+    }
+
+    /// Preferred OpenFreeMap basemap label language code (default English).
+    public static func loadPreferredMapLabelLanguage(defaults: UserDefaults = .standard) -> String {
+        defaults.string(forKey: preferredMapLabelLanguageKey) ?? "en"
+    }
+
+    /// Persists the preferred basemap label language code.
+    public static func savePreferredMapLabelLanguage(_ code: String, defaults: UserDefaults = .standard) {
+        defaults.set(code, forKey: preferredMapLabelLanguageKey)
+    }
+
+    /// OSM `name:*` property keys to try when localizing MapLibre symbol layers.
+    ///
+    /// Norwegian BCP-47 codes map to multiple OSM tags because Pelias and OSM use different conventions.
+    public static func mapLabelNamePropertyCandidates(for code: String) -> [String] {
+        switch code {
+        case "nb":
+            return ["name:nb", "name:no", "name", "name:latin"]
+        case "nn":
+            return ["name:nn", "name:no", "name", "name:latin"]
+        default:
+            return ["name:\(code)", "name", "name:latin"]
+        }
     }
 }

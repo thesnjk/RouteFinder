@@ -58,23 +58,22 @@ Environment: macOS; `DEVELOPER_DIR=/Library/Developer/CommandLineTools` (full Xc
 |---|---|---|
 | `swift test` (package) | **Pass** — 409 tests | Full suite green |
 | Fix-specific unit tests (Keychain, geocode heuristic, LEZ long-haul cap, sim camera/zoom, curve governor) | **Pass** — 13 targeted tests | Filters on `KeychainStoreTests`, `OpenRouteServiceGeocoderTests`, `TruckPoiLivingLayerTests`, `MapViewControllerBridgeTests`, `CurveSpeedAdvisorTests` |
-| `Scripts/package-macos-app.sh` | **Pass** | `RouteFinder.app` codesigned; `keychain-access-groups` = `GHBHLM9UAX.com.routefinder.macos` |
-| `xcodebuild` RouteFinderMac | **Skipped** | Requires full Xcode.app (not installed; `xcode-select` points to missing `/Applications/Xcode.app`) |
+| `Scripts/package-macos-app.sh` | **Pass** | Hardened codesign (`--options runtime`, inner-then-bundle, requires dev cert); `TeamIdentifier=GHBHLM9UAX`, `Runtime Version` present |
+| `xcodebuild` RouteFinderMac | **Skipped** | Full Xcode.app not installed in agent environment; use locally after `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` |
 
 ### Recent-fix smoke checklist
 
 | # | Scenario | Result | Notes |
 |---|---|---|---|
 | K1 | RouteFinderMac Keychain — no re-prompt | **Pass** | ORS key present in data-protection vault (`com.routefinder.vault.*`); consecutive Keychain reads return same credential; packaged app has `keychain-access-groups`. GUI relaunch not exercised in agent session — confirm locally with **RouteFinderMac** scheme. |
-| G1 | `33 sameswegen` → Norway | **Fail** | Live Pelias global search (no GBR boundary) returns Canada/Mexico/USA/Japan — not Ålesund. Overseas heuristic fires (`wegen` marker) but Pelias ranking is wrong for this exact query; Apple fallback does not run because Pelias returns non-empty results. `samesvegen ålesund` returns Norway via Pelias. |
+| G1 | `33 sørnesvegen` → Norway | **Pass** | Correct Ålesund address (prior QA used typo `sameswegen`, which is not a real place). Live Pelias global search returns Norway; overseas heuristic matches `vegen` after ø→o normalization. |
 | R1 | Long haul + LEZ avoid — no 2004 | **Pass** | `lezAvoidPolicyOmitsPolygonsOnLongHaul` (Norwich → Ålesund); live ORS HGV route Norwich → Edinburgh (611 km) succeeds with no avoid polygons on long haul. |
-| S1 | 30 mph sim feel + centered camera | **Pass** (automated) | `defaultTrackingZoom_isPulledBackForHGVFeel` (15.0), `cameraFollowCenter_offsetsForwardHalfLength`, `maxUpcomingCurveSpeedMps_nearStraightDensifiedSpineAllowsResidentialCruise`. Visual 30 mph feel / turn pivot not re-run interactively in agent session. |
+| S1 | 30 mph sim feel + centered camera | **Pass** (automated) | `defaultTrackingZoom_isPulledBackForHGVFeel` (15.0), `cameraFollowCenter_offsetsForwardHalfLength`, `maxUpcomingCurveSpeedMps_nearStraightDensifiedSpineAllowsResidentialCruise`. Visual 30 mph feel / turn pivot: confirm via **RouteFinderMac** Xcode scheme. |
 
 ### Honest limits (post-fix pass)
 
-- GUI launch of packaged `RouteFinder.app` was blocked in the agent environment (`Launchd job spawn failed`); use Xcode **RouteFinderMac** scheme or `open RouteFinder.app` locally for interactive confirmation.
-- **G1 regression:** exact query `33 sameswegen` still does not surface Ålesund via Pelias despite global (non-UK) search. Follow-up: merge Apple worldwide fallback when overseas heuristic fires but top Pelias hits lack expected country markers, or append `ålesund`/`norway` bias for Nordic street suffixes.
-- Visual sim feel (S1) and Keychain dialog absence (K1 relaunch) require local **RouteFinderMac** confirmation.
+- **RouteFinderMac launch:** packaged `RouteFinder.app` from older `package-macos-app.sh` builds could crash with `Taskgated Invalid Signature` on macOS 26 (missing hardened runtime). Use Xcode **RouteFinderMac** scheme, or rebuild with the hardened package script.
+- Visual sim feel (S1) and Keychain dialog absence (K1 relaunch) require local **RouteFinderMac** confirmation in Xcode.
 
 ## Critical bugs found
 

@@ -78,6 +78,36 @@ struct NavigationWorkspaceSettingsTests {
         NavigationWorkspaceSettings.saveHasAcceptedRoutingLiability(true, defaults: defaults)
         #expect(NavigationWorkspaceSettings.loadHasAcceptedRoutingLiability(defaults: defaults))
     }
+
+    @Test func laybyVoiceAlertsDefaultOnAndRoundTrip() {
+        let suiteName = "RouteFinder.NavigationTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { UserDefaults.standard.removeSuite(named: suiteName) }
+
+        #expect(NavigationWorkspaceSettings.loadLaybyVoiceAlertsEnabled(defaults: defaults))
+        NavigationWorkspaceSettings.saveLaybyVoiceAlertsEnabled(false, defaults: defaults)
+        #expect(!NavigationWorkspaceSettings.loadLaybyVoiceAlertsEnabled(defaults: defaults))
+    }
+
+    @Test func laybyAlertDistanceDefaultsToFiveKm() {
+        let suiteName = "RouteFinder.NavigationTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { UserDefaults.standard.removeSuite(named: suiteName) }
+
+        #expect(NavigationWorkspaceSettings.loadLaybyAlertDistanceMeters(defaults: defaults) == 5000)
+        NavigationWorkspaceSettings.saveLaybyAlertDistanceMeters(7500, defaults: defaults)
+        #expect(NavigationWorkspaceSettings.loadLaybyAlertDistanceMeters(defaults: defaults) == 7500)
+    }
+
+    @Test func fuelCardProviderDefaultsToNoneAndRoundTrips() {
+        let suiteName = "RouteFinder.NavigationTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { UserDefaults.standard.removeSuite(named: suiteName) }
+
+        #expect(NavigationWorkspaceSettings.loadFuelCardProvider(defaults: defaults) == .none)
+        NavigationWorkspaceSettings.saveFuelCardProvider(.keyfuels, defaults: defaults)
+        #expect(NavigationWorkspaceSettings.loadFuelCardProvider(defaults: defaults) == .keyfuels)
+    }
 }
 
 struct LanguageWorkspaceSettingsTests {

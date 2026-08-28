@@ -1,9 +1,11 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-28 (Phase 29 positioning refresh)  
+Last updated: 2026-08-28 (Phase 30–32 driver-facing wins)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then advisory tacho + offline packs. **CarPlay deferred** until paid-team signing.
 
-> **Aug 28 Phase 29:** Light competitive positioning refresh — executive summary and sales lines updated for Ph26–27 shipped state in [`competitive-research-2026-08.md`](competitive-research-2026-08.md). No new Firecrawl scrape; full re-scrape deferred to **2026-11**.
+> **Aug 28 Phase 30–32:** Layby proactive voice + skip-to-next toast; zoned DVSA walkaround v2 with PDF share; fuel card provider advisory on ahead-of-route truck POIs. See [`phase20-verification.md`](phase20-verification.md#phase-3032-driver-facing-wins-2026-08-28).
+
+> **Aug 28 Phase A (iOS):** MapBootstrapServer loopback HTTP fixes sandbox map error; iOS login gate; walkaround onboarding + toolbar; liability acceptance. Device QA checklist in [`phase20-verification.md`](phase20-verification.md#phase-a-ios-device-qa-2026-08-28).
 
 > **Aug 28 Phase 26:** Market research pack (4 docs + `.firecrawl/` summaries). Shipped Break Now quick action, LEZ catalog expansion (11 zones) + Euro-class copy, lane voice at prepare/execute tiers. See [`competitive-research-2026-08.md`](competitive-research-2026-08.md) and [`phase20-verification.md`](phase20-verification.md#phase-26-live-qa).
 
@@ -44,6 +46,9 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **24** | Sim UX persistence + lane guidance hardening | **Done** — Touch ID session, workspace snapshot, traffic cruise toggle, cab/trailer model, map-top lane banner, capped async Overpass enrichment |
 | **25** | Market research + gap ranking (Aug 2026) | **Done** — 4 research docs, scorecard, pricing, personas; CoPilot TRAVIS / Break Now deltas captured |
 | **26** | Break Now + LEZ v2 + lane voice polish | **Done** — HUD Break Now, 11 UK LEZ zones, Euro-class banners, `spokenLanePhrase` voice |
+| **30** | Layby proactive alerts — voice + skip-to-next toast + GPS throttle | **Done** — `LaybyAlertFormatter`, Settings toggle, throttled GPS refresh |
+| **31** | Comprehensive walkaround v2 — zoned DVSA checklist + defect notes + PDF | **Done** — 7 zones, completion gate, `InspectionReportPDFRenderer` |
+| **32** | Fuel card provider advisory — brand match on ahead POIs | **Done** — Settings picker, `FuelCardMatcher`, ahead banner |
 
 ### Remaining gaps (explicitly not claiming parity)
 
@@ -87,8 +92,10 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | Driver community dock/parking intel | **Age-weighted multi-report Full/Spaces** + last-seen banner copy | Garmin community | Crowdsource | Phase 19–22 |
 | LEZ compliance | **Banners + avoid-on-route** with **11 zones** (6 authored rings + 5 circle envelopes); Euro-class copy | Strong avoid (Sygic/TomTom) | Varies | Phase 21–23, **26** |
 | Lane-level junction guidance | **OSM `turn:lanes` + heuristic**; map-top banner; **prepare/execute lane voice** | Strong (TomTom/Sygic) | Weak | Phase 24, **26** |
-| Walkaround inspection | **Local DVSA checklist + disk store** | Varies | Strong | Glass UI |
+| Walkaround inspection | **Zoned DVSA checklist (7 zones) + defect notes + PDF share** | Varies | Strong | Phase 31; glass UI |
 | Live weather road conditions | **OpenWeather preferred** + WeatherKit fallback | Varies | Strong | Phase 17–18; WeatherKit needs paid team |
+| Layby proactive driver notify | **Voice announce + skip-to-next toast** (Settings toggle) | Weak (CoPilot HOS breaks) | Weak | Phase 30 |
+| Fleet fuel card POI advisory | **OSM brand/name match banner** (Keyfuels, UK Fuels, AllStar, Esso, BP) | Fuel prices (Sygic) | Weak | Phase 32; no paid fuel API |
 
 ## White space RouteFinder owns
 
@@ -132,7 +139,8 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 
 1. **Full quarterly competitive re-scrape** — target **2026-11**; re-scrape Sygic / CoPilot / TomTom public pages; update research doc and scorecard if competitor deltas appear.
 2. **CarPlay + WeatherKit entitlement restore** — same as Phase 28+ #1; blocked until paid team.
-3. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs, legal cadastral LEZ polygons, TRAVIS booking integration.
+3. **Road closures (B4), roadworks GPS (B5), settings sub-menus (B6), DVLA scrape (B7)** — deferred; larger or data-dependent.
+4. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs, legal cadastral LEZ polygons, TRAVIS booking integration.
 
 ## 90-day bar checklist
 

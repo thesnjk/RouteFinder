@@ -11,6 +11,9 @@ public enum NavigationWorkspaceSettings {
     private static let breakNowQuickActionEnabledKey = "RouteFinder.breakNowQuickActionEnabled"
     private static let productOnboardingSeenKey = "RouteFinder.productOnboardingSeen"
     private static let routingLiabilityAcceptedKey = "RouteFinder.routingLiabilityAccepted"
+    private static let laybyVoiceAlertsEnabledKey = "RouteFinder.laybyVoiceAlertsEnabled"
+    private static let laybyAlertDistanceMetersKey = "RouteFinder.laybyAlertDistanceMeters"
+    private static let fuelCardProviderKey = "RouteFinder.fuelCardProvider"
 
     /// Loads the preferred telemetry source mode.
     public static func loadTelemetrySourceMode(defaults: UserDefaults = .standard) -> LocationProviderMode {
@@ -116,5 +119,43 @@ public enum NavigationWorkspaceSettings {
     /// Persists acceptance of the routing liability disclaimer.
     public static func saveHasAcceptedRoutingLiability(_ accepted: Bool, defaults: UserDefaults = .standard) {
         defaults.set(accepted, forKey: routingLiabilityAcceptedKey)
+    }
+
+    /// Whether spoken layby-ahead alerts are enabled (default on).
+    public static func loadLaybyVoiceAlertsEnabled(defaults: UserDefaults = .standard) -> Bool {
+        if defaults.object(forKey: laybyVoiceAlertsEnabledKey) == nil {
+            return true
+        }
+        return defaults.bool(forKey: laybyVoiceAlertsEnabledKey)
+    }
+
+    /// Persists spoken layby-ahead alert preference.
+    public static func saveLaybyVoiceAlertsEnabled(_ enabled: Bool, defaults: UserDefaults = .standard) {
+        defaults.set(enabled, forKey: laybyVoiceAlertsEnabledKey)
+    }
+
+    /// Distance inside which a layby is announced once (default 5000 m).
+    public static func loadLaybyAlertDistanceMeters(defaults: UserDefaults = .standard) -> Double {
+        let stored = defaults.double(forKey: laybyAlertDistanceMetersKey)
+        return stored > 0 ? stored : LaybyAlertFormatter.defaultAlertDistanceMeters
+    }
+
+    /// Persists layby announce distance threshold in meters.
+    public static func saveLaybyAlertDistanceMeters(_ meters: Double, defaults: UserDefaults = .standard) {
+        defaults.set(max(500, meters), forKey: laybyAlertDistanceMetersKey)
+    }
+
+    /// Selected fleet fuel card provider for ahead-of-route matching (default none).
+    public static func loadFuelCardProvider(defaults: UserDefaults = .standard) -> FuelCardProvider {
+        guard let raw = defaults.string(forKey: fuelCardProviderKey),
+              let provider = FuelCardProvider(rawValue: raw) else {
+            return .none
+        }
+        return provider
+    }
+
+    /// Persists fleet fuel card provider preference.
+    public static func saveFuelCardProvider(_ provider: FuelCardProvider, defaults: UserDefaults = .standard) {
+        defaults.set(provider.rawValue, forKey: fuelCardProviderKey)
     }
 }

@@ -8,9 +8,34 @@ public enum InspectionItemStatus: String, Sendable, Hashable, Codable, CaseItera
     case notApplicable
 }
 
+/// Vehicle area grouping for a DVSA daily walkaround checklist.
+public enum InspectionZone: String, Sendable, Hashable, Codable, CaseIterable {
+    case cabMirrors
+    case lights
+    case coupling
+    case tractorExterior
+    case trailer
+    case fluidsLeaks
+    case brakesTacho
+
+    /// Driver-facing section title.
+    public var displayTitle: String {
+        switch self {
+        case .cabMirrors: return "Cab and mirrors"
+        case .lights: return "Lights and markers"
+        case .coupling: return "Coupling and connections"
+        case .tractorExterior: return "Tractor exterior"
+        case .trailer: return "Trailer"
+        case .fluidsLeaks: return "Fluids and leaks"
+        case .brakesTacho: return "Brakes and tacho"
+        }
+    }
+}
+
 /// A single walkaround checklist item.
 public struct InspectionChecklistItem: Sendable, Hashable, Codable, Equatable, Identifiable {
     public let id: String
+    public let zone: InspectionZone
     public let label: String
     public var status: InspectionItemStatus
     public var note: String?
@@ -18,14 +43,29 @@ public struct InspectionChecklistItem: Sendable, Hashable, Codable, Equatable, I
     /// Creates a checklist item.
     public init(
         id: String = UUID().uuidString,
+        zone: InspectionZone,
         label: String,
         status: InspectionItemStatus = .notChecked,
         note: String? = nil
     ) {
         self.id = id
+        self.zone = zone
         self.label = label
         self.status = status
         self.note = note
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, zone, label, status, note
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        zone = try container.decodeIfPresent(InspectionZone.self, forKey: .zone) ?? .cabMirrors
+        label = try container.decode(String.self, forKey: .label)
+        status = try container.decode(InspectionItemStatus.self, forKey: .status)
+        note = try container.decodeIfPresent(String.self, forKey: .note)
     }
 }
 
@@ -58,20 +98,62 @@ public struct InspectionRecord: Sendable, Hashable, Codable, Equatable, Identifi
         self.syncPending = syncPending
     }
 
-    /// Default DVSA-style walkaround checklist labels.
+    /// Fraction of checklist items that are no longer `notChecked`.
+    public var completionFraction: Double {
+        guard !items.isEmpty else { return 0 }
+        let resolved = items.filter { $0.status != .notChecked }.count
+        return Double(resolved) / Double(items.count)
+    }
+
+    /// Whether every item has been marked pass, defect, or N/A.
+    public var isReadyToSave: Bool {
+        !items.isEmpty && items.allSatisfy { $0.status != .notChecked }
+    }
+
+    /// Count of items marked defect.
+    public var defectCount: Int {
+        items.filter { $0.status == .defect }.count
+    }
+
+    /// Items grouped by zone in checklist order.
+    public func itemsGroupedByZone() -> [(zone: InspectionZone, items: [InspectionChecklistItem])] {
+        InspectionZone.allCases.compactMap { zone in
+            let grouped = items.filter { $0.zone == zone }
+            guard !grouped.isEmpty else { return nil }
+            return (zone, grouped)
+        }
+    }
+
+    /// Default DVSA-style walkaround checklist grouped by vehicle area.
     public static func defaultDVSAItems() -> [InspectionChecklistItem] {
         [
-            "Lights / indicators",
-            "Tyres / wheels / nuts",
-            "Brakes",
-            "Windscreen / wipers",
-            "Mirrors",
-            "Body / security / load",
-            "Fuel / AdBlue / leaks",
-            "Number plates",
-            "Tachograph / speed limiter",
-            "Seat belts / cab",
-        ].map { InspectionChecklistItem(label: $0) }
+            (.cabMirrors, "Windscreen and washers"),
+            (.cabMirrors, "Wipers and washers operate"),
+            (.cabMirrors, "Mirrors — condition and adjustment"),
+            (.cabMirrors, "Seat belts and cab security"),
+            (.lights, "Headlights and sidelights"),
+            (.lights, "Indicators and hazard warning"),
+            (.lights, "Brake lights and markers"),
+            (.coupling, "Fifth wheel / coupling security"),
+            (.coupling, "Air lines and electrics"),
+            (.coupling, "Kingpin / trailer coupling condition"),
+            (.tractorExterior, "Tyres — tread, cuts, inflation"),
+            (.tractorExterior, "Wheels and wheel nuts"),
+            (.tractorExterior, "Bodywork and load security"),
+            (.tractorExterior, "Number plates legible"),
+            (.trailer, "Trailer tyres and wheels"),
+            (.trailer, "Trailer doors, curtains, and seals"),
+            (.trailer, "Trailer load security and strapping"),
+            (.trailer, "Trailer number plate"),
+            (.fluidsLeaks, "Fuel cap and fuel leaks"),
+            (.fluidsLeaks, "AdBlue level and leaks"),
+            (.fluidsLeaks, "Oil / coolant leaks under vehicle"),
+            (.brakesTacho, "Brake lines and audible leaks"),
+            (.brakesTacho, "Parking brake holds"),
+            (.brakesTacho, "Tachograph and speed limiter"),
+        ].map { zone, label in
+            InspectionChecklistItem(zone: zone, label: label)
+        }
     }
 }
 

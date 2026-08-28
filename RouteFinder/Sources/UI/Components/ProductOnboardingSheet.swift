@@ -139,12 +139,12 @@ struct ProductOnboardingSheet: View {
 
     private var searchLanguageSection: some View {
         onboardingSection(
-            title: "Search language",
+            title: "Language",
             icon: "character.book.closed.fill",
             body: """
-            Settings → Search language controls Pelias geocoding display language and optional English name fallback for sparse results.
+            Settings → Language controls Pelias search display language, optional English name fallback, and a separate map label language for basemap road and place names.
 
-            Characters you type are preserved in search results and pin labels. Basemap road names still follow the OpenFreeMap tile language.
+            Search results and pin labels use Pelias. Basemap labels update live when you change the map label picker.
             """
         )
     }

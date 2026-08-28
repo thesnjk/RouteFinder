@@ -146,6 +146,8 @@ public final class RouteViewModel {
     public var preferredSearchLanguage = LanguageWorkspaceSettings.loadPreferredSearchLanguage()
     /// When true, run a secondary English Pelias pass when localized results are sparse.
     public var searchEnglishFallback = LanguageWorkspaceSettings.loadSearchEnglishFallback()
+    /// Preferred OpenFreeMap basemap label language code (BCP-47).
+    public var preferredMapLabelLanguage = LanguageWorkspaceSettings.loadPreferredMapLabelLanguage()
     /// When true, tiled offline routing may be used (fallback or primary).
     public var offlineRoutingEnabled = VehicleProfileStore.loadOfflineRoutingEnabled()
     /// When true, prefer offline tiles over ORS even when online and keyed.
@@ -1071,6 +1073,7 @@ public final class RouteViewModel {
     public func persistLanguageWorkspaceSettings() {
         LanguageWorkspaceSettings.savePreferredSearchLanguage(preferredSearchLanguage)
         LanguageWorkspaceSettings.saveSearchEnglishFallback(searchEnglishFallback)
+        LanguageWorkspaceSettings.savePreferredMapLabelLanguage(preferredMapLabelLanguage)
     }
 
     /// Restores sidebar vehicle fields from the last workspace snapshot.

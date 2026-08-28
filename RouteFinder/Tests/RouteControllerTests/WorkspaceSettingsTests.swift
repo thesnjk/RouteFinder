@@ -68,3 +68,29 @@ struct NavigationWorkspaceSettingsTests {
         #expect(NavigationWorkspaceSettings.loadHasSeenProductOnboarding(defaults: defaults))
     }
 }
+
+struct LanguageWorkspaceSettingsTests {
+    @Test func preferredMapLabelLanguageRoundTripsThroughUserDefaults() {
+        let suiteName = "RouteFinder.LanguageTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { UserDefaults.standard.removeSuite(named: suiteName) }
+
+        #expect(LanguageWorkspaceSettings.loadPreferredMapLabelLanguage(defaults: defaults) == "en")
+
+        LanguageWorkspaceSettings.savePreferredMapLabelLanguage("de", defaults: defaults)
+        #expect(LanguageWorkspaceSettings.loadPreferredMapLabelLanguage(defaults: defaults) == "de")
+    }
+
+    @Test func mapLabelNamePropertyCandidatesIncludeNorwegianFallbacks() {
+        let nbCandidates = LanguageWorkspaceSettings.mapLabelNamePropertyCandidates(for: "nb")
+        #expect(nbCandidates.contains("name:nb"))
+        #expect(nbCandidates.contains("name:no"))
+
+        let nnCandidates = LanguageWorkspaceSettings.mapLabelNamePropertyCandidates(for: "nn")
+        #expect(nnCandidates.contains("name:nn"))
+        #expect(nnCandidates.contains("name:no"))
+
+        let deCandidates = LanguageWorkspaceSettings.mapLabelNamePropertyCandidates(for: "de")
+        #expect(deCandidates.first == "name:de")
+    }
+}

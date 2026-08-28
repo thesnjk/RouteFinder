@@ -59,6 +59,9 @@ Exit code `0` = all targeted tests passed.
 | 6 | — | Accept dispatch → **Find route** → **Rehearse Route** |
 | 7 | — | Open trip brief share menu → verify plain text **and** PDF include stops, physics ETA, layby/HOS blocks where applicable |
 | 8 | Dispatch console shows updated trip status / physics ETA snapshot from driver publish | — |
+| 9 | Dispatch console shows **Walkaround defects** card with defect count; tap **PDF** share when driver saved inspection with defects (remote fleet enabled) | Complete zoned walkaround with ≥1 defect → **Save** on driver device |
+
+Last updated: 2026-08-29 (Phase 41 dispatch inspection visibility)
 
 ### API surface (for curl debugging)
 
@@ -70,7 +73,7 @@ Exit code `0` = all targeted tests passed.
 | POST | `/v1/trips` | Push trip to driver |
 | GET | `/v1/vehicles/{id}/active-trip` | Poll active trip |
 | GET | `/v1/vehicles/{id}/events` | SSE stream (`tripPushed`, heartbeat) |
-| PUT | `/v1/trips/{id}/snapshot` | Driver physics ETA + layby snapshot |
+| PUT | `/v1/trips/{id}/snapshot` | Driver physics ETA + layby + optional inspection summary/PDF base64 |
 
 Bonjour service type: `_routefinder-fleet._tcp`.
 

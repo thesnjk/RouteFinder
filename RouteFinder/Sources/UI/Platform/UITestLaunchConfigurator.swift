@@ -1,6 +1,9 @@
 #if DEBUG
 import Contracts
 import Foundation
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Applies launch-argument overrides for RouteFinderApp UI tests.
 enum UITestLaunchConfigurator {
@@ -12,6 +15,9 @@ enum UITestLaunchConfigurator {
         }
         NavigationWorkspaceSettings.saveHasSeenProductOnboarding(true)
         NavigationWorkspaceSettings.saveHasAcceptedRoutingLiability(true)
+        #if canImport(UIKit)
+        UIView.setAnimationsEnabled(false)
+        #endif
     }
 }
 #endif

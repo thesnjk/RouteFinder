@@ -44,3 +44,16 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             -skipPackagePluginValidation \
             CODE_SIGNING_ALLOWED=NO
+
+      - name: Run RouteFinderApp UI smoke tests
+        run: |
+          xcodebuild test \
+            -project RouteFinderApp.xcodeproj \
+            -scheme RouteFinderApp \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -only-testing:RouteFinderAppUITests/RouteFinderAppUITests \
+            | xcpretty || xcodebuild test \
+            -project RouteFinderApp.xcodeproj \
+            -scheme RouteFinderApp \
+            -destination 'generic/platform=iOS Simulator,name=iPhone 16' \
+            -only-testing:RouteFinderAppUITests/RouteFinderAppUITests

@@ -204,7 +204,28 @@ Run on a **physical iPhone** before treating Phase 30+ as fully verified (person
 | A5 | ⋯ toolbar → Walkaround check opens zoned checklist | **Pass** (code) | Default HGV mode on iOS; interactive **Pending local** |
 | A6 | On failure: capture device log | **N/A** | Look for `SIGABRT`, `WebKit`, `Jetsam` in Console |
 
-**Automated gate (2026-08-28):** `swift test` green; Ph30–36 unit tests pass. **Phase 38** adds `RouteFinderAppUITests` smoke (cold launch, settings hub, walkaround entry) — run in Xcode on simulator. Physical device execution of C1–C9 remains **your ~20 min checklist** before production confidence.
+**Automated gate (2026-08-29):** `swift test` green; Ph38–40 unit/UI smoke pass on simulator. **Phase 41–42** adds dispatch inspection card + fleet E2E inspection snapshot + CI `RouteFinderAppUITests`. Physical device execution of **C1–C9** remains **your ~20 min checklist** before production confidence.
+
+### Phase 41–42 dispatch inspection + CI (2026-08-29)
+
+Scope: dispatch console walkaround defect visibility, fleet LAN inspection snapshot round-trip, CI UI smoke.
+
+| # | Scenario | Automated | Local confirm |
+|---|---|---|---|
+| P41-1 | Dispatch shows walkaround defect card when snapshot has defects | **Pass** (code) | `DispatchStatusPanel.inspectionWarningCard` |
+| P41-2 | Dispatch PDF share from inspection base64 on trip | **Pass** (code) | ShareLink on defect card |
+| P41-3 | Trip brief share visible when inspection-only snapshot | **Pass** (code) | `showsTripBriefShare` in dispatch header |
+| P42-1 | Fleet E2E snapshot carries inspection summary + PDF | **Pass** (unit) | `fleetE2EWorkflowPushSnapshotAndSSE` |
+| P42-2 | RouteFinderApp UI smoke in CI | **Pass** (CI) | `.github/workflows/ci.yml` ios job |
+| P42-3 | Fleet Part B walkaround → dispatch inspection | **Pass** (doc) | [`fleet-e2e-qa.md`](fleet-e2e-qa.md) step 9 — **Pending local** |
+
+#### Phase 41–42 code surfaces
+
+| Feature | Primary files |
+|---|---|
+| Dispatch inspection UI | `DispatchStatusPanel`, `FleetTrip.latestInspectionSummary` |
+| Fleet inspection E2E | `FleetSSETests.fleetE2EWorkflowPushSnapshotAndSSE` |
+| CI UI smoke | `RouteFinder/.github/workflows/ci.yml`, `RouteFinderAppUITests` |
 
 ### Phase 38–40 automation & fleet handoff (2026-08-28)
 

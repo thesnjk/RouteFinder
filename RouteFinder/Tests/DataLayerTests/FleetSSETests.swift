@@ -235,14 +235,38 @@ private func startFleetServer(
     #expect(updated.status == .rehearsed)
     #expect(updated.predictedLayby?.stop.label == "E2E Layby A1")
 
+    let inspectionSummary = TripBriefInspectionSummary(
+        vehicleLabel: "E2E Artic",
+        registrationPlate: "E2E1 TST",
+        defectCount: 2,
+        completedAt: Date(timeIntervalSince1970: 1_700_000_000)
+    )
+    let pdfFixture = Data("%PDF-1.4 e2e-inspection".utf8).base64EncodedString()
+    let inspectionSnapshot = FleetTripSnapshot(
+        tripId: trip.id,
+        status: .active,
+        orderedStopIds: trip.stops.map(\.id),
+        physicsETASeconds: 7_200,
+        predictedLayby: layby,
+        latestInspectionSummary: inspectionSummary,
+        inspectionReportPDFBase64: pdfFixture
+    )
+    let withInspection = try await client.applySnapshot(inspectionSnapshot)
+    #expect(withInspection.latestInspectionSummary?.defectCount == 2)
+    #expect(withInspection.inspectionReportPDFBase64 == pdfFixture)
+
+    let fetched = try await client.trip(id: trip.id)
+    #expect(fetched?.latestInspectionSummary?.vehicleLabel == "E2E Artic")
+    #expect(fetched?.inspectionReportPDFBase64 == pdfFixture)
+
     let active = try await client.activeTrip(forVehicleId: vehicle.id)
     #expect(active?.id == trip.id)
-    #expect(active?.status == .rehearsed)
+    #expect(active?.status == .active)
 
-    let briefContext = TripBriefContext.from(fleetTrip: updated, vehicleLabel: vehicle.label)
+    let briefContext = TripBriefContext.from(fleetTrip: withInspection, vehicleLabel: vehicle.label)
     let briefText = TripBriefFormatter.plainText(from: briefContext)
     #expect(briefText.contains("E2E Artic"))
-    #expect(briefText.contains("Rehearsed"))
-    #expect(briefText.contains("E2E Layby A1"))
+    #expect(briefText.contains("Inspection warning"))
+    #expect(briefText.contains("2 defect(s)"))
     #expect(briefText.contains("Felixstowe"))
 }

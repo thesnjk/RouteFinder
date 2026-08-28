@@ -264,6 +264,45 @@ enum MapLibreMapHTML {
                   layout: { visibility: 'none' }
                 });
               }
+              if (!map.getSource('vehicle-parts-source')) {
+                map.addSource('vehicle-parts-source', {
+                  type: 'geojson',
+                  data: { type: 'FeatureCollection', features: [] }
+                });
+                map.addLayer({
+                  id: 'vehicle-part-0-fill',
+                  type: 'fill',
+                  source: 'vehicle-parts-source',
+                  filter: ['==', ['get', 'part'], 0],
+                  paint: {
+                    'fill-color': '#1d4ed8',
+                    'fill-opacity': 0.72
+                  },
+                  layout: { visibility: 'none' }
+                });
+                map.addLayer({
+                  id: 'vehicle-part-1-fill',
+                  type: 'fill',
+                  source: 'vehicle-parts-source',
+                  filter: ['==', ['get', 'part'], 1],
+                  paint: {
+                    'fill-color': '#3b82f6',
+                    'fill-opacity': 0.62
+                  },
+                  layout: { visibility: 'none' }
+                });
+                map.addLayer({
+                  id: 'vehicle-parts-outline-layer',
+                  type: 'line',
+                  source: 'vehicle-parts-source',
+                  paint: {
+                    'line-color': '#ffffff',
+                    'line-width': 2,
+                    'line-opacity': 0.95
+                  },
+                  layout: { visibility: 'none' }
+                });
+              }
             }
 
             function ensureVehicleIconLayer() {
@@ -502,7 +541,7 @@ enum MapLibreMapHTML {
               map.getSource('markers-source').setData({ type: 'FeatureCollection', features });
             };
 
-            window.updateVehicleSpatialFootprint = function(coordinates, bearing, renderMode, centerLng, centerLat, visible) {
+            window.updateVehicleSpatialFootprint = function(coordinates, bearing, renderMode, centerLng, centerLat, visible, partsJSON) {
               if (!map) return;
               ensureVehicleLayer();
               ensureVehicleIconLayer();
@@ -510,16 +549,50 @@ enum MapLibreMapHTML {
               if (!show) {
                 map.setLayoutProperty('vehicle-fill-layer', 'visibility', 'none');
                 map.setLayoutProperty('vehicle-outline-layer', 'visibility', 'none');
+                map.setLayoutProperty('vehicle-part-0-fill', 'visibility', 'none');
+                map.setLayoutProperty('vehicle-part-1-fill', 'visibility', 'none');
+                map.setLayoutProperty('vehicle-parts-outline-layer', 'visibility', 'none');
                 map.setLayoutProperty('vehicle-icon-layer', 'visibility', 'none');
                 return;
               }
               const mode = (renderMode || 'polygon').toLowerCase();
               const zoom = map.getZoom();
-              const usePolygon = mode === 'polygon' && zoom >= 16.0;
+              const usePolygon = mode === 'polygon';
+              let partFeatures = [];
+              try {
+                const parsedParts = typeof partsJSON === 'string' ? JSON.parse(partsJSON) : partsJSON;
+                if (Array.isArray(parsedParts)) {
+                  partFeatures = parsedParts.map(function(ring, index) {
+                    const polygon = (ring || []).map(function(pair) { return [pair[0], pair[1]]; });
+                    return {
+                      type: 'Feature',
+                      geometry: { type: 'Polygon', coordinates: [polygon] },
+                      properties: { part: index, bearing: bearing || 0 }
+                    };
+                  }).filter(function(feature) {
+                    return feature.geometry.coordinates[0].length > 2;
+                  });
+                }
+              } catch (e) {
+                partFeatures = [];
+              }
+              if (usePolygon && partFeatures.length > 0) {
+                map.setLayoutProperty('vehicle-fill-layer', 'visibility', 'none');
+                map.setLayoutProperty('vehicle-outline-layer', 'visibility', 'none');
+                map.setLayoutProperty('vehicle-icon-layer', 'visibility', 'none');
+                map.setLayoutProperty('vehicle-part-0-fill', 'visibility', 'visible');
+                map.setLayoutProperty('vehicle-part-1-fill', 'visibility', partFeatures.length > 1 ? 'visible' : 'none');
+                map.setLayoutProperty('vehicle-parts-outline-layer', 'visibility', 'visible');
+                map.getSource('vehicle-parts-source').setData({ type: 'FeatureCollection', features: partFeatures });
+                return;
+              }
               if (usePolygon && coordinates && coordinates.length > 0) {
                 const polygon = coordinates.map(function(c) { return [c.lng, c.lat]; });
                 map.setLayoutProperty('vehicle-fill-layer', 'visibility', 'visible');
                 map.setLayoutProperty('vehicle-outline-layer', 'visibility', 'visible');
+                map.setLayoutProperty('vehicle-part-0-fill', 'visibility', 'none');
+                map.setLayoutProperty('vehicle-part-1-fill', 'visibility', 'none');
+                map.setLayoutProperty('vehicle-parts-outline-layer', 'visibility', 'none');
                 map.setLayoutProperty('vehicle-icon-layer', 'visibility', 'none');
                 map.getSource('vehicle-source').setData({
                   type: 'Feature',
@@ -529,6 +602,9 @@ enum MapLibreMapHTML {
               } else {
                 map.setLayoutProperty('vehicle-fill-layer', 'visibility', 'none');
                 map.setLayoutProperty('vehicle-outline-layer', 'visibility', 'none');
+                map.setLayoutProperty('vehicle-part-0-fill', 'visibility', 'none');
+                map.setLayoutProperty('vehicle-part-1-fill', 'visibility', 'none');
+                map.setLayoutProperty('vehicle-parts-outline-layer', 'visibility', 'none');
                 map.setLayoutProperty('vehicle-icon-layer', 'visibility', 'visible');
                 vehicleIconVisible = true;
                 vehicleIconLengthMeters = window._vehicleLengthMeters || 12;
@@ -543,14 +619,14 @@ enum MapLibreMapHTML {
               }
             };
 
-            window.setSimulatedVehicleFootprint = function(lng, lat, visible, bearing, footprintJSON, lengthM, widthM, renderMode) {
+            window.setSimulatedVehicleFootprint = function(lng, lat, visible, bearing, footprintJSON, lengthM, widthM, renderMode, partsJSON) {
               if (!map) return;
               window._vehicleLengthMeters = lengthM || 12;
               window._vehicleWidthMeters = widthM || 2.55;
               const show = visible === true || visible === 'true';
               if (!show) {
                 vehicleIconVisible = false;
-                updateVehicleSpatialFootprint([], 0, 'icon', 0, 0, false);
+                updateVehicleSpatialFootprint([], 0, 'icon', 0, 0, false, '[]');
                 return;
               }
               let footprintCoords = [];
@@ -565,7 +641,7 @@ enum MapLibreMapHTML {
                   return { lng: pair[0], lat: pair[1] };
                 });
               }
-              updateVehicleSpatialFootprint(footprintCoords, bearing || 0, renderMode, lng, lat, true);
+              updateVehicleSpatialFootprint(footprintCoords, bearing || 0, renderMode, lng, lat, true, partsJSON || '[]');
             };
 
             window.setSimulatedVehicle = function(lng, lat, visible, bearing, lengthM, widthM, renderMode) {

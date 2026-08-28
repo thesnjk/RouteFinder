@@ -413,7 +413,10 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
                     playbackRevision: state.playbackRevision,
                     dimensionRevision: state.dimensionRevision,
                     renderMode: renderMode,
-                    footprintCoordinates: state.footprintCoordinates
+                    footprintCoordinates: state.footprintCoordinates,
+                    footprintParts: state.footprintParts,
+                    isPassengerCar: state.isPassengerCar,
+                    wheelbaseMeters: state.wheelbaseMeters
                 )
             }
             self.enqueueVehicleBridgeUpdate(enriched, to: webView)
@@ -658,9 +661,11 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
         if vehicle.visible {
             let renderMode = vehicle.renderMode.rawValue
             let footprintJSON = footprintJSONString(from: vehicle.footprintCoordinates)
+            let partsJSON = footprintPartsJSONString(from: vehicle.footprintParts)
             let escapedFootprint = escapeJS(footprintJSON)
+            let escapedParts = escapeJS(partsJSON)
             webView.evaluateJavaScript(
-                "setSimulatedVehicleFootprint(\(vehicle.longitude),\(vehicle.latitude),true,\(vehicle.bearing),'\(escapedFootprint)',\(vehicle.lengthMeters),\(vehicle.widthMeters),'\(renderMode)')"
+                "setSimulatedVehicleFootprint(\(vehicle.longitude),\(vehicle.latitude),true,\(vehicle.bearing),'\(escapedFootprint)',\(vehicle.lengthMeters),\(vehicle.widthMeters),'\(renderMode)','\(escapedParts)')"
             ) { _, _ in
                 finish()
             }
@@ -677,6 +682,15 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
         guard !coordinates.isEmpty else { return "[]" }
         let pairs = coordinates.map { "[\($0.longitude), \($0.latitude)]" }.joined(separator: ",")
         return "[\(pairs)]"
+    }
+
+    private func footprintPartsJSONString(from parts: [[CLLocationCoordinate2D]]) -> String {
+        guard !parts.isEmpty else { return "[]" }
+        let rings = parts.map { ring in
+            let pairs = ring.map { "[\($0.longitude), \($0.latitude)]" }.joined(separator: ",")
+            return "[\(pairs)]"
+        }.joined(separator: ",")
+        return "[\(rings)]"
     }
 
     private func pushSimulatedVehicle(

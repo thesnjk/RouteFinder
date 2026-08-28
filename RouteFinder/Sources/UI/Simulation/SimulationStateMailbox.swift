@@ -36,6 +36,8 @@ public struct SimulationDisplaySnapshot: Sendable, Equatable {
 public struct SimulationUIState: Sendable, Equatable {
   public let speedKmh: Double
   public let activeLegalSpeedLimitKmh: Double?
+  /// Traffic-adjusted effective limit when congestion caps cruise speed.
+  public let trafficAdjustedLimitKmh: Double?
   public let speedLimitSource: SpeedLimitSource
   public let velocityCapReason: VelocityCapReason
   public let isBrakingWarning: Bool
@@ -50,6 +52,7 @@ public struct SimulationUIState: Sendable, Equatable {
   public init(
     speedKmh: Double,
     activeLegalSpeedLimitKmh: Double? = nil,
+    trafficAdjustedLimitKmh: Double? = nil,
     speedLimitSource: SpeedLimitSource = .regionalDefault,
     velocityCapReason: VelocityCapReason = .legal,
     isBrakingWarning: Bool,
@@ -62,6 +65,7 @@ public struct SimulationUIState: Sendable, Equatable {
   ) {
     self.speedKmh = speedKmh
     self.activeLegalSpeedLimitKmh = activeLegalSpeedLimitKmh
+    self.trafficAdjustedLimitKmh = trafficAdjustedLimitKmh
     self.speedLimitSource = speedLimitSource
     self.velocityCapReason = velocityCapReason
     self.isBrakingWarning = isBrakingWarning

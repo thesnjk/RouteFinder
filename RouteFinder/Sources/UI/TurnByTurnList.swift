@@ -61,7 +61,7 @@ public struct TurnByTurnList: View {
                                             .foregroundStyle(.orange)
                                     }
                                     if let lane = instruction.laneGuidance {
-                                        Text(lane)
+                                        Text(lane.guidanceText)
                                             .font(.caption2.weight(.semibold))
                                             .foregroundStyle(.blue)
                                     }

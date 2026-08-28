@@ -73,7 +73,10 @@ public final class MapViewControllerBridge: ObservableObject {
 
     /// Returns the vehicle render mode for a given map zoom level.
     public func renderMode(for zoom: Double) -> VehicleRenderMode {
-        zoom >= Self.lodZoomThreshold ? .polygon : .icon
+        if isTrackingVehicle {
+            return .polygon
+        }
+        return zoom >= Self.lodZoomThreshold ? .polygon : .icon
     }
 
     /// Computes the georeferenced vehicle footprint ring for the map simulation layer.

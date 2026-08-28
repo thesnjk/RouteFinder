@@ -12,6 +12,9 @@ struct SettingsSheet: View {
     #endif
     @State private var showInspectionSheet = false
     @State private var showDispatchConsole = false
+    #if os(macOS)
+    @State private var requireLoginEachLaunch = SessionWorkspaceSettings.loadRequireLoginEachLaunch()
+    #endif
 
     var body: some View {
         NavigationStack {
@@ -214,6 +217,19 @@ struct SettingsSheet: View {
             Toggle("Voice guidance", isOn: $viewModel.voiceGuidanceEnabled)
                 .onChange(of: viewModel.voiceGuidanceEnabled) { _, _ in
                     viewModel.persistVoiceGuidanceEnabled()
+                }
+            #endif
+
+            Toggle("Apply live traffic to cruise speed", isOn: $viewModel.applyTrafficToSimulation)
+                .onChange(of: viewModel.applyTrafficToSimulation) { _, _ in
+                    viewModel.persistApplyTrafficToSimulation()
+                }
+                .help("When off, TomTom traffic still informs reroutes but does not cap steady-state simulation speed.")
+
+            #if os(macOS)
+            Toggle("Require login each launch", isOn: $requireLoginEachLaunch)
+                .onChange(of: requireLoginEachLaunch) { _, value in
+                    SessionWorkspaceSettings.saveRequireLoginEachLaunch(value)
                 }
             #endif
         }

@@ -41,6 +41,7 @@ public final class RouteSimulationEngine: ObservableObject {
   @Published public private(set) var currentBearing: Double = 0
   @Published public private(set) var currentSpeedKmh: Double = 0
   @Published public private(set) var activeLegalSpeedLimitKmh: Double?
+  @Published public private(set) var trafficAdjustedLimitKmh: Double?
   @Published public private(set) var activeSpeedLimitSource: SpeedLimitSource = .regionalDefault
   @Published public private(set) var isBrakingWarning = false
   @Published public private(set) var playbackRevision: UInt64 = 0
@@ -92,6 +93,7 @@ public final class RouteSimulationEngine: ObservableObject {
   private var staticWebETASeconds: TimeInterval = 0
   private var simulationElapsedSeconds: TimeInterval = 0
   private var isPassengerCarMode = false
+  private var applyTrafficToSimulation = false
   private var activeSpecificationProfile: VehicleSpecificationProfile?
 
   private let mailbox = SimulationStateMailbox()
@@ -173,7 +175,8 @@ public final class RouteSimulationEngine: ObservableObject {
     vehicleSpecificationProfile: VehicleSpecificationProfile? = nil,
     kineticStressProfile: KineticStressProfile? = nil,
     canonicalGeometry: RouteGeometryCanonicalizer.CanonicalRouteGeometry? = nil,
-    minimumTurnRadiusMeters: Double? = nil
+    minimumTurnRadiusMeters: Double? = nil,
+    applyTrafficToSimulation: Bool = false
   ) {
     stop()
     displayClock.stop()
@@ -182,6 +185,7 @@ public final class RouteSimulationEngine: ObservableObject {
     staticWebETASeconds = totalDuration
     simulationElapsedSeconds = 0
     isPassengerCarMode = isPassengerCar
+    self.applyTrafficToSimulation = applyTrafficToSimulation
     lastConfigureManeuvers = maneuvers
     lastConfigureTurnInstructions = turnInstructions
     lastConfigureEnvironmentalContext = environmentalContext
@@ -326,7 +330,8 @@ public final class RouteSimulationEngine: ObservableObject {
       activeSpecificationProfile: activeSpecificationProfile,
       staticWebETASeconds: staticWebETASeconds,
       minimumTurnRadiusMeters: minimumTurnRadiusMeters,
-      turnInstructions: turnInstructions
+      turnInstructions: turnInstructions,
+      applyTrafficToSimulation: applyTrafficToSimulation
     )
     configureTask = Task {
       await physicsActor.configure(physicsConfig)
@@ -395,6 +400,26 @@ public final class RouteSimulationEngine: ObservableObject {
     )
   }
 
+  /// Updates whether TomTom congestion caps steady-state cruise speed.
+  public func updateApplyTrafficToSimulation(_ enabled: Bool) {
+    applyTrafficToSimulation = enabled
+    guard !lastRouteCoordinates.isEmpty else { return }
+    configure(
+      route: lastRouteCoordinates,
+      environmentalContext: lastConfigureEnvironmentalContext,
+      vehicle: lastConfigureVehicle,
+      totalDuration: lastConfigureTotalDuration,
+      enginePowerHP: lastConfigureEnginePowerHP,
+      maneuvers: lastConfigureManeuvers,
+      turnInstructions: lastConfigureTurnInstructions,
+      isPassengerCar: isPassengerCarMode,
+      tomTomAPIKey: lastConfigureTomTomAPIKey,
+      vehicleSpecificationProfile: activeSpecificationProfile,
+      minimumTurnRadiusMeters: lastConfigureMinimumTurnRadiusMeters,
+      applyTrafficToSimulation: enabled
+    )
+  }
+
   /// Updates environmental context without resetting route playback position.
   public func updateEnvironmentalContext(_ context: EnvironmentalContext) {
     environmentalContext = context
@@ -441,7 +466,8 @@ public final class RouteSimulationEngine: ObservableObject {
       isPassengerCar: isPassengerCar,
       tomTomAPIKey: lastConfigureTomTomAPIKey,
       vehicleSpecificationProfile: profile,
-      minimumTurnRadiusMeters: lastConfigureMinimumTurnRadiusMeters
+      minimumTurnRadiusMeters: lastConfigureMinimumTurnRadiusMeters,
+      applyTrafficToSimulation: applyTrafficToSimulation
     )
   }
 
@@ -616,6 +642,7 @@ public final class RouteSimulationEngine: ObservableObject {
     simulationElapsedSeconds = uiState.simulationElapsedSeconds
     currentSpeedKmh = uiState.speedKmh
     activeLegalSpeedLimitKmh = uiState.activeLegalSpeedLimitKmh
+    trafficAdjustedLimitKmh = uiState.trafficAdjustedLimitKmh
     activeSpeedLimitSource = uiState.speedLimitSource
     isBrakingWarning = uiState.isBrakingWarning
     isPausedForSignal = uiState.isPausedForSignal
@@ -699,18 +726,37 @@ public final class RouteSimulationEngine: ObservableObject {
     renderMode: VehicleRenderMode = .polygon
   ) -> SimulatedVehicleState {
     let dimensions = resolvedFootprintDimensions()
+    let center = MapViewControllerBridge.cameraFollowCenter(
+      rearAxle: coordinate,
+      bearingDegrees: currentBearing,
+      lengthMeters: dimensions.length
+    )
+    let footprint = VehicleGeometryCalculator.generateFootprint(
+      anchor: .geometricCenter,
+      anchorCoordinate: center,
+      headingDegrees: currentBearing,
+      lengthMeters: dimensions.length,
+      widthMeters: dimensions.width
+    )
+    let parts = VehicleGeometryCalculator.generateFootprintParts(
+      rearAxle: coordinate,
+      headingDegrees: currentBearing,
+      lengthMeters: dimensions.length,
+      widthMeters: dimensions.width,
+      isPassengerCar: isPassengerCarMode
+    )
     return SimulatedVehicleState(
-      latitude: coordinate.latitude,
-      longitude: coordinate.longitude,
+      latitude: center.latitude,
+      longitude: center.longitude,
       bearing: currentBearing,
       visible: true,
       lengthMeters: dimensions.length,
       widthMeters: dimensions.width,
       playbackRevision: bridgeRevision,
       dimensionRevision: dimensionRevision,
-      renderMode: .polygon,
-      footprintCoordinates: [],
-      footprintParts: [],
+      renderMode: renderMode,
+      footprintCoordinates: footprint,
+      footprintParts: parts,
       isPassengerCar: isPassengerCarMode,
       wheelbaseMeters: resolvedWheelbaseMeters()
     )

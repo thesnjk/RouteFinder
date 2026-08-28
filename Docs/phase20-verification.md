@@ -75,6 +75,18 @@ Environment: macOS; `DEVELOPER_DIR=/Library/Developer/CommandLineTools` (full Xc
 - **RouteFinderMac launch:** packaged `RouteFinder.app` from older `package-macos-app.sh` builds could crash with `Taskgated Invalid Signature` on macOS 26 (missing hardened runtime). Use Xcode **RouteFinderMac** scheme, or rebuild with the hardened package script.
 - Visual sim feel (S1) and Keychain dialog absence (K1 relaunch) require local **RouteFinderMac** confirmation in Xcode.
 
+### Sim UX + lane guidance (2026-08-28)
+
+| # | Scenario | Automated | Local confirm |
+|---|---|---|---|
+| U1 | Session auto-unlock / pre-filled email | `SessionWorkspaceSettings` + `SessionController.bootstrap()` Touch ID path | Relaunch twice — Touch ID or pre-filled login |
+| U2 | Vehicle workspace restore | `VehicleWorkspaceSettings` round-trip + `restoreVehicleWorkspace()` | Quit → relaunch — reg/dims/HGV mode persist |
+| U3 | 30 mph cruise (traffic off) | `applyTrafficToSimulation` default false; physics uses posted limit only | Sim on 30 mph leg — dial ~30, not 24 |
+| U4 | Center-anchored HGV polygon | `renderMode` forces polygon while tracking; cab/trailer `footprintParts` | Turn at zoom 15 — body pivots from center |
+| U5 | Lane banner | `TurnLanesParserTests`, `LaneGuidanceEnricher`, `LaneGuidanceBanner` on map chrome | Approach maneuver — lane strip on map top |
+
+`swift test`: **415 tests** green (includes lane parser + footprint part tests).
+
 ## Critical bugs found
 
 None blocking. No Phase 20 hotfix required.

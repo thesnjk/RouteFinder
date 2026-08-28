@@ -32,6 +32,8 @@ public struct SimulationPhysicsConfiguration: Sendable {
   public let minimumTurnRadiusMeters: Double?
   /// Turn instructions used for maneuver-aware physics cues.
   public let turnInstructions: [TurnInstruction]
+  /// When true, TomTom congestion multipliers cap steady-state cruise speed.
+  public let applyTrafficToSimulation: Bool
 
   /// Creates a physics configuration bundle.
   public init(
@@ -56,7 +58,8 @@ public struct SimulationPhysicsConfiguration: Sendable {
     activeSpecificationProfile: VehicleSpecificationProfile?,
     staticWebETASeconds: TimeInterval,
     minimumTurnRadiusMeters: Double? = nil,
-    turnInstructions: [TurnInstruction] = []
+    turnInstructions: [TurnInstruction] = [],
+    applyTrafficToSimulation: Bool = false
   ) {
     self.densifiedRoute = densifiedRoute
     self.segmentLengths = segmentLengths
@@ -80,6 +83,7 @@ public struct SimulationPhysicsConfiguration: Sendable {
     self.staticWebETASeconds = staticWebETASeconds
     self.minimumTurnRadiusMeters = minimumTurnRadiusMeters
     self.turnInstructions = turnInstructions
+    self.applyTrafficToSimulation = applyTrafficToSimulation
   }
 
   /// Returns a copy with an updated vehicle specification profile and rebuilt telematics-driven dynamics.
@@ -125,7 +129,8 @@ public struct SimulationPhysicsConfiguration: Sendable {
       activeSpecificationProfile: profile,
       staticWebETASeconds: staticWebETASeconds,
       minimumTurnRadiusMeters: minimumTurnRadiusMeters,
-      turnInstructions: turnInstructions
+      turnInstructions: turnInstructions,
+      applyTrafficToSimulation: applyTrafficToSimulation
     )
   }
 }
@@ -186,6 +191,7 @@ public actor SimulationPhysicsActor {
   private var poseSnapshots: [SimulationPoseSnapshot] = []
   private var steeringSnapshot: CentripetalSpeedGovernor.SteeringSnapshot?
   private var activeLegalSpeedLimitKmh: Double?
+  private var trafficAdjustedLimitKmh: Double?
   private var activeSpeedLimitSource: SpeedLimitSource = .regionalDefault
   private var velocityCapReason: VelocityCapReason = .legal
   private var previousLegalLimitMps: Double?
@@ -399,7 +405,15 @@ public actor SimulationPhysicsActor {
     }
     previousLegalLimitMps = legalRoadLimitMps > 0 ? legalRoadLimitMps : config.defaultSpeedFloorMps
 
-    let vLegal = min(roadLimitMps, config.vehicleMaxSpeedMps) * cachedTrafficMultiplier
+    let vLegalBase = min(roadLimitMps, config.vehicleMaxSpeedMps)
+    let vLegal: Double
+    if config.applyTrafficToSimulation {
+      vLegal = vLegalBase * cachedTrafficMultiplier
+      trafficAdjustedLimitKmh = limitDetails.speedKmh * cachedTrafficMultiplier
+    } else {
+      vLegal = vLegalBase
+      trafficAdjustedLimitKmh = nil
+    }
     let gradePercent = config.elevationProfile.gradePercent(atArcLength: arcLengthPosition)
     let effectiveDecel = EnvironmentalPhysics.effectiveMaxDecel(
       base: config.dynamics.maxDecelMps2,
@@ -639,6 +653,7 @@ public actor SimulationPhysicsActor {
       SimulationUIState(
         speedKmh: speedMps * 3.6,
         activeLegalSpeedLimitKmh: activeLegalSpeedLimitKmh,
+        trafficAdjustedLimitKmh: trafficAdjustedLimitKmh,
         speedLimitSource: activeSpeedLimitSource,
         velocityCapReason: velocityCapReason,
         isBrakingWarning: isBrakingWarning,

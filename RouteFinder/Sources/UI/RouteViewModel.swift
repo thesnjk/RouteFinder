@@ -199,7 +199,7 @@ public final class RouteViewModel {
     public var routeGeometry: RouteGeometry?
     public var routeEncodedPolyline: String?
     public var routeEncodedPolylinePrecision: Int = 6
-    public var hazardOverlayJSON = "{\"type\":\"FeatureCollection\",\"features\":[]}"
+    public var hazardOverlayJSON = HazardOverlayBuilder.emptyFeatureCollection
 
     #if os(iOS)
     public var isFollowModeEnabled = false
@@ -270,6 +270,8 @@ public final class RouteViewModel {
     public var latestKineticAdvisory: KineticAdvisory?
     /// Shareable plain-text trip brief from the latest predictive report.
     public var tripBriefShareText: String?
+    /// Latest saved walkaround summary for trip brief and fleet handoff.
+    public var latestInspectionSummary: TripBriefInspectionSummary?
     /// Map camera zoom while simulating (user-adjustable).
     public var simulationCameraZoom: Double = 15.0
     /// When true, auto camera tracking will not override the sim zoom slider.
@@ -1371,6 +1373,12 @@ public final class RouteViewModel {
         do {
             try await inspectionStore.save(record)
             try await inspectionStore.enqueueSync(record)
+            let summary = TripBriefInspectionSummary(record: record)
+            latestInspectionSummary = summary
+            refreshTripBriefShareText()
+            if record.defectCount > 0 {
+                await publishInspectionFleetHandoff(record: record, summary: summary)
+            }
         } catch {
             errorMessage = "Could not save inspection: \(error.localizedDescription)"
         }
@@ -1775,7 +1783,11 @@ public final class RouteViewModel {
     }
 
     /// Publishes trip status + physics ETA for the dispatch console.
-    public func publishDispatchSnapshot(status: FleetTripStatus? = nil) async {
+    public func publishDispatchSnapshot(
+        status: FleetTripStatus? = nil,
+        inspectionSummary: TripBriefInspectionSummary? = nil,
+        inspectionReportPDFBase64: String? = nil
+    ) async {
         guard let tripId = activeDispatchTripId else { return }
         let resolvedStatus = status
             ?? (simulationEngine.telemetryReport != nil ? .rehearsed : .active)
@@ -1785,10 +1797,24 @@ public final class RouteViewModel {
             orderedStopIds: routeWaypoints.map(\.id),
             physicsETASeconds: journeyPhysicsETASeconds ?? physicsPredictedDurationSeconds,
             predictiveReport: simulationEngine.telemetryReport,
-            predictedLayby: laybyAdvisory
+            predictedLayby: laybyAdvisory,
+            latestInspectionSummary: inspectionSummary,
+            inspectionReportPDFBase64: inspectionReportPDFBase64
         )
         lastPublishedFleetSnapshot = snapshot
         _ = try? await fleetStore.applySnapshot(snapshot)
+    }
+
+    private func publishInspectionFleetHandoff(
+        record: InspectionRecord,
+        summary: TripBriefInspectionSummary
+    ) async {
+        guard activeDispatchTripId != nil, useRemoteFleetServer else { return }
+        let pdfBase64 = InspectionReportPDFRenderer.pdfData(from: record).base64EncodedString()
+        await publishDispatchSnapshot(
+            inspectionSummary: summary,
+            inspectionReportPDFBase64: pdfBase64
+        )
     }
 
     /// Returns the current trip as seen by dispatch (after driver snapshot publish).
@@ -2669,7 +2695,10 @@ public final class RouteViewModel {
     /// Refreshes share text from the current predictive telemetry report, if any.
     public func refreshTripBriefShareText() {
         let context = tripBriefContext()
-        guard context.predictiveReport != nil || context.physicsETASeconds != nil || !context.stops.isEmpty else {
+        guard context.predictiveReport != nil
+            || context.physicsETASeconds != nil
+            || !context.stops.isEmpty
+            || context.latestInspectionSummary != nil else {
             tripBriefShareText = nil
             return
         }
@@ -2702,7 +2731,8 @@ public final class RouteViewModel {
             physicsETASeconds: journeyPhysicsETASeconds,
             vehicleLabel: tripBriefVehicleLabel(),
             tripStatus: status,
-            routeCoordinates: coordinates
+            routeCoordinates: coordinates,
+            latestInspectionSummary: latestInspectionSummary
         )
     }
 
@@ -3057,6 +3087,7 @@ public final class RouteViewModel {
         let stored = await crowdEventIngest.allReports()
         crowdReports = stored
         activeHazards = HazardAheadFormatter.promotedHazards(from: crowdReports)
+        hazardOverlayJSON = HazardOverlayBuilder.geoJSON(from: activeHazards)
         if !upcomingTruckPois.isEmpty {
             upcomingTruckPois = PoiConfidenceAdjuster.adjust(pois: upcomingTruckPois, reports: crowdReports)
         }
@@ -3527,15 +3558,7 @@ public final class RouteViewModel {
     private func appendHazardOverlay(_ hazard: HazardEvent) {
         activeHazards.append(hazard)
         refreshHazardAheadAnnouncement()
-        let feature = """
-        {"type":"Feature","properties":{"id":"\(hazard.id)","color":"#ef4444","title":"\(hazard.type.rawValue)"},"geometry":{"type":"Point","coordinates":[\(hazard.longitude),\(hazard.latitude)]}}
-        """
-        if hazardOverlayJSON.contains("\"features\":[]") {
-            hazardOverlayJSON = "{\"type\":\"FeatureCollection\",\"features\":[\(feature)]}"
-        } else if let range = hazardOverlayJSON.range(of: "\"features\":[") {
-            let insertAt = hazardOverlayJSON.index(range.upperBound, offsetBy: 0)
-            hazardOverlayJSON.insert(contentsOf: feature + ",", at: insertAt)
-        }
+        hazardOverlayJSON = HazardOverlayBuilder.geoJSON(from: activeHazards)
     }
 }
 

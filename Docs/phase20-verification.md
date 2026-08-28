@@ -204,7 +204,40 @@ Run on a **physical iPhone** before treating Phase 30+ as fully verified (person
 | A5 | ⋯ toolbar → Walkaround check opens zoned checklist | **Pass** (code) | Default HGV mode on iOS; interactive **Pending local** |
 | A6 | On failure: capture device log | **N/A** | Look for `SIGABRT`, `WebKit`, `Jetsam` in Console |
 
-**Automated gate (2026-08-28):** `swift test` green; Ph30–35 unit tests pass. Physical device execution of A1–A2 and interactive rows below remains **your ~20 min checklist** before production confidence.
+**Automated gate (2026-08-28):** `swift test` green; Ph30–36 unit tests pass. **Phase 38** adds `RouteFinderAppUITests` smoke (cold launch, settings hub, walkaround entry) — run in Xcode on simulator. Physical device execution of C1–C9 remains **your ~20 min checklist** before production confidence.
+
+### Phase 38–40 automation & fleet handoff (2026-08-28)
+
+Scope: iOS XCTest smoke, walkaround defect line in trip brief + optional fleet PDF snapshot, hazard overlay rebuild on crowd hydrate.
+
+| # | Scenario | Automated | Local confirm |
+|---|---|---|---|
+| P38-1 | Cold launch shows auth or map chrome | **Pass** (UI test) | `RouteFinderAppUITests.testColdLaunchShowsAuthOrMap` |
+| P38-2 | Settings hub → Vehicle & HGV row | **Pass** (UI test) | `testSettingsHubOpens` with `UITEST_SKIP_AUTH` |
+| P38-3 | HGV toolbar exposes walkaround entry | **Pass** (UI test) | `testWalkaroundEntryExists` |
+| P39-1 | Trip brief includes inspection warning when defects > 0 | **Pass** (unit) | `TripBriefFormatterTests` |
+| P39-2 | Fleet snapshot carries inspection PDF base64 | **Pass** (code) | `RouteViewModel.publishInspectionFleetHandoff` when remote fleet configured |
+| P40-1 | Hazard overlay rebuild from promoted hazards | **Pass** (unit) | `HazardOverlayBuilderTests` |
+| P40-2 | Crowd hydrate restores map pins after relaunch | **Pass** (code) | `hydrateCrowdReportsFromDisk` + `HazardOverlayBuilder` |
+
+#### Running Phase 38 UI tests
+
+```bash
+# In Xcode: Product → Test (RouteFinderApp scheme, iPhone simulator)
+# Or: xcodebuild test -project RouteFinderApp.xcodeproj -scheme RouteFinderApp \
+#   -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:RouteFinderAppUITests
+```
+
+Launch arguments used by smoke tests: `UITEST_SKIP_AUTH`, `UITEST_SKIP_ONBOARDING`.
+
+#### Phase 38–40 code surfaces
+
+| Feature | Primary files |
+|---|---|
+| XCTest smoke | `RouteFinderAppUITests`, `UITestLaunchConfigurator`, accessibility IDs in `AuthGateView`, `SettingsSheet`, `IOSMapChrome` |
+| Walkaround trip brief | `TripBriefInspectionSummary`, `TripBriefFormatter`, `RouteViewModel.saveActiveInspection` |
+| Fleet inspection PDF | `FleetTripSnapshot.inspectionReportPDFBase64`, `FleetTrip.latestInspectionSummary` |
+| Hazard overlay rebuild | `HazardOverlayBuilder`, `hydrateCrowdReportsFromDisk` |
 
 ### Consolidated iPhone device QA — Phase A + Ph30–35 (2026-08-28)
 

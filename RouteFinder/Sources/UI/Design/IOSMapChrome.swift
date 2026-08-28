@@ -554,6 +554,7 @@ private struct IOSMapToolbar: View {
                 } label: {
                     Label("Settings", systemImage: "gearshape.fill")
                 }
+                .accessibilityIdentifier("mapToolbarSettings")
 
                 if viewModel.isHGVMode {
                     Button {
@@ -561,6 +562,7 @@ private struct IOSMapToolbar: View {
                     } label: {
                         Label("Walkaround check", systemImage: "checklist")
                     }
+                    .accessibilityIdentifier("walkaroundToolbarEntry")
                 }
 
                 Button {
@@ -608,6 +610,7 @@ private struct IOSMapToolbar: View {
                     .overlay(Circle().strokeBorder(.white.opacity(0.2), lineWidth: 0.5))
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("mapToolbarMenu")
             .depthShadow()
         }
     }

@@ -86,7 +86,7 @@ public final class VoiceGuidanceCoordinator: NavigationSessionDelegate {
             text: text,
             priority: AnnouncementTier.prepare.priority,
             tier: .prepare,
-            instructionID: "layby-\(laybyId)"
+            instructionID: stableInstructionID(namespace: "layby", value: laybyId)
         )
         voiceService.speak(prompt)
     }
@@ -98,9 +98,28 @@ public final class VoiceGuidanceCoordinator: NavigationSessionDelegate {
             text: text,
             priority: AnnouncementTier.prepare.priority,
             tier: .prepare,
-            instructionID: "hazard-\(hazardId)"
+            instructionID: stableInstructionID(namespace: "hazard", value: hazardId)
         )
         voiceService.speak(prompt)
+    }
+
+    private func stableInstructionID(namespace: String, value: String) -> UUID {
+        if let uuid = UUID(uuidString: value) {
+            return uuid
+        }
+        var uuidBytes = [UInt8](repeating: 0, count: 16)
+        let seed = "\(namespace):\(value)"
+        for (offset, byte) in seed.utf8.enumerated() {
+            uuidBytes[offset % 16] &+= byte
+        }
+        uuidBytes[6] = (uuidBytes[6] & 0x0F) | 0x40
+        uuidBytes[8] = (uuidBytes[8] & 0x3F) | 0x80
+        return UUID(uuid: (
+            uuidBytes[0], uuidBytes[1], uuidBytes[2], uuidBytes[3],
+            uuidBytes[4], uuidBytes[5], uuidBytes[6], uuidBytes[7],
+            uuidBytes[8], uuidBytes[9], uuidBytes[10], uuidBytes[11],
+            uuidBytes[12], uuidBytes[13], uuidBytes[14], uuidBytes[15]
+        ))
     }
 
     private func evaluateDistanceTiers(

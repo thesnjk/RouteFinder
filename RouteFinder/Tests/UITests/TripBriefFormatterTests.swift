@@ -102,6 +102,30 @@ import Testing
     #expect(titles.contains("Company break windows (planning aid — not legal tacho)"))
 }
 
+@Test func tripBriefFormatterIncludesInspectionWarningWhenDefectsPresent() {
+    let summary = TripBriefInspectionSummary(
+        vehicleLabel: "Artic 1",
+        registrationPlate: "AB12 CDE",
+        defectCount: 2,
+        completedAt: Date(timeIntervalSince1970: 1_700_000_000)
+    )
+    let context = TripBriefContext(latestInspectionSummary: summary)
+    let text = TripBriefFormatter.plainText(from: context)
+    #expect(text.contains("Inspection warning"))
+    #expect(text.contains("Artic 1 (AB12 CDE)"))
+    #expect(text.contains("2 defect(s)"))
+}
+
+@Test func tripBriefFormatterOmitsInspectionSectionWhenNoDefects() {
+    let summary = TripBriefInspectionSummary(
+        vehicleLabel: "Artic 1",
+        defectCount: 0,
+        completedAt: Date()
+    )
+    let text = TripBriefFormatter.plainText(from: TripBriefContext(latestInspectionSummary: summary))
+    #expect(!text.contains("Inspection warning"))
+}
+
 @Test func tripBriefContextFromFleetTripMapsSnapshotFields() {
     let trip = FleetTrip(
         orgId: UUID(),
@@ -120,4 +144,25 @@ import Testing
     #expect(context.vehicleLabel == "Artic 1")
     #expect(context.tripStatus == "Rehearsed")
     #expect(context.companyBreaks.count == 1)
+}
+
+@Test func tripBriefContextFromFleetTripMapsInspectionSummary() {
+    let summary = TripBriefInspectionSummary(
+        vehicleLabel: "Rigid",
+        registrationPlate: "XY99 ZZZ",
+        defectCount: 1,
+        completedAt: Date(timeIntervalSince1970: 1_700_000_000)
+    )
+    let trip = FleetTrip(
+        orgId: UUID(),
+        vehicleId: UUID(),
+        status: .active,
+        stops: [
+            FleetTripStop(sequence: 0, label: "Port", latitude: 51.95, longitude: 1.35, role: .origin),
+            FleetTripStop(sequence: 1, label: "Depot", latitude: 53.48, longitude: -2.24, role: .destination),
+        ],
+        latestInspectionSummary: summary
+    )
+    let context = TripBriefContext.from(fleetTrip: trip, vehicleLabel: "Artic 1")
+    #expect(context.latestInspectionSummary == summary)
 }

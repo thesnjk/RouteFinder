@@ -94,6 +94,7 @@ public struct AuthGateView: View {
 
             TextField("Email", text: $email)
                 .textFieldStyle(GlassTextFieldStyle())
+                .accessibilityIdentifier("authEmailField")
                 #if os(iOS)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.emailAddress)

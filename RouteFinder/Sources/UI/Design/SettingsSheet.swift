@@ -62,6 +62,7 @@ struct SettingsSheet: View {
             } label: {
                 Label("Vehicle & HGV", systemImage: "truck.box.fill")
             }
+            .accessibilityIdentifier("settingsVehicleHGV")
 
             NavigationLink {
                 settingsDetailPage(title: "Navigation & Voice") {

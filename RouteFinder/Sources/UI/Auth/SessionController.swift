@@ -23,7 +23,23 @@ public final class SessionController {
     /// Email pre-filled on the login form after a cancelled auto-unlock.
     public private(set) var prefillEmail: String = ""
 
-    public init() {}
+    public init() {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("UITEST_SKIP_AUTH") {
+            phase = .authenticated
+            UITestLaunchConfigurator.applyIfNeeded()
+        }
+        #endif
+    }
+
+    /// Skips the auth gate for UI test runs (DEBUG only).
+    public func skipAuthenticationForUITest() {
+        #if DEBUG
+        phase = .authenticated
+        errorMessage = nil
+        UITestLaunchConfigurator.applyIfNeeded()
+        #endif
+    }
 
     /// Boots splash state and attempts device auto-unlock when allowed.
     public func bootstrap() async {

@@ -2,42 +2,52 @@
 //  RouteFinderAppUITests.swift
 //  RouteFinderAppUITests
 //
-//  Created by Jacob on 05/07/2026.
-//
 
 import XCTest
 
 final class RouteFinderAppUITests: XCTestCase {
+    private let launchTimeout: TimeInterval = 15
 
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
-    }
-
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    func testColdLaunchShowsAuthOrMap() throws {
+        let app = launchApp()
+        let authField = app.textFields["authEmailField"]
+        let mapMenu = app.buttons["mapToolbarMenu"]
+        XCTAssertTrue(authField.waitForExistence(timeout: launchTimeout) || mapMenu.waitForExistence(timeout: launchTimeout))
+    }
+
+    @MainActor
+    func testSettingsHubOpens() throws {
+        let app = launchApp(skipAuth: true)
+        XCTAssertTrue(app.buttons["mapToolbarMenu"].waitForExistence(timeout: launchTimeout))
+
+        app.buttons["mapToolbarMenu"].tap()
+        XCTAssertTrue(app.buttons["mapToolbarSettings"].waitForExistence(timeout: 5))
+        app.buttons["mapToolbarSettings"].tap()
+
+        XCTAssertTrue(app.buttons["settingsVehicleHGV"].waitForExistence(timeout: launchTimeout))
+    }
+
+    @MainActor
+    func testWalkaroundEntryExists() throws {
+        let app = launchApp(skipAuth: true)
+        XCTAssertTrue(app.buttons["mapToolbarMenu"].waitForExistence(timeout: launchTimeout))
+
+        app.buttons["mapToolbarMenu"].tap()
+        XCTAssertTrue(app.buttons["walkaroundToolbarEntry"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    private func launchApp(skipAuth: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launch()
-
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // XCUIAutomation Documentation
-        // https://developer.apple.com/documentation/xcuiautomation
-    }
-
-    @MainActor
-    func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
-        measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
+        if skipAuth {
+            app.launchArguments += ["UITEST_SKIP_AUTH", "UITEST_SKIP_ONBOARDING"]
         }
+        app.launch()
+        return app
     }
 }

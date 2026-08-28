@@ -1,7 +1,9 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-28 (Phase 36 hazard hardening)  
+Last updated: 2026-08-28 (Phase 38–40 XCTest smoke, walkaround fleet handoff, hazard overlay rebuild)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then advisory tacho + offline packs. **CarPlay deferred** until paid-team signing.
+
+> **Aug 28 Phase 38–40:** iOS XCTest smoke (cold launch, settings hub, walkaround entry); walkaround defect warning in shareable trip brief + optional fleet inspection PDF on LAN snapshot; hazard map overlay rebuild on crowd hydrate. See [`phase20-verification.md`](phase20-verification.md#phase-3840-automation--fleet-handoff-2026-08-28).
 
 > **Aug 28 Phase 36:** TomTom live traffic/closure ahead sampling during GPS nav; crowd hazard hydration on route load; roadworks disk cache. See [`phase20-verification.md`](phase20-verification.md#phase-36-hazard-hardening-2026-08-28).
 
@@ -95,12 +97,12 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | Multi-stop optimize | Shipped | Shipped | Strong | Existing |
 | Live traffic affecting route choice | **TomTom flow → ORS avoid_polygons reroute** | Strong | Strong | Phase 2 |
 | HOS / tacho | **Advisory EU 561 + JSON/DDD import + Can-I-drive** (VU remains legal) | Weak | **Strong** | Phase 1 + 5; partner port stubbed |
-| Fleet dispatch / shared physics ETA | **Shipped** (native dispatch + LAN sync + SSE + trip brief) | Weak | **Strong** | Phase 8–16 |
+| Fleet dispatch / shared physics ETA | **Shipped** (native dispatch + LAN sync + SSE + trip brief + inspection PDF) | Weak | **Strong** | Phase 8–16 + Ph39 |
 | Predictive layby / break stop | **Strong** (fused HOS + company window + physics + occupancy + **Break Now**; $0 APIs) | Weak (CoPilot: HOS breaks + TRAVIS booking) | Weak | **Wedge vs CoPilot** — no parking booking fee |
 | Driver community dock/parking intel | **Age-weighted multi-report Full/Spaces** + last-seen banner copy | Garmin community | Crowdsource | Phase 19–22 |
 | LEZ compliance | **Banners + avoid-on-route** with **11 zones** (6 authored rings + 5 circle envelopes); Euro-class copy | Strong avoid (Sygic/TomTom) | Varies | Phase 21–23, **26** |
 | Lane-level junction guidance | **OSM `turn:lanes` + heuristic**; map-top banner; **prepare/execute lane voice** | Strong (TomTom/Sygic) | Weak | Phase 24, **26** |
-| Walkaround inspection | **Zoned DVSA checklist (7 zones) + defect notes + PDF share** | Varies | Strong | Phase 31; glass UI |
+| Walkaround inspection | **Zoned DVSA checklist (7 zones) + defect notes + PDF share + trip brief warning** | Varies | Strong | Phase 31 + Ph39 fleet handoff |
 | Live weather road conditions | **OpenWeather preferred** + WeatherKit fallback | Varies | Strong | Phase 17–18; WeatherKit needs paid team |
 | Layby proactive driver notify | **Voice announce + skip-to-next toast** (Settings toggle) | Weak (CoPilot HOS breaks) | Weak | Phase 30 |
 | Fleet fuel card POI advisory | **OSM brand/name match banner** (Keyfuels, UK Fuels, AllStar, Esso, BP) | Fuel prices (Sygic) | Weak | Phase 32; no paid fuel API |

@@ -29,6 +29,8 @@ public struct TripBriefContext: Sendable, Equatable {
     public var tripStatus: String?
     /// Route polyline coordinates for PDF map snapshot rendering.
     public var routeCoordinates: [Coordinate]
+    /// Latest completed walkaround with defects, when dispatch should be warned.
+    public var latestInspectionSummary: TripBriefInspectionSummary?
 
     /// Creates a trip brief context.
     public init(
@@ -40,7 +42,8 @@ public struct TripBriefContext: Sendable, Equatable {
         physicsETASeconds: TimeInterval? = nil,
         vehicleLabel: String? = nil,
         tripStatus: String? = nil,
-        routeCoordinates: [Coordinate] = []
+        routeCoordinates: [Coordinate] = [],
+        latestInspectionSummary: TripBriefInspectionSummary? = nil
     ) {
         self.predictiveReport = predictiveReport
         self.hosForecast = hosForecast
@@ -51,6 +54,7 @@ public struct TripBriefContext: Sendable, Equatable {
         self.vehicleLabel = vehicleLabel
         self.tripStatus = tripStatus
         self.routeCoordinates = routeCoordinates
+        self.latestInspectionSummary = latestInspectionSummary
     }
 
     /// Builds brief context from a fleet trip snapshot visible to dispatch.
@@ -81,7 +85,8 @@ public struct TripBriefContext: Sendable, Equatable {
             physicsETASeconds: fleetTrip.physicsETASeconds,
             vehicleLabel: vehicleLabel,
             tripStatus: fleetTrip.status.rawValue.capitalized,
-            routeCoordinates: routeCoordinates
+            routeCoordinates: routeCoordinates,
+            latestInspectionSummary: fleetTrip.latestInspectionSummary
         )
     }
 }

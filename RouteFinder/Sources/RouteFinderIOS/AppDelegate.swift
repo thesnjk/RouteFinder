@@ -14,7 +14,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         configurationForConnecting connectingSceneSession: UISceneSession,
         options: UIScene.ConnectionOptions
     ) -> UISceneConfiguration {
-        if connectingSceneSession.role == CPTemplateApplicationSceneSessionRoleApplication {
+        if connectingSceneSession.role == .carTemplateApplication {
             let configuration = UISceneConfiguration(
                 name: "CarPlay Configuration",
                 sessionRole: connectingSceneSession.role

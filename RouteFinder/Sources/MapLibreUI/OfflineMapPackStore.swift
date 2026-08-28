@@ -71,6 +71,10 @@ public actor OfflineMapPackStore {
             await stopServer()
             return registeredStyleURL
         }
+        guard isValidStyleFile(at: styleFileURL) else {
+            await stopServer()
+            return nil
+        }
 
         if server == nil {
             let tileServer = LocalHTTPTileServer(rootDirectory: packDirectory)
@@ -120,5 +124,13 @@ public actor OfflineMapPackStore {
 
     private var styleFileURL: URL {
         packDirectory.appendingPathComponent("style.json")
+    }
+
+    private func isValidStyleFile(at url: URL) -> Bool {
+        guard let data = try? Data(contentsOf: url),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return false
+        }
+        return json["version"] != nil
     }
 }

@@ -306,6 +306,7 @@ let package = Package(
             name: "MapLibreUITests",
             dependencies: [
                 "MapLibreUI",
+                "DataLayer",
             ]
         ),
         .testTarget(

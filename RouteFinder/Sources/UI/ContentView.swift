@@ -113,7 +113,11 @@ public struct ContentView: View {
             viewModel.environmentalContext = condition
             viewModel.refreshSimulationEnvironment()
         }
+        .onAppear {
+            viewModel.bindVault(session.vault)
+        }
         .task {
+            weatherViewModel.startMonitoring()
             viewModel.environmentalContext = weatherViewModel.effectiveCondition
             viewModel.refreshSimulationEnvironment()
             await viewModel.startLocationServicesIfNeeded()
@@ -181,6 +185,11 @@ private struct MapWorkspaceView: View {
                 },
                 onRegionChange: { center in
                     viewModel.updateMapViewport(center: center)
+                },
+                onUseOnlineMap: {
+                    Task {
+                        await viewModel.fallbackToOnlineMapStyle()
+                    }
                 }
             )
 
@@ -194,7 +203,9 @@ private struct MapWorkspaceView: View {
             }
         }
         .sheet(isPresented: $showProductOnboarding, onDismiss: markProductOnboardingSeen) {
-            ProductOnboardingSheet()
+            ProductOnboardingSheet(
+                requireLiabilityAcceptance: !NavigationWorkspaceSettings.loadHasAcceptedRoutingLiability()
+            )
         }
     }
 

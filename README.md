@@ -119,7 +119,30 @@ On the driver iPhone (same Wi‑Fi/LAN), open **Settings → Fleet dispatch**, t
 
 ```bash
 cd RouteFinder
-# Prefer Xcode: open Package.swift, select RouteFinderIOS + a simulator/device
+# Prefer Xcode: open RouteFinderApp.xcodeproj, scheme RouteFinderApp + simulator or device
+```
+
+#### iOS device testing (physical iPhone)
+
+Use the signed Xcode app — not the SPM `RouteFinderIOS` executable alone — for on-device testing:
+
+1. Open [`RouteFinderApp.xcodeproj`](RouteFinderApp.xcodeproj) and select the **RouteFinderApp** scheme (not **RouteFinderMac**).
+2. Choose your **physical iPhone** as the run destination (not an iOS Simulator).
+3. **Signing:** RouteFinderApp target → Signing & Capabilities → Automatic signing + your team.
+4. On the iPhone: enable **Developer Mode** (Settings → Privacy & Security → Developer Mode) and trust the Mac when prompted.
+5. **iOS 27 devices** require an Xcode build that includes the **iOS 27 device platform**. If deploy fails with a platform or device-support error, install the matching Xcode beta, then:
+   ```bash
+   sudo xcode-select -s /Applications/Xcode-beta.app/Contents/Developer
+   ```
+   Xcode → Settings → Platforms → confirm **iOS 27** is installed.
+6. After changing deployment targets or switching between simulator and device, **Product → Clean Build Folder**. If builds still fail, delete Derived Data (`~/Library/Developer/Xcode/DerivedData`) to clear stale simulator SPM artifacts.
+
+List connected devices from Terminal:
+
+```bash
+xcrun xctrace list devices
+xcodebuild build -project RouteFinderApp.xcodeproj -scheme RouteFinderApp \
+  -destination 'generic/platform=iOS' -configuration Debug
 ```
 
 CarPlay entitlements live next to the RouteFinderIOS Swift package target. Use a development team with CarPlay capability for in-car device testing.
@@ -129,7 +152,7 @@ Personal (free) Apple teams: `RouteFinderApp` ships without WeatherKit or CarPla
 **Personal team verification checklist** (verified 2026-08-27 on Xcode 26 / iOS 26.5 SDK):
 
 - Open [`RouteFinderApp.xcodeproj`](../RouteFinderApp.xcodeproj) (not the SPM package alone).
-- **Product → Clean Build Folder**, then build for **iOS Simulator** or a registered device with **Signing → Automatic** and your personal team.
+- Select the **RouteFinderApp** scheme and your iPhone or iOS Simulator as destination.
 - Confirm [`RouteFinderApp/RouteFinderApp.entitlements`](../RouteFinderApp/RouteFinderApp.entitlements) is an empty plist — the signed app should contain only `application-identifier`, `com.apple.developer.team-identifier`, and `get-task-allow` (no WeatherKit or CarPlay).
 - Expect **no signing/provisioning errors** for `com.apple.developer.weatherkit` or `com.apple.developer.carplay-maps`.
 - **Runtime limitations on personal team:** Without an OpenWeather key, WeatherKit auto-fetch fails gracefully (`WeatherViewModel.lastError` includes a Settings hint). Saving an OpenWeather key in Settings (or `OPENWEATHER_API_KEY`) switches live auto weather to OpenWeather immediately — no app restart. CarPlay scene wiring is present in `Info.plist` but in-car UI will not connect without a paid-team CarPlay entitlement.

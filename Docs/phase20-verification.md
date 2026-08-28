@@ -173,3 +173,20 @@ Scope: light positioning refresh — no code, entitlements, or Firecrawl re-scra
 | Manual Mac↔iPhone LAN (Fleet Part B) | **Pending local** — [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B |
 | Interactive Mac app (U1–U5) | **Pending local** |
 | CarPlay + WeatherKit restore | **Blocked — paid team** — [`carplay-weatherkit-restore.md`](carplay-weatherkit-restore.md) |
+
+### iOS map load hardening (2026-08-28)
+
+Scope: fix white-screen launch on iPhone when MapLibre WKWebView fails silently (CDN race, broken local map pack, WebContent process kill).
+
+| Check | Result |
+|---|---|
+| `bootMap` retry + `setMapStyle` hot-reload + JS error bridge | **Done** — [`MapLibreMapHTML.swift`](../RouteFinder/Sources/MapLibreUI/MapLibreMapHTML.swift), [`MapLibreWebMapView.swift`](../RouteFinder/Sources/MapLibreUI/MapLibreWebMapView.swift) |
+| Loading spinner + error/retry/online fallback overlay | **Done** |
+| Local map style default **off**; invalid `style.json` rejected | **Done** — [`VehicleProfileStore.swift`](../RouteFinder/Sources/DataLayer/VehicleProfileStore.swift), [`OfflineMapPackStore.swift`](../RouteFinder/Sources/MapLibreUI/OfflineMapPackStore.swift) |
+| Bundled `maplibre-gl.js/css` in `RouteFinderApp` | **Done** — iOS uses loopback `MapBootstrapServer` + bundled assets; macOS uses file `baseURL` + relative script refs |
+| `RouteFinderApp` location/motion privacy keys | **Done** — `NSLocationWhenInUseUsageDescription`, `NSLocationAlwaysAndWhenInUseUsageDescription`, `NSMotionUsageDescription` in [`RouteFinderApp/Info.plist`](../RouteFinderApp/Info.plist) |
+| iOS login gate via `RootAuthContainer` | **Done** — [`RouteFinderAppApp.swift`](../RouteFinderApp/RouteFinderAppApp.swift) |
+| Walkaround discoverability + onboarding liability | **Done** — default HGV mode on iOS, toolbar shortcut, liability acceptance in onboarding |
+| WebContent terminate reload cap | **Done** — max 2 automatic reloads in [`MapLibreWebMapView.swift`](../RouteFinder/Sources/MapLibreUI/MapLibreWebMapView.swift) |
+| `RouteFinderApp` AppDelegate CarPlay scene config | **Done** — matches [`RouteFinderIOS/AppDelegate.swift`](../RouteFinder/Sources/RouteFinderIOS/AppDelegate.swift) |
+| Device iPhone stays open + map visible on launch | **Pending local** — delete app, rebuild `RouteFinderApp` on physical iPhone |

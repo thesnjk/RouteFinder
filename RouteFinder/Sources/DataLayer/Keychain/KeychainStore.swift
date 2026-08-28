@@ -246,6 +246,7 @@ public enum KeychainStore: Sendable {
     }
 
     private static func firstKeychainAccessGroupFromEntitlements() -> String? {
+#if os(macOS)
         guard let task = SecTaskCreateFromSelf(nil) else { return nil }
         guard let value = SecTaskCopyValueForEntitlement(
             task,
@@ -260,6 +261,7 @@ public enum KeychainStore: Sendable {
         if let single = value as? String, !single.isEmpty {
             return single
         }
+#endif
         return nil
     }
 

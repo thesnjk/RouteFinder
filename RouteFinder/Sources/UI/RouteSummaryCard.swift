@@ -152,7 +152,8 @@ struct RouteSummaryCard: View {
                         Divider()
                         TruckPoiAheadList(
                             pois: viewModel.upcomingTruckPois,
-                            isLoading: viewModel.isLoadingTruckPois
+                            isLoading: viewModel.isLoadingTruckPois,
+                            fuelCardProvider: viewModel.fuelCardProvider
                         )
                     }
 

@@ -190,3 +190,49 @@ Scope: fix white-screen launch on iPhone when MapLibre WKWebView fails silently 
 | WebContent terminate reload cap | **Done** — max 2 automatic reloads in [`MapLibreWebMapView.swift`](../RouteFinder/Sources/MapLibreUI/MapLibreWebMapView.swift) |
 | `RouteFinderApp` AppDelegate CarPlay scene config | **Done** — matches [`RouteFinderIOS/AppDelegate.swift`](../RouteFinder/Sources/RouteFinderIOS/AppDelegate.swift) |
 | Device iPhone stays open + map visible on launch | **Pending local** — delete app, rebuild `RouteFinderApp` on physical iPhone |
+
+### Phase A iOS device QA (2026-08-28)
+
+Run on a **physical iPhone** before merging Phase 30+ (personal-team signing).
+
+| # | Scenario | Result | Notes |
+|---|---|---|---|
+| A1 | Delete RouteFinderApp from device | **Pending local** | Ensures clean Keychain + UserDefaults |
+| A2 | Xcode → Clean Build Folder → run `RouteFinderApp` to device | **Pending local** | Use `RouteFinderApp.xcodeproj` scheme |
+| A3 | Login screen appears on cold launch | **Pending local** | `RootAuthContainer` gate |
+| A4 | Liability onboarding → accept → map loads tiles | **Pending local** | No sandbox "outside the sandbox" error; `MapBootstrapServer` loopback |
+| A5 | ⋯ toolbar → Walkaround check opens zoned checklist | **Pending local** | Default HGV mode on iOS |
+| A6 | On failure: capture device log | **N/A** | Look for `SIGABRT`, `WebKit`, `Jetsam` in Console |
+
+### Phase 30–32 driver-facing wins (2026-08-28)
+
+Scope: layby proactive alerts, comprehensive walkaround v2, fuel card provider advisory.
+
+| # | Scenario | Automated | Local confirm |
+|---|---|---|---|
+| P30-1 | Layby voice announce once inside 5 km | **Pass** (unit) | `LaybyAlertFormatterTests`, Settings "Layby voice alerts" toggle |
+| P30-2 | "Looks full" → toast with next layby | **Pass** (unit) | `LaybyAlertFormatter.nextLaybyToast` |
+| P30-3 | GPS navigation refreshes layby advisory (10 s throttle) | **Pass** (code) | `LaybyRefreshNavigationAdapter` in `RouteViewModel` |
+| P31-1 | Zoned checklist covers 7 DVSA zones (~24 items) | **Pass** (unit) | `InspectionRecordTests.defaultDVSAItemsCoverAllZones` |
+| P31-2 | Defect note field + completion gate blocks Save | **Pass** (code) | `InspectionWalkaroundSheet`, `isReadyToSave` |
+| P31-3 | PDF report renders and shares | **Pass** (unit) | `InspectionReportPDFRendererTests` |
+| P32-1 | Fuel card provider picker persists | **Pass** (unit) | `NavigationWorkspaceSettingsTests.fuelCardProviderDefaultsToNoneAndRoundTrips` |
+| P32-2 | Brand/name match highlights ahead fuel POIs | **Pass** (unit) | `FuelCardMatcherTests` |
+| P32-3 | Ahead banner "Accepts your {provider} card" | **Pass** (unit + code) | `TruckPoiAheadList` + Settings picker |
+
+#### Phase 30–32 code surfaces
+
+| Feature | Primary files |
+|---|---|
+| Layby voice + toast | `LaybyAlertFormatter`, `VoiceGuidanceCoordinator.speakLaybyAdvisory`, `RouteViewModel.processLaybyVoiceAlertIfNeeded` |
+| Walkaround v2 | `InspectionZone`, `InspectionRecord.defaultDVSAItems`, `InspectionWalkaroundSheet`, `InspectionReportPDFRenderer` |
+| Fuel card advisory | `FuelCardProvider`, `FuelCardMatcher`, `TruckPoiAheadList`, Settings picker |
+
+#### Automated evidence (Phase 30–32)
+
+| Check | Result |
+|---|---|
+| `LaybyAlertFormatterTests` | **Pass** |
+| `InspectionRecordTests` + `InspectionReportPDFRendererTests` | **Pass** |
+| `FuelCardMatcherTests` + fuel card settings round-trip | **Pass** |
+| Full `swift test` | **Pending** — run locally after merge |

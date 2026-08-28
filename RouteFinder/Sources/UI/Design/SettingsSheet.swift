@@ -303,6 +303,22 @@ struct SettingsSheet: View {
                         viewModel.persistBreakNowQuickActionEnabled()
                     }
                     .help("Shows a one-tap Break Now control to find the nearest layby ahead on the active route.")
+
+                Toggle("Layby voice alerts", isOn: $viewModel.laybyVoiceAlertsEnabled)
+                    .onChange(of: viewModel.laybyVoiceAlertsEnabled) { _, _ in
+                        viewModel.persistLaybyVoiceAlertsEnabled()
+                    }
+                    .help("Speaks once when an upcoming layby enters the advisory window during navigation or simulation.")
+
+                Picker("Fuel card provider", selection: $viewModel.fuelCardProvider) {
+                    ForEach(FuelCardProvider.allCases) { provider in
+                        Text(provider.displayName).tag(provider)
+                    }
+                }
+                .onChange(of: viewModel.fuelCardProvider) { _, _ in
+                    viewModel.persistFuelCardProvider()
+                }
+                .help("Highlights truck fuel stops ahead that likely accept your fleet card (name/brand match on OpenStreetMap data).")
             }
 
             #if os(macOS)

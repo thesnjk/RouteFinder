@@ -171,6 +171,9 @@ public actor OverpassTruckPoiRepository: TruckPoiRepositoryPort {
         if tags?.toilets == "yes" { result.insert("toilets") }
         if tags?.shower == "yes" { result.insert("shower") }
         if tags?.hgv == "yes" || tags?.hgv == "designated" { result.insert("hgv") }
+        if let brand = tags?.brand?.trimmingCharacters(in: .whitespacesAndNewlines), !brand.isEmpty {
+            result.insert("brand:\(brand.lowercased())")
+        }
         return result
     }
 
@@ -326,6 +329,7 @@ public actor OverpassTruckPoiRepository: TruckPoiRepositoryPort {
     private struct OverpassTags: Decodable {
         let name: String?
         let ref: String?
+        let brand: String?
         let operatorTag: String?
         let amenity: String?
         let highway: String?
@@ -341,7 +345,7 @@ public actor OverpassTruckPoiRepository: TruckPoiRepositoryPort {
         let maxlength: String?
 
         enum CodingKeys: String, CodingKey {
-            case name, ref, amenity, highway, hgv, access, supervised, hazardous, hazmat, toilets, shower
+            case name, ref, brand, amenity, highway, hgv, access, supervised, hazardous, hazmat, toilets, shower
             case maxheight, maxlength
             case operatorTag = "operator"
             case manMade = "man_made"

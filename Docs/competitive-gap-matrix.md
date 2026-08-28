@@ -3,7 +3,7 @@
 Last updated: 2026-08-28 (post-Phase 23 hotfixes verified)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then CarPlay parity, then fleet/dispatch, then advisory tacho + offline packs.
 
-> **Aug 28 hotfixes (verified):** data-protection Keychain persistence (`RouteFinderMac` + packaged app), global Pelias geocode (overseas heuristic + no GBR boundary on global search), LEZ avoid long-haul cap (ORS 2004), simulation cruise feel (softened curve governor), camera follow on vehicle geometric center (zoom 15). See [`phase20-verification.md`](phase20-verification.md#post-fix-verification-2026-08-28).
+> **Aug 28 hotfixes (verified):** data-protection Keychain persistence (`RouteFinderMac` + hardened packaged app), global Pelias geocode (`33 sørnesvegen` Ålesund), LEZ avoid long-haul cap (ORS 2004), simulation cruise feel (softened curve governor), camera follow on vehicle geometric center (zoom 15). Package script hardened for macOS 26 (`--options runtime`). See [`phase20-verification.md`](phase20-verification.md#post-fix-verification-2026-08-28).
 
 > Phase 20 refreshed competitor intel from public product pages (2026-08-27). Parallel deep-research remains blocked (`APIConnectionError` / `api.parallel.ai` unreachable). Firecrawl CLI was unavailable in-session; sources below are live web pages.
 

@@ -8,7 +8,9 @@ set -euo pipefail
 #   ./Scripts/package-macos-app.sh release  # release build + codesign
 #   ./Scripts/package-macos-app.sh open     # build debug, codesign, and launch
 #
-# Prefer the Xcode RouteFinderMac scheme for day-to-day use (stable signing).
+# PREFERRED: open RouteFinderApp.xcodeproj → scheme RouteFinderMac → Run.
+# Xcode applies hardened runtime + provisioning correctly. This script is a fallback.
+#
 # Bare `swift run RouteFinderMacApp` has no entitlements — Keychain Always Allow
 # will not stick across rebuilds.
 #
@@ -78,26 +80,47 @@ chmod +x "${BUNDLE}/Contents/MacOS/${EXEC_NAME}"
 ENTITLEMENTS_EXPANDED="$(mktemp -t routefinder-entitlements).plist"
 sed "s/\$(AppIdentifierPrefix)/${TEAM_ID}./g" "${ENTITLEMENTS_SRC}" > "${ENTITLEMENTS_EXPANDED}"
 
-CODESIGN_ID="${ROUTEFINDER_CODESIGN_IDENTITY:--}"
-if [[ "${CODESIGN_ID}" == "-" ]]; then
-    # Prefer a development cert when available so keychain-access-groups is honored.
-    DETECTED="$(security find-identity -v -p codesigning 2>/dev/null | awk -F'\"' '/Apple Development|Developer ID Application/ {print $2; exit}')"
-    if [[ -n "${DETECTED}" ]]; then
-        CODESIGN_ID="${DETECTED}"
-    fi
+CODESIGN_ID="${ROUTEFINDER_CODESIGN_IDENTITY:-}"
+if [[ -z "${CODESIGN_ID}" ]]; then
+    CODESIGN_ID="$(security find-identity -v -p codesigning 2>/dev/null | awk -F'\"' '/Apple Development|Developer ID Application/ {print $2; exit}')"
 fi
 
-echo "Codesigning with identity: ${CODESIGN_ID}"
-codesign --force --deep --sign "${CODESIGN_ID}" \
+if [[ -z "${CODESIGN_ID}" ]]; then
+    echo "Error: no Apple Development or Developer ID signing identity found." >&2
+    echo "Sandbox + keychain entitlements cannot be ad-hoc signed. Either:" >&2
+    echo "  1. Open RouteFinderApp.xcodeproj → RouteFinderMac scheme → Run (recommended)" >&2
+    echo "  2. Set ROUTEFINDER_CODESIGN_IDENTITY to your signing certificate name" >&2
+    rm -f "${ENTITLEMENTS_EXPANDED}"
+    exit 1
+fi
+
+EXEC_PATH="${BUNDLE}/Contents/MacOS/${EXEC_NAME}"
+echo "Codesigning executable with identity: ${CODESIGN_ID}"
+codesign --force --sign "${CODESIGN_ID}" \
+    --options runtime \
+    --entitlements "${ENTITLEMENTS_EXPANDED}" \
+    --identifier com.routefinder.macos \
+    "${EXEC_PATH}"
+
+echo "Codesigning app bundle..."
+codesign --force --sign "${CODESIGN_ID}" \
+    --options runtime \
     --entitlements "${ENTITLEMENTS_EXPANDED}" \
     --identifier com.routefinder.macos \
     "${BUNDLE}"
 rm -f "${ENTITLEMENTS_EXPANDED}"
-codesign --verify --verbose=2 "${BUNDLE}" || true
 
-echo "Created ${BUNDLE}"
-echo "Launch with: open \"${BUNDLE}\""
-echo "Day-to-day: open RouteFinderApp.xcodeproj → scheme RouteFinderMac"
+codesign --verify --verbose=2 "${BUNDLE}"
+
+TEAM_CHECK="$(codesign -dv "${BUNDLE}" 2>&1 | awk -F= '/TeamIdentifier/ {print $2; exit}')"
+if [[ -z "${TEAM_CHECK}" || "${TEAM_CHECK}" == "not set" ]]; then
+    echo "Error: signed bundle has no TeamIdentifier — launch will fail with Invalid Signature." >&2
+    exit 1
+fi
+
+echo "Created ${BUNDLE} (TeamIdentifier=${TEAM_CHECK})"
+echo "Prefer Xcode: open RouteFinderApp.xcodeproj → scheme RouteFinderMac"
+echo "Fallback launch: open \"${BUNDLE}\""
 
 if [[ "${LAUNCH}" == true ]]; then
     open "${BUNDLE}"

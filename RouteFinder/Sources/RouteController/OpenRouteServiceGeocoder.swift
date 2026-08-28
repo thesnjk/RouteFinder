@@ -109,7 +109,7 @@ public actor OpenRouteServiceGeocoder {
     ///
     /// Used to prefer global Pelias search over UK-biased results for overseas destinations.
     public static func querySuggestsOutsideUnitedKingdom(_ query: String) -> Bool {
-        let lowered = query.lowercased()
+        let lowered = normalizeOverseasQuery(query.lowercased())
         let overseasMarkers = [
             "france", "paris", "germany", "berlin", "spain", "madrid", "italy", "rome",
             "ireland", "dublin", "netherlands", "amsterdam", "belgium", "brussels",
@@ -138,6 +138,15 @@ public actor OpenRouteServiceGeocoder {
             return true
         }
         return false
+    }
+
+    /// ASCII-folds Nordic letters so `sørnesvegen` and `sornesvegen` match the same street suffixes.
+    private static func normalizeOverseasQuery(_ query: String) -> String {
+        query
+            .replacingOccurrences(of: "ø", with: "o")
+            .replacingOccurrences(of: "ö", with: "o")
+            .replacingOccurrences(of: "å", with: "a")
+            .replacingOccurrences(of: "ä", with: "a")
     }
 
     private func performSearch(

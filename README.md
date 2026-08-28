@@ -26,7 +26,9 @@ Keys are stored in the macOS/iOS **data-protection** Keychain for the local sign
 
 **Mac day-to-day:** open [`RouteFinderApp.xcodeproj`](RouteFinderApp.xcodeproj) and run the **`RouteFinderMac`** scheme (signed `.app` with Keychain access group). After updating, log in once — allow any leftover login-Keychain prompt **once**, then re-save the ORS key in Settings if empty. Later launches must not re-prompt. If they do, Keychain Access → delete `com.routefinder.vault.*` (login keychain) → re-save keys.
 
-Bare `swift run RouteFinderMacApp` has no Keychain entitlements — **Always Allow will not stick** across rebuilds (legacy login Keychain ACL). Use `./Scripts/package-macos-app.sh open` only if you need a packaged bundle without Xcode.
+Bare `swift run RouteFinderMacApp` has no Keychain entitlements — **Always Allow will not stick** across rebuilds (legacy login Keychain ACL).
+
+The packaged `./Scripts/package-macos-app.sh` fallback requires an **Apple Development** signing identity and hardened runtime; ad-hoc signing will crash at launch (`Invalid Signature` on macOS 26). **Use the Xcode `RouteFinderMac` scheme** whenever possible.
 
 | Key | Purpose | Required? |
 |---|---|---|
@@ -53,13 +55,19 @@ swift run RouteFinder -- help
 
 ### macOS app (preferred)
 
+Requires **full Xcode** (not Command Line Tools only):
+
+```bash
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+```
+
 ```bash
 # From repo root — signed .app, data-protection Keychain
 open RouteFinderApp.xcodeproj
 # Scheme: RouteFinderMac  →  Run
 ```
 
-Packaged SPM bundle (codesigned with entitlements):
+Packaged SPM bundle (fallback; needs Apple Development cert + hardened runtime):
 
 ```bash
 cd RouteFinder

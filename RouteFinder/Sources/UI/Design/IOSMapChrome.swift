@@ -9,6 +9,7 @@ struct IOSMapChrome: View {
     @Bindable var viewModel: RouteViewModel
     @Binding var isRouteSheetVisible: Bool
     var onPresentModal: (IOSModal) -> Void
+    var onOpenWalkaround: () -> Void = {}
 
     @AppStorage("dismissCloudRoutingBanner") private var isCloudBannerDismissed = false
     @State private var sheetPhase: IOSRouteSheetPhase = .hidden
@@ -34,7 +35,8 @@ struct IOSMapChrome: View {
                 IOSMapToolbar(
                     viewModel: viewModel,
                     onOpenSettings: { requestModal(.settings) },
-                    onOpenProfile: { requestModal(.profile) }
+                    onOpenProfile: { requestModal(.profile) },
+                    onOpenWalkaround: onOpenWalkaround
                 )
                 .padding(.trailing, RFSpacing.md)
                 .padding(.bottom, toolbarBottomPadding)
@@ -494,6 +496,7 @@ private struct IOSMapToolbar: View {
     @Bindable var viewModel: RouteViewModel
     var onOpenSettings: () -> Void
     var onOpenProfile: () -> Void
+    var onOpenWalkaround: () -> Void = {}
 
     var body: some View {
         VStack(spacing: RFSpacing.sm) {
@@ -540,6 +543,14 @@ private struct IOSMapToolbar: View {
                     onOpenSettings()
                 } label: {
                     Label("Settings", systemImage: "gearshape.fill")
+                }
+
+                if viewModel.isHGVMode {
+                    Button {
+                        onOpenWalkaround()
+                    } label: {
+                        Label("Walkaround check", systemImage: "checklist")
+                    }
                 }
 
                 Button {

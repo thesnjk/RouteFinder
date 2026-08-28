@@ -164,6 +164,8 @@ public final class RouteViewModel {
     public var offlineMapPackStatus: String = "Checking map pack…"
     /// Active MapLibre style URL (CDN or localhost pack).
     public var mapStyleURL: String = MapLibreConfiguration.openFreeMapStyleURL
+    /// Whether the initial offline-map-pack style resolution pass has completed.
+    public var mapStyleResolved = false
     /// Latest HOS snapshot for HUD.
     public var hosSnapshot: HosClockSnapshot?
     /// Latest HOS rest forecast for the active route / trip brief.
@@ -471,6 +473,12 @@ public final class RouteViewModel {
         #endif
         wireNavigationPipeline()
         restoreVehicleWorkspace()
+        #if os(iOS)
+        if VehicleWorkspaceSettings.load() == nil {
+            isHGVMode = true
+            applyHGVPreset()
+        }
+        #endif
         updateCloudRoutingBanner()
         if let savedFleetVehicleId = FleetWorkspaceSettings.loadFleetVehicleId() {
             fleetVehicleId = savedFleetVehicleId
@@ -1213,6 +1221,7 @@ public final class RouteViewModel {
 
     /// Refreshes offline map pack status and starts the local style server when enabled.
     public func refreshOfflineMapPackStatus() async {
+        defer { mapStyleResolved = true }
         do {
             if let local = try await mapPackStore.prepareLocalStyleIfAvailable(enabled: useLocalMapStyleWhenPackPresent) {
                 mapStyleURL = local.absoluteString
@@ -1225,6 +1234,13 @@ public final class RouteViewModel {
             mapStyleURL = MapLibreConfiguration.openFreeMapStyleURL
             offlineMapPackStatus = error.localizedDescription
         }
+    }
+
+    /// Disables local map-pack style and falls back to the online OpenFreeMap style.
+    public func fallbackToOnlineMapStyle() async {
+        useLocalMapStyleWhenPackPresent = false
+        VehicleProfileStore.saveUseLocalMapStyleWhenPackPresent(false)
+        await refreshOfflineMapPackStatus()
     }
 
     /// Transitions the advisory HOS duty mode and refreshes the HUD snapshot.

@@ -67,6 +67,17 @@ struct NavigationWorkspaceSettingsTests {
         NavigationWorkspaceSettings.saveHasSeenProductOnboarding(true, defaults: defaults)
         #expect(NavigationWorkspaceSettings.loadHasSeenProductOnboarding(defaults: defaults))
     }
+
+    @Test func routingLiabilityAcceptedRoundTripsThroughUserDefaults() {
+        let suiteName = "RouteFinder.NavigationTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { UserDefaults.standard.removeSuite(named: suiteName) }
+
+        #expect(!NavigationWorkspaceSettings.loadHasAcceptedRoutingLiability(defaults: defaults))
+
+        NavigationWorkspaceSettings.saveHasAcceptedRoutingLiability(true, defaults: defaults)
+        #expect(NavigationWorkspaceSettings.loadHasAcceptedRoutingLiability(defaults: defaults))
+    }
 }
 
 struct LanguageWorkspaceSettingsTests {

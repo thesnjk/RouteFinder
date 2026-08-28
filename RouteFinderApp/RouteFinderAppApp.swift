@@ -15,11 +15,8 @@ struct RouteFinderAppApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootAuthContainer()
                 .environmentObject(weatherViewModel)
-                .onAppear {
-                    weatherViewModel.startMonitoring()
-                }
         }
     }
 }

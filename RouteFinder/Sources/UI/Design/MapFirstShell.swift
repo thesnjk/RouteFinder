@@ -22,7 +22,11 @@ struct MapFirstShell: View {
         IOSMapChrome(
             viewModel: viewModel,
             isRouteSheetVisible: $isRouteSheetVisible,
-            onPresentModal: { presentedModal = $0 }
+            onPresentModal: { presentedModal = $0 },
+            onOpenWalkaround: {
+                viewModel.startWalkaroundInspection()
+                presentedModal = .walkaround
+            }
         )
         .sheet(item: $presentedModal) { modal in
             iosModalContent(modal)
@@ -61,6 +65,8 @@ struct MapFirstShell: View {
                 VehicleProfileManager(viewModel: viewModel)
             }
             .presentationDetents([.medium, .large])
+        case .walkaround:
+            InspectionWalkaroundSheet(viewModel: viewModel)
         case .routeFailure(let failure):
             RouteFailureSheet(presentation: failure) {
                 viewModel.routeFailure = nil
@@ -639,12 +645,14 @@ struct HGVRouteFailureBanner: View {
 enum IOSModal: Identifiable {
     case settings
     case profile
+    case walkaround
     case routeFailure(RouteFailurePresentation)
 
     var id: String {
         switch self {
         case .settings: "settings"
         case .profile: "profile"
+        case .walkaround: "walkaround"
         case .routeFailure(let presentation): "routeFailure-\(presentation.id)"
         }
     }

@@ -110,6 +110,9 @@ public struct MapLibreWebMapView: View {
     let onMapClick: (CLLocationCoordinate2D) -> Void
     let onContextMenu: (CLLocationCoordinate2D) -> Void
     let onRegionChange: (CLLocationCoordinate2D) -> Void
+    let loadState: MapWebViewLoadState?
+    let onRetryMapLoad: (() -> Void)?
+    let onUseOnlineMap: (() -> Void)?
 
     public init(
         coordinates: [CLLocationCoordinate2D],
@@ -127,7 +130,10 @@ public struct MapLibreWebMapView: View {
         mapBridge: MapViewControllerBridge? = nil,
         onMapClick: @escaping (CLLocationCoordinate2D) -> Void = { _ in },
         onContextMenu: @escaping (CLLocationCoordinate2D) -> Void = { _ in },
-        onRegionChange: @escaping (CLLocationCoordinate2D) -> Void = { _ in }
+        onRegionChange: @escaping (CLLocationCoordinate2D) -> Void = { _ in },
+        loadState: MapWebViewLoadState? = nil,
+        onRetryMapLoad: (() -> Void)? = nil,
+        onUseOnlineMap: (() -> Void)? = nil
     ) {
         self.coordinates = coordinates
         self.encodedPolyline = encodedPolyline
@@ -145,10 +151,13 @@ public struct MapLibreWebMapView: View {
         self.onMapClick = onMapClick
         self.onContextMenu = onContextMenu
         self.onRegionChange = onRegionChange
+        self.loadState = loadState
+        self.onRetryMapLoad = onRetryMapLoad
+        self.onUseOnlineMap = onUseOnlineMap
     }
 
     public var body: some View {
-        MapLibreWebViewRepresentable(
+        MapLibreWebMapContainer(
             coordinates: coordinates,
             encodedPolyline: encodedPolyline,
             encodedPolylinePrecision: encodedPolylinePrecision,
@@ -164,9 +173,110 @@ public struct MapLibreWebMapView: View {
             mapBridge: mapBridge,
             onMapClick: onMapClick,
             onContextMenu: onContextMenu,
-            onRegionChange: onRegionChange
+            onRegionChange: onRegionChange,
+            externalLoadState: loadState,
+            onRetryMapLoad: onRetryMapLoad,
+            onUseOnlineMap: onUseOnlineMap
         )
-        .ignoresSafeArea()
+    }
+}
+
+private struct MapLibreWebMapContainer: View {
+    let coordinates: [CLLocationCoordinate2D]
+    let encodedPolyline: String?
+    let encodedPolylinePrecision: Int
+    let routeCumulativeLengths: [Double]
+    let pins: [MapLibrePin]
+    let hazardsGeoJSON: String
+    let simulatedVehicle: SimulatedVehicleState?
+    let interactionMode: MapLibreInteractionMode
+    let region: MapRegion
+    let styleURL: String
+    let labelLanguage: String
+    let labelNameCandidates: [String]
+    let mapBridge: MapViewControllerBridge?
+    let onMapClick: (CLLocationCoordinate2D) -> Void
+    let onContextMenu: (CLLocationCoordinate2D) -> Void
+    let onRegionChange: (CLLocationCoordinate2D) -> Void
+    let externalLoadState: MapWebViewLoadState?
+    let onRetryMapLoad: (() -> Void)?
+    let onUseOnlineMap: (() -> Void)?
+
+    @State private var internalLoadState = MapWebViewLoadState()
+    @State private var reloadToken = 0
+
+    private var loadState: MapWebViewLoadState {
+        externalLoadState ?? internalLoadState
+    }
+
+    var body: some View {
+        ZStack {
+            MapLibreWebViewRepresentable(
+                coordinates: coordinates,
+                encodedPolyline: encodedPolyline,
+                encodedPolylinePrecision: encodedPolylinePrecision,
+                routeCumulativeLengths: routeCumulativeLengths,
+                pins: pins,
+                hazardsGeoJSON: hazardsGeoJSON,
+                simulatedVehicle: simulatedVehicle,
+                interactionMode: interactionMode,
+                region: region,
+                styleURL: styleURL,
+                labelLanguage: labelLanguage,
+                labelNameCandidates: labelNameCandidates,
+                mapBridge: mapBridge,
+                onMapClick: onMapClick,
+                onContextMenu: onContextMenu,
+                onRegionChange: onRegionChange,
+                loadState: loadState,
+                reloadToken: reloadToken
+            )
+            .id(reloadToken)
+            .ignoresSafeArea()
+
+            if loadState.isLoading, loadState.errorMessage == nil {
+                ProgressView("Loading map…")
+                    .padding(16)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    .accessibilityLabel("Loading map")
+            }
+
+            if let errorMessage = loadState.errorMessage {
+                mapLoadErrorOverlay(message: errorMessage)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func mapLoadErrorOverlay(message: String) -> some View {
+        VStack(spacing: 12) {
+            Text("Map failed to load")
+                .font(.headline)
+            Text(message)
+                .font(.caption)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+            HStack(spacing: 12) {
+                Button("Retry") {
+                    loadState.resetForReload()
+                    reloadToken += 1
+                    onRetryMapLoad?()
+                }
+                .buttonStyle(.borderedProminent)
+                if onUseOnlineMap != nil {
+                    Button("Use online map") {
+                        loadState.resetForReload()
+                        onUseOnlineMap?()
+                        reloadToken += 1
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+        }
+        .padding(20)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .padding(20)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -242,6 +352,8 @@ private struct MapLibreWebViewRepresentable: NSViewRepresentable {
     let onMapClick: (CLLocationCoordinate2D) -> Void
     let onContextMenu: (CLLocationCoordinate2D) -> Void
     let onRegionChange: (CLLocationCoordinate2D) -> Void
+    let loadState: MapWebViewLoadState?
+    let reloadToken: Int
 
     func makeNSView(context: Context) -> MapWebViewHost {
         let webView = MapKeyboardPassiveWebView(frame: .zero, configuration: context.coordinator.makeConfiguration())
@@ -259,7 +371,7 @@ private struct MapLibreWebViewRepresentable: NSViewRepresentable {
     }
 
     func makeCoordinator() -> Coordinator {
-        let coordinator = Coordinator(parent: self)
+        let coordinator = Coordinator(parent: self, loadState: loadState)
         coordinator.registerSimulationBridge()
         return coordinator
     }
@@ -308,6 +420,8 @@ private struct MapLibreWebViewRepresentable: UIViewRepresentable {
     let onMapClick: (CLLocationCoordinate2D) -> Void
     let onContextMenu: (CLLocationCoordinate2D) -> Void
     let onRegionChange: (CLLocationCoordinate2D) -> Void
+    let loadState: MapWebViewLoadState?
+    let reloadToken: Int
 
     func makeUIView(context: Context) -> MapWebViewHostView {
         let webView = WKWebView(frame: .zero, configuration: context.coordinator.makeConfiguration())
@@ -329,7 +443,7 @@ private struct MapLibreWebViewRepresentable: UIViewRepresentable {
     }
 
     func makeCoordinator() -> Coordinator {
-        let coordinator = Coordinator(parent: self)
+        let coordinator = Coordinator(parent: self, loadState: loadState)
         coordinator.registerSimulationBridge()
         return coordinator
     }
@@ -338,9 +452,11 @@ private struct MapLibreWebViewRepresentable: UIViewRepresentable {
 
 private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
     var parent: MapLibreWebViewRepresentable
+    weak var loadState: MapWebViewLoadState?
     weak var webView: WKWebView?
     private var isReady = false
     private var didInitMap = false
+    private var lastStyleURL = ""
     private var lastRouteFingerprint = ""
     private var lastPinFingerprint = ""
     private var lastHazardsFingerprint = ""
@@ -349,6 +465,8 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
     private var lastLabelLanguageFingerprint = ""
     private var lastMode: MapLibreInteractionMode = .navigate
     private var suppressUserMoveEventCount = 0
+    private var webContentTerminateReloadCount = 0
+    private let maxWebContentTerminateReloads = 2
     private let vehicleCoalescer = BridgeFrameCoalescer()
 
     private var shouldSuppressUserMoveEvents: Bool {
@@ -363,8 +481,9 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
         }
     }
 
-    init(parent: MapLibreWebViewRepresentable) {
+    init(parent: MapLibreWebViewRepresentable, loadState: MapWebViewLoadState?) {
         self.parent = parent
+        self.loadState = loadState
     }
 
     func registerSimulationBridge() {
@@ -492,37 +611,85 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
     }
 
     func loadMap(in webView: WKWebView, region: MapRegion) {
-        let scriptURL = MapLibreConfiguration.mapLibreScriptURL
-        let cssURL = MapLibreConfiguration.mapLibreStyleSheetURL
-        var inlineScript: String?
-        var inlineCSS: String?
-        if scriptURL.isFileURL {
-            inlineScript = try? String(contentsOf: scriptURL, encoding: .utf8)
+        isReady = false
+        didInitMap = false
+        lastStyleURL = ""
+        lastRouteFingerprint = ""
+        lastPinFingerprint = ""
+        lastHazardsFingerprint = ""
+        lastVehicleFingerprint = ""
+        lastRegionFingerprint = ""
+        lastLabelLanguageFingerprint = ""
+        Task { @MainActor in
+            loadState?.resetForReload()
         }
-        if cssURL.isFileURL {
-            inlineCSS = try? String(contentsOf: cssURL, encoding: .utf8)
+        let loadParameters = MapLibreConfiguration.mapLoadParameters(styleURL: parent.styleURL)
+        #if os(iOS)
+        if loadParameters.iosUsesBootstrapServer {
+            Task { [weak self, weak webView] in
+                guard let self, let webView else { return }
+                do {
+                    let pageURL = try await MapBootstrapServer.shared.mapPageURL(html: loadParameters.html)
+                    webView.load(URLRequest(url: pageURL))
+                } catch {
+                    await MainActor.run {
+                        self.loadState?.markFailed(error.localizedDescription)
+                    }
+                }
+            }
+        } else {
+            webView.loadHTMLString(loadParameters.html, baseURL: loadParameters.baseURL)
         }
-        let html = MapLibreMapHTML.page(
-            styleURL: parent.styleURL,
-            scriptURL: scriptURL.absoluteString,
-            cssURL: cssURL.absoluteString,
-            inlineScript: inlineScript,
-            inlineStyleSheet: inlineCSS
-        )
-        webView.loadHTMLString(html, baseURL: URL(string: "http://127.0.0.1/"))
+        #else
+        webView.loadHTMLString(loadParameters.html, baseURL: loadParameters.baseURL)
+        #endif
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         guard !didInitMap else { return }
         didInitMap = true
+        lastStyleURL = parent.styleURL
         let controlPosition = "top-right"
         let escapedStyle = escapeJS(parent.styleURL)
         webView.evaluateJavaScript(
-            "initMap([\(parent.region.center.longitude), \(parent.region.center.latitude)], \(parent.region.zoomLevel), '\(escapedStyle)', '\(controlPosition)')"
+            "bootMap([\(parent.region.center.longitude), \(parent.region.center.latitude)], \(parent.region.zoomLevel), '\(escapedStyle)', '\(controlPosition)')"
         )
     }
 
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        Task { @MainActor in
+            loadState?.markFailed(error.localizedDescription)
+        }
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        Task { @MainActor in
+            loadState?.markFailed(error.localizedDescription)
+        }
+    }
+
+    #if os(iOS)
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        if webContentTerminateReloadCount >= maxWebContentTerminateReloads {
+            Task { @MainActor in
+                loadState?.markFailed("Map process terminated repeatedly")
+            }
+            return
+        }
+        webContentTerminateReloadCount += 1
+        Task { @MainActor in
+            loadState?.markFailed("Map process terminated")
+        }
+        reloadMap(in: webView)
+    }
+    #endif
+
+    private func reloadMap(in webView: WKWebView) {
+        loadMap(in: webView, region: parent.region)
+    }
+
     func syncState(to webView: WKWebView) {
+        syncStyleURL(to: webView)
         guard isReady else { return }
 
         let routeFingerprint = routeFingerprint(
@@ -589,6 +756,21 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
         syncMapLabelLanguage(to: webView)
     }
 
+    private func syncStyleURL(to webView: WKWebView) {
+        guard parent.styleURL != lastStyleURL else { return }
+        let escapedStyle = escapeJS(parent.styleURL)
+        lastStyleURL = parent.styleURL
+        if isReady {
+            Task { @MainActor in
+                loadState?.resetForReload()
+            }
+            isReady = false
+            webView.evaluateJavaScript("setMapStyle('\(escapedStyle)')")
+        } else if didInitMap {
+            webView.evaluateJavaScript("setMapStyle('\(escapedStyle)')")
+        }
+    }
+
     private func syncMapLabelLanguage(to webView: WKWebView) {
         let fingerprint = "\(parent.labelLanguage)|\(parent.labelNameCandidates.joined(separator: ","))"
         guard fingerprint != lastLabelLanguageFingerprint else { return }
@@ -608,7 +790,17 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
         switch type {
         case "ready":
             isReady = true
+            webContentTerminateReloadCount = 0
+            Task { @MainActor in
+                loadState?.markReady()
+            }
             webView.flatMap { syncState(to: $0) }
+        case "error":
+            let message = body["message"] as? String ?? "Map failed to load"
+            isReady = false
+            Task { @MainActor in
+                loadState?.markFailed(message)
+            }
         case "click":
             guard let lng = body["lng"] as? Double, let lat = body["lat"] as? Double else { return }
             let coordinate = CLLocationCoordinate2D(latitude: lat, longitude: lng)

@@ -3,7 +3,11 @@ import SwiftUI
 
 /// First-launch and Settings re-entry sheet explaining core RouteFinder workflows.
 struct ProductOnboardingSheet: View {
+    /// When true, the driver must accept the liability disclaimer before dismissing.
+    var requireLiabilityAcceptance: Bool = false
+
     @Environment(\.dismiss) private var dismiss
+    @State private var liabilityAccepted = false
 
     var body: some View {
         NavigationStack {
@@ -15,10 +19,14 @@ struct ProductOnboardingSheet: View {
                     trafficSection
                     laneSection
                     vehicleSection
+                    walkaroundSection
                     breakNowSection
                     lezSection
                     searchLanguageSection
                     quickReferenceSection
+                    if requireLiabilityAcceptance {
+                        liabilitySection
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(RFSpacing.lg)
@@ -32,6 +40,7 @@ struct ProductOnboardingSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Got it", action: markSeenAndDismiss)
                         .modifier(GlassButton())
+                        .disabled(requireLiabilityAcceptance && !liabilityAccepted)
                 }
             }
         }
@@ -115,6 +124,18 @@ struct ProductOnboardingSheet: View {
         )
     }
 
+    private var walkaroundSection: some View {
+        onboardingSection(
+            title: "DVSA walkaround",
+            icon: "checklist",
+            body: """
+            Before driving, complete a local DVSA-style walkaround checklist. Open the map toolbar menu (⋯) → Walkaround check, or Settings → Walkaround inspection when HGV mode is enabled.
+
+            Records are saved on device. Official defect books and fleet procedures remain authoritative.
+            """
+        )
+    }
+
     private var breakNowSection: some View {
         onboardingSection(
             title: "Break Now",
@@ -172,6 +193,29 @@ struct ProductOnboardingSheet: View {
         .glassPanel(cornerRadius: 14)
     }
 
+    private var liabilitySection: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.sm) {
+            Text("Routing disclaimer")
+                .font(RFFont.sectionTitle)
+
+            Text("RouteFinder routing, layby suggestions, and guidance are advisory tools only. Road conditions, signage, and regulations can change. You remain responsible for safe and lawful driving.")
+                .font(RFFont.body)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Toggle(
+                isOn: $liabilityAccepted,
+                label: {
+                    Text("I understand routing and guidance are advisory only; the developer is not liable for incorrect routing.")
+                        .font(RFFont.caption)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            )
+        }
+        .padding(RFSpacing.md)
+        .glassPanel(cornerRadius: 14)
+    }
+
     private func onboardingSection(title: String, icon: String, body: String) -> some View {
         VStack(alignment: .leading, spacing: RFSpacing.sm) {
             Label(title, systemImage: icon)
@@ -198,6 +242,9 @@ struct ProductOnboardingSheet: View {
     }
 
     private func markSeenAndDismiss() {
+        if requireLiabilityAcceptance, liabilityAccepted {
+            NavigationWorkspaceSettings.saveHasAcceptedRoutingLiability(true)
+        }
         NavigationWorkspaceSettings.saveHasSeenProductOnboarding(true)
         dismiss()
     }

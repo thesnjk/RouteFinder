@@ -389,6 +389,10 @@ enum MapLibreMapHTML {
             window.fitRouteBounds = fitRouteBounds;
 
             window.initMap = function(center, zoom, style, controlPosition) {
+              if (map) {
+                try { map.remove(); } catch (e) {}
+                map = null;
+              }
               map = new maplibregl.Map({
                 container: 'map',
                 style: style,
@@ -408,6 +412,12 @@ enum MapLibreMapHTML {
                 applyMapLabelLanguage();
                 post('ready', {});
               });
+              map.on('error', (event) => {
+                const message = (event && event.error && event.error.message)
+                  ? event.error.message
+                  : 'Map failed to load';
+                post('error', { message: message });
+              });
               map.on('dragstart', () => { userMapInteraction = true; });
               map.on('zoomstart', () => { userMapInteraction = true; });
               map.on('moveend', postMoveEnd);
@@ -421,6 +431,44 @@ enum MapLibreMapHTML {
               map.on('contextmenu', (e) => {
                 e.preventDefault();
                 post('contextmenu', { lng: e.lngLat.lng, lat: e.lngLat.lat });
+              });
+            };
+
+            window.bootMap = function(center, zoom, style, controlPosition, attempt) {
+              const tries = attempt || 0;
+              if (typeof maplibregl === 'undefined') {
+                if (tries >= 100) {
+                  post('error', { message: 'MapLibre library failed to load' });
+                  return;
+                }
+                setTimeout(function() {
+                  bootMap(center, zoom, style, controlPosition, tries + 1);
+                }, 50);
+                return;
+              }
+              try {
+                initMap(center, zoom, style, controlPosition);
+              } catch (err) {
+                post('error', { message: err && err.message ? err.message : 'Map initialization failed' });
+              }
+            };
+
+            window.setMapStyle = function(url) {
+              if (!map) return;
+              map.setStyle(url);
+              map.once('load', () => {
+                ensureRouteLayer();
+                ensureMarkerSource();
+                ensureVehicleLayer();
+                ensureVehicleIconLayer();
+                applyMapLabelLanguage();
+                post('ready', {});
+              });
+              map.once('error', (event) => {
+                const message = (event && event.error && event.error.message)
+                  ? event.error.message
+                  : 'Map style failed to load';
+                post('error', { message: message });
               });
             };
 

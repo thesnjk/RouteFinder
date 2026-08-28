@@ -1,11 +1,11 @@
 # Competitive Feature Scorecard — August 2026
 
-Last updated: 2026-08-28 (Phase 36 hazard hardening)
+Last updated: 2026-08-28 (Phase 38–40 XCTest smoke + walkaround fleet handoff)
 
 Scoring: **0** Absent · **1** Weak · **2** Parity · **3** Lead  
 Personas: **OO** = UK owner-operator · **SF** = small fleet (2–20 vehicles)
 
-RouteFinder scores from code inventory + Phase 20/26/27/30–35 verification. Competitor scores from public sources only (`.firecrawl/`).
+RouteFinder scores from code inventory + Phase 20/26/27/30–40 verification. Competitor scores from public sources only (`.firecrawl/`).
 
 ---
 
@@ -31,9 +31,9 @@ RouteFinder scores from code inventory + Phase 20/26/27/30–35 verification. Co
 
 | Capability | Weight | RF | CoPilot AM | PTV | Samsara | Notes |
 |---|---:|---:|---:|---:|---:|---|
-| Dispatch push | 20% | **3** | 2 | 2 | 3 | RF SSE + native console |
+| Dispatch push | 20% | **3** | 2 | 2 | 3 | RF SSE + native console + walkaround PDF on snapshot (Ph39) |
 | Physics ETA to depot | 15% | **3** | 1 | 2 | 2 | RF wedge |
-| Trip brief PDF | 15% | **3** | 1 | 2 | 2 | RF shipped Ph15 |
+| Trip brief PDF | 15% | **3** | 1 | 2 | 2 | RF shipped Ph15; defect warning line Ph39 |
 | LAN sync / Bonjour | 15% | **3** | 0 | 1 | 0 | RF $0 LAN |
 | Layby on trip | 10% | **3** | 2 | 1 | 0 | RF prediction + Break Now |
 | Constraint routing | 10% | **3** | 3 | 3 | 2 | Parity |

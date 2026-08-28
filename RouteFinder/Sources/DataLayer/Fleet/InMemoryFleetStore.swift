@@ -53,6 +53,12 @@ public actor InMemoryFleetStore: FleetDispatchPort {
         trip.physicsETASeconds = snapshot.physicsETASeconds
         trip.predictiveReport = snapshot.predictiveReport
         trip.predictedLayby = snapshot.predictedLayby
+        if let summary = snapshot.latestInspectionSummary {
+            trip.latestInspectionSummary = summary
+        }
+        if let pdf = snapshot.inspectionReportPDFBase64 {
+            trip.inspectionReportPDFBase64 = pdf
+        }
         trip.updatedAt = snapshot.updatedAt
         tripById[trip.id] = trip
         return trip

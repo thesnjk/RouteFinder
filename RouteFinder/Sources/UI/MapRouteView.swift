@@ -1,3 +1,4 @@
+import Contracts
 import CoreLocation
 import MapLibreUI
 import SwiftUI
@@ -19,6 +20,8 @@ public struct MapRouteView: View {
     let interactionMode: MapInteractionMode
     let initialRegion: MapRegion
     let styleURL: String
+    let labelLanguage: String
+    let labelNameCandidates: [String]
     let mapBridge: MapViewControllerBridge?
     let onMapClick: (CLLocationCoordinate2D) -> Void
     let onContextAction: (MapContextAction, CLLocationCoordinate2D) -> Void
@@ -35,6 +38,8 @@ public struct MapRouteView: View {
         interactionMode: MapInteractionMode = .navigate,
         initialRegion: MapRegion,
         styleURL: String = MapLibreConfiguration.openFreeMapStyleURL,
+        labelLanguage: String = LanguageWorkspaceSettings.loadPreferredMapLabelLanguage(),
+        labelNameCandidates: [String]? = nil,
         mapBridge: MapViewControllerBridge? = nil,
         onMapClick: @escaping (CLLocationCoordinate2D) -> Void = { _ in },
         onContextAction: @escaping (MapContextAction, CLLocationCoordinate2D) -> Void = { _, _ in },
@@ -50,6 +55,9 @@ public struct MapRouteView: View {
         self.interactionMode = interactionMode
         self.initialRegion = initialRegion
         self.styleURL = styleURL
+        self.labelLanguage = labelLanguage
+        self.labelNameCandidates = labelNameCandidates
+            ?? LanguageWorkspaceSettings.mapLabelNamePropertyCandidates(for: labelLanguage)
         self.mapBridge = mapBridge
         self.onMapClick = onMapClick
         self.onContextAction = onContextAction
@@ -69,6 +77,8 @@ public struct MapRouteView: View {
                 interactionMode: libreInteractionMode,
                 region: initialRegion,
                 styleURL: styleURL,
+                labelLanguage: labelLanguage,
+                labelNameCandidates: labelNameCandidates,
                 mapBridge: mapBridge,
                 onMapClick: onMapClick,
                 onContextMenu: { coordinate in

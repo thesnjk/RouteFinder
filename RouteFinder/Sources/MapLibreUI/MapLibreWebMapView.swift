@@ -102,6 +102,10 @@ public struct MapLibreWebMapView: View {
     let region: MapRegion
     /// MapLibre style URL (CDN, `http://127.0.0.1`, or `routefinder-tiles://`).
     let styleURL: String
+    /// BCP-47 language code for basemap symbol labels.
+    let labelLanguage: String
+    /// OSM `name:*` property keys passed to MapLibre coalesce expressions.
+    let labelNameCandidates: [String]
     let mapBridge: MapViewControllerBridge?
     let onMapClick: (CLLocationCoordinate2D) -> Void
     let onContextMenu: (CLLocationCoordinate2D) -> Void
@@ -118,6 +122,8 @@ public struct MapLibreWebMapView: View {
         interactionMode: MapLibreInteractionMode = .navigate,
         region: MapRegion,
         styleURL: String = MapLibreConfiguration.openFreeMapStyleURL,
+        labelLanguage: String = "en",
+        labelNameCandidates: [String] = ["name:en", "name", "name:latin"],
         mapBridge: MapViewControllerBridge? = nil,
         onMapClick: @escaping (CLLocationCoordinate2D) -> Void = { _ in },
         onContextMenu: @escaping (CLLocationCoordinate2D) -> Void = { _ in },
@@ -133,6 +139,8 @@ public struct MapLibreWebMapView: View {
         self.interactionMode = interactionMode
         self.region = region
         self.styleURL = styleURL
+        self.labelLanguage = labelLanguage
+        self.labelNameCandidates = labelNameCandidates
         self.mapBridge = mapBridge
         self.onMapClick = onMapClick
         self.onContextMenu = onContextMenu
@@ -151,6 +159,8 @@ public struct MapLibreWebMapView: View {
             interactionMode: interactionMode,
             region: region,
             styleURL: styleURL,
+            labelLanguage: labelLanguage,
+            labelNameCandidates: labelNameCandidates,
             mapBridge: mapBridge,
             onMapClick: onMapClick,
             onContextMenu: onContextMenu,
@@ -226,6 +236,8 @@ private struct MapLibreWebViewRepresentable: NSViewRepresentable {
     let interactionMode: MapLibreInteractionMode
     let region: MapRegion
     let styleURL: String
+    let labelLanguage: String
+    let labelNameCandidates: [String]
     let mapBridge: MapViewControllerBridge?
     let onMapClick: (CLLocationCoordinate2D) -> Void
     let onContextMenu: (CLLocationCoordinate2D) -> Void
@@ -290,6 +302,8 @@ private struct MapLibreWebViewRepresentable: UIViewRepresentable {
     let interactionMode: MapLibreInteractionMode
     let region: MapRegion
     let styleURL: String
+    let labelLanguage: String
+    let labelNameCandidates: [String]
     let mapBridge: MapViewControllerBridge?
     let onMapClick: (CLLocationCoordinate2D) -> Void
     let onContextMenu: (CLLocationCoordinate2D) -> Void
@@ -332,6 +346,7 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
     private var lastHazardsFingerprint = ""
     private var lastVehicleFingerprint = ""
     private var lastRegionFingerprint = ""
+    private var lastLabelLanguageFingerprint = ""
     private var lastMode: MapLibreInteractionMode = .navigate
     private var suppressUserMoveEventCount = 0
     private let vehicleCoalescer = BridgeFrameCoalescer()
@@ -570,6 +585,20 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
             let mode = parent.interactionMode == .pin ? "pin" : "navigate"
             webView.evaluateJavaScript("setInteractionMode('\(mode)')")
         }
+
+        syncMapLabelLanguage(to: webView)
+    }
+
+    private func syncMapLabelLanguage(to webView: WKWebView) {
+        let fingerprint = "\(parent.labelLanguage)|\(parent.labelNameCandidates.joined(separator: ","))"
+        guard fingerprint != lastLabelLanguageFingerprint else { return }
+        lastLabelLanguageFingerprint = fingerprint
+        let candidatesJSON = parent.labelNameCandidates
+            .map { "'\(escapeJS($0))'" }
+            .joined(separator: ", ")
+        webView.evaluateJavaScript(
+            "setMapLabelLanguage('\(escapeJS(parent.labelLanguage))', [\(candidatesJSON)])"
+        )
     }
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {

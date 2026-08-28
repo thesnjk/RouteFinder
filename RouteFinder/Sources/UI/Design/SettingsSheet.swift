@@ -222,10 +222,10 @@ struct SettingsSheet: View {
 
     private var searchLanguageSection: some View {
         VStack(alignment: .leading, spacing: RFSpacing.sm) {
-            Text("Search language")
+            Text("Language")
                 .font(RFFont.sectionTitle)
 
-            Picker("Display language", selection: $viewModel.preferredSearchLanguage) {
+            Picker("Search display language", selection: $viewModel.preferredSearchLanguage) {
                 ForEach(LanguageWorkspaceSettings.supportedOptions) { option in
                     Text(option.label).tag(option.code)
                 }
@@ -235,13 +235,23 @@ struct SettingsSheet: View {
                 viewModel.persistLanguageWorkspaceSettings()
             }
 
+            Picker("Map label language", selection: $viewModel.preferredMapLabelLanguage) {
+                ForEach(LanguageWorkspaceSettings.supportedOptions) { option in
+                    Text(option.label).tag(option.code)
+                }
+            }
+            .pickerStyle(.menu)
+            .onChange(of: viewModel.preferredMapLabelLanguage) { _, _ in
+                viewModel.persistLanguageWorkspaceSettings()
+            }
+
             Toggle("English name fallback", isOn: $viewModel.searchEnglishFallback)
                 .onChange(of: viewModel.searchEnglishFallback) { _, _ in
                     viewModel.persistLanguageWorkspaceSettings()
                 }
                 .help("When few localized results are found, also search in English (e.g. Warsaw instead of Warszawa). Special characters you type are preserved in results.")
 
-            Text("Map road labels still follow the basemap tile language. Search results and pin labels use the language returned by Pelias.")
+            Text("Search results and pin labels use Pelias. Basemap road and place names follow the map label language where OpenStreetMap provides translations.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }

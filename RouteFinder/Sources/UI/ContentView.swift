@@ -162,6 +162,7 @@ private struct MapWorkspaceView: View {
                 interactionMode: viewModel.interactionMode,
                 initialRegion: viewModel.mapRegion,
                 styleURL: viewModel.mapStyleURL,
+                labelLanguage: viewModel.preferredMapLabelLanguage,
                 mapBridge: mapBridge,
                 onMapClick: { coordinate in
                     Task {

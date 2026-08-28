@@ -58,7 +58,40 @@ enum MapLibreMapHTML {
             let vehicleIconLengthMeters = 12;
             let vehicleIconVisible = false;
             let vehicleIconCenter = { lng: 0, lat: 0 };
+            let mapLabelLanguage = 'en';
+            let mapLabelNameCandidates = ['name:en', 'name', 'name:latin'];
             const initialStyleURL = '\(styleURL)';
+
+            function buildMapLabelTextField(candidates) {
+              const gets = (candidates || []).map((key) => ['get', key]);
+              if (gets.length === 0) {
+                return ['get', 'name'];
+              }
+              return ['coalesce'].concat(gets);
+            }
+
+            function applyMapLabelLanguage() {
+              if (!map || !map.isStyleLoaded()) return;
+              const style = map.getStyle();
+              if (!style || !style.layers) return;
+              const textField = buildMapLabelTextField(mapLabelNameCandidates);
+              for (const layer of style.layers) {
+                if (layer.type !== 'symbol') continue;
+                const layout = layer.layout || {};
+                if (!layout['text-field']) continue;
+                try {
+                  map.setLayoutProperty(layer.id, 'text-field', textField);
+                } catch (e) {}
+              }
+            }
+
+            window.setMapLabelLanguage = function(lang, candidates) {
+              mapLabelLanguage = lang || 'en';
+              mapLabelNameCandidates = (candidates && candidates.length)
+                ? candidates
+                : ['name:' + mapLabelLanguage, 'name', 'name:latin'];
+              applyMapLabelLanguage();
+            };
 
             function post(type, payload) {
               if (!bridge) return;
@@ -372,6 +405,7 @@ enum MapLibreMapHTML {
                 ensureMarkerSource();
                 ensureVehicleLayer();
                 ensureVehicleIconLayer();
+                applyMapLabelLanguage();
                 post('ready', {});
               });
               map.on('dragstart', () => { userMapInteraction = true; });

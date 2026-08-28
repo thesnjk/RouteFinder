@@ -116,7 +116,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 
 1. **Driver onboarding sheet** — **Done** (Phase 27a) — in-app "What RouteFinder does" linking [`user-guide-simulation.md`](user-guide-simulation.md).
 2. **Map label i18n** — **Done** (Phase 27b) — MapLibre label language preference in Settings.
-3. **Fleet E2E scripted QA** — Mac server + iPhone driver Bonjour/SSE/trip brief automation.
+3. **Fleet E2E scripted QA** — **Done** (Phase 27c) — [`fleet-e2e-qa.md`](fleet-e2e-qa.md) + `Scripts/fleet-e2e-smoke.sh`.
 4. **Paid-team CarPlay entitlement restore** — only when signing allows (explicitly deferred from Phase 26).
 5. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs, legal cadastral LEZ polygons, TRAVIS booking integration.
 

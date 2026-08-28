@@ -37,7 +37,7 @@ Environment: macOS + iPhone 17 Simulator; personal Apple team signing (`RouteFin
 | 4 | Layby advisory; Looks full / Has spaces | **Pass** (code + tests) | Phase 19 ingest → occupancy prior wired; UI handlers on map chrome |
 | 5 | Save OpenWeather key → weather without restart | **Pass** (code + tests) | `weatherConfigurationDidChange` + `WeatherViewModel.replaceWeatherService` |
 | 6 | Fleet local disk trip push | **Pass** (code + tests) | Disk store + dispatch VM covered by tests |
-| 6b | LAN Bonjour discover + SSE | **Partial** | Server/SSE unit tests pass; live Mac↔phone discover not exercised this session |
+| 6b | LAN Bonjour discover + SSE | **Pass (scripted)** | Automated smoke: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part A + `Scripts/fleet-e2e-smoke.sh`; live Mac↔phone checklist in Part B |
 | 7 | HOS clock + inspection checklist open | **Pass** (code + tests) | No crash paths in suite; checklist on disk |
 | 8 | Known degraded paths | **Documented** | CarPlay inactive (personal team entitlements); WeatherKit unavailable without paid team / OpenWeather key |
 
@@ -112,7 +112,7 @@ Market research push + wave 1 features (Break Now, LEZ v2, lane voice). **No Car
 | D4 | Lane banner + voice at junction | Owner-op | **Pass** (unit) | `spokenLanePhrase` + prepare-tier prompt tests |
 | D5 | LEZ cross (London hop) | Owner-op | **Pass** (unit) | 11 zones; Euro-class copy in `announcementMessage`; long-haul avoid cap unchanged |
 | D6 | Mac dispatch push → iPhone SSE | Small fleet | **Pass** (code + tests) | SSE hub + toast wired; live Mac↔phone not re-run this session |
-| D7 | Bonjour discover fleet server | Small fleet | **Partial** | Unit tests pass; interactive LAN discover pending local Xcode |
+| D7 | Bonjour discover fleet server | Small fleet | **Pass (scripted)** | [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part A automated + Part B manual checklist |
 | D8 | `swift test` full suite | Engineering | **Pass** | 412+ tests green with Xcode-beta `DEVELOPER_DIR` |
 
 ### Phase 26 code surfaces
@@ -136,3 +136,14 @@ Market research push + wave 1 features (Break Now, LEZ v2, lane voice). **No Car
 - Interactive Break Now tap-to-map-center not re-run on device this session; unit + code inventory stand in.
 - TRAVIS parking booking intentionally not implemented — documented in research docs.
 - CarPlay and WeatherKit remain out of scope.
+
+### Phase 27c fleet E2E QA (2026-08-28)
+
+HEAD: post-`5506e655`  
+Deliverables: [`Docs/fleet-e2e-qa.md`](fleet-e2e-qa.md), [`RouteFinder/Scripts/fleet-e2e-smoke.sh`](../RouteFinder/Scripts/fleet-e2e-smoke.sh), consolidated test `fleetE2EWorkflowPushSnapshotAndSSE`.
+
+| Check | Result |
+|---|---|
+| `./Scripts/fleet-e2e-smoke.sh` | **Pass** — HTTP push, SSE, Bonjour helpers, E2E workflow |
+| Manual Mac↔iPhone LAN (Part B) | **Pending local** — checklist documented; run when two devices available |
+| Demo dispatch fallback (Part C) | **Documented** — single-device path via Settings |

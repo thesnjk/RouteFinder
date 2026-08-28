@@ -191,8 +191,8 @@ struct OpenRouteServiceGeocoderTests {
 
     @Test("overseas heuristic detects Nordic street names")
     func overseasHeuristicNordicStreet() {
-        #expect(OpenRouteServiceGeocoder.querySuggestsOutsideUnitedKingdom("33 samesvegen"))
-        #expect(OpenRouteServiceGeocoder.querySuggestsOutsideUnitedKingdom("33 sameswegen"))
+        #expect(OpenRouteServiceGeocoder.querySuggestsOutsideUnitedKingdom("33 sørnesvegen"))
+        #expect(OpenRouteServiceGeocoder.querySuggestsOutsideUnitedKingdom("33 sornesvegen"))
         #expect(OpenRouteServiceGeocoder.querySuggestsOutsideUnitedKingdom("Ålesund, Norway"))
         #expect(OpenRouteServiceGeocoder.querySuggestsOutsideUnitedKingdom("Karl Johans gate Oslo"))
         #expect(!OpenRouteServiceGeocoder.querySuggestsOutsideUnitedKingdom("3 Doris Road Norwich"))

@@ -161,7 +161,7 @@ Scope: scorecard + verification doc refresh; CarPlay/WeatherKit restore **playbo
 
 ### Phase 29 competitive positioning refresh (2026-08-28)
 
-HEAD: `cb3f107`  
+HEAD: `8c464ee`  
 Scope: light positioning refresh — no code, entitlements, or Firecrawl re-scrape.
 
 | Check | Result |

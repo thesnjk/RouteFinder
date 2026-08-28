@@ -9,6 +9,7 @@ Built as a Swift 6 Swift Package with SwiftUI, MapLibre (WKWebView), and HeiGIT 
 - [Route simulation and rehearsal](Docs/user-guide-simulation.md) — Rehearse Route vs Play, traffic banner, lane guidance, vehicle footprint, language settings
 - [Fleet E2E QA playbook](Docs/fleet-e2e-qa.md) — Automated fleet smoke script + Mac/iPhone LAN checklist
 - [CarPlay + WeatherKit restore](Docs/carplay-weatherkit-restore.md) — Paid-team entitlement restore (personal team: use OpenWeather instead)
+- [Competitive research (Aug 2026)](Docs/competitive-research-2026-08.md) — Positioning vs Sygic/TomTom/CoPilot; Ph29 refresh reflects Ph26–27 shipped wedge
 
 ## What it does
 

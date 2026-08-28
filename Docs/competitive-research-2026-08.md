@@ -6,21 +6,44 @@ Methodology: Public product pages, App Store listings, Trimble release notes, TR
 
 **Explicitly out of scope for this push:** CarPlay entitlements, WeatherKit, Android Auto, hosted multi-tenant SaaS, remote VU download, paid fuel/SNAP APIs, legal cadastral LEZ polygons.
 
+**Phase 29 refresh (2026-08-28):** Positioning update only — no new competitor scrape. Narrative updated to reflect Ph26–27 shipped capabilities.
+
 ---
 
 ## Executive summary
 
-RouteFinder holds a defensible wedge on **physics rehearsal**, **$0 fleet LAN dispatch**, and **UK plate→profile** — but is not universal parity with Sygic, TomTom hardware, or CoPilot fleet seats.
+RouteFinder holds a defensible wedge on **physics rehearsal**, **$0 fleet LAN dispatch**, **UK plate→profile**, and **driver/fleet polish** (onboarding, map label i18n, scripted fleet QA) — but is not universal parity with Sygic, TomTom hardware, or CoPilot fleet seats.
 
-After Aug 2026 research, the highest-ROI gaps to close at **$0 recurring cost** are:
+**Current wedge vs Sygic / TomTom / CoPilot (post Ph26–27):**
 
-1. **Break Now layby workflow** — CoPilot 11.3 ships one-tap break search by default; RouteFinder had fused layby prediction but no explicit driver-initiated quick action.
-2. **LEZ v2 messaging + coverage** — Sygic/TomTom set expectations for broad UK zone awareness and clear Euro-class copy; RouteFinder had six authored rings but thin compliance messaging.
-3. **Lane guidance voice polish** — TomTom/Sygic lane assistant is table-stakes; RouteFinder had banner + execute-tier voice but weak multi-lane phrasing and no prepare-tier lane hint.
+1. **Physics rehearsal + layby prediction** — Pre-trip kinetic sim, fused HOS/company-break ranker, and **Break Now** quick action at $0 (CoPilot charges for TRAVIS booking; TomTom/Sygic lack physics rehearsal).
+2. **$0 fleet LAN dispatch** — Bonjour discovery, SSE push, physics ETA, trip brief PDF; scripted E2E QA playbook ([`fleet-e2e-qa.md`](fleet-e2e-qa.md)) vs per-seat Account Manager SaaS.
+3. **UK plate→profile + honest LEZ messaging** — RegCheck + DVLA chain; 11 authored zones with Euro-class copy (simplified geometry, not legal cadastre).
+4. **Driver onboarding + map label i18n** — First-launch product sheet and separate MapLibre label language picker for EU small-fleet drivers.
 
 **Wave 1 shipped (Phase 26):** Break Now HUD button, LEZ catalog expansion (11 zones) + honest Euro copy, lane voice at prepare/execute tiers.
 
+**Wave 2 shipped (Phase 27):** Product onboarding sheet, map label language preference (independent of UI locale), fleet E2E scripted QA (`fleet-e2e-smoke.sh` + SSE snapshot test).
+
+**Remaining $0 gaps (honest, not chasing unless UK wedge):** LEZ depth (2 vs Sygic/TomTom 3), lane guidance depth (2 vs 3), CarPlay/Android Auto (deferred — paid team).
+
 **Intentional deferrals (document, do not chase):** TRAVIS/TPC paid parking booking, CarPlay/Android Auto, remote VU, toll tables, legal LEZ cadastre, hosted fleet portal.
+
+---
+
+## Post-Phase-27 positioning (sales lines)
+
+**Owner-operator (1 vehicle):**
+
+- Rehearse your route with real vehicle physics before you roll — no other truck nav app does this at $0.
+- Break when you need to: fused layby prediction plus one-tap **Break Now**, without TRAVIS booking fees.
+- UK plate lookup builds your profile; LEZ banners and avoid-on-route with honest Euro-class copy.
+
+**Small fleet (2–20 vehicles):**
+
+- Push trips over your office LAN — Bonjour discover, SSE instant notify, physics ETA back to dispatch — no per-seat SaaS.
+- Trip brief PDF for the office; drivers get onboarding and map labels in their preferred language.
+- Scripted fleet QA (`./Scripts/fleet-e2e-smoke.sh`) proves push → rehearse → brief without a hosted portal.
 
 ---
 
@@ -55,14 +78,14 @@ Sources dated 2026-08-27/28 unless noted. Firecrawl CLI unavailable in-session; 
 
 - **Jobs:** Long-haul constrained routing, mandatory breaks, LEZ compliance, offline when signal poor.
 - **Defaults today:** Sygic Truck (offline + LEZ) or CoPilot if fleet-affiliated.
-- **RouteFinder wins:** Physics rehearsal, layby prediction without booking fees, UK plate lookup, $0 app.
-- **RouteFinder gaps (pre–Phase 26):** Break Now UX, lane voice depth, LEZ zone breadth/messaging, CarPlay.
+- **RouteFinder wins:** Physics rehearsal, layby prediction + Break Now without booking fees, UK plate lookup, onboarding sheet, map label i18n, $0 app.
+- **RouteFinder gaps (honest):** LEZ/lane depth vs Sygic/TomTom, CarPlay (deferred on personal team).
 
 ### Small fleet (2–20 vehicles, UK)
 
 - **Jobs:** Push trips to drivers, physics ETA to depot, trip brief for office, LAN without per-seat SaaS.
 - **Defaults today:** CoPilot Account Manager + telematics (Samsara/Geotab) or TomTom WEBFLEET add-ons.
-- **RouteFinder wins:** $0 Bonjour LAN + SSE dispatch, trip brief PDF, physics ETA on push.
+- **RouteFinder wins:** $0 Bonjour LAN + SSE dispatch, trip brief PDF, physics ETA on push, fleet E2E QA playbook, driver onboarding.
 - **RouteFinder gaps:** Hosted portal, remote VU, TRAVIS parking network, Android Auto.
 
 ---

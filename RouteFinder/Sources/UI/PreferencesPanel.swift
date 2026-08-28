@@ -26,6 +26,9 @@ public struct PreferencesPanel: View {
             Toggle("Avoid Ferries", isOn: $viewModel.avoidFerries)
             Toggle("Avoid Tunnels", isOn: $viewModel.avoidTunnels)
             Toggle("Avoid non-compliant LEZ / CAZ", isOn: $viewModel.avoidNonCompliantLEZ)
+                .onChange(of: viewModel.avoidNonCompliantLEZ) { _, _ in
+                    viewModel.scheduleVehicleWorkspacePersist()
+                }
             Toggle("Hurry Mode", isOn: $viewModel.hurryMode)
         }
     }

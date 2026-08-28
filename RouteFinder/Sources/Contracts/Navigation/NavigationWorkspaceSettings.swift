@@ -7,6 +7,8 @@ public enum NavigationWorkspaceSettings {
     private static let voiceGuidanceEnabledKey = "RouteFinder.voiceGuidanceEnabled"
     private static let hosAdvisoryClockEnabledKey = "RouteFinder.hosAdvisoryClockEnabled"
     private static let applyTrafficToSimulationKey = "RouteFinder.applyTrafficToSimulation"
+    private static let avoidTrafficDelaysWhenRoutingKey = "RouteFinder.avoidTrafficDelaysWhenRouting"
+    private static let breakNowQuickActionEnabledKey = "RouteFinder.breakNowQuickActionEnabled"
 
     /// Loads the preferred telemetry source mode.
     public static func loadTelemetrySourceMode(defaults: UserDefaults = .standard) -> LocationProviderMode {
@@ -66,5 +68,31 @@ public enum NavigationWorkspaceSettings {
     /// Persists whether traffic congestion affects simulation cruise speed.
     public static func saveApplyTrafficToSimulation(_ enabled: Bool, defaults: UserDefaults = .standard) {
         defaults.set(enabled, forKey: applyTrafficToSimulationKey)
+    }
+
+    /// Whether live traffic jams should trigger avoid-polygon reroute evaluation (default on).
+    public static func loadAvoidTrafficDelaysWhenRouting(defaults: UserDefaults = .standard) -> Bool {
+        if defaults.object(forKey: avoidTrafficDelaysWhenRoutingKey) == nil {
+            return true
+        }
+        return defaults.bool(forKey: avoidTrafficDelaysWhenRoutingKey)
+    }
+
+    /// Persists whether traffic reroute evaluation runs after route find.
+    public static func saveAvoidTrafficDelaysWhenRouting(_ enabled: Bool, defaults: UserDefaults = .standard) {
+        defaults.set(enabled, forKey: avoidTrafficDelaysWhenRoutingKey)
+    }
+
+    /// Whether the Break Now layby quick action is shown (default on, mirroring CoPilot 11.3).
+    public static func loadBreakNowQuickActionEnabled(defaults: UserDefaults = .standard) -> Bool {
+        if defaults.object(forKey: breakNowQuickActionEnabledKey) == nil {
+            return true
+        }
+        return defaults.bool(forKey: breakNowQuickActionEnabledKey)
+    }
+
+    /// Persists Break Now quick action preference.
+    public static func saveBreakNowQuickActionEnabled(_ enabled: Bool, defaults: UserDefaults = .standard) {
+        defaults.set(enabled, forKey: breakNowQuickActionEnabledKey)
     }
 }

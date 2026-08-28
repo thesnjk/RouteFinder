@@ -180,12 +180,14 @@ public struct VehicleProfileManager: View {
                 .tint(RFColor.hazard)
                 .onChange(of: viewModel.isHGVMode) { _, enabled in
                     if enabled, viewModel.vehicleHeight.isEmpty { viewModel.applyHGVPreset() }
+                    viewModel.scheduleVehicleWorkspacePersist()
                     Task { await viewModel.recalculateIfReady() }
                 }
 
             if viewModel.isHGVMode {
                 Toggle("Avoid residential roads", isOn: $viewModel.avoidResidential)
                     .onChange(of: viewModel.avoidResidential) { _, _ in
+                        viewModel.scheduleVehicleWorkspacePersist()
                         Task { await viewModel.recalculateIfReady() }
                     }
             }
@@ -196,12 +198,18 @@ public struct VehicleProfileManager: View {
                     Text(cls.rawValue).tag(Optional(cls))
                 }
             }
+            .onChange(of: viewModel.hazmatClass) { _, _ in
+                viewModel.scheduleVehicleWorkspacePersist()
+            }
 
             Picker("Emission class", selection: $viewModel.emissionClass) {
                 Text("Not set").tag(EmissionClass?.none)
                 ForEach(EmissionClass.allCases, id: \.self) { cls in
                     Text(cls.rawValue.uppercased()).tag(Optional(cls))
                 }
+            }
+            .onChange(of: viewModel.emissionClass) { _, _ in
+                viewModel.scheduleVehicleWorkspacePersist()
             }
         }
     }
@@ -267,10 +275,14 @@ public struct VehicleProfileManager: View {
                     .textFieldStyle(GlassTextFieldStyle())
                     .onChange(of: text.wrappedValue) { _, newValue in
                         viewModel.markPhysicsFieldEdited(field, text: newValue)
+                        viewModel.scheduleVehicleWorkspacePersist()
                     }
             } else {
                 TextField(label, text: text)
                     .textFieldStyle(GlassTextFieldStyle())
+                    .onChange(of: text.wrappedValue) { _, _ in
+                        viewModel.scheduleVehicleWorkspacePersist()
+                    }
             }
         }
     }

@@ -56,13 +56,14 @@ public actor OpenRouteServiceGeocoder {
         query: String,
         near coordinate: Coordinate,
         apiKey: String,
-        limit: Int = 8
+        limit: Int = 8,
+        language: String? = nil
     ) async throws -> [GeocodeSuggestion] {
         try await performSearch(
             query: query,
             apiKey: apiKey,
-            cacheKey: GeocoderCache.cacheKey(query: query, near: coordinate),
-            queryItems: Self.biasedQueryItems(query: query, near: coordinate, limit: limit)
+            cacheKey: GeocoderCache.cacheKey(query: query, near: coordinate, language: language),
+            queryItems: Self.biasedQueryItems(query: query, near: coordinate, limit: limit, language: language)
         )
     }
 
@@ -71,13 +72,14 @@ public actor OpenRouteServiceGeocoder {
         query: String,
         near coordinate: Coordinate,
         apiKey: String,
-        limit: Int = 8
+        limit: Int = 8,
+        language: String? = nil
     ) async throws -> [GeocodeSuggestion] {
         try await performSearch(
             query: query,
             apiKey: apiKey,
-            cacheKey: GeocoderCache.cacheKeyGlobal(query: query, near: coordinate),
-            queryItems: Self.globalQueryItems(query: query, near: coordinate, limit: limit)
+            cacheKey: GeocoderCache.cacheKeyGlobal(query: query, near: coordinate, language: language),
+            queryItems: Self.globalQueryItems(query: query, near: coordinate, limit: limit, language: language)
         )
     }
 
@@ -85,13 +87,15 @@ public actor OpenRouteServiceGeocoder {
     public func searchGlobal(
         query: String,
         apiKey: String,
-        limit: Int = 8
+        limit: Int = 8,
+        language: String? = nil
     ) async throws -> [GeocodeSuggestion] {
         try await searchGlobal(
             query: query,
             near: Coordinate(latitude: 0, longitude: 0),
             apiKey: apiKey,
-            limit: limit
+            limit: limit,
+            language: language
         )
     }
 
@@ -100,9 +104,10 @@ public actor OpenRouteServiceGeocoder {
         query: String,
         near coordinate: Coordinate,
         apiKey: String,
-        limit: Int = 8
+        limit: Int = 8,
+        language: String? = nil
     ) async throws -> [GeocodeSuggestion] {
-        try await searchBiased(query: query, near: coordinate, apiKey: apiKey, limit: limit)
+        try await searchBiased(query: query, near: coordinate, apiKey: apiKey, limit: limit, language: language)
     }
 
     /// Returns whether a free-text query likely refers to a place outside the United Kingdom.
@@ -245,7 +250,12 @@ public actor OpenRouteServiceGeocoder {
     }
 
     /// Builds UK-biased Pelias query items (`boundary.country=GBR`). Exposed for tests.
-    public static func biasedQueryItems(query: String, near coordinate: Coordinate, limit: Int) -> [URLQueryItem] {
+    public static func biasedQueryItems(
+        query: String,
+        near coordinate: Coordinate,
+        limit: Int,
+        language: String? = nil
+    ) -> [URLQueryItem] {
         var items = [
             URLQueryItem(name: "text", value: query.trimmingCharacters(in: .whitespaces)),
             URLQueryItem(name: "size", value: String(limit)),
@@ -253,6 +263,9 @@ public actor OpenRouteServiceGeocoder {
             URLQueryItem(name: "focus.point.lon", value: String(coordinate.longitude)),
         ]
         items.append(contentsOf: ukBoundaryQueryItems())
+        if let language, !language.isEmpty {
+            items.append(URLQueryItem(name: "lang", value: language))
+        }
         return items
     }
 
@@ -260,12 +273,21 @@ public actor OpenRouteServiceGeocoder {
     ///
     /// Omitting ``focus.point`` prevents UK-map bias from ranking domestic “33 …” hits
     /// ahead of overseas matches.
-    public static func globalQueryItems(query: String, near coordinate: Coordinate, limit: Int) -> [URLQueryItem] {
+    public static func globalQueryItems(
+        query: String,
+        near coordinate: Coordinate,
+        limit: Int,
+        language: String? = nil
+    ) -> [URLQueryItem] {
         _ = coordinate
-        return [
+        var items = [
             URLQueryItem(name: "text", value: query.trimmingCharacters(in: .whitespaces)),
             URLQueryItem(name: "size", value: String(limit)),
         ]
+        if let language, !language.isEmpty {
+            items.append(URLQueryItem(name: "lang", value: language))
+        }
+        return items
     }
 
     private static func ukBoundaryQueryItems() -> [URLQueryItem] {

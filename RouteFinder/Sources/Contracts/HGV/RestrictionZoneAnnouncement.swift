@@ -180,6 +180,42 @@ public enum UKLowEmissionZoneCatalog: Sendable {
             radiusMeters: 3_000,
             boundaryRing: UKLowEmissionZoneBoundaries.newcastleCAZ
         ),
+        Zone(
+            id: "manchester-caz",
+            label: "Manchester CAZ",
+            latitude: 53.4808,
+            longitude: -2.2426,
+            radiusMeters: 3_500
+        ),
+        Zone(
+            id: "glasgow-lez",
+            label: "Glasgow LEZ",
+            latitude: 55.8642,
+            longitude: -4.2518,
+            radiusMeters: 4_000
+        ),
+        Zone(
+            id: "bradford-caz",
+            label: "Bradford CAZ",
+            latitude: 53.7959,
+            longitude: -1.7594,
+            radiusMeters: 3_000
+        ),
+        Zone(
+            id: "oxford-zez",
+            label: "Oxford ZEZ",
+            latitude: 51.7520,
+            longitude: -1.2577,
+            radiusMeters: 2_500,
+            minimumCompliantClass: .euro6
+        ),
+        Zone(
+            id: "portsmouth-caz",
+            label: "Portsmouth CAZ",
+            latitude: 50.8198,
+            longitude: -1.0880,
+            radiusMeters: 3_000
+        ),
     ]
 
     /// Returns LEZ announcements where the route polyline intersects known UK zones.
@@ -236,13 +272,24 @@ public enum UKLowEmissionZoneCatalog: Sendable {
         destination: Coordinate?
     ) -> String {
         let destinationInside = destination.map { zone.contains($0) } ?? false
+        let requirement = zone.minimumCompliantClass.displayLabel
+        let complianceNote: String
+        if let emissionClass {
+            if emissionClass.euroRank >= zone.minimumCompliantClass.euroRank {
+                complianceNote = "Your \(emissionClass.displayLabel) profile meets the \(requirement) requirement."
+            } else {
+                complianceNote = "Your \(emissionClass.displayLabel) profile is below the \(requirement) requirement — check before entry."
+            }
+        } else {
+            complianceNote = "Set emission class in vehicle profile. Unknown class is treated as non-compliant for avoid routing."
+        }
         if destinationInside {
-            return "Destination inside \(zone.label). Check vehicle compliance before entry."
+            return "Destination inside \(zone.label). \(complianceNote)"
         }
         if avoidEnabled, LEZAvoidPolicy.shouldAvoid(zone: zone, emissionClass: emissionClass) {
-            return "Avoiding \(zone.label) (vehicle emission below zone requirement)."
+            return "Avoiding \(zone.label) (\(complianceNote))"
         }
-        return "\(zone.label) ahead. Check vehicle compliance before entry."
+        return "\(zone.label) ahead. \(complianceNote) Geometry is approximate — not a legal boundary."
     }
 }
 

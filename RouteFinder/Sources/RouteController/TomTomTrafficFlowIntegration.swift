@@ -81,8 +81,8 @@ public actor TomTomTrafficFlowIntegration {
 
     /// Applies the vehicle speed ceiling to TomTom free-flow speed.
     public func effectiveSpeedKmh(flow: TomTomFlowSegmentData) -> Double {
-        let ceiling = speedCeilingKmh(for: vehicleProfile.vehicleClass)
-        return min(flow.currentSpeedKmh, ceiling)
+        let snapshot = makeSnapshot(from: flow)
+        return snapshot.effectiveCurrentSpeedKmh
     }
 
     /// Returns a travel-time multiplier from vehicle-adjusted flow speeds.
@@ -102,7 +102,26 @@ public actor TomTomTrafficFlowIntegration {
     }
 
     private func makeSnapshot(from flow: TomTomFlowSegmentData) -> TrafficCongestionSnapshot {
-        let ceiling = speedCeilingKmh(for: vehicleProfile.vehicleClass)
+        VehicleAdjustedTrafficClassifier.snapshot(
+            from: flow,
+            vehicleClass: vehicleProfile.vehicleClass,
+            measurementSystem: measurementSystem
+        )
+    }
+}
+
+/// Vehicle-adjusted TomTom congestion classification (shared by simulation and reroute).
+public enum VehicleAdjustedTrafficClassifier: Sendable {
+    /// Minimum TomTom confidence required to treat standstill as a reroute-worthy jam.
+    public static let minimumConfidenceForStandstill = 0.5
+
+    /// Classifies flow using vehicle speed ceilings instead of raw car free-flow speeds.
+    public static func snapshot(
+        from flow: TomTomFlowSegmentData,
+        vehicleClass: VehicleProfileClass,
+        measurementSystem: RegionalMeasurementSystem = .imperial
+    ) -> TrafficCongestionSnapshot {
+        let ceiling = speedCeilingKmh(for: vehicleClass, measurementSystem: measurementSystem)
         let adjustedFreeFlow = min(flow.freeFlowSpeedKmh, ceiling)
         let adjustedCurrent = min(flow.currentSpeedKmh, adjustedFreeFlow)
         let level = TrafficCongestionLevel.classify(
@@ -118,7 +137,17 @@ public actor TomTomTrafficFlowIntegration {
         )
     }
 
-    private func speedCeilingKmh(for vehicleClass: VehicleProfileClass) -> Double {
+    /// Returns whether congestion is severe enough to justify an avoid-polygon reroute.
+    public static func isRerouteWorthy(flow: TomTomFlowSegmentData, snapshot: TrafficCongestionSnapshot) -> Bool {
+        if flow.roadClosed { return true }
+        guard snapshot.congestionLevel == .standstill else { return false }
+        return flow.confidence >= minimumConfidenceForStandstill
+    }
+
+    private static func speedCeilingKmh(
+        for vehicleClass: VehicleProfileClass,
+        measurementSystem: RegionalMeasurementSystem
+    ) -> Double {
         let regionalLimits = VehicleSpeedLimits.limits(for: measurementSystem)
         switch vehicleClass {
         case .heavyGoodsVehicle, .lightCommercialVehicle:

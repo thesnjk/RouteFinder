@@ -400,6 +400,11 @@ public final class RouteSimulationEngine: ObservableObject {
     )
   }
 
+  /// Replaces turn instructions after async lane enrichment without resetting playback.
+  public func updateTurnInstructions(_ instructions: [TurnInstruction]) {
+    lastConfigureTurnInstructions = instructions
+  }
+
   /// Updates whether TomTom congestion caps steady-state cruise speed.
   public func updateApplyTrafficToSimulation(_ enabled: Bool) {
     applyTrafficToSimulation = enabled
@@ -726,14 +731,8 @@ public final class RouteSimulationEngine: ObservableObject {
     renderMode: VehicleRenderMode = .polygon
   ) -> SimulatedVehicleState {
     let dimensions = resolvedFootprintDimensions()
-    let center = MapViewControllerBridge.cameraFollowCenter(
-      rearAxle: coordinate,
-      bearingDegrees: currentBearing,
-      lengthMeters: dimensions.length
-    )
     let footprint = VehicleGeometryCalculator.generateFootprint(
-      anchor: .geometricCenter,
-      anchorCoordinate: center,
+      rearAxle: coordinate,
       headingDegrees: currentBearing,
       lengthMeters: dimensions.length,
       widthMeters: dimensions.width
@@ -746,8 +745,8 @@ public final class RouteSimulationEngine: ObservableObject {
       isPassengerCar: isPassengerCarMode
     )
     return SimulatedVehicleState(
-      latitude: center.latitude,
-      longitude: center.longitude,
+      latitude: coordinate.latitude,
+      longitude: coordinate.longitude,
       bearing: currentBearing,
       visible: true,
       lengthMeters: dimensions.length,

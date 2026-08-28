@@ -338,6 +338,16 @@ struct MapFirstShell: View {
                 viewModel.recenterMap()
             }
 
+            if viewModel.breakNowQuickActionEnabled,
+               viewModel.isHGVMode,
+               viewModel.result != nil,
+               !viewModel.upcomingLaybys.isEmpty {
+                MapControlButton(icon: "cup.and.saucer.fill") {
+                    Task { await viewModel.findBreakNow() }
+                }
+                .accessibilityLabel("Break now")
+            }
+
             if viewModel.simulationEngine.isRunning {
                 MapControlButton(
                     icon: viewModel.mapBridge?.isTrackingVehicle == true

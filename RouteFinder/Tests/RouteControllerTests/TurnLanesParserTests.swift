@@ -31,6 +31,32 @@ struct TurnLanesParserTests {
         let guidance = LaneGuidance(lanes: [.left, .straight, .right], recommendedIndices: [0])
         #expect(guidance.guidanceText == "Use the left lane")
     }
+
+    @Test func parseCompoundLanesForLeftManeuver() {
+        let guidance = TurnLanesParser.parse(
+            turnLanes: "left;through|through|through;right",
+            forManeuver: .left
+        )
+        #expect(guidance?.lanes[0] == .left)
+        #expect(guidance?.recommendedIndices == [0])
+    }
+
+    @Test func parseSkipsNoneLaneForLeftManeuver() {
+        let guidance = TurnLanesParser.parse(
+            turnLanes: "none|left|through",
+            forManeuver: .left
+        )
+        #expect(guidance?.recommendedIndices == [1])
+    }
+
+    @Test func parseCompoundLaneForStraightManeuver() {
+        let guidance = TurnLanesParser.parse(
+            turnLanes: "left;through",
+            forManeuver: .straight
+        )
+        #expect(guidance?.lanes[0] == .straight)
+        #expect(guidance?.recommendedIndices == [0])
+    }
 }
 
 struct VehicleFootprintPartsTests {

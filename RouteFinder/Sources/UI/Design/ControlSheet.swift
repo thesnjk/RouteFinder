@@ -111,11 +111,15 @@ private struct VehicleProfileSection: View {
                 .tint(RFColor.hazard)
                 .onChange(of: viewModel.isHGVMode) { _, enabled in
                     if enabled { viewModel.applyHGVPreset() }
+                    viewModel.scheduleVehicleWorkspacePersist()
                 }
 
             if viewModel.isHGVMode {
                 HGVModeBadge()
                 Toggle("Avoid residential roads", isOn: $viewModel.avoidResidential)
+                    .onChange(of: viewModel.avoidResidential) { _, _ in
+                        viewModel.scheduleVehicleWorkspacePersist()
+                    }
                 Toggle("Advisory hours clock (EU 561)", isOn: $viewModel.hosEnabled)
                     .tint(RFColor.hazard)
                     .onChange(of: viewModel.hosEnabled) { _, _ in
@@ -129,14 +133,26 @@ private struct VehicleProfileSection: View {
             HStack {
                 TextField("Height (m)", text: $viewModel.vehicleHeight)
                     .textFieldStyle(GlassTextFieldStyle())
+                    .onChange(of: viewModel.vehicleHeight) { _, _ in
+                        viewModel.scheduleVehicleWorkspacePersist()
+                    }
                 TextField("Weight (t)", text: $viewModel.vehicleWeight)
                     .textFieldStyle(GlassTextFieldStyle())
+                    .onChange(of: viewModel.vehicleWeight) { _, _ in
+                        viewModel.scheduleVehicleWorkspacePersist()
+                    }
             }
             HStack {
                 TextField("Width (m)", text: $viewModel.vehicleWidth)
                     .textFieldStyle(GlassTextFieldStyle())
+                    .onChange(of: viewModel.vehicleWidth) { _, _ in
+                        viewModel.scheduleVehicleWorkspacePersist()
+                    }
                 TextField("Length (m)", text: $viewModel.vehicleLength)
                     .textFieldStyle(GlassTextFieldStyle())
+                    .onChange(of: viewModel.vehicleLength) { _, _ in
+                        viewModel.scheduleVehicleWorkspacePersist()
+                    }
             }
         }
         .animation(.spring(response: 0.35), value: viewModel.isHGVMode)
@@ -161,6 +177,9 @@ private struct AvoidanceSection: View {
             Toggle("Avoid Ferries", isOn: $viewModel.avoidFerries)
             Toggle("Avoid Tunnels", isOn: $viewModel.avoidTunnels)
             Toggle("Avoid non-compliant LEZ / CAZ", isOn: $viewModel.avoidNonCompliantLEZ)
+                .onChange(of: viewModel.avoidNonCompliantLEZ) { _, _ in
+                    viewModel.scheduleVehicleWorkspacePersist()
+                }
             Toggle("Hurry Mode", isOn: $viewModel.hurryMode)
                 .tint(RFColor.hazard)
             if viewModel.hurryMode { HurryModeBadge() }

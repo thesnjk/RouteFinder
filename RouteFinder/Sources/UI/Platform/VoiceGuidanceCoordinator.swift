@@ -88,12 +88,10 @@ public final class VoiceGuidanceCoordinator: NavigationSessionDelegate {
               let distance = catalog.distanceToNextManeuver(from: snapshot.arcLengthMeters),
               let nextAnchor = catalog.nextAnchor(after: snapshot.arcLengthMeters) else { return }
 
-        let instruction = TurnInstruction(
-            id: nextAnchor.id,
-            maneuver: nextAnchor.maneuver,
-            roadName: nextAnchor.roadName,
-            distance: distance,
-            bearing: 0
+        let instruction = resolvedInstruction(
+            session: session,
+            nextAnchor: nextAnchor,
+            distanceToManeuverMeters: distance
         )
 
         for tier in AnnouncementTier.allCases.reversed() {
@@ -120,6 +118,31 @@ public final class VoiceGuidanceCoordinator: NavigationSessionDelegate {
             }
             break
         }
+    }
+
+    private func resolvedInstruction(
+        session: NavigationSession,
+        nextAnchor: ManeuverAnchor,
+        distanceToManeuverMeters: Double
+    ) -> TurnInstruction {
+        if let stored = session.turnInstruction(withID: nextAnchor.id) {
+            return TurnInstruction(
+                id: stored.id,
+                maneuver: stored.maneuver,
+                roadName: stored.roadName,
+                distance: distanceToManeuverMeters,
+                bearing: stored.bearing,
+                recommendedSpeedKmh: stored.recommendedSpeedKmh,
+                laneGuidance: stored.laneGuidance
+            )
+        }
+        return TurnInstruction(
+            id: nextAnchor.id,
+            maneuver: nextAnchor.maneuver,
+            roadName: nextAnchor.roadName,
+            distance: distanceToManeuverMeters,
+            bearing: 0
+        )
     }
 }
 #endif

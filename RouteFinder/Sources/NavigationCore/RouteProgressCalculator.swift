@@ -16,6 +16,7 @@ public struct RouteProgressCalculator: Sendable {
     ///   - totalLengthMeters: Total route length in meters.
     ///   - currentSpeedMps: Current ground speed in meters per second, when available.
     ///   - staticTotalTimeSeconds: Static routing ETA used as fallback proportion.
+    ///   - webRoutingETASeconds: Web routing ETA used to cap inflated physics static totals.
     ///   - currentManeuverIndex: Index of the upcoming maneuver, when available.
     /// - Returns: Live navigation progress snapshot.
     public func compute(
@@ -23,6 +24,7 @@ public struct RouteProgressCalculator: Sendable {
         totalLengthMeters: Double,
         currentSpeedMps: Double?,
         staticTotalTimeSeconds: Double? = nil,
+        webRoutingETASeconds: Double? = nil,
         currentManeuverIndex: Int? = nil
     ) -> NavigationProgressSnapshot {
         let clampedArc = min(max(arcLengthMeters, 0), totalLengthMeters)
@@ -40,7 +42,11 @@ public struct RouteProgressCalculator: Sendable {
             let effectiveSpeed = max(speed, Self.minimumSpeedMps)
             remainingETA = remaining / effectiveSpeed
         } else if let staticTotal = staticTotalTimeSeconds, totalLengthMeters > 0 {
-            remainingETA = (remaining / totalLengthMeters) * staticTotal
+            var proportional = (remaining / totalLengthMeters) * staticTotal
+            if let web = webRoutingETASeconds, web > 0, staticTotal > web * 3 {
+                proportional = (remaining / totalLengthMeters) * web
+            }
+            remainingETA = proportional
         } else {
             remainingETA = 0
         }

@@ -14,6 +14,8 @@ public enum NavigationWorkspaceSettings {
     private static let laybyVoiceAlertsEnabledKey = "RouteFinder.laybyVoiceAlertsEnabled"
     private static let laybyAlertDistanceMetersKey = "RouteFinder.laybyAlertDistanceMeters"
     private static let fuelCardProviderKey = "RouteFinder.fuelCardProvider"
+    private static let hazardVoiceAlertsEnabledKey = "RouteFinder.hazardVoiceAlertsEnabled"
+    private static let hazardAlertDistanceMetersKey = "RouteFinder.hazardAlertDistanceMeters"
 
     /// Loads the preferred telemetry source mode.
     public static func loadTelemetrySourceMode(defaults: UserDefaults = .standard) -> LocationProviderMode {
@@ -157,5 +159,29 @@ public enum NavigationWorkspaceSettings {
     /// Persists fleet fuel card provider preference.
     public static func saveFuelCardProvider(_ provider: FuelCardProvider, defaults: UserDefaults = .standard) {
         defaults.set(provider.rawValue, forKey: fuelCardProviderKey)
+    }
+
+    /// Whether spoken closure/traffic hazard alerts are enabled (default on).
+    public static func loadHazardVoiceAlertsEnabled(defaults: UserDefaults = .standard) -> Bool {
+        if defaults.object(forKey: hazardVoiceAlertsEnabledKey) == nil {
+            return true
+        }
+        return defaults.bool(forKey: hazardVoiceAlertsEnabledKey)
+    }
+
+    /// Persists spoken hazard-ahead alert preference.
+    public static func saveHazardVoiceAlertsEnabled(_ enabled: Bool, defaults: UserDefaults = .standard) {
+        defaults.set(enabled, forKey: hazardVoiceAlertsEnabledKey)
+    }
+
+    /// Distance inside which a hazard is announced once (default 3000 m).
+    public static func loadHazardAlertDistanceMeters(defaults: UserDefaults = .standard) -> Double {
+        let stored = defaults.double(forKey: hazardAlertDistanceMetersKey)
+        return stored > 0 ? stored : HazardAheadFormatter.defaultAlertDistanceMeters
+    }
+
+    /// Persists hazard announce distance threshold in meters.
+    public static func saveHazardAlertDistanceMeters(_ meters: Double, defaults: UserDefaults = .standard) {
+        defaults.set(max(300, meters), forKey: hazardAlertDistanceMetersKey)
     }
 }

@@ -117,8 +117,14 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 1. **Driver onboarding sheet** — **Done** (Phase 27a) — in-app "What RouteFinder does" linking [`user-guide-simulation.md`](user-guide-simulation.md).
 2. **Map label i18n** — **Done** (Phase 27b) — MapLibre label language preference in Settings.
 3. **Fleet E2E scripted QA** — **Done** (Phase 27c) — [`fleet-e2e-qa.md`](fleet-e2e-qa.md) + `Scripts/fleet-e2e-smoke.sh`.
-4. **Paid-team CarPlay entitlement restore** — only when signing allows (explicitly deferred from Phase 26).
+4. **Paid-team CarPlay entitlement restore** — playbook only; see [`carplay-weatherkit-restore.md`](carplay-weatherkit-restore.md). Execute when signing allows (explicitly deferred from Phase 26 on personal team).
 5. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs, legal cadastral LEZ polygons, TRAVIS booking integration.
+
+## Phase 28+ backlog (ranked)
+
+1. **CarPlay + WeatherKit entitlement restore** — follow [`carplay-weatherkit-restore.md`](carplay-weatherkit-restore.md) when on a paid Apple Developer Program team with CarPlay Maps + WeatherKit capabilities.
+2. **Quarterly competitive refresh** — re-scrape Sygic / CoPilot / TomTom public pages; update [`competitive-research-2026-08.md`](competitive-research-2026-08.md) and scorecard.
+3. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs, legal cadastral LEZ polygons, TRAVIS booking integration, LEZ/lane depth chase unless UK wedge appears.
 
 ## 90-day bar checklist
 

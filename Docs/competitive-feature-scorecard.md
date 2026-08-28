@@ -50,11 +50,12 @@ Formula: `(competitor best − RF) × persona weight × feasibility ($0, no CarP
 | 1 | Break Now UX | 0.15 | 0.05 | High | **Yes — Ph26** |
 | 2 | LEZ v2 copy + coverage | 0.10 | 0.02 | High | **Yes — Ph26** |
 | 3 | Lane voice + banner | 0.10 | 0.02 | High | **Yes — Ph26** |
-| 4 | Fleet E2E hardening (docs) | 0.02 | 0.12 | Medium | Partial — QA checklist |
-| 5 | Map label i18n | 0.03 | 0.04 | Medium | Defer — Ph27 |
-| 6 | Driver onboarding sheet | 0.05 | 0.03 | High | Defer — Ph27 |
+| 4 | Fleet E2E hardening (docs) | 0.02 | 0.12 | Medium | **Done — Ph27c** ([`fleet-e2e-qa.md`](fleet-e2e-qa.md)) |
+| 5 | Map label i18n | 0.03 | 0.04 | Medium | **Done — Ph27b** |
+| 6 | Driver onboarding sheet | 0.05 | 0.03 | High | **Done — Ph27a** |
 
-**Confirmed wave 1:** B1 Break Now · B2 LEZ v2 · B3 Lane voice (matches pre-research hypothesis).
+**Confirmed wave 1:** B1 Break Now · B2 LEZ v2 · B3 Lane voice (matches pre-research hypothesis).  
+**Phase 27 wave:** onboarding · map label i18n · fleet E2E QA playbook.
 
 ---
 

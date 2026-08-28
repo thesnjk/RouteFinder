@@ -23,7 +23,7 @@ Environment: macOS + iPhone 17 Simulator; personal Apple team signing (`RouteFin
 
 | Check | Result |
 |---|---|
-| `swift test` (package) | **Pass** — 409 tests (2026-08-28 re-run) |
+| `swift test` (package) | **Pass** — 435 tests (2026-08-28, Xcode-beta) |
 | `xcodebuild` RouteFinderApp (iOS Simulator) | **Pass** — BUILD SUCCEEDED |
 | Simulator cold launch (`Learning.RouteFinderApp`) | **Pass** — process started; no crash/fault in first ~8s of process logs |
 
@@ -39,7 +39,7 @@ Environment: macOS + iPhone 17 Simulator; personal Apple team signing (`RouteFin
 | 6 | Fleet local disk trip push | **Pass** (code + tests) | Disk store + dispatch VM covered by tests |
 | 6b | LAN Bonjour discover + SSE | **Pass (scripted)** | Automated smoke: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part A + `Scripts/fleet-e2e-smoke.sh`; live Mac↔phone checklist in Part B |
 | 7 | HOS clock + inspection checklist open | **Pass** (code + tests) | No crash paths in suite; checklist on disk |
-| 8 | Known degraded paths | **Documented** | CarPlay inactive (personal team entitlements); WeatherKit unavailable without paid team / OpenWeather key |
+| 8 | Known degraded paths | **Documented** | CarPlay inactive (personal team entitlements); WeatherKit unavailable without paid team / OpenWeather key. Restore guide: [`carplay-weatherkit-restore.md`](carplay-weatherkit-restore.md) |
 
 ## Honest limits
 
@@ -113,7 +113,7 @@ Market research push + wave 1 features (Break Now, LEZ v2, lane voice). **No Car
 | D5 | LEZ cross (London hop) | Owner-op | **Pass** (unit) | 11 zones; Euro-class copy in `announcementMessage`; long-haul avoid cap unchanged |
 | D6 | Mac dispatch push → iPhone SSE | Small fleet | **Pass** (code + tests) | SSE hub + toast wired; live Mac↔phone not re-run this session |
 | D7 | Bonjour discover fleet server | Small fleet | **Pass (scripted)** | [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part A automated + Part B manual checklist |
-| D8 | `swift test` full suite | Engineering | **Pass** | 412+ tests green with Xcode-beta `DEVELOPER_DIR` |
+| D8 | `swift test` full suite | Engineering | **Pass** | 435 tests green with Xcode-beta `DEVELOPER_DIR` |
 
 ### Phase 26 code surfaces
 
@@ -139,11 +139,22 @@ Market research push + wave 1 features (Break Now, LEZ v2, lane voice). **No Car
 
 ### Phase 27c fleet E2E QA (2026-08-28)
 
-HEAD: post-`5506e655`  
+HEAD: `315d39e9`  
 Deliverables: [`Docs/fleet-e2e-qa.md`](fleet-e2e-qa.md), [`RouteFinder/Scripts/fleet-e2e-smoke.sh`](../RouteFinder/Scripts/fleet-e2e-smoke.sh), consolidated test `fleetE2EWorkflowPushSnapshotAndSSE`.
 
 | Check | Result |
 |---|---|
-| `./Scripts/fleet-e2e-smoke.sh` | **Pass** — HTTP push, SSE, Bonjour helpers, E2E workflow |
+| `./Scripts/fleet-e2e-smoke.sh` | **Pass** — HTTP push, SSE, Bonjour helpers, E2E workflow (9/9 filters) |
 | Manual Mac↔iPhone LAN (Part B) | **Pending local** — checklist documented; run when two devices available |
 | Demo dispatch fallback (Part C) | **Documented** — single-device path via Settings |
+
+### Phase 28 ship hygiene (2026-08-28)
+
+HEAD: `315d39e9` (post-Phase-27 doc refresh)  
+Scope: scorecard + verification doc refresh; CarPlay/WeatherKit restore **playbook only** (no entitlement merge on personal team).
+
+| Check | Result |
+|---|---|
+| Scorecard Ph27 gaps marked Done | **Done** |
+| [`carplay-weatherkit-restore.md`](carplay-weatherkit-restore.md) playbook | **Done** — execute only on paid Apple Developer Program team |
+| Full `swift test` | **Pass** — 435 tests (Xcode-beta) |

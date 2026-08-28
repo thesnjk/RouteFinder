@@ -1,9 +1,11 @@
 # Competitive Feature Scorecard — August 2026
 
+Last updated: 2026-08-28 (Phase 29 positioning refresh)
+
 Scoring: **0** Absent · **1** Weak · **2** Parity · **3** Lead  
 Personas: **OO** = UK owner-operator · **SF** = small fleet (2–20 vehicles)
 
-RouteFinder scores from code inventory + Phase 20/26 verification. Competitor scores from public sources only (`.firecrawl/`).
+RouteFinder scores from code inventory + Phase 20/26/27 verification. Competitor scores from public sources only (`.firecrawl/`).
 
 ---
 
@@ -55,7 +57,8 @@ Formula: `(competitor best − RF) × persona weight × feasibility ($0, no CarP
 | 6 | Driver onboarding sheet | 0.05 | 0.03 | High | **Done — Ph27a** |
 
 **Confirmed wave 1:** B1 Break Now · B2 LEZ v2 · B3 Lane voice (matches pre-research hypothesis).  
-**Phase 27 wave:** onboarding · map label i18n · fleet E2E QA playbook.
+**Phase 27 wave:** onboarding · map label i18n · fleet E2E QA playbook — **complete**.  
+**Phase 29:** Positioning refresh only; no new $0 builds ranked until next quarterly review (target **2026-11**). Ph27 capability pointers: [`ProductOnboardingSheet.swift`](../RouteFinder/Sources/UI/Components/ProductOnboardingSheet.swift), [`MapLibreMapHTML.swift`](../RouteFinder/Sources/UI/Map/MapLibreMapHTML.swift) (`setMapLabelLanguage`), [`fleet-e2e-qa.md`](fleet-e2e-qa.md).
 
 ---
 

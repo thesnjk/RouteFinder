@@ -1,7 +1,9 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-28 (Phase 26 market research + Break Now / LEZ v2 / lane voice)  
+Last updated: 2026-08-28 (Phase 29 positioning refresh)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then advisory tacho + offline packs. **CarPlay deferred** until paid-team signing.
+
+> **Aug 28 Phase 29:** Light competitive positioning refresh — executive summary and sales lines updated for Ph26–27 shipped state in [`competitive-research-2026-08.md`](competitive-research-2026-08.md). No new Firecrawl scrape; full re-scrape deferred to **2026-11**.
 
 > **Aug 28 Phase 26:** Market research pack (4 docs + `.firecrawl/` summaries). Shipped Break Now quick action, LEZ catalog expansion (11 zones) + Euro-class copy, lane voice at prepare/execute tiers. See [`competitive-research-2026-08.md`](competitive-research-2026-08.md) and [`phase20-verification.md`](phase20-verification.md#phase-26-live-qa).
 
@@ -122,9 +124,15 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 
 ## Phase 28+ backlog (ranked)
 
-1. **CarPlay + WeatherKit entitlement restore** — follow [`carplay-weatherkit-restore.md`](carplay-weatherkit-restore.md) when on a paid Apple Developer Program team with CarPlay Maps + WeatherKit capabilities.
-2. **Quarterly competitive refresh** — re-scrape Sygic / CoPilot / TomTom public pages; update [`competitive-research-2026-08.md`](competitive-research-2026-08.md) and scorecard.
+1. **CarPlay + WeatherKit entitlement restore** — **Blocked — paid team** — follow [`carplay-weatherkit-restore.md`](carplay-weatherkit-restore.md) when on a paid Apple Developer Program team with CarPlay Maps + WeatherKit capabilities.
+2. **Quarterly competitive refresh** — **Done (Ph29 light)** — positioning narrative updated in [`competitive-research-2026-08.md`](competitive-research-2026-08.md) and scorecard; no full re-scrape.
 3. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs, legal cadastral LEZ polygons, TRAVIS booking integration, LEZ/lane depth chase unless UK wedge appears.
+
+## Phase 30+ backlog (ranked)
+
+1. **Full quarterly competitive re-scrape** — target **2026-11**; re-scrape Sygic / CoPilot / TomTom public pages; update research doc and scorecard if competitor deltas appear.
+2. **CarPlay + WeatherKit entitlement restore** — same as Phase 28+ #1; blocked until paid team.
+3. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs, legal cadastral LEZ polygons, TRAVIS booking integration.
 
 ## 90-day bar checklist
 
@@ -154,7 +162,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | Predictive layby v2 | LaybyIntel | Done |
 | Advisory tacho + Can-I-drive | AdvisoryTacho | Done (Phase 5) |
 | Offline map packs | OfflineMaps | Done (Phase 4) |
-| Competitive intel refresh | CompetitiveIntel | **Done** — Phase 25/26 research docs + scorecard |
+| Competitive intel refresh | CompetitiveIntel | **Done** — Phase 25/26 research docs + scorecard; **Ph29 positioning refresh** |
 | LEZ avoid-on-route | UKLivingLayer | **Done** (Phase 21) |
 | LEZ simplified geometry | UKLivingLayer | **Done** (Phase 23) |
 

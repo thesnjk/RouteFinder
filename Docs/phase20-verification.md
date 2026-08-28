@@ -150,7 +150,7 @@ Deliverables: [`Docs/fleet-e2e-qa.md`](fleet-e2e-qa.md), [`RouteFinder/Scripts/f
 
 ### Phase 28 ship hygiene (2026-08-28)
 
-HEAD: `315d39e9` (post-Phase-27 doc refresh)  
+HEAD: `c9355a54`  
 Scope: scorecard + verification doc refresh; CarPlay/WeatherKit restore **playbook only** (no entitlement merge on personal team).
 
 | Check | Result |
@@ -158,3 +158,18 @@ Scope: scorecard + verification doc refresh; CarPlay/WeatherKit restore **playbo
 | Scorecard Ph27 gaps marked Done | **Done** |
 | [`carplay-weatherkit-restore.md`](carplay-weatherkit-restore.md) playbook | **Done** — execute only on paid Apple Developer Program team |
 | Full `swift test` | **Pass** — 435 tests (Xcode-beta) |
+
+### Phase 29 competitive positioning refresh (2026-08-28)
+
+HEAD: `cb3f107`  
+Scope: light positioning refresh — no code, entitlements, or Firecrawl re-scrape.
+
+| Check | Result |
+|---|---|
+| [`competitive-research-2026-08.md`](competitive-research-2026-08.md) executive summary + Post-Ph27 sales lines | **Done** |
+| [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md) Phase 29 wave-complete note | **Done** |
+| [`competitive-gap-matrix.md`](competitive-gap-matrix.md) Ph28+ #2 Done; Ph30+ next scrape **2026-11** | **Done** |
+| Full competitor re-scrape | **Deferred** — next quarterly cycle (2026-11) |
+| Manual Mac↔iPhone LAN (Fleet Part B) | **Pending local** — [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B |
+| Interactive Mac app (U1–U5) | **Pending local** |
+| CarPlay + WeatherKit restore | **Blocked — paid team** — [`carplay-weatherkit-restore.md`](carplay-weatherkit-restore.md) |

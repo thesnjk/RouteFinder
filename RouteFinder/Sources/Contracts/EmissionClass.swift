@@ -18,4 +18,16 @@ public enum EmissionClass: String, Codable, Sendable, Hashable, CaseIterable {
         case .euro6: return 6
         }
     }
+
+    /// Human-readable label for LEZ banners and settings copy.
+    public var displayLabel: String {
+        switch self {
+        case .euro1: "Euro 1"
+        case .euro2: "Euro 2"
+        case .euro3: "Euro 3"
+        case .euro4: "Euro 4"
+        case .euro5: "Euro 5"
+        case .euro6: "Euro 6"
+        }
+    }
 }

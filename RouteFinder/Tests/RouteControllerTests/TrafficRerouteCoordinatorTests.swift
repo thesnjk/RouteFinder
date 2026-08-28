@@ -72,3 +72,82 @@ import Testing
     let coordinates = try #require(avoid["coordinates"] as? [[[[Double]]]])
     #expect(coordinates.count == 1)
 }
+
+@Test func trafficRerouteCoordinatorRejectsMarginalAlternate() {
+    let original = ExternalRouteResponse(
+        coordinates: [Coordinate(latitude: 51.5, longitude: -0.1)],
+        distanceMeters: 100_000,
+        durationSeconds: 3600,
+        maneuvers: []
+    )
+    let marginal = ExternalRouteResponse(
+        coordinates: [Coordinate(latitude: 51.5, longitude: -0.2)],
+        distanceMeters: 95_000,
+        durationSeconds: 3600,
+        maneuvers: []
+    )
+    #expect(!TrafficRerouteCoordinator.isMeaningfullyBetterAlternate(alternate: marginal, original: original))
+
+    let faster = ExternalRouteResponse(
+        coordinates: [Coordinate(latitude: 51.5, longitude: -0.2)],
+        distanceMeters: 98_000,
+        durationSeconds: 3000,
+        maneuvers: []
+    )
+    #expect(TrafficRerouteCoordinator.isMeaningfullyBetterAlternate(alternate: faster, original: original))
+}
+
+@Test func vehicleAdjustedClassifierIgnoresHgvLegalMotorwaySpeeds() {
+    let flow = TomTomFlowSegmentData(
+        currentSpeedKmh: 85,
+        freeFlowSpeedKmh: 120,
+        confidence: 0.9,
+        roadClosed: false
+    )
+    let hgvSnapshot = VehicleAdjustedTrafficClassifier.snapshot(
+        from: flow,
+        vehicleClass: .heavyGoodsVehicle,
+        measurementSystem: .imperial
+    )
+    #expect(hgvSnapshot.congestionLevel != .standstill)
+    #expect(!VehicleAdjustedTrafficClassifier.isRerouteWorthy(flow: flow, snapshot: hgvSnapshot))
+
+    let standstillFlow = TomTomFlowSegmentData(
+        currentSpeedKmh: 5,
+        freeFlowSpeedKmh: 90,
+        confidence: 0.8,
+        roadClosed: false
+    )
+    let standstillSnapshot = VehicleAdjustedTrafficClassifier.snapshot(
+        from: standstillFlow,
+        vehicleClass: .passengerCar,
+        measurementSystem: .imperial
+    )
+    #expect(standstillSnapshot.congestionLevel == .standstill)
+    #expect(VehicleAdjustedTrafficClassifier.isRerouteWorthy(flow: standstillFlow, snapshot: standstillSnapshot))
+}
+
+@Test func vehicleAdjustedClassifierRejectsLowConfidenceStandstill() {
+    let flow = TomTomFlowSegmentData(
+        currentSpeedKmh: 4,
+        freeFlowSpeedKmh: 90,
+        confidence: 0.2,
+        roadClosed: false
+    )
+    let snapshot = VehicleAdjustedTrafficClassifier.snapshot(
+        from: flow,
+        vehicleClass: .passengerCar,
+        measurementSystem: .imperial
+    )
+    #expect(!VehicleAdjustedTrafficClassifier.isRerouteWorthy(flow: flow, snapshot: snapshot))
+}
+
+@Test func openRouteServiceGeocoderIncludesLanguageQueryItem() {
+    let items = OpenRouteServiceGeocoder.globalQueryItems(
+        query: "Warsaw",
+        near: Coordinate(latitude: 52.2, longitude: 21.0),
+        limit: 8,
+        language: "en"
+    )
+    #expect(items.contains { $0.name == "lang" && $0.value == "en" })
+}

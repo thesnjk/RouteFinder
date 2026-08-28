@@ -40,6 +40,45 @@ public enum ManeuverSpeechFormatter {
         }
     }
 
+    /// Spoken lane phrase for voice guidance (natural multi-lane wording).
+    public static func spokenLanePhrase(for guidance: LaneGuidance) -> String {
+        guard !guidance.lanes.isEmpty else { return "Follow the road" }
+        let indices = guidance.recommendedIndices.sorted()
+        guard !indices.isEmpty else { return "Follow the road" }
+
+        if indices.count == 1, let index = indices.first {
+            let laneCount = guidance.lanes.count
+            switch guidance.lanes[index] {
+            case .left, .slightLeft:
+                return index == 0 ? "Use the left lane" : "Use lane \(index + 1)"
+            case .right, .slightRight:
+                return index == laneCount - 1 ? "Use the right lane" : "Use lane \(index + 1)"
+            case .merge:
+                return "Merge"
+            default:
+                if index == 0 { return "Keep left" }
+                if index == laneCount - 1 { return "Keep right" }
+                return "Use lane \(index + 1)"
+            }
+        }
+
+        if indices.count > 1 {
+            let laneCount = guidance.lanes.count
+            let isContiguousFromLeft = indices == Array(0..<indices.count)
+            let isContiguousFromRight = indices == Array((laneCount - indices.count)..<laneCount)
+            if isContiguousFromLeft {
+                return indices.count == 2 ? "Use the left two lanes" : "Use the left \(indices.count) lanes"
+            }
+            if isContiguousFromRight {
+                return indices.count == 2 ? "Use the right two lanes" : "Use the right \(indices.count) lanes"
+            }
+            let numbers = indices.map { String($0 + 1) }.joined(separator: " and ")
+            return "Use lanes \(numbers)"
+        }
+
+        return guidance.guidanceText
+    }
+
     /// Spoken prompt for a given tier and instruction.
     public static func spokenPrompt(
         for instruction: TurnInstruction,
@@ -49,14 +88,20 @@ public enum ManeuverSpeechFormatter {
 
         switch tier {
         case .approach:
+            if let laneText = instruction.laneGuidance.map({ spokenLanePhrase(for: $0) }), !laneText.isEmpty {
+                return "In one mile, \(laneText.lowercased())\(roadSuffix(for: instruction, tier: tier))"
+            }
             return "In one mile, \(phrase.lowercased())\(roadSuffix(for: instruction, tier: tier))"
         case .prepare:
+            if let laneText = instruction.laneGuidance.map({ spokenLanePhrase(for: $0) }), !laneText.isEmpty {
+                return "In a quarter mile, \(laneText.lowercased())"
+            }
             return "In a quarter mile, \(phrase.lowercased())"
         case .execute:
             if instruction.maneuver == .arrive {
                 return phrase
             }
-            if let laneText = instruction.laneGuidance?.guidanceText, !laneText.isEmpty {
+            if let laneText = instruction.laneGuidance.map({ spokenLanePhrase(for: $0) }), !laneText.isEmpty {
                 return "\(laneText). \(phrase)"
             }
             if let roadName = instruction.roadName, !roadName.isEmpty {

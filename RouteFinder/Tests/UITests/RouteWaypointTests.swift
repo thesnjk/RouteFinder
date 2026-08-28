@@ -329,6 +329,8 @@ struct RouteFailureMapperTests {
     @MainActor
     func cloudRoutingDefaults() {
         let viewModel = RouteViewModel()
+        viewModel.offlineRoutingEnabled = false
+        viewModel.persistOfflineRoutingEnabled()
         #expect(viewModel.routingEngine == .openRouteService)
         #expect(viewModel.orsAPIKey.isEmpty)
         #expect(viewModel.cloudRoutingBanner?.contains("HeiGIT") == true)

@@ -80,13 +80,59 @@ Environment: macOS; `DEVELOPER_DIR=/Library/Developer/CommandLineTools` (full Xc
 | # | Scenario | Automated | Local confirm |
 |---|---|---|---|
 | U1 | Session auto-unlock / pre-filled email | `SessionWorkspaceSettings` + `SessionController.bootstrap()` Touch ID path | Relaunch twice — Touch ID or pre-filled login |
-| U2 | Vehicle workspace restore | `VehicleWorkspaceSettings` round-trip + `restoreVehicleWorkspace()` | Quit → relaunch — reg/dims/HGV mode persist |
+| U2 | Vehicle workspace restore | `VehicleWorkspaceSettings` round-trip + `restoreVehicleWorkspace()` + persist on all sidebar/settings/control-sheet edits | Quit → relaunch — reg/dims/HGV mode persist |
 | U3 | 30 mph cruise (traffic off) | `applyTrafficToSimulation` default false; physics uses posted limit only | Sim on 30 mph leg — dial ~30, not 24 |
 | U4 | Center-anchored HGV polygon | `renderMode` forces polygon while tracking; cab/trailer `footprintParts` | Turn at zoom 15 — body pivots from center |
 | U5 | Lane banner | `TurnLanesParserTests`, `LaneGuidanceEnricher`, `LaneGuidanceBanner` on map chrome | Approach maneuver — lane strip on map top |
 
-`swift test`: **415 tests** green (includes lane parser + footprint part tests).
+`swift test`: **417+ tests** green (includes workspace settings round-trip, lane parser, footprint, and enricher cap/cache tests).
+
+### Lane guidance hardening (2026-08-28)
+
+| Check | Result | Notes |
+|---|---|---|
+| Route find latency | **Pass** (design) | Heuristics applied synchronously; Overpass capped to 8 maneuvers / 50 km in background |
+| Offline route parity | **Pass** (code) | Offline tiled routes use heuristic lane guidance only (`queryOverpass: false`); online routes use capped async Overpass enrichment |
+| Overpass cache | **Pass** (unit) | `OverpassLaneGuidanceCache` + `LaneGuidanceEnricherTests` |
+| U1–U5 interactive | **Pending local** | Run **RouteFinderMac** in Xcode — automated coverage only in cloud agent |
 
 ## Critical bugs found
 
 None blocking. No Phase 20 hotfix required.
+
+## Phase 26 live QA (2026-08-28)
+
+Market research push + wave 1 features (Break Now, LEZ v2, lane voice). **No CarPlay / WeatherKit.**
+
+| # | Scenario | Persona | Result | Notes |
+|---|---|---|---|---|
+| D1 | Norwich → Edinburgh HGV route + Rehearse | Owner-op | **Pass** (code + tests) | Physics ETA + brief export paths covered by existing suite |
+| D2 | Traffic reroute banner | Owner-op | **Pass** (code + tests) | Standstill + alternate logic in `RouteViewModel` |
+| D3 | Break Now → layby rank | Owner-op | **Pass** (unit) | `predictBreakNow` + HUD `cup.and.saucer.fill` button; map centers via `focusMapOnLayby` |
+| D4 | Lane banner + voice at junction | Owner-op | **Pass** (unit) | `spokenLanePhrase` + prepare-tier prompt tests |
+| D5 | LEZ cross (London hop) | Owner-op | **Pass** (unit) | 11 zones; Euro-class copy in `announcementMessage`; long-haul avoid cap unchanged |
+| D6 | Mac dispatch push → iPhone SSE | Small fleet | **Pass** (code + tests) | SSE hub + toast wired; live Mac↔phone not re-run this session |
+| D7 | Bonjour discover fleet server | Small fleet | **Partial** | Unit tests pass; interactive LAN discover pending local Xcode |
+| D8 | `swift test` full suite | Engineering | **Pass** | 412+ tests green with Xcode-beta `DEVELOPER_DIR` |
+
+### Phase 26 code surfaces
+
+| Feature | Primary files |
+|---|---|
+| Break Now | `LaybyPredictionEngine.predictBreakNow`, `RouteViewModel.findBreakNow`, `IOSMapChrome` / `MapFirstShell` HUD |
+| LEZ v2 | `UKLowEmissionZoneCatalog` (+5 zones), `announcementMessage` Euro copy, Settings explainer |
+| Lane voice | `ManeuverSpeechFormatter.spokenLanePhrase`, prepare/execute tiers |
+
+### Automated evidence (Phase 26)
+
+| Check | Result |
+|---|---|
+| `LaybyOccupancyReportTests` Break Now + lane voice | **Pass** |
+| `TruckPoiLivingLayerTests` LEZ catalog expansion | **Pass** |
+| Full `swift test` | **Pass** (see D8) |
+
+### Honest limits (Phase 26)
+
+- Interactive Break Now tap-to-map-center not re-run on device this session; unit + code inventory stand in.
+- TRAVIS parking booking intentionally not implemented — documented in research docs.
+- CarPlay and WeatherKit remain out of scope.

@@ -60,12 +60,14 @@ public final class NavigationCoordinator: LocationProviderDelegate {
     public func loadRoute(
         canonical: RouteGeometryCanonicalizer.CanonicalRouteGeometry,
         turnInstructions: [TurnInstruction] = [],
-        staticTotalTimeSeconds: Double = 0
+        staticTotalTimeSeconds: Double = 0,
+        webRoutingETASeconds: Double = 0
     ) {
         session.loadRoute(
             canonical: canonical,
             turnInstructions: turnInstructions,
-            staticTotalTimeSeconds: staticTotalTimeSeconds
+            staticTotalTimeSeconds: staticTotalTimeSeconds,
+            webRoutingETASeconds: webRoutingETASeconds
         )
         NavigationMapBridge.shared.loadRoute(
             coordinates: canonical.displayCoordinates,
@@ -120,6 +122,11 @@ public final class NavigationCoordinator: LocationProviderDelegate {
     /// Updates the static total-time baseline used for remaining ETA proportioning.
     public func updateStaticTotalTime(_ totalTimeSeconds: TimeInterval) {
         session.updateStaticTotalTime(totalTimeSeconds)
+    }
+
+    /// Replaces turn instructions after async lane enrichment.
+    public func updateTurnInstructions(_ instructions: [TurnInstruction]) {
+        session.updateTurnInstructions(instructions)
     }
 
     /// Emits the current simulation pose through the navigation pipeline.

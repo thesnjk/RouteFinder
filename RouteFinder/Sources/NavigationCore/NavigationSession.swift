@@ -20,10 +20,13 @@ public final class NavigationSession {
     public private(set) var maneuverAnchorCatalog: ManeuverAnchorCatalog?
     /// Static routing ETA in seconds from the routing engine.
     public private(set) var staticTotalTimeSeconds: Double = 0
+    /// Original web routing ETA used to cap inflated physics static totals during live nav.
+    public private(set) var webRoutingETASeconds: Double = 0
 
     private let projector = RoutePolylineProjector()
     private let progressCalculator = RouteProgressCalculator()
     private var maneuverTracker: ManeuverProgressTracker?
+    private var storedTurnInstructions: [TurnInstruction] = []
     private var delegates: [WeakNavigationDelegate] = []
     private var lastManeuverIndex: Int?
     private var lastProgressFraction: Double = -1
@@ -48,15 +51,18 @@ public final class NavigationSession {
     public func loadRoute(
         canonical: RouteGeometryCanonicalizer.CanonicalRouteGeometry,
         turnInstructions: [TurnInstruction] = [],
-        staticTotalTimeSeconds: Double = 0
+        staticTotalTimeSeconds: Double = 0,
+        webRoutingETASeconds: Double = 0
     ) {
         canonicalGeometry = canonical
         self.staticTotalTimeSeconds = staticTotalTimeSeconds
+        self.webRoutingETASeconds = webRoutingETASeconds
         let catalog = ManeuverAnchorCatalogBuilder.build(
             instructions: turnInstructions,
             totalLengthMeters: canonical.totalLengthMeters
         )
         maneuverAnchorCatalog = catalog
+        storedTurnInstructions = turnInstructions
         maneuverTracker = ManeuverProgressTracker(
             instructions: turnInstructions,
             cumulativeArcLengths: catalog.cumulativeArcLengths
@@ -66,6 +72,26 @@ public final class NavigationSession {
         progressSnapshot = nil
         latestRouteSplit = nil
         setPhase(.routeLoaded)
+    }
+
+    /// Replaces turn instructions without reloading geometry (e.g. after async lane enrichment).
+    public func updateTurnInstructions(_ instructions: [TurnInstruction]) {
+        guard let canonical = canonicalGeometry else { return }
+        let catalog = ManeuverAnchorCatalogBuilder.build(
+            instructions: instructions,
+            totalLengthMeters: canonical.totalLengthMeters
+        )
+        maneuverAnchorCatalog = catalog
+        storedTurnInstructions = instructions
+        maneuverTracker = ManeuverProgressTracker(
+            instructions: instructions,
+            cumulativeArcLengths: catalog.cumulativeArcLengths
+        )
+    }
+
+    /// Returns the turn instruction for a maneuver anchor identifier.
+    public func turnInstruction(withID id: UUID) -> TurnInstruction? {
+        storedTurnInstructions.first { $0.id == id }
     }
 
     /// Begins active navigation tracking.
@@ -93,10 +119,12 @@ public final class NavigationSession {
         canonicalGeometry = nil
         maneuverAnchorCatalog = nil
         maneuverTracker = nil
+        storedTurnInstructions = []
         progressSnapshot = nil
         latestRouteSplit = nil
         latestPosition = nil
         staticTotalTimeSeconds = 0
+        webRoutingETASeconds = 0
         lastManeuverIndex = nil
         lastProgressFraction = -1
         setPhase(.idle)
@@ -138,6 +166,7 @@ public final class NavigationSession {
             totalLengthMeters: canonical.totalLengthMeters,
             currentSpeedMps: speedMps,
             staticTotalTimeSeconds: staticTotalTimeSeconds > 0 ? staticTotalTimeSeconds : nil,
+            webRoutingETASeconds: webRoutingETASeconds > 0 ? webRoutingETASeconds : nil,
             currentManeuverIndex: maneuverIndex
         )
 

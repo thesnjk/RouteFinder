@@ -28,6 +28,7 @@ struct SettingsSheet: View {
                     }
                     avoidanceSection
                     environmentSection
+                    searchLanguageSection
                     navigationSection
                     offlineRoutingSection
                     offlineMapSection
@@ -92,10 +93,14 @@ struct SettingsSheet: View {
                 .tint(RFColor.hazard)
                 .onChange(of: viewModel.isHGVMode) { _, enabled in
                     if enabled { viewModel.applyHGVPreset() }
+                    viewModel.scheduleVehicleWorkspacePersist()
                 }
 
             if viewModel.isHGVMode {
                 Toggle("Avoid residential roads", isOn: $viewModel.avoidResidential)
+                    .onChange(of: viewModel.avoidResidential) { _, _ in
+                        viewModel.scheduleVehicleWorkspacePersist()
+                    }
                 Toggle("Advisory hours clock (EU 561)", isOn: $viewModel.hosEnabled)
                     .tint(RFColor.hazard)
                     .onChange(of: viewModel.hosEnabled) { _, _ in
@@ -106,14 +111,26 @@ struct SettingsSheet: View {
             HStack {
                 TextField("Height (m)", text: $viewModel.vehicleHeight)
                     .textFieldStyle(GlassTextFieldStyle())
+                    .onChange(of: viewModel.vehicleHeight) { _, _ in
+                        viewModel.scheduleVehicleWorkspacePersist()
+                    }
                 TextField("Weight (t)", text: $viewModel.vehicleWeight)
                     .textFieldStyle(GlassTextFieldStyle())
+                    .onChange(of: viewModel.vehicleWeight) { _, _ in
+                        viewModel.scheduleVehicleWorkspacePersist()
+                    }
             }
             HStack {
                 TextField("Width (m)", text: $viewModel.vehicleWidth)
                     .textFieldStyle(GlassTextFieldStyle())
+                    .onChange(of: viewModel.vehicleWidth) { _, _ in
+                        viewModel.scheduleVehicleWorkspacePersist()
+                    }
                 TextField("Length (m)", text: $viewModel.vehicleLength)
                     .textFieldStyle(GlassTextFieldStyle())
+                    .onChange(of: viewModel.vehicleLength) { _, _ in
+                        viewModel.scheduleVehicleWorkspacePersist()
+                    }
             }
 
             NavigationLink {
@@ -160,7 +177,13 @@ struct SettingsSheet: View {
             Toggle("Avoid Ferries", isOn: $viewModel.avoidFerries)
             Toggle("Avoid Tunnels", isOn: $viewModel.avoidTunnels)
             Toggle("Avoid non-compliant LEZ / CAZ", isOn: $viewModel.avoidNonCompliantLEZ)
+                .onChange(of: viewModel.avoidNonCompliantLEZ) { _, _ in
+                    viewModel.scheduleVehicleWorkspacePersist()
+                }
                 .help("Routes around UK ULEZ/CAZ zones when emission class is missing or below Euro 6. Destinations inside a zone are still allowed.")
+            Text("LEZ rings are simplified envelopes — not legal cadastral boundaries. Euro 6 exempt vehicles skip avoid routing when class is set in the vehicle profile.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
             Toggle("Hurry Mode", isOn: $viewModel.hurryMode)
                 .tint(RFColor.hazard)
             Toggle("Avoid speed cameras", isOn: $viewModel.avoidCameras)
@@ -189,6 +212,33 @@ struct SettingsSheet: View {
             Toggle("Curve speed advisories", isOn: $viewModel.enforceCurveSpeed)
             Toggle("Apple search fallback", isOn: $viewModel.useAppleSearchFallback)
                 .help("Off by default — uses HeiGIT OpenRouteService geocoding only")
+        }
+    }
+
+    private var searchLanguageSection: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.sm) {
+            Text("Search language")
+                .font(RFFont.sectionTitle)
+
+            Picker("Display language", selection: $viewModel.preferredSearchLanguage) {
+                ForEach(LanguageWorkspaceSettings.supportedOptions) { option in
+                    Text(option.label).tag(option.code)
+                }
+            }
+            .pickerStyle(.menu)
+            .onChange(of: viewModel.preferredSearchLanguage) { _, _ in
+                viewModel.persistLanguageWorkspaceSettings()
+            }
+
+            Toggle("English name fallback", isOn: $viewModel.searchEnglishFallback)
+                .onChange(of: viewModel.searchEnglishFallback) { _, _ in
+                    viewModel.persistLanguageWorkspaceSettings()
+                }
+                .help("When few localized results are found, also search in English (e.g. Warsaw instead of Warszawa). Special characters you type are preserved in results.")
+
+            Text("Map road labels still follow the basemap tile language. Search results and pin labels use the language returned by Pelias.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -225,6 +275,20 @@ struct SettingsSheet: View {
                     viewModel.persistApplyTrafficToSimulation()
                 }
                 .help("When off, TomTom traffic still informs reroutes but does not cap steady-state simulation speed.")
+
+            Toggle("Avoid traffic delays when routing", isOn: $viewModel.avoidTrafficDelaysWhenRouting)
+                .onChange(of: viewModel.avoidTrafficDelaysWhenRouting) { _, _ in
+                    viewModel.persistAvoidTrafficDelaysWhenRouting()
+                }
+                .help("When on, live TomTom standstills can trigger an ORS avoid-polygon recalculation after route find.")
+
+            if viewModel.isHGVMode {
+                Toggle("Break Now quick action", isOn: $viewModel.breakNowQuickActionEnabled)
+                    .onChange(of: viewModel.breakNowQuickActionEnabled) { _, _ in
+                        viewModel.persistBreakNowQuickActionEnabled()
+                    }
+                    .help("Shows a one-tap Break Now control to find the nearest layby ahead on the active route.")
+            }
 
             #if os(macOS)
             Toggle("Require login each launch", isOn: $requireLoginEachLaunch)

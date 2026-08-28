@@ -243,6 +243,38 @@ struct RouteSimulationEngineTests {
     #expect(peakSpeedKmh >= 105)
   }
 
+  @Test func cruiseSpeedDoesNotCapBelowPostedLegalLimit() async {
+    let coordinates = (0..<6).map { index in
+      Coordinate(latitude: 52.628, longitude: 1.296 + Double(index) * 0.015)
+    }
+    let speedLimitsKmh: [Double?] = Array(repeating: 48.0, count: coordinates.count)
+    let canonical = RouteGeometryCanonicalizer.process(
+      coordinates,
+      simulationStepMeters: 25,
+      speedLimitSource: SegmentSpeedLimitSource(
+        rawGeometrySpeedLimitsKmh: speedLimitsKmh,
+        stepSpeedRanges: []
+      )
+    )
+
+    let engine = RouteSimulationEngine()
+    engine.configure(
+      route: coordinates,
+      vehicle: .default,
+      totalDuration: 3600,
+      enginePowerHP: 250,
+      isPassengerCar: true,
+      canonicalGeometry: canonical
+    )
+    engine.simulationSpeedMultiplier = 20.0
+
+    for _ in 0..<150 {
+      await engine.simulateTick(deltaTime: 0.1)
+    }
+
+    #expect(engine.currentSpeedKmh >= 40)
+  }
+
   @Test func sharpBendSlowsHeavyVehicle() async {
     let bendRoute = [
       CLLocationCoordinate2D(latitude: 51.5000, longitude: -0.1300),

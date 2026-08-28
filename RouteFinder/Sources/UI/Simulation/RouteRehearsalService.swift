@@ -8,20 +8,27 @@ public enum RouteRehearsalService {
     private static let maxSteps = 2_000_000
     public static let defaultTimeoutSeconds: TimeInterval = 20
 
+    /// Scales wall-clock timeout with route length for long-haul rehearsals.
+    public static func scaledTimeoutSeconds(for routeLengthMeters: Double) -> TimeInterval {
+        let distanceKm = routeLengthMeters / 1000
+        return min(120, 20 + distanceKm / 50)
+    }
+
     /// Rehearses a configured route and returns the predictive telematics report.
     public static func rehearse(
         configuration: SimulationPhysicsConfiguration,
         tomTomAPIKey: String? = nil,
-        timeoutSeconds: TimeInterval = defaultTimeoutSeconds
+        timeoutSeconds: TimeInterval? = nil
     ) async -> PredictiveTelemetryReport? {
         guard configuration.totalRouteLength > 0 else { return nil }
 
+        let resolvedTimeout = timeoutSeconds ?? scaledTimeoutSeconds(for: configuration.totalRouteLength)
         let mailbox = SimulationStateMailbox()
         let actor = SimulationPhysicsActor(tomTomAPIKey: tomTomAPIKey, mailbox: mailbox)
         await actor.configure(configuration)
         await actor.start()
 
-        let deadline = ContinuousClock.now + .seconds(timeoutSeconds)
+        let deadline = ContinuousClock.now + .seconds(resolvedTimeout)
         var steps = 0
         while steps < maxSteps {
             if Task.isCancelled { return nil }

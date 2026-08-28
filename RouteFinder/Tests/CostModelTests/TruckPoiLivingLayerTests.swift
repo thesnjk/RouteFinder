@@ -67,12 +67,23 @@ import Testing
     }
 }
 
-@Test func ukLezAllZonesUseAuthoredBoundaryRings() {
-    for zone in UKLowEmissionZoneCatalog.zones {
+@Test func ukLezAuthoredZonesUseBoundaryRings() {
+    for (zoneId, expectedRing) in UKLowEmissionZoneBoundaries.ringsByZoneId {
+        let zone = try! #require(UKLowEmissionZoneCatalog.zones.first { $0.id == zoneId })
         #expect(zone.boundaryRing != nil)
-        #expect(zone.avoidPolygonRing() == zone.boundaryRing)
+        #expect(zone.avoidPolygonRing() == expectedRing)
         #expect(zone.avoidPolygonRing().first == zone.avoidPolygonRing().last)
     }
+}
+
+@Test func ukLezCatalogIncludesExpandedCoverage() {
+    #expect(UKLowEmissionZoneCatalog.zones.count >= 11)
+    let ids = Set(UKLowEmissionZoneCatalog.zones.map(\.id))
+    #expect(ids.contains("manchester-caz"))
+    #expect(ids.contains("glasgow-lez"))
+    #expect(ids.contains("bradford-caz"))
+    #expect(ids.contains("oxford-zez"))
+    #expect(ids.contains("portsmouth-caz"))
 }
 
 @Test func ukLezPolygonContainsCentralPointsAndExcludesFarAway() {

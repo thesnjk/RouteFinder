@@ -227,3 +227,49 @@ import Testing
     #expect(primary?.lastOccupancyKind == .full)
     #expect(primary?.lastOccupancyReportAt == createdAt)
 }
+
+@Test func laybyPredictionEngineBreakNowRanksNearestAhead() {
+    let near = LaybyStop(
+        id: "near",
+        coordinate: Coordinate(latitude: 51.5, longitude: -0.1),
+        label: "Near layby",
+        arcLengthAlongRouteMeters: 2_000
+    )
+    let far = LaybyStop(
+        id: "far",
+        coordinate: Coordinate(latitude: 51.51, longitude: -0.11),
+        label: "Far layby",
+        arcLengthAlongRouteMeters: 20_000
+    )
+    let input = LaybyPredictionInput(
+        candidates: [far, near],
+        currentArcLengthMeters: 500,
+        speedMps: 20,
+        pathDurationsSeconds: [0, 2_000],
+        pathArcLengthsMeters: [0, 40_000]
+    )
+    let result = LaybyPredictionEngine.predictBreakNow(input)
+    #expect(result.primary?.stop.id == "near")
+    #expect(result.primary?.reasonCodes.contains(.breakNow) == true)
+}
+
+@Test func maneuverSpeechFormatterSpokenLanePhraseUsesLeftTwoLanes() {
+    let guidance = LaneGuidance(
+        lanes: [.straight, .straight, .right],
+        recommendedIndices: [0, 1]
+    )
+    #expect(ManeuverSpeechFormatter.spokenLanePhrase(for: guidance) == "Use the left two lanes")
+}
+
+@Test func maneuverSpeechFormatterPrepareTierIncludesLaneHint() {
+    let instruction = TurnInstruction(
+        id: UUID(),
+        maneuver: .right,
+        roadName: "A1",
+        distance: 400,
+        bearing: 90,
+        laneGuidance: LaneGuidance(lanes: [.straight, .right], recommendedIndices: [1])
+    )
+    let prompt = ManeuverSpeechFormatter.spokenPrompt(for: instruction, tier: .prepare)
+    #expect(prompt.contains("right lane"))
+}

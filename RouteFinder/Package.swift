@@ -48,10 +48,6 @@ let package = Package(
             from: "1.2.0"
         ),
         .package(
-            url: "https://github.com/apple/swift-testing.git",
-            exact: "0.99.0"
-        ),
-        .package(
             url: "https://github.com/hummingbird-project/hummingbird.git",
             from: "2.0.0"
         ),
@@ -268,14 +264,12 @@ let package = Package(
             dependencies: [
                 "GraphCore",
                 "UI",
-                .product(name: "Testing", package: "swift-testing"),
             ]
         ),
         .testTarget(
             name: "CostModelTests",
             dependencies: [
                 "CostModel",
-                .product(name: "Testing", package: "swift-testing"),
             ]
         ),
         .testTarget(
@@ -286,21 +280,19 @@ let package = Package(
                 "RouteController",
                 "FleetServerCore",
                 .product(name: "Hummingbird", package: "hummingbird"),
-                .product(name: "Testing", package: "swift-testing"),
             ]
         ),
         .testTarget(
             name: "PathfindingEngineTests",
             dependencies: [
                 "PathfindingEngine",
-                .product(name: "Testing", package: "swift-testing"),
+                "DataLayer",
             ]
         ),
         .testTarget(
             name: "RouteControllerTests",
             dependencies: [
                 "RouteController",
-                .product(name: "Testing", package: "swift-testing"),
             ]
         ),
         .testTarget(
@@ -308,35 +300,30 @@ let package = Package(
             dependencies: [
                 "UI",
                 "DataLayer",
-                .product(name: "Testing", package: "swift-testing"),
             ]
         ),
         .testTarget(
             name: "MapLibreUITests",
             dependencies: [
                 "MapLibreUI",
-                .product(name: "Testing", package: "swift-testing"),
             ]
         ),
         .testTarget(
             name: "NavigationCoreTests",
             dependencies: [
                 "NavigationCore",
-                .product(name: "Testing", package: "swift-testing"),
             ]
         ),
         .testTarget(
             name: "CarPlayUITests",
             dependencies: [
                 "CarPlayUI",
-                .product(name: "Testing", package: "swift-testing"),
             ]
         ),
         .testTarget(
             name: "SharedCoreTests",
             dependencies: [
                 "SharedCore",
-                .product(name: "Testing", package: "swift-testing"),
             ]
         ),
     ]

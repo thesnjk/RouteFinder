@@ -1,7 +1,11 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-28 (post-Phase 23 hotfixes verified)  
-Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then CarPlay parity, then fleet/dispatch, then advisory tacho + offline packs.
+Last updated: 2026-08-28 (Phase 26 market research + Break Now / LEZ v2 / lane voice)  
+Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then advisory tacho + offline packs. **CarPlay deferred** until paid-team signing.
+
+> **Aug 28 Phase 26:** Market research pack (4 docs + `.firecrawl/` summaries). Shipped Break Now quick action, LEZ catalog expansion (11 zones) + Euro-class copy, lane voice at prepare/execute tiers. See [`competitive-research-2026-08.md`](competitive-research-2026-08.md) and [`phase20-verification.md`](phase20-verification.md#phase-26-live-qa).
+
+> **Aug 28 Sim UX:** session/workspace persistence, traffic cruise toggle (default off), center-anchored cab/trailer model, OSM `turn:lanes` lane banner with heuristic fallback + async Overpass enrichment (capped). See [`phase20-verification.md`](phase20-verification.md#sim-ux--lane-guidance-2026-08-28).
 
 > **Aug 28 hotfixes (verified):** data-protection Keychain persistence (`RouteFinderMac` + hardened packaged app), global Pelias geocode (`33 sørnesvegen` Ålesund), LEZ avoid long-haul cap (ORS 2004), simulation cruise feel (softened curve governor), camera follow on vehicle geometric center (zoom 15). Package script hardened for macOS 26 (`--options runtime`). See [`phase20-verification.md`](phase20-verification.md#post-fix-verification-2026-08-28).
 
@@ -35,14 +39,19 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **21** | UK LEZ / CAZ avoid-on-route — EmissionClass + ORS `avoid_polygons` | **Done** — `LEZAvoidPolicy` + Settings toggle; destination-inside zones still allowed |
 | **22** | Layby community signal expansion — age-weighted multi-report prior + last-seen banner | **Done** — `ParkingOccupancyPrior` fusion + `LaybyAdvisory` last-seen fields |
 | **23** | UK LEZ / CAZ geometry upgrade — hand-authored simplified boundary rings | **Done** — `UKLowEmissionZoneBoundaries` (approximate envelopes, not legal cadastral) |
+| **24** | Sim UX persistence + lane guidance hardening | **Done** — Touch ID session, workspace snapshot, traffic cruise toggle, cab/trailer model, map-top lane banner, capped async Overpass enrichment |
+| **25** | Market research + gap ranking (Aug 2026) | **Done** — 4 research docs, scorecard, pricing, personas; CoPilot TRAVIS / Break Now deltas captured |
+| **26** | Break Now + LEZ v2 + lane voice polish | **Done** — HUD Break Now, 11 UK LEZ zones, Euro-class banners, `spokenLanePhrase` voice |
 
 ### Remaining gaps (explicitly not claiming parity)
+
+- **CarPlay / Android Auto** (deferred — personal-team entitlements)
 
 - Full multi-country **toll tariff tables**
 - **Remote VU download** (partner SDK — VDO / Stoneridge / Samsara)
 - **Android Auto**
 - **In-process planet PBF** parser (pipeline uses osmium + `PBFPreprocessor` / tile scripts instead)
-- Paid live fuel-price API / SNAP booking
+- Paid live fuel-price API / SNAP booking / **TRAVIS parking booking** (CoPilot Jul 2026)
 - **Hosted fleet web portal / multi-tenant SaaS** (native dispatch + secured LAN server shipped; hosted portal deferred)
 - Legal cadastral LEZ polygons / diesel vs petrol nuance (authored rings are simplified envelopes)
 
@@ -72,9 +81,10 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | Live traffic affecting route choice | **TomTom flow → ORS avoid_polygons reroute** | Strong | Strong | Phase 2 |
 | HOS / tacho | **Advisory EU 561 + JSON/DDD import + Can-I-drive** (VU remains legal) | Weak | **Strong** | Phase 1 + 5; partner port stubbed |
 | Fleet dispatch / shared physics ETA | **Shipped** (native dispatch + LAN sync + SSE + trip brief) | Weak | **Strong** | Phase 8–16 |
-| Predictive layby / break stop | **Strong** (fused HOS + company window + physics + occupancy; $0 APIs) | Weak (CoPilot: HOS breaks + paid parking hold) | Weak | **Wedge vs CoPilot** — no parking booking fee |
+| Predictive layby / break stop | **Strong** (fused HOS + company window + physics + occupancy + **Break Now**; $0 APIs) | Weak (CoPilot: HOS breaks + TRAVIS booking) | Weak | **Wedge vs CoPilot** — no parking booking fee |
 | Driver community dock/parking intel | **Age-weighted multi-report Full/Spaces** + last-seen banner copy | Garmin community | Crowdsource | Phase 19–22 |
-| LEZ compliance | **Banners + avoid-on-route** with **simplified authored rings** (Euro 6 exempt; destination-inside allowed) | Strong avoid (Sygic/TomTom) | Varies | Phase 21–23 |
+| LEZ compliance | **Banners + avoid-on-route** with **11 zones** (6 authored rings + 5 circle envelopes); Euro-class copy | Strong avoid (Sygic/TomTom) | Varies | Phase 21–23, **26** |
+| Lane-level junction guidance | **OSM `turn:lanes` + heuristic**; map-top banner; **prepare/execute lane voice** | Strong (TomTom/Sygic) | Weak | Phase 24, **26** |
 | Walkaround inspection | **Local DVSA checklist + disk store** | Varies | Strong | Glass UI |
 | Live weather road conditions | **OpenWeather preferred** + WeatherKit fallback | Varies | Strong | Phase 17–18; WeatherKit needs paid team |
 
@@ -93,8 +103,8 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 
 | | CoPilot 11.x | RouteFinder |
 |---|---|---|
-| HOS break planning | ELD sync + rest stops (US/CA; Trip Management license) | Advisory EU 561 + company `CompanyBreakAllocation` |
-| Predictive parking | Live insights + driver Plenty/Limited/None feedback (US/CA); Book Parking TPC/BTP (+ select EU) | OSM layby + hour-of-day prior + **Looks full / Has spaces** (free, UK-first) |
+| HOS break planning | ELD sync + rest stops (US/CA; Trip Management license) | Advisory EU 561 + company `CompanyBreakAllocation` + **Break Now** |
+| Predictive parking | TRAVIS 750+ EU booking (Jul 2026) + US/CA live feedback | OSM layby + occupancy taps + **Break Now** (no booking fee) |
 | Fleet portal | Account Manager (per-seat SaaS) | Native macOS/iPad dispatch + LAN HTTP at **$0** |
 | Physics rehearsal | Absent | Pre-trip kinetic sim + physics ETA |
 | Android Auto | Shipped in CoPilot 11 | Deferred |
@@ -102,10 +112,13 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 
 **Do not chase:** CoPilot parking booking fees, ELD vendor lock-in, Android Auto, hosted multi-tenant SaaS — unless an urgent UK wedge appears.
 
-## Phase 24+ backlog (ranked)
+## Phase 27+ backlog (ranked)
 
-1. **Phase 24:** Paid-team CarPlay entitlement restore + device QA checklist (only when signing allows).
-2. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs, legal cadastral LEZ polygons.
+1. **Driver onboarding sheet** — in-app "What RouteFinder does" linking [`user-guide-simulation.md`](user-guide-simulation.md).
+2. **Map label i18n** — MapLibre label language preference (CoPilot TRAVIS: 10+ languages for parking copy).
+3. **Fleet E2E scripted QA** — Mac server + iPhone driver Bonjour/SSE/trip brief automation.
+4. **Paid-team CarPlay entitlement restore** — only when signing allows (explicitly deferred from Phase 26).
+5. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs, legal cadastral LEZ polygons, TRAVIS booking integration.
 
 ## 90-day bar checklist
 
@@ -119,7 +132,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 - [x] Fused layby prediction v2 (HOS + company breaks + physics + occupancy)
 - [x] Shareable predictive trip brief (driver + dispatch ShareLink)
 - [x] Shareable trip brief PDF export (driver + dispatch)
-- [x] Competitive intel refresh (Phase 20 public-web; Parallel still blocked)
+- [x] Competitive intel refresh (Phase 20 public-web; **Phase 25/26 research docs**)
 - [ ] Full Samsara-class remote VU (partner, don’t rebuild)
 - [x] LEZ avoid-on-route (Phase 21)
 
@@ -135,7 +148,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | Predictive layby v2 | LaybyIntel | Done |
 | Advisory tacho + Can-I-drive | AdvisoryTacho | Done (Phase 5) |
 | Offline map packs | OfflineMaps | Done (Phase 4) |
-| Competitive intel refresh | CompetitiveIntel | **Partial** — Phase 20 public-web Done; Parallel API still Pending |
+| Competitive intel refresh | CompetitiveIntel | **Done** — Phase 25/26 research docs + scorecard |
 | LEZ avoid-on-route | UKLivingLayer | **Done** (Phase 21) |
 | LEZ simplified geometry | UKLivingLayer | **Done** (Phase 23) |
 
@@ -156,4 +169,5 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 - [HERE Professional Navigation](https://www.here.com/solutions/professional-navigation)
 - [Samsara tachograph](https://www.samsara.com/uk/products/telematics/tachograph)
 - [Geotab digital tachograph](https://www.geotab.com/uk/fleet-management-solutions/smart-digital-tachograph/)
-- Verification: [`Docs/phase20-verification.md`](phase20-verification.md)
+- [CoPilot TRAVIS integration](https://www.yourtravis.com/knowledge/trimble-integration/) *(2026-07-23)*
+- Phase 26 research: [`competitive-research-2026-08.md`](competitive-research-2026-08.md)

@@ -144,7 +144,7 @@ public struct SimulationCompletionResult: Sendable {
 public actor SimulationPhysicsActor {
   private static let maxPoseSnapshots = 4
   private static let environmentPollInterval = 4
-  private static let curveLookaheadBufferMeters = 30.0
+  private static let curveLookaheadBufferMeters = 15.0
   private static let launchSpeedThresholdMps = 0.5
 
   private let trafficSignalController = TrafficSignalController()

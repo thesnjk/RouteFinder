@@ -247,7 +247,7 @@ public final class RouteViewModel {
     /// Shareable plain-text trip brief from the latest predictive report.
     public var tripBriefShareText: String?
     /// Map camera zoom while simulating (user-adjustable).
-    public var simulationCameraZoom: Double = 16.5
+    public var simulationCameraZoom: Double = 15.0
     /// When true, auto camera tracking will not override the sim zoom slider.
     public var simulationZoomLockedByUser = false
     /// Active lane-keep popup text near the upcoming maneuver.

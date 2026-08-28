@@ -36,8 +36,8 @@ public final class MapViewControllerBridge: ObservableObject {
     @Published public var isTrackingVehicle: Bool = true
     /// Active camera tracking mode.
     @Published public var cameraMode: CameraTrackingMode = .lockNorth
-    /// Target zoom when tracking the vehicle.
-    @Published public var trackingZoomLevel: Double = 16.5
+    /// Target zoom when tracking the vehicle (pulled back so HGV screen velocity feels real).
+    @Published public var trackingZoomLevel: Double = 15.0
     /// Latest reported map zoom from the web canvas.
     @Published public var currentMapZoom: Double = 12.0
 
@@ -113,6 +113,9 @@ public final class MapViewControllerBridge: ObservableObject {
     }
 
     /// Notifies the bridge of a vehicle position update during navigation.
+    ///
+    /// `coordinate` is the rear-axle pose used by physics/footprint. Camera follow
+    /// centers on the geometric mid-body so long HGVs do not appear to steer from the trailer.
     public func vehicleDidUpdate(
         coordinate: CLLocationCoordinate2D,
         bearing: Double,
@@ -138,11 +141,16 @@ public final class MapViewControllerBridge: ObservableObject {
 
         let mapBearing = cameraStateMachine.mapBearing(forVehicleBearing: bearing)
         let mapPitch = cameraStateMachine.mapPitch()
+        let followCenter = Self.cameraFollowCenter(
+            rearAxle: coordinate,
+            bearingDegrees: bearing,
+            lengthMeters: dimensions.lengthMeters
+        )
 
         if mapBearing != nil || mapPitch != nil {
             let command = MapCameraCommand(
-                longitude: coordinate.longitude,
-                latitude: coordinate.latitude,
+                longitude: followCenter.longitude,
+                latitude: followCenter.latitude,
                 zoom: zoom,
                 bearing: mapBearing,
                 pitch: mapPitch,
@@ -152,20 +160,36 @@ public final class MapViewControllerBridge: ObservableObject {
                 easeToNavigationHandler(command)
             } else {
                 easeToCenterHandler?(
-                    coordinate.longitude,
-                    coordinate.latitude,
+                    followCenter.longitude,
+                    followCenter.latitude,
                     zoom,
                     Self.cameraEaseDurationMs
                 )
             }
         } else {
             easeToCenterHandler?(
-                coordinate.longitude,
-                coordinate.latitude,
+                followCenter.longitude,
+                followCenter.latitude,
                 zoom,
                 Self.cameraEaseDurationMs
             )
         }
+    }
+
+    /// Map camera target: geometric center of the vehicle (forward of rear axle by half length).
+    public nonisolated static func cameraFollowCenter(
+        rearAxle: CLLocationCoordinate2D,
+        bearingDegrees: Double,
+        lengthMeters: Double
+    ) -> CLLocationCoordinate2D {
+        let halfLength = max(lengthMeters, 0) * 0.5
+        guard halfLength > 0.1 else { return rearAxle }
+        return SimulatedVehicleFootprint.offsetMeters(
+            from: rearAxle,
+            bearingDegrees: bearingDegrees,
+            forwardMeters: halfLength,
+            rightMeters: 0
+        )
     }
 
     private static func seconds(from duration: Duration) -> Double {

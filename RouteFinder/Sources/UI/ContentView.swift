@@ -129,6 +129,7 @@ private struct MapWorkspaceView: View {
     @Bindable var viewModel: RouteViewModel
     @ObservedObject private var simulationEngine: RouteSimulationEngine
     @ObservedObject private var mapBridge: MapViewControllerBridge
+    @State private var showProductOnboarding = !NavigationWorkspaceSettings.loadHasSeenProductOnboarding()
     var onOpenProfile: () -> Void
     var onOpenSettings: () -> Void
 
@@ -191,6 +192,13 @@ private struct MapWorkspaceView: View {
                     .padding(.bottom, RFSpacing.lg + 120)
             }
         }
+        .sheet(isPresented: $showProductOnboarding, onDismiss: markProductOnboardingSeen) {
+            ProductOnboardingSheet()
+        }
+    }
+
+    private func markProductOnboardingSeen() {
+        NavigationWorkspaceSettings.saveHasSeenProductOnboarding(true)
     }
 
     private var simulatedVehicleState: SimulatedVehicleState? {

@@ -9,6 +9,7 @@ public enum NavigationWorkspaceSettings {
     private static let applyTrafficToSimulationKey = "RouteFinder.applyTrafficToSimulation"
     private static let avoidTrafficDelaysWhenRoutingKey = "RouteFinder.avoidTrafficDelaysWhenRouting"
     private static let breakNowQuickActionEnabledKey = "RouteFinder.breakNowQuickActionEnabled"
+    private static let productOnboardingSeenKey = "RouteFinder.productOnboardingSeen"
 
     /// Loads the preferred telemetry source mode.
     public static func loadTelemetrySourceMode(defaults: UserDefaults = .standard) -> LocationProviderMode {
@@ -94,5 +95,15 @@ public enum NavigationWorkspaceSettings {
     /// Persists Break Now quick action preference.
     public static func saveBreakNowQuickActionEnabled(_ enabled: Bool, defaults: UserDefaults = .standard) {
         defaults.set(enabled, forKey: breakNowQuickActionEnabledKey)
+    }
+
+    /// Whether the driver has dismissed the product onboarding sheet.
+    public static func loadHasSeenProductOnboarding(defaults: UserDefaults = .standard) -> Bool {
+        defaults.bool(forKey: productOnboardingSeenKey)
+    }
+
+    /// Persists that the driver has seen and dismissed product onboarding.
+    public static func saveHasSeenProductOnboarding(_ seen: Bool, defaults: UserDefaults = .standard) {
+        defaults.set(seen, forKey: productOnboardingSeenKey)
     }
 }

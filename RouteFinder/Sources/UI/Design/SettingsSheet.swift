@@ -12,6 +12,7 @@ struct SettingsSheet: View {
     #endif
     @State private var showInspectionSheet = false
     @State private var showDispatchConsole = false
+    @State private var showProductOnboarding = false
     #if os(macOS)
     @State private var requireLoginEachLaunch = SessionWorkspaceSettings.loadRequireLoginEachLaunch()
     #endif
@@ -30,6 +31,7 @@ struct SettingsSheet: View {
                     environmentSection
                     searchLanguageSection
                     navigationSection
+                    helpSection
                     offlineRoutingSection
                     offlineMapSection
                     orsAPIKeySection
@@ -58,6 +60,9 @@ struct SettingsSheet: View {
             }
             .sheet(isPresented: $showDispatchConsole) {
                 DispatchConsoleView()
+            }
+            .sheet(isPresented: $showProductOnboarding) {
+                ProductOnboardingSheet()
             }
         }
         #if os(macOS)
@@ -296,6 +301,20 @@ struct SettingsSheet: View {
                     SessionWorkspaceSettings.saveRequireLoginEachLaunch(value)
                 }
             #endif
+        }
+    }
+
+    private var helpSection: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.sm) {
+            Text("Help")
+                .font(RFFont.sectionTitle)
+
+            Button {
+                showProductOnboarding = true
+            } label: {
+                Label("How RouteFinder works", systemImage: "questionmark.circle")
+            }
+            .buttonStyle(.plain)
         }
     }
 

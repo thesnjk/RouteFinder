@@ -55,3 +55,16 @@ struct SessionWorkspaceSettingsTests {
         #expect(SessionWorkspaceSettings.loadLastEmail(defaults: defaults) == nil)
     }
 }
+
+struct NavigationWorkspaceSettingsTests {
+    @Test func productOnboardingSeenRoundTripsThroughUserDefaults() {
+        let suiteName = "RouteFinder.NavigationTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { UserDefaults.standard.removeSuite(named: suiteName) }
+
+        #expect(!NavigationWorkspaceSettings.loadHasSeenProductOnboarding(defaults: defaults))
+
+        NavigationWorkspaceSettings.saveHasSeenProductOnboarding(true, defaults: defaults)
+        #expect(NavigationWorkspaceSettings.loadHasSeenProductOnboarding(defaults: defaults))
+    }
+}

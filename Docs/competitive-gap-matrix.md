@@ -1,7 +1,9 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-28 (Phase 38–40 XCTest smoke, walkaround fleet handoff, hazard overlay rebuild)  
+Last updated: 2026-08-29 (Phase 41–42 dispatch inspection + CI UI smoke)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then advisory tacho + offline packs. **CarPlay deferred** until paid-team signing.
+
+> **Aug 29 Phase 41–42:** Dispatch console walkaround defect card + PDF share; fleet LAN inspection snapshot E2E; CI `RouteFinderAppUITests`. See [`phase20-verification.md`](phase20-verification.md#phase-4142-dispatch-inspection--ci-2026-08-29).
 
 > **Aug 28 Phase 38–40:** iOS XCTest smoke (cold launch, settings hub, walkaround entry); walkaround defect warning in shareable trip brief + optional fleet inspection PDF on LAN snapshot; hazard map overlay rebuild on crowd hydrate. See [`phase20-verification.md`](phase20-verification.md#phase-3840-automation--fleet-handoff-2026-08-28).
 
@@ -59,6 +61,11 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **34** | Settings hub sub-menus | **Done** — drill-down NavigationLink groups |
 | **35** | Roadworks ahead on route (OSM) | **Done** — `RoadworksAlongRouteRepository`, corridor banner |
 | **36** | TomTom live hazard ahead + crowd hydrate + roadworks cache | **Done** — `LiveTrafficHazardSampler`, `promotedHazards`, `RoadworksDiskCache` |
+| **38** | iOS XCTest smoke + accessibility IDs + auth bypass launch args | **Done** — `RouteFinderAppUITests` |
+| **39** | Walkaround defect line in trip brief + fleet inspection PDF snapshot | **Done** — `TripBriefInspectionSummary`, `publishInspectionFleetHandoff` |
+| **40** | Hazard map overlay rebuild on crowd hydrate | **Done** — `HazardOverlayBuilder` |
+| **41** | Dispatch console inspection defect card + PDF share | **Done** — `DispatchStatusPanel` |
+| **42** | Fleet E2E inspection snapshot + CI UI smoke | **Done** — `FleetSSETests`, `.github/workflows/ci.yml` |
 
 ### Remaining gaps (explicitly not claiming parity)
 
@@ -97,7 +104,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | Multi-stop optimize | Shipped | Shipped | Strong | Existing |
 | Live traffic affecting route choice | **TomTom flow → ORS avoid_polygons reroute** | Strong | Strong | Phase 2 |
 | HOS / tacho | **Advisory EU 561 + JSON/DDD import + Can-I-drive** (VU remains legal) | Weak | **Strong** | Phase 1 + 5; partner port stubbed |
-| Fleet dispatch / shared physics ETA | **Shipped** (native dispatch + LAN sync + SSE + trip brief + inspection PDF) | Weak | **Strong** | Phase 8–16 + Ph39 |
+| Fleet dispatch / shared physics ETA | **Shipped** (native dispatch + LAN sync + SSE + trip brief + inspection PDF + dispatch defect card) | Weak | **Strong** | Phase 8–16 + Ph39–41 |
 | Predictive layby / break stop | **Strong** (fused HOS + company window + physics + occupancy + **Break Now**; $0 APIs) | Weak (CoPilot: HOS breaks + TRAVIS booking) | Weak | **Wedge vs CoPilot** — no parking booking fee |
 | Driver community dock/parking intel | **Age-weighted multi-report Full/Spaces** + last-seen banner copy | Garmin community | Crowdsource | Phase 19–22 |
 | LEZ compliance | **Banners + avoid-on-route** with **11 zones** (6 authored rings + 5 circle envelopes); Euro-class copy | Strong avoid (Sygic/TomTom) | Varies | Phase 21–23, **26** |

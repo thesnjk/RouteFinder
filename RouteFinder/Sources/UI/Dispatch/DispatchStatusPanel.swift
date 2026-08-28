@@ -47,6 +47,9 @@ struct DispatchStatusPanel: View {
                     if let layby = trip.predictedLayby {
                         laybyCard(layby)
                     }
+                    if let inspection = trip.latestInspectionSummary, inspection.defectCount > 0 {
+                        inspectionWarningCard(inspection, pdfBase64: trip.inspectionReportPDFBase64)
+                    }
                 } else {
                     Text("No active trip for the selected vehicle.")
                         .font(RFFont.caption)
@@ -63,7 +66,7 @@ struct DispatchStatusPanel: View {
             Text("Status")
                 .font(RFFont.sectionTitle)
             Spacer()
-            if trip.predictiveReport != nil || trip.physicsETASeconds != nil {
+            if showsTripBriefShare(for: trip) {
                 TripBriefShareMenu(
                     context: tripBriefContext(for: trip),
                     labelStyle: .caption
@@ -111,6 +114,49 @@ struct DispatchStatusPanel: View {
                 .font(RFFont.summary.monospacedDigit())
         }
         .controlSheetStyle()
+    }
+
+    private func showsTripBriefShare(for trip: FleetTrip) -> Bool {
+        trip.predictiveReport != nil
+            || trip.physicsETASeconds != nil
+            || (trip.latestInspectionSummary?.defectCount ?? 0) > 0
+    }
+
+    private func inspectionWarningCard(
+        _ summary: TripBriefInspectionSummary,
+        pdfBase64: String?
+    ) -> some View {
+        VStack(alignment: .leading, spacing: RFSpacing.xs) {
+            HStack {
+                Text("Walkaround defects")
+                    .font(RFFont.sectionTitle)
+                Spacer()
+                if let pdfBase64,
+                   let pdfData = Data(base64Encoded: pdfBase64),
+                   !pdfData.isEmpty {
+                    ShareLink(
+                        item: pdfData,
+                        preview: SharePreview("Walkaround report", icon: Image(systemName: "doc.richtext"))
+                    ) {
+                        Label("PDF", systemImage: "square.and.arrow.up")
+                            .font(RFFont.caption)
+                    }
+                }
+            }
+            Text(inspectionSummaryLine(summary))
+                .font(RFFont.caption.weight(.semibold))
+                .foregroundStyle(.orange)
+            Text("Driver-reported defects — verify in the operator defect system before dispatch.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .controlSheetStyle()
+    }
+
+    private func inspectionSummaryLine(_ summary: TripBriefInspectionSummary) -> String {
+        let plateSuffix = summary.registrationPlate.map { " (\($0))" } ?? ""
+        let timestamp = summary.completedAt.formatted(date: .abbreviated, time: .shortened)
+        return "\(summary.vehicleLabel)\(plateSuffix) — \(summary.defectCount) defect(s) at \(timestamp)"
     }
 
     private func laybyCard(_ advisory: LaybyAdvisory) -> some View {

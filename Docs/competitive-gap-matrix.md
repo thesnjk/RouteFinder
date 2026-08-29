@@ -84,6 +84,9 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **52** | HOS advisory coordinator extraction | **Done** — `HosAdvisoryCoordinator`, `HosAdvisoryHost`, tests |
 | **53** | Pilot GTM prep (Driver Terms + pilot pack) | **Done** — CI green [`33260215759`](https://github.com/thesnjk/RouteFinder/actions/runs/33260215759); outreach targets drafted; meetings after P0 |
 | **54** | iOS routing UX unblock (banner / save / basemap) | **Done** (code) — device Save key + London→Manchester **Pending local** |
+| **55** | Start Navigation primary CTA on iOS results sheet | **Done** (code) — `NavigationStartRow` + UI smoke with `UITEST_SEED_ROUTE` |
+| **56** | iOS native map feel (full-bleed, vehicle, overview, alerts) | **Done** (code) — `MapCanvasBackdrop`, `CompactAlertStack`, device QA pending |
+| **57** | Map resize, voice, Car/HGV onboarding, bottom peek sheet  | **Done** (code) — `map.resize()`, `VehicleModeOnboardingSheet`, device QA pending |
 
 ### Remaining gaps (explicitly not claiming parity)
 

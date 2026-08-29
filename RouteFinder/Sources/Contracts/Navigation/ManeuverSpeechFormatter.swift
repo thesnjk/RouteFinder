@@ -89,20 +89,20 @@ public enum ManeuverSpeechFormatter {
         switch tier {
         case .approach:
             if let laneText = instruction.laneGuidance.map({ spokenLanePhrase(for: $0) }), !laneText.isEmpty {
-                return "In one mile, \(laneText.lowercased())\(roadSuffix(for: instruction, tier: tier))"
+                return "In 1.6 kilometres, \(laneText.lowercased())\(roadSuffix(for: instruction, tier: tier))"
             }
-            return "In one mile, \(phrase.lowercased())\(roadSuffix(for: instruction, tier: tier))"
+            return "In 1.6 kilometres, \(phrase.lowercased())\(roadSuffix(for: instruction, tier: tier))"
         case .prepare:
             if let laneText = instruction.laneGuidance.map({ spokenLanePhrase(for: $0) }), !laneText.isEmpty {
-                return "In a quarter mile, \(laneText.lowercased())"
+                return "In 400 metres, \(laneText.lowercased())"
             }
-            return "In a quarter mile, \(phrase.lowercased())"
+            return "In 400 metres, \(phrase.lowercased())"
         case .execute:
             if instruction.maneuver == .arrive {
                 return phrase
             }
             if let laneText = instruction.laneGuidance.map({ spokenLanePhrase(for: $0) }), !laneText.isEmpty {
-                return "\(laneText). \(phrase)"
+                return "\(laneText), then \(phrase.lowercased())"
             }
             if let roadName = instruction.roadName, !roadName.isEmpty {
                 return "\(phrase) onto \(roadName)"

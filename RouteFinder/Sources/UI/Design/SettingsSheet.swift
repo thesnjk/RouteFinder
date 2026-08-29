@@ -2,6 +2,9 @@ import Contracts
 import DataLayer
 import RouteController
 import SwiftUI
+#if os(iOS)
+import AVFoundation
+#endif
 
 /// Settings sheet for algorithm, vehicle, avoidance, and HeiGIT API configuration.
 struct SettingsSheet: View {
@@ -357,6 +360,8 @@ struct SettingsSheet: View {
                 .onChange(of: viewModel.voiceGuidanceEnabled) { _, _ in
                     viewModel.persistVoiceGuidanceEnabled()
                 }
+
+            speechVoiceSettings
             #endif
 
             Toggle("Apply live traffic to cruise speed", isOn: $viewModel.applyTrafficToSimulation)
@@ -409,6 +414,39 @@ struct SettingsSheet: View {
             #endif
         }
     }
+
+    #if os(iOS)
+    private var speechVoiceSettings: some View {
+        Group {
+            let voices = AVSpeechSynthesisVoice.speechVoices()
+                .filter { $0.language.hasPrefix("en") }
+                .sorted { $0.name < $1.name }
+
+            Picker("Voice", selection: Binding(
+                get: { viewModel.speechVoiceIdentifier ?? "" },
+                set: { viewModel.speechVoiceIdentifier = $0.isEmpty ? nil : $0 }
+            )) {
+                Text("System default (enhanced)").tag("")
+                ForEach(voices, id: \.identifier) { voice in
+                    Text(voice.name).tag(voice.identifier)
+                }
+            }
+            .onChange(of: viewModel.speechVoiceIdentifier) { _, _ in
+                viewModel.persistSpeechVoiceSettings()
+            }
+
+            VStack(alignment: .leading, spacing: RFSpacing.xs) {
+                Text("Speech rate")
+                    .font(RFFont.caption)
+                    .foregroundStyle(.secondary)
+                Slider(value: $viewModel.speechRate, in: 0.35...0.65, step: 0.02)
+                    .onChange(of: viewModel.speechRate) { _, _ in
+                        viewModel.persistSpeechVoiceSettings()
+                    }
+            }
+        }
+    }
+    #endif
 
     private var helpSection: some View {
         VStack(alignment: .leading, spacing: RFSpacing.sm) {

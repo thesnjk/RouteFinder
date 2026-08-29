@@ -68,6 +68,43 @@ final class RouteFinderAppUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Driver Terms"].waitForExistence(timeout: menuTimeout))
     }
 
+    /// Ph57: bottom peek search bar visible at launch.
+    @MainActor
+    func testMapSearchPeekBarAtLaunch() throws {
+        let app = launchApp(skipAuth: true)
+        let peekBar = app.buttons["mapSearchPeekBar"]
+        XCTAssertTrue(peekBar.waitForExistence(timeout: launchTimeout), "mapSearchPeekBar")
+    }
+
+    /// Ph55: seeded route results sheet shows Start Navigation primary action.
+    @MainActor
+    func testStartNavigationButtonOnRouteResults() throws {
+        let app = launchApp(skipAuth: true, seedRoute: true)
+        let mapMenu = app.buttons["mapToolbarMenu"]
+        XCTAssertTrue(mapMenu.waitForExistence(timeout: launchTimeout), "map should load")
+
+        let startButton = app.buttons["startNavigationButton"]
+        XCTAssertTrue(
+            startButton.waitForExistence(timeout: launchTimeout),
+            "startNavigationButton should appear after seeded route"
+        )
+        let label = startButton.label
+        XCTAssertTrue(
+            label.contains("Start Navigation") || label.contains("Start Simulation") || label.contains("Stop"),
+            "Unexpected start button label: \(label)"
+        )
+        XCTAssertFalse(startButton.isHittable && app.buttons.matching(identifier: "startNavigationButton").count > 1)
+    }
+
+    /// Ph56: Route Overview toolbar button visible when route is loaded.
+    @MainActor
+    func testRouteOverviewButtonOnSeededRoute() throws {
+        let app = launchApp(skipAuth: true, seedRoute: true)
+        let overview = app.buttons["mapRouteOverviewButton"]
+        XCTAssertTrue(overview.waitForExistence(timeout: launchTimeout), "mapRouteOverviewButton")
+        XCTAssertTrue(overview.isEnabled)
+    }
+
     @MainActor
     private func openSettingsHub(in app: XCUIApplication) {
         let mapMenu = app.buttons["mapToolbarMenu"]
@@ -82,10 +119,13 @@ final class RouteFinderAppUITests: XCTestCase {
     }
 
     @MainActor
-    private func launchApp(skipAuth: Bool = false) -> XCUIApplication {
+    private func launchApp(skipAuth: Bool = false, seedRoute: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         if skipAuth {
             app.launchArguments += ["UITEST_SKIP_AUTH", "UITEST_SKIP_ONBOARDING"]
+        }
+        if seedRoute {
+            app.launchArguments += ["UITEST_SEED_ROUTE"]
         }
         app.launch()
         return app

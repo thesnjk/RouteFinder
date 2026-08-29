@@ -245,6 +245,7 @@ private struct MapLibreWebMapContainer: View {
                 mapLoadErrorOverlay(message: errorMessage)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     @ViewBuilder
@@ -343,6 +344,11 @@ private final class MapWebViewHost: NSView {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+
+    override func layout() {
+        super.layout()
+        webView.evaluateJavaScript("if (window.map) map.resize();", completionHandler: nil)
+    }
 }
 
 private struct MapLibreWebViewRepresentable: NSViewRepresentable {
@@ -396,6 +402,7 @@ private final class MapWebViewHostView: UIView {
     init(webView: WKWebView) {
         self.webView = webView
         super.init(frame: .zero)
+        backgroundColor = MapCanvasBackdrop.uiColor
         addSubview(webView)
         webView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
@@ -410,6 +417,11 @@ private final class MapWebViewHostView: UIView {
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        webView.evaluateJavaScript("if (window.map) map.resize();", completionHandler: nil)
     }
 }
 
@@ -438,7 +450,8 @@ private struct MapLibreWebViewRepresentable: UIViewRepresentable {
     func makeUIView(context: Context) -> MapWebViewHostView {
         let webView = WKWebView(frame: .zero, configuration: context.coordinator.makeConfiguration())
         webView.isOpaque = true
-        webView.backgroundColor = .systemBackground
+        webView.backgroundColor = MapCanvasBackdrop.uiColor
+        webView.scrollView.backgroundColor = MapCanvasBackdrop.uiColor
         webView.isMultipleTouchEnabled = true
         webView.scrollView.isScrollEnabled = false
         webView.scrollView.delaysContentTouches = false
@@ -546,9 +559,12 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
 
         NavigationMapBridge.shared.pushVehicle = { [weak self] state in
             guard let self, let webView = self.webView else { return }
-            let renderMode = self.parent.mapBridge?.renderMode(
-                for: self.parent.mapBridge?.currentMapZoom ?? MapViewControllerBridge.lodZoomThreshold
-            ) ?? state.renderMode
+            let zoom = self.parent.mapBridge?.currentMapZoom ?? MapViewControllerBridge.lodZoomThreshold
+            let hasFootprint = !state.footprintParts.isEmpty || !state.footprintCoordinates.isEmpty
+            let bridgeRenderMode = self.parent.mapBridge?.renderMode(for: zoom) ?? state.renderMode
+            let renderMode: VehicleRenderMode = (bridgeRenderMode == .polygon && hasFootprint)
+                ? .polygon
+                : (hasFootprint ? state.renderMode : .icon)
             var enriched = state
             if renderMode != state.renderMode {
                 enriched = SimulatedVehicleState(

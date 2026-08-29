@@ -132,3 +132,17 @@ func maneuverSpeechIncludesLaneGuidance() {
     #expect(spoken.contains(instruction.laneGuidance!.guidanceText))
     #expect(spoken.contains("Turn right"))
 }
+
+@Test("Maneuver speech uses metric approach distances")
+func maneuverSpeechUsesMetricDistances() {
+    let instruction = TurnInstruction(
+        maneuver: .left,
+        roadName: "M6",
+        distance: 1600,
+        bearing: 270
+    )
+    let approach = ManeuverSpeechFormatter.spokenPrompt(for: instruction, tier: .approach)
+    let prepare = ManeuverSpeechFormatter.spokenPrompt(for: instruction, tier: .prepare)
+    #expect(approach.contains("kilometres"))
+    #expect(prepare.contains("metres"))
+}

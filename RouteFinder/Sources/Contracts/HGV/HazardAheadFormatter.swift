@@ -220,12 +220,14 @@ public enum HazardAheadFormatter {
     }
 
     private static func formattedDistance(_ meters: Double) -> String {
-        let miles = meters / 1609.34
-        if miles >= 1 {
-            return String(format: "%.1f miles", miles)
+        if meters >= 1000 {
+            let km = meters / 1000
+            return km >= 10
+                ? String(format: "%.0f kilometres", km)
+                : String(format: "%.1f kilometres", km)
         }
-        let yards = Int((meters * 1.09361).rounded())
-        return "\(max(50, yards)) yards"
+        let rounded = Int(meters.rounded())
+        return "\(max(50, rounded)) metres"
     }
 
     private struct Projection {

@@ -207,8 +207,8 @@ public final class MapViewControllerBridge: ObservableObject {
         zoom: Double,
         userInitiated: Bool
     ) {
-        currentMapZoom = zoom
         if userInitiated {
+            currentMapZoom = zoom
             isTrackingVehicle = false
             cameraMode = .freePan
             cameraStateMachine.userDidPanOrZoom()

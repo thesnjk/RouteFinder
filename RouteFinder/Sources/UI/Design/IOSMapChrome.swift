@@ -4,6 +4,8 @@ import MapLibreUI
 import RouteController
 import SwiftUI
 
+private let iosMapPeekDetent = PresentationDetent.fraction(0.12)
+
 /// Maps-style iOS map chrome: compact top search, bottom detent sheet, consolidated toolbar.
 struct IOSMapChrome: View {
     @Bindable var viewModel: RouteViewModel
@@ -12,12 +14,17 @@ struct IOSMapChrome: View {
     var onOpenWalkaround: () -> Void = {}
 
     @AppStorage("dismissCloudRoutingBanner") private var isCloudBannerDismissed = false
-    @State private var sheetPhase: IOSRouteSheetPhase = .hidden
-    @State private var selectedDetent: PresentationDetent = .medium
+    @State private var sheetPhase: IOSRouteSheetPhase = .peek
+    @State private var selectedDetent: PresentationDetent = iosMapPeekDetent
+    @State private var isBottomSheetPresented = true
     @State private var isDetailExpanded = false
     @State private var isKeyboardVisible = false
     @State private var pendingModal: IOSModal?
     @State private var pendingFocusWaypointID: UUID?
+    @State private var showAlertOverflow = false
+    @State private var refitMapTask: Task<Void, Never>?
+
+    private static let peekDetent = iosMapPeekDetent
 
     var body: some View {
         Color.clear
@@ -42,13 +49,25 @@ struct IOSMapChrome: View {
                 .padding(.bottom, toolbarBottomPadding)
                 .safeAreaPadding(.bottom)
             }
-            .sheet(isPresented: routeSheetPresented) {
+            .sheet(isPresented: $isBottomSheetPresented) {
                 IOSRouteSheet(
                     viewModel: viewModel,
                     phase: sheetPhase,
                     isDetailExpanded: $isDetailExpanded,
+                    selectedDetent: $selectedDetent,
                     isKeyboardVisible: $isKeyboardVisible,
                     pendingFocusWaypointID: $pendingFocusWaypointID,
+                    showAlertOverflow: $showAlertOverflow,
+                    onPeekTap: {
+                        if viewModel.result != nil {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                                sheetPhase = .results
+                                selectedDetent = .medium
+                            }
+                        } else {
+                            openPlanningSheet(focusing: defaultPlanningFocusWaypointID)
+                        }
+                    },
                     onFindRoute: {
                         await viewModel.findRoute()
                         await Task.yield()
@@ -61,7 +80,10 @@ struct IOSMapChrome: View {
                     onClose: {
                         dismissKeyboard()
                         isKeyboardVisible = false
-                        sheetPhase = .hidden
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                            sheetPhase = .peek
+                            selectedDetent = Self.peekDetent
+                        }
                     },
                     onEditRoute: {
                         dismissKeyboard()
@@ -72,12 +94,13 @@ struct IOSMapChrome: View {
                         }
                     }
                 )
-                .presentationDetents([.medium, .large], selection: $selectedDetent)
+                .presentationDetents([Self.peekDetent, .medium, .large], selection: $selectedDetent)
                 .presentationDragIndicator(.visible)
+                .interactiveDismissDisabled()
                 .modifier(RouteSheetBackgroundInteraction(isEnabled: !isKeyboardVisible && sheetPhase == .results))
             }
             .onChange(of: sheetPhase) { oldPhase, phase in
-                isRouteSheetVisible = phase != .hidden
+                isRouteSheetVisible = phase == .planning || phase == .results
                 if phase != oldPhase, phase != .planning {
                     dismissKeyboard()
                     isKeyboardVisible = false
@@ -86,7 +109,8 @@ struct IOSMapChrome: View {
                 }
                 if phase == .planning, oldPhase != .planning { selectedDetent = .medium }
                 if phase == .results, oldPhase != .results { selectedDetent = .medium }
-                if phase == .hidden, let modal = pendingModal {
+                if phase == .peek, oldPhase != .peek { selectedDetent = Self.peekDetent }
+                if phase == .peek, let modal = pendingModal {
                     pendingModal = nil
                     Task { @MainActor in
                         await Task.yield()
@@ -95,104 +119,133 @@ struct IOSMapChrome: View {
                 }
                 refitMapToRoute()
             }
-            .onChange(of: selectedDetent) { _, _ in
+            .onChange(of: selectedDetent) { _, detent in
+                if detent == Self.peekDetent, sheetPhase != .peek {
+                    sheetPhase = .peek
+                }
                 refitMapToRoute()
             }
             .onAppear {
-                isRouteSheetVisible = sheetPhase != .hidden
+                isRouteSheetVisible = sheetPhase == .planning || sheetPhase == .results
+                Task { @MainActor in
+                    viewModel.seedUITestDemoRouteIfNeeded()
+                    await Task.yield()
+                    presentSeededResultsIfNeeded()
+                }
             }
+            .onChange(of: viewModel.uiTestForceResultsSheet) { _, force in
+                if force { presentSeededResultsIfNeeded() }
+            }
+            .onChange(of: viewModel.result?.explanation) { _, _ in
+                presentSeededResultsIfNeeded()
+            }
+    }
+
+    private func presentSeededResultsIfNeeded() {
+        guard viewModel.uiTestForceResultsSheet, viewModel.result != nil else { return }
+        sheetPhase = .results
+        selectedDetent = .medium
+        isDetailExpanded = false
     }
 
     private func requestModal(_ modal: IOSModal) {
         dismissKeyboard()
         isKeyboardVisible = false
-        if sheetPhase != .hidden {
+        if sheetPhase != .peek {
             pendingModal = modal
-            sheetPhase = .hidden
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                sheetPhase = .peek
+                selectedDetent = Self.peekDetent
+            }
         } else {
             onPresentModal(modal)
         }
     }
 
     private var toolbarBottomPadding: CGFloat {
-        sheetPhase == .hidden ? RFSpacing.lg : 120
+        selectedDetent == Self.peekDetent ? 72 : 120
     }
 
     private func refitMapToRoute() {
-        guard viewModel.result != nil, !viewModel.routeCoordinates.isEmpty else { return }
-        if sheetPhase == .results, selectedDetent == .large { return }
-        viewModel.fitMapToRoute(padding: routeFitPadding)
+        refitMapTask?.cancel()
+        refitMapTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            guard viewModel.result != nil, !viewModel.routeCoordinates.isEmpty else { return }
+            if sheetPhase == .results, selectedDetent == .large { return }
+            viewModel.fitMapToRoute(padding: routeFitPadding)
+        }
     }
 
     private var routeFitPadding: MapEdgePadding {
         switch sheetPhase {
-        case .hidden:
-            MapEdgePadding(top: 96, bottom: 120, leading: 24, trailing: 24)
+        case .peek:
+            MapEdgePadding(top: 72, bottom: 72, leading: 24, trailing: 24)
         case .planning, .results:
-            MapEdgePadding(top: 96, bottom: 300, leading: 24, trailing: 24)
+            MapEdgePadding(top: 72, bottom: 300, leading: 24, trailing: 24)
         }
     }
 
-    private var routeSheetPresented: Binding<Bool> {
-        Binding(
-            get: { sheetPhase != .hidden },
-            set: { isPresented in
-                if !isPresented {
-                    dismissKeyboard()
-                    isKeyboardVisible = false
-                    sheetPhase = .hidden
-                }
-            }
-        )
+    private var isAtPeekDetent: Bool {
+        selectedDetent == Self.peekDetent
     }
 
     private var topChrome: some View {
         VStack(spacing: RFSpacing.sm) {
-            if viewModel.showCloudRoutingStatusBanner, !isCloudBannerDismissed {
+            if !viewModel.hasORSAPIKey, !isCloudBannerDismissed {
                 compactCloudBanner
             }
             if let dispatchToast = viewModel.fleetDispatchToast {
                 fleetDispatchToastBanner(dispatchToast)
             }
-            if let advisory = viewModel.laybyAdvisory {
-                LaybyAdvisoryBanner(
-                    advisory: advisory,
-                    onLaybyFull: { viewModel.markCurrentLaybyFull() },
-                    onLaybyHasSpaces: { viewModel.markCurrentLaybyHasSpaces() }
-                )
+            if viewModel.result != nil, isAtPeekDetent {
+                activeRouteChip
             }
-            if viewModel.hosEnabled, let hos = viewModel.hosSnapshot {
-                HosClockBanner(snapshot: hos)
-            }
-            if viewModel.trafficRerouteAvailable || viewModel.isEvaluatingTrafficReroute {
-                TrafficRerouteBanner(isEvaluating: viewModel.isEvaluatingTrafficReroute) {
-                    Task { await viewModel.applyTrafficReroute() }
-                }
-            }
-            if let hazard = viewModel.activeHazardAheadAnnouncement {
-                HazardAheadBanner(announcement: hazard)
-            }
-            if let roadworks = viewModel.activeRoadworksAhead,
-               let message = RoadworksAheadFormatter.bannerMessage(
-                   site: roadworks,
-                   currentArcLengthMeters: viewModel.currentRouteArcLengthForDisplay
-               ) {
-                RoadworksAheadBanner(message: message)
-            }
-            if let restriction = viewModel.activeRestrictionAnnouncement {
-                RestrictionZoneBanner(announcement: restriction)
-            }
-            if let kinetic = viewModel.latestKineticAdvisory {
-                LiveKineticAdvisoryBanner(text: kinetic.spokenText)
-            }
-            if let lane = viewModel.activeLaneGuidance,
-               let maneuver = viewModel.activeLaneManeuver,
-               let distance = viewModel.activeLaneDistanceMeters {
-                LaneGuidanceBanner(guidance: lane, maneuver: maneuver, distanceMeters: distance)
-            }
-            routeSearchPill
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var activeRouteChip: some View {
+        Button {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                sheetPhase = .results
+                selectedDetent = .medium
+            }
+        } label: {
+            HStack(spacing: RFSpacing.sm) {
+                Image(systemName: "arrow.triangle.turn.up.right.diamond.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(RFColor.route)
+                Text(viewModel.destinationWaypoint.rawText.isEmpty ? "Route" : viewModel.destinationWaypoint.rawText)
+                    .font(RFFont.summary)
+                    .lineLimit(1)
+                    .foregroundStyle(.primary)
+                Spacer(minLength: 0)
+                if let result = viewModel.result {
+                    Text(formatRouteDuration(result.metrics.totalTime))
+                        .font(RFFont.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                Image(systemName: "chevron.up")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, RFSpacing.md)
+            .padding(.vertical, RFSpacing.sm + 2)
+            .controlSheetStyle()
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("activeRouteChip")
+    }
+
+    private func formatRouteDuration(_ seconds: TimeInterval) -> String {
+        let totalMinutes = Int(seconds / 60)
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        }
+        return "\(minutes)m"
     }
 
     private var compactCloudBanner: some View {
@@ -357,7 +410,7 @@ private struct RouteSheetBackgroundInteraction: ViewModifier {
 }
 
 private enum IOSRouteSheetPhase {
-    case hidden
+    case peek
     case planning
     case results
 }
@@ -366,8 +419,11 @@ private struct IOSRouteSheet: View {
     @Bindable var viewModel: RouteViewModel
     let phase: IOSRouteSheetPhase
     @Binding var isDetailExpanded: Bool
+    @Binding var selectedDetent: PresentationDetent
     @Binding var isKeyboardVisible: Bool
     @Binding var pendingFocusWaypointID: UUID?
+    @Binding var showAlertOverflow: Bool
+    var onPeekTap: () -> Void
     var onFindRoute: () async -> Void
     var onClose: () -> Void
     var onEditRoute: () -> Void
@@ -375,6 +431,47 @@ private struct IOSRouteSheet: View {
     @FocusState private var focusedWaypointID: UUID?
 
     var body: some View {
+        Group {
+            if phase == .peek, selectedDetent == iosMapPeekDetent {
+                peekContent
+            } else {
+                expandedSheetContent
+            }
+        }
+        .sheet(isPresented: $showAlertOverflow) {
+            MapAlertOverflowSheet(viewModel: viewModel)
+        }
+    }
+
+    private var peekContent: some View {
+        Button(action: onPeekTap) {
+            HStack(spacing: RFSpacing.sm) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.secondary)
+                Text(peekPromptText)
+                    .font(RFFont.summary)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Image(systemName: "mic.fill")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, RFSpacing.md)
+            .padding(.vertical, RFSpacing.md)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("mapSearchPeekBar")
+    }
+
+    private var peekPromptText: String {
+        if viewModel.result != nil,
+           !viewModel.destinationWaypoint.rawText.isEmpty {
+            return viewModel.destinationWaypoint.rawText
+        }
+        return "Where to?"
+    }
+
+    private var expandedSheetContent: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: RFSpacing.md) {
@@ -502,6 +599,25 @@ private struct IOSRouteSheet: View {
                 HGVRouteFailureBanner()
             }
 
+            if viewModel.result != nil {
+                RouteProfileBadge(label: viewModel.routeProfileBadgeLabel)
+                CompactAlertStack(viewModel: viewModel, showOverflow: $showAlertOverflow)
+                Text("Waze routes as car with live traffic; RouteFinder uses OpenRouteService without traffic on first calculation.")
+                    .font(RFFont.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                NavigationStartRow(
+                    viewModel: viewModel,
+                    onStarted: {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                            selectedDetent = .medium
+                            isDetailExpanded = false
+                        }
+                    }
+                )
+            }
+
             RouteSummaryCard(
                 viewModel: viewModel,
                 embeddedInBottomSheet: true,
@@ -513,6 +629,318 @@ private struct IOSRouteSheet: View {
     }
 }
 
+/// Shows at most two route alerts; overflow opens a sheet.
+private struct CompactAlertStack: View {
+    @Bindable var viewModel: RouteViewModel
+    @Binding var showOverflow: Bool
+
+    private var navigationActive: Bool {
+        viewModel.isNavigationSessionActiveFromResults || viewModel.simulationEngine.isRunning
+    }
+
+    private var alerts: [MapAlertItem] {
+        var items: [MapAlertItem] = []
+        if let hazard = viewModel.activeHazardAheadAnnouncement {
+            items.append(.hazard(hazard))
+        }
+        if let roadworks = viewModel.activeRoadworksAhead,
+           let message = RoadworksAheadFormatter.bannerMessage(
+               site: roadworks,
+               currentArcLengthMeters: viewModel.currentRouteArcLengthForDisplay
+           ) {
+            items.append(.roadworks(message))
+        }
+        if viewModel.trafficRerouteAvailable || viewModel.isEvaluatingTrafficReroute {
+            items.append(.trafficReroute(viewModel.isEvaluatingTrafficReroute))
+        }
+        if let restriction = viewModel.activeRestrictionAnnouncement,
+           !isLongHaulRoute(viewModel) {
+            items.append(.restriction(restriction))
+        }
+        if let advisory = viewModel.laybyAdvisory {
+            items.append(.layby(advisory))
+        }
+        if viewModel.hosEnabled, let hos = viewModel.hosSnapshot {
+            items.append(.hos(hos))
+        }
+        if let kinetic = viewModel.latestKineticAdvisory {
+            items.append(.kinetic(kinetic.spokenText))
+        }
+        if navigationActive,
+           let lane = viewModel.activeLaneGuidance,
+           let maneuver = viewModel.activeLaneManeuver,
+           let distance = viewModel.activeLaneDistanceMeters {
+            items.append(.lane(lane, maneuver, distance))
+        }
+        return items
+    }
+
+    private func isLongHaulRoute(_ viewModel: RouteViewModel) -> Bool {
+        guard let origin = viewModel.originWaypoint.resolved?.snappedCoordinate,
+              let destination = viewModel.destinationWaypoint.resolved?.snappedCoordinate else {
+            return false
+        }
+        return mapAlertHaversineMeters(origin, destination) > LEZAvoidPolicy.avoidPolygonsMaxHaversineMeters
+    }
+
+    var body: some View {
+        let visible = alerts.prefix(2)
+        let overflowCount = max(0, alerts.count - 2)
+        if !visible.isEmpty || overflowCount > 0 {
+            VStack(spacing: RFSpacing.sm) {
+                ForEach(Array(visible.enumerated()), id: \.offset) { _, item in
+                    item.view(viewModel: viewModel)
+                }
+                if overflowCount > 0 {
+                    Button {
+                        showOverflow = true
+                    } label: {
+                        HStack(spacing: RFSpacing.sm) {
+                            Image(systemName: "bell.badge")
+                                .font(.caption.weight(.semibold))
+                            Text("\(overflowCount) more alert\(overflowCount == 1 ? "" : "s")")
+                                .font(RFFont.caption.weight(.semibold))
+                            Spacer(minLength: 0)
+                            Image(systemName: "chevron.right")
+                                .font(.caption2.weight(.semibold))
+                        }
+                        .foregroundStyle(.primary)
+                        .padding(.horizontal, RFSpacing.md)
+                        .padding(.vertical, RFSpacing.sm)
+                        .glassPanel(cornerRadius: 12)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("mapAlertOverflowChip")
+                }
+            }
+        }
+    }
+}
+
+private enum MapAlertItem {
+    case hazard(HazardAheadAnnouncement)
+    case roadworks(String)
+    case trafficReroute(Bool)
+    case restriction(RestrictionZoneAnnouncement)
+    case layby(LaybyAdvisory)
+    case hos(HosClockSnapshot)
+    case kinetic(String)
+    case lane(LaneGuidance, TurnManeuver, Double)
+
+    @ViewBuilder
+    func view(viewModel: RouteViewModel) -> some View {
+        switch self {
+        case .hazard(let announcement):
+            HazardAheadBanner(announcement: announcement)
+        case .roadworks(let message):
+            RoadworksAheadBanner(message: message)
+        case .trafficReroute(let isEvaluating):
+            TrafficRerouteBanner(isEvaluating: isEvaluating) {
+                Task { await viewModel.applyTrafficReroute() }
+            }
+        case .restriction(let announcement):
+            CompactRestrictionZoneBanner(announcement: announcement)
+        case .layby(let advisory):
+            LaybyAdvisoryBanner(
+                advisory: advisory,
+                onLaybyFull: { viewModel.markCurrentLaybyFull() },
+                onLaybyHasSpaces: { viewModel.markCurrentLaybyHasSpaces() }
+            )
+        case .hos(let snapshot):
+            HosClockBanner(snapshot: snapshot)
+        case .kinetic(let text):
+            LiveKineticAdvisoryBanner(text: text)
+        case .lane(let guidance, let maneuver, let distance):
+            LaneGuidanceBanner(guidance: guidance, maneuver: maneuver, distanceMeters: distance)
+        }
+    }
+}
+
+/// Full alert list when more than two banners are active.
+private struct MapAlertOverflowSheet: View {
+    @Bindable var viewModel: RouteViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    private var navigationActive: Bool {
+        viewModel.isNavigationSessionActiveFromResults || viewModel.simulationEngine.isRunning
+    }
+
+    private var alerts: [MapAlertItem] {
+        var items: [MapAlertItem] = []
+        if let hazard = viewModel.activeHazardAheadAnnouncement {
+            items.append(.hazard(hazard))
+        }
+        if let roadworks = viewModel.activeRoadworksAhead,
+           let message = RoadworksAheadFormatter.bannerMessage(
+               site: roadworks,
+               currentArcLengthMeters: viewModel.currentRouteArcLengthForDisplay
+           ) {
+            items.append(.roadworks(message))
+        }
+        if viewModel.trafficRerouteAvailable || viewModel.isEvaluatingTrafficReroute {
+            items.append(.trafficReroute(viewModel.isEvaluatingTrafficReroute))
+        }
+        if let restriction = viewModel.activeRestrictionAnnouncement {
+            items.append(.restriction(restriction))
+        }
+        if let advisory = viewModel.laybyAdvisory {
+            items.append(.layby(advisory))
+        }
+        if viewModel.hosEnabled, let hos = viewModel.hosSnapshot {
+            items.append(.hos(hos))
+        }
+        if let kinetic = viewModel.latestKineticAdvisory {
+            items.append(.kinetic(kinetic.spokenText))
+        }
+        if navigationActive,
+           let lane = viewModel.activeLaneGuidance,
+           let maneuver = viewModel.activeLaneManeuver,
+           let distance = viewModel.activeLaneDistanceMeters {
+            items.append(.lane(lane, maneuver, distance))
+        }
+        return items
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: RFSpacing.sm) {
+                    ForEach(Array(alerts.enumerated()), id: \.offset) { _, item in
+                        item.view(viewModel: viewModel)
+                    }
+                }
+                .padding(RFSpacing.md)
+            }
+            .navigationTitle("Route alerts")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+}
+
+/// One-line LEZ / restriction chip with detail on tap.
+private struct CompactRestrictionZoneBanner: View {
+    let announcement: RestrictionZoneAnnouncement
+    @State private var showDetail = false
+
+    private var compactMessage: String {
+        if announcement.kind == .lez {
+            return "Avoiding \(announcement.label) — set emission class"
+        }
+        return announcement.label
+    }
+
+    var body: some View {
+        Button {
+            showDetail = true
+        } label: {
+            HStack(spacing: RFSpacing.sm) {
+                Image(systemName: announcement.kind == .lez ? "leaf.circle.fill" : "nosign")
+                    .foregroundStyle(announcement.kind == .lez ? .green : RFColor.hazard)
+                Text(compactMessage)
+                    .font(RFFont.caption.weight(.semibold))
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, RFSpacing.md)
+            .padding(.vertical, RFSpacing.sm)
+            .controlSheetStyle()
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(compactMessage)
+        .alert(announcement.label, isPresented: $showDetail) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(announcement.message)
+        }
+    }
+}
+
+/// Primary Start / Stop control for the iOS route results sheet.
+private struct NavigationStartRow: View {
+    @Bindable var viewModel: RouteViewModel
+    @ObservedObject private var simulationEngine: RouteSimulationEngine
+    var onStarted: () -> Void
+
+    init(viewModel: RouteViewModel, onStarted: @escaping () -> Void) {
+        self.viewModel = viewModel
+        self._simulationEngine = ObservedObject(wrappedValue: viewModel.simulationEngine)
+        self.onStarted = onStarted
+    }
+
+    private var canStart: Bool {
+        viewModel.result != nil
+            && !viewModel.isCalculating
+            && !viewModel.isRouteDimensionBlocked
+    }
+
+    private var isActive: Bool {
+        if viewModel.preferredTelemetryMode == .simulation {
+            return simulationEngine.isRunning
+        }
+        return viewModel.isFollowModeEnabled || viewModel.isNavigationActive
+    }
+
+    private var primaryTitle: String {
+        if isActive { return "Stop" }
+        switch viewModel.preferredTelemetryMode {
+        case .simulation: return "Start Simulation"
+        case .hardwareGPS: return "Start Navigation"
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.xs) {
+            Button {
+                if isActive {
+                    viewModel.stopNavigationFromResults()
+                } else {
+                    Task {
+                        await viewModel.startNavigationFromResults()
+                        onStarted()
+                    }
+                }
+            } label: {
+                Text(primaryTitle)
+                    .font(RFFont.summary.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(!canStart && !isActive)
+            .accessibilityIdentifier("startNavigationButton")
+
+            Text("Or use the compass control on the map")
+                .font(RFFont.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+private struct RouteProfileBadge: View {
+    let label: String
+
+    var body: some View {
+        HStack(spacing: RFSpacing.sm) {
+            Image(systemName: "arrow.triangle.branch")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(RFColor.route)
+            Text(label)
+                .font(RFFont.caption.weight(.semibold))
+                .foregroundStyle(.primary)
+        }
+        .padding(.horizontal, RFSpacing.md)
+        .padding(.vertical, RFSpacing.sm)
+        .glassPanel(cornerRadius: 12)
+        .accessibilityIdentifier("routeProfileBadge")
+    }
+}
+
 private struct IOSMapToolbar: View {
     @Bindable var viewModel: RouteViewModel
     var onOpenSettings: () -> Void
@@ -521,45 +949,41 @@ private struct IOSMapToolbar: View {
 
     var body: some View {
         VStack(spacing: RFSpacing.sm) {
-            MapControlButton(icon: "plus") {
-                viewModel.mapBridge?.zoomBy(1)
-            }
-
-            MapControlButton(icon: "minus") {
-                viewModel.mapBridge?.zoomBy(-1)
-            }
-
             MapControlButton(icon: "location.fill") {
                 viewModel.recenterMap()
             }
 
-            if viewModel.breakNowQuickActionEnabled,
-               viewModel.isHGVMode,
-               viewModel.result != nil,
-               !viewModel.upcomingLaybys.isEmpty {
-                MapControlButton(icon: "cup.and.saucer.fill") {
-                    Task { await viewModel.findBreakNow() }
+            MapControlButton(icon: "square.stack.3d.up") {
+                Task {
+                    await viewModel.fallbackToOnlineMapStyle()
                 }
-                .accessibilityLabel("Break now")
             }
+            .accessibilityLabel("Map layers")
 
-            MapControlButton(icon: navigationControlIcon) {
-                handleNavigationControlTap()
-            }
-
-            if viewModel.simulationEngine.isRunning {
-                MapControlButton(
-                    icon: viewModel.mapBridge?.isTrackingVehicle == true
-                        ? "location.north.line.fill"
-                        : "location.north.line"
-                ) {
-                    if let coordinate = viewModel.simulationEngine.currentCoordinate {
-                        viewModel.mapBridge?.resumeTracking(at: coordinate)
-                    }
+            if viewModel.result != nil {
+                MapControlButton(icon: "map") {
+                    viewModel.resetMapToRouteOverview()
                 }
+                .accessibilityLabel("Route overview")
+                .accessibilityIdentifier("mapRouteOverviewButton")
             }
 
             Menu {
+                Button {
+                    viewModel.mapBridge?.zoomBy(1)
+                } label: {
+                    Label("Zoom in", systemImage: "plus.magnifyingglass")
+                }
+                Button {
+                    viewModel.mapBridge?.zoomBy(-1)
+                } label: {
+                    Label("Zoom out", systemImage: "minus.magnifyingglass")
+                }
+                Button {
+                    handleNavigationControlTap()
+                } label: {
+                    Label("Compass", systemImage: navigationControlIcon)
+                }
                 Button {
                     onOpenSettings()
                 } label: {
@@ -589,19 +1013,20 @@ private struct IOSMapToolbar: View {
                 }
 
                 Button {
-                    viewModel.avoidCameras.toggle()
-                    Task { await viewModel.recalculateIfReady() }
-                } label: {
-                    Label(
-                        viewModel.avoidCameras ? "Allow Speed Cameras" : "Avoid Speed Cameras",
-                        systemImage: viewModel.avoidCameras ? "camera.fill" : "camera"
-                    )
-                }
-
-                Button {
                     onOpenProfile()
                 } label: {
                     Label("Vehicle Profile", systemImage: "person.crop.rectangle.stack")
+                }
+
+                if viewModel.breakNowQuickActionEnabled,
+                   viewModel.isHGVMode,
+                   viewModel.result != nil,
+                   !viewModel.upcomingLaybys.isEmpty {
+                    Button {
+                        Task { await viewModel.findBreakNow() }
+                    } label: {
+                        Label("Break now", systemImage: "cup.and.saucer.fill")
+                    }
                 }
 
                 if viewModel.isFollowModeEnabled {
@@ -668,5 +1093,16 @@ enum MapCameraControls {
             viewModel.mapBridge?.resumeTracking(at: coordinate, mode: next)
         }
     }
+}
+
+private func mapAlertHaversineMeters(_ a: Coordinate, _ b: Coordinate) -> Double {
+    let earthRadius = 6_371_000.0
+    let lat1 = a.latitude * .pi / 180
+    let lat2 = b.latitude * .pi / 180
+    let dLat = (b.latitude - a.latitude) * .pi / 180
+    let dLon = (b.longitude - a.longitude) * .pi / 180
+    let h = sin(dLat / 2) * sin(dLat / 2)
+        + cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2)
+    return 2 * earthRadius * asin(min(1, sqrt(h)))
 }
 #endif

@@ -69,7 +69,6 @@ public final class VoiceGuidanceCoordinator: NavigationSessionDelegate {
     /// Speaks a kinetic advisory (brake fade, grade, slip) during live or simulated navigation.
     public func speakKineticAdvisory(_ advisory: KineticAdvisory) {
         guard isEnabled else { return }
-        try? voiceService.configureAudioSession()
         let prompt = SpeechPrompt(
             text: advisory.spokenText,
             priority: max(advisory.priority, AnnouncementTier.execute.priority),
@@ -81,7 +80,6 @@ public final class VoiceGuidanceCoordinator: NavigationSessionDelegate {
 
     /// Speaks an upcoming layby advisory when layby voice alerts are enabled.
     public func speakLaybyAdvisory(_ text: String, laybyId: String) {
-        try? voiceService.configureAudioSession()
         let prompt = SpeechPrompt(
             text: text,
             priority: AnnouncementTier.prepare.priority,
@@ -93,7 +91,6 @@ public final class VoiceGuidanceCoordinator: NavigationSessionDelegate {
 
     /// Speaks an upcoming closure/traffic hazard when hazard voice alerts are enabled.
     public func speakHazardAdvisory(_ text: String, hazardId: String) {
-        try? voiceService.configureAudioSession()
         let prompt = SpeechPrompt(
             text: text,
             priority: AnnouncementTier.prepare.priority,

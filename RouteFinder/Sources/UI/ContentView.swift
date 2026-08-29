@@ -97,6 +97,7 @@ public struct ContentView: View {
             } else {
                 NavigationStack {
                     MapWorkspaceView(viewModel: viewModel, mapBridge: mapBridge)
+                        .toolbarBackground(.hidden, for: .navigationBar)
                         .toolbar {
                             if horizontalSizeClass == .regular {
                                 ToolbarItem(placement: .topBarTrailing) {
@@ -115,12 +116,17 @@ public struct ContentView: View {
         }
         .onAppear {
             viewModel.bindVault(session.vault)
+            viewModel.seedUITestDemoRouteIfNeeded()
         }
         .task {
             weatherViewModel.startMonitoring()
             viewModel.environmentalContext = weatherViewModel.effectiveCondition
             viewModel.refreshSimulationEnvironment()
-            await viewModel.startLocationServicesIfNeeded()
+            viewModel.seedUITestDemoRouteIfNeeded()
+            let skipLocationForUITest = ProcessInfo.processInfo.arguments.contains("UITEST_SKIP_AUTH")
+            if !skipLocationForUITest {
+                await viewModel.startLocationServicesIfNeeded()
+            }
             await viewModel.startFleetDispatchListener()
         }
     }
@@ -134,6 +140,9 @@ private struct MapWorkspaceView: View {
     @ObservedObject private var simulationEngine: RouteSimulationEngine
     @ObservedObject private var mapBridge: MapViewControllerBridge
     @State private var showProductOnboarding = !NavigationWorkspaceSettings.loadHasSeenProductOnboarding()
+    #if os(iOS)
+    @State private var showVehicleModeOnboarding = false
+    #endif
     var onOpenProfile: () -> Void
     var onOpenSettings: () -> Void
 
@@ -152,8 +161,6 @@ private struct MapWorkspaceView: View {
     }
 
     var body: some View {
-        let _ = simulationEngine.playbackRevision
-
         ZStack {
             MapRouteView(
                 coordinates: viewModel.routeCoordinates,
@@ -162,7 +169,7 @@ private struct MapWorkspaceView: View {
                 routeCumulativeLengths: viewModel.routeCumulativeLengths,
                 pins: viewModel.displayMapPins,
                 hazardsGeoJSON: viewModel.hazardOverlayJSON,
-                simulatedVehicle: simulatedVehicleState,
+                simulatedVehicle: viewModel.liveMapVehicleState(),
                 interactionMode: viewModel.interactionMode,
                 initialRegion: viewModel.mapRegion,
                 styleURL: viewModel.mapStyleURL,
@@ -196,6 +203,8 @@ private struct MapWorkspaceView: View {
             MapFirstShell(viewModel: viewModel, onOpenProfile: onOpenProfile, onOpenSettings: onOpenSettings)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(MapCanvasBackdrop.color)
+        .ignoresSafeArea(edges: .all)
         .overlay(alignment: .bottom) {
             if case .setPin = viewModel.interactionMode {
                 MapPinToolbar(viewModel: viewModel)
@@ -207,6 +216,20 @@ private struct MapWorkspaceView: View {
                 requireLiabilityAcceptance: !NavigationWorkspaceSettings.loadHasAcceptedRoutingLiability()
             )
         }
+        #if os(iOS)
+        .sheet(isPresented: $showVehicleModeOnboarding) {
+            VehicleModeOnboardingSheet { passengerCar in
+                viewModel.applyVehicleModeFromOnboarding(passengerCar: passengerCar)
+                showVehicleModeOnboarding = false
+            }
+        }
+        .onAppear {
+            if NavigationWorkspaceSettings.loadHasSeenProductOnboarding(),
+               !NavigationWorkspaceSettings.loadHasCompletedVehicleModeOnboarding() {
+                showVehicleModeOnboarding = true
+            }
+        }
+        #endif
     }
 
     private func markProductOnboardingSeen() {
@@ -218,45 +241,10 @@ private struct MapWorkspaceView: View {
             return
         }
         NavigationWorkspaceSettings.saveHasSeenProductOnboarding(true)
-    }
-
-    private var simulatedVehicleState: SimulatedVehicleState? {
-        guard !simulationEngine.isRunning,
-              let coordinate = simulationEngine.currentCoordinate else {
-            return nil
+        #if os(iOS)
+        if !NavigationWorkspaceSettings.loadHasCompletedVehicleModeOnboarding() {
+            showVehicleModeOnboarding = true
         }
-        let profile = viewModel.resolvedSpecificationProfile ?? mapBridge.activeSpecificationProfile
-        let length = profile?.lengthMeters ?? simulationEngine.vehicleLengthMeters
-        let width = profile?.widthMeters ?? simulationEngine.vehicleWidthMeters
-        let isPassengerCar = !viewModel.isHGVMode
-        let parts = VehicleGeometryCalculator.generateFootprintParts(
-            rearAxle: coordinate,
-            headingDegrees: simulationEngine.currentBearing,
-            lengthMeters: length,
-            widthMeters: width,
-            isPassengerCar: isPassengerCar
-        )
-        let footprint = parts.first
-            ?? VehicleGeometryCalculator.generateFootprint(
-                rearAxle: coordinate,
-                headingDegrees: simulationEngine.currentBearing,
-                lengthMeters: length,
-                widthMeters: width
-            )
-        return SimulatedVehicleState(
-            latitude: coordinate.latitude,
-            longitude: coordinate.longitude,
-            bearing: simulationEngine.currentBearing,
-            visible: true,
-            lengthMeters: length,
-            widthMeters: width,
-            playbackRevision: simulationEngine.playbackRevision,
-            dimensionRevision: simulationEngine.dimensionRevision,
-            renderMode: .polygon,
-            footprintCoordinates: footprint,
-            footprintParts: parts,
-            isPassengerCar: isPassengerCar,
-            wheelbaseMeters: isPassengerCar ? 2.7 : 6.5
-        )
+        #endif
     }
 }

@@ -442,14 +442,15 @@ Reliability gate (Ph48) + CI green (Ph49a/Ph51–52 wave) are complete. **Physic
 1. Unlock iPhone + plug USB (UDID `00008101-000E6C41226A001E` was Offline on 2026-08-29).
 2. Delete RouteFinder from the phone.
 3. Xcode → open `RouteFinderApp.xcodeproj` → scheme **RouteFinderApp** → destination = your iPhone → **Product → Clean Build Folder** → **Run**.
-4. Log in → accept **Driver Terms** (confirm sheet cannot swipe-dismiss) → confirm map tiles load (tap **Retry** / **Use online map** if basemap fails).
+4. Log in → accept **Driver Terms** (confirm sheet cannot swipe-dismiss) → pick **Car** or **HGV** on the vehicle sheet → confirm map tiles load (tap **Retry** / **Use online map** if basemap fails).
 5. ⋯ → Settings → **API Keys**:
   - Paste HeiGIT OpenRouteService key → tap **Save API Key** (typing alone does not save).
   - Confirm **Saved in Keychain as ••••••••** and green **HeiGIT API key saved**.
   - Confirm **API Usage Today** loads → back → **Legal** (Driver Terms).
 6. Dismiss Settings → confirm the orange **Cloud routing — add API key** banner is **gone**.
-7. Search: start `London`, destination `Manchester` → **Find route** → expect polyline + ETA (screenshot any failure modal).
-8. Edit this file: set C1, C2, C8, and P49b-P0 to **Pass** or **Fail**.
+7. Tap bottom **Where to?** peek bar → start `London`, destination `Manchester` → **Find Route** → expect polyline + ETA (screenshot any failure modal). Confirm route profile badge shows **Car** or **HGV**.
+8. On the **Route** results sheet, tap **Start Navigation** (Live GPS) or **Start Simulation** (Settings → Navigation & Voice → Simulation). Button becomes **Stop** while active. Tap toolbar **Route overview** (map icon) to exit follow and see the full route north-up.
+9. Edit this file: set C1, C2, C8, and P49b-P0 to **Pass** or **Fail**.
 
 **Then P1 / P2 / Fleet:** C3, C6–C7, C9 → C4–C5 → Fleet Part B LAN (`[fleet-e2e-qa.md](fleet-e2e-qa.md)`). After P0: book meetings via `[pilot-outreach.md](pilot-outreach.md)`.
 
@@ -460,6 +461,90 @@ Reliability gate (Ph48) + CI green (Ph49a/Ph51–52 wave) are complete. **Physic
 | P49b-1  | C1–C9 physical iPhone checklist                   | **Pending local** | Full table below                                                                 |
 | P49b-2  | Fleet Part B LAN walkaround → dispatch inspection | **Pending local** | Part A smoke **Pass** local 2026-08-29 (9/9); Part B needs phone on same Wi‑Fi   |
 | P49b-3  | Settings API Usage Today + Legal Driver Terms     | **Pass** (sim)    | `testSettingsAPIUsageAndLegalDriverTerms` green 2026-08-29; physical still in C8 |
+
+
+
+
+### Phase 55 — Start Navigation UX (2026-08-29)
+
+Scope: labeled primary Start / Stop on the iOS route results sheet so drivers do not need to discover Play or the compass control.
+
+
+| #     | SLO / evidence                                              | Automated         | Notes                                                                 |
+| ----- | ----------------------------------------------------------- | ----------------- | --------------------------------------------------------------------- |
+| P55-1 | Results sheet shows **Start Navigation** / **Start Simulation** | **Pass** (code + UI test) | `NavigationStartRow` in results sheet only (Ph56 removed top duplicate) |
+| P55-2 | Live GPS starts follow mode; Simulation toggles playback    | **Pass** (code)   | `startNavigationFromResults` / `stopNavigationFromResults`            |
+| P55-3 | Active session shows **Stop**; compass shortcut unchanged   | **Pass** (code)   | Toolbar `handleNavigationControlTap` retained                         |
+| P55-4 | UI test: Start Navigation visible after seeded route        | **Pass** (UI test)| `testStartNavigationButtonOnRouteResults` green on iPhone 17 sim      |
+
+
+
+#### Phase 55 code surfaces
+
+
+| Feature             | Primary files                                                                  |
+| ------------------- | ------------------------------------------------------------------------------ |
+| Start / Stop CTA    | `IOSMapChrome.NavigationStartRow`                                              |
+| Session helpers     | `RouteViewModel.startNavigationFromResults` / `stopNavigationFromResults`      |
+| UI test seed        | `RouteViewModel.seedUITestDemoRouteIfNeeded`, `UITEST_SEED_ROUTE`              |
+
+
+
+
+### Phase 57 — Map canvas, voice, routing clarity, bottom sheet (2026-08-30)
+
+Scope: `map.resize()` fix, voice quality, Car vs HGV onboarding, Waze-style bottom peek sheet.
+
+
+| #     | SLO / evidence                                              | Automated         | Notes                                                                 |
+| ----- | ----------------------------------------------------------- | ----------------- | --------------------------------------------------------------------- |
+| P57-1 | Map canvas resizes with window — no parchment cube          | **Pass** (code)   | `ResizeObserver`, `layoutSubviews` → `map.resize()`                   |
+| P57-2 | Pan/zoom not thrashed by SwiftUI invalidation               | **Pass** (code)   | Removed `playbackRevision`; debounced refit; user-only zoom publish   |
+| P57-3 | Navigation voice uses enhanced voice + metric prompts       | **Pass** (code + unit test) | `NavigationVoiceService` queue; Settings voice/rate picker      |
+| P57-4 | First launch asks Car vs HGV before first route             | **Pass** (code)   | `VehicleModeOnboardingSheet`; no silent HGV default                     |
+| P57-5 | Bottom peek "Where to?" + route profile badge               | **Pass** (code + UI test) | `mapSearchPeekBar`, `routeProfileBadge`, `activeRouteChip`        |
+| P57-6 | UI tests: peek bar + Start + Route Overview on seeded route | **Pass** (UI test)| `testMapSearchPeekBarAtLaunch`, existing Ph55/Ph56 tests              |
+
+
+
+
+#### Phase 57 code surfaces
+
+
+| Feature           | Primary files                                                                 |
+| ----------------- | ----------------------------------------------------------------------------- |
+| Map resize        | `MapLibreMapHTML`, `MapLibreWebMapView` host `layoutSubviews`                 |
+| Voice             | `NavigationVoiceService`, `ManeuverSpeechFormatter`, `SettingsSheet`          |
+| Vehicle onboarding| `VehicleModeOnboardingSheet`, `RouteViewModel.applyVehicleModeFromOnboarding` |
+| Bottom sheet UX   | `IOSMapChrome` peek detent, `RouteProfileBadge`, slim toolbar                 |
+
+
+
+
+### Phase 56 — iOS native map feel (2026-08-30)
+
+Scope: edge-to-edge map, persistent vehicle marker in follow/sim, Route Overview reset, compact alert stack.
+
+
+| #     | SLO / evidence                                              | Automated         | Notes                                                                 |
+| ----- | ----------------------------------------------------------- | ----------------- | --------------------------------------------------------------------- |
+| P56-1 | Map fills screen — no white letterboxing                    | **Pass** (code)   | `MapCanvasBackdrop`, `ignoresSafeArea`, parchment WKWebView           |
+| P56-2 | Vehicle visible in preview / sim / GPS follow               | **Pass** (code)   | `liveMapVehicleState`, adapter footprint, sim bridge push             |
+| P56-3 | **Route overview** toolbar resets north-up full route       | **Pass** (code + UI test) | `resetMapToRouteOverview`, `mapRouteOverviewButton`             |
+| P56-4 | Top chrome shows max 2 alerts + overflow chip               | **Pass** (code)   | `CompactAlertStack`; Start only in results sheet                      |
+| P56-5 | UI tests: Start in sheet + Route Overview on seeded route   | **Pass** (UI test)| `testStartNavigationButtonOnRouteResults`, `testRouteOverviewButtonOnSeededRoute` |
+
+
+
+#### Phase 56 code surfaces
+
+
+| Feature           | Primary files                                                                 |
+| ----------------- | ----------------------------------------------------------------------------- |
+| Full-bleed map    | `MapCanvasBackdrop`, `ContentView`, `MapRouteView`, `MapLibreWebMapView`      |
+| Vehicle marker    | `RouteViewModel.liveMapVehicleState`, `NavigationSessionMapAdapter`           |
+| Route overview    | `RouteViewModel.resetMapToRouteOverview`, `IOSMapToolbar`, `fitRouteBounds`   |
+| Alert declutter   | `IOSMapChrome.CompactAlertStack`, `CompactRestrictionZoneBanner`              |
 
 
 
@@ -600,7 +685,7 @@ Scope: iOS XCTest smoke, walkaround defect line in trip brief + optional fleet P
 #   -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:RouteFinderAppUITests
 ```
 
-Launch arguments used by smoke tests: `UITEST_SKIP_AUTH`, `UITEST_SKIP_ONBOARDING`.
+Launch arguments used by smoke tests: `UITEST_SKIP_AUTH`, `UITEST_SKIP_ONBOARDING`, `UITEST_SEED_ROUTE` (Ph55 Start Navigation).
 
 #### Phase 38–40 code surfaces
 

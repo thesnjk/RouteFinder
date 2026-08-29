@@ -1,3 +1,4 @@
+import MapLibreUI
 import SwiftUI
 
 /// Root container: auth gate until unlocked, then the main map UI.
@@ -16,5 +17,7 @@ public struct RootAuthContainer: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(MapCanvasBackdrop.color)
+        .ignoresSafeArea()
     }
 }

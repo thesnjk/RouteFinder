@@ -132,6 +132,10 @@ public final class RouteViewModel {
     public var preferredTelemetryMode = NavigationWorkspaceSettings.loadTelemetrySourceMode()
     #if os(iOS)
     public var voiceGuidanceEnabled = NavigationWorkspaceSettings.loadVoiceGuidanceEnabled()
+    #if os(iOS)
+    public var speechVoiceIdentifier: String? = NavigationWorkspaceSettings.loadSpeechVoiceIdentifier()
+    public var speechRate = Double(NavigationWorkspaceSettings.loadSpeechRate())
+    #endif
     #endif
 
     /// Whether the advisory EU hours-of-service clock is enabled.
@@ -512,12 +516,6 @@ public final class RouteViewModel {
             self?.hazardStateVersion &+= 1
         }
         restoreVehicleWorkspace()
-        #if os(iOS)
-        if VehicleWorkspaceSettings.load() == nil {
-            isHGVMode = true
-            applyHGVPreset()
-        }
-        #endif
         updateCloudRoutingBanner()
         fleetDispatchCoordinator.restoreWorkspaceSettings()
         #if os(iOS)
@@ -1052,6 +1050,30 @@ public final class RouteViewModel {
     public func persistVoiceGuidanceEnabled() {
         NavigationWorkspaceSettings.saveVoiceGuidanceEnabled(voiceGuidanceEnabled)
         voiceGuidanceCoordinator.setEnabled(voiceGuidanceEnabled)
+    }
+
+    /// Persists navigation speech voice and rate preferences.
+    public func persistSpeechVoiceSettings() {
+        NavigationWorkspaceSettings.saveSpeechVoiceIdentifier(speechVoiceIdentifier)
+        NavigationWorkspaceSettings.saveSpeechRate(Float(speechRate))
+    }
+
+    /// Applies the first-launch Car vs HGV onboarding choice.
+    public func applyVehicleModeFromOnboarding(passengerCar: Bool) {
+        isHGVMode = !passengerCar
+        if isHGVMode {
+            applyHGVPreset()
+        }
+        scheduleVehicleWorkspacePersist()
+        NavigationWorkspaceSettings.saveHasCompletedVehicleModeOnboarding(true)
+    }
+
+    /// Short label for the active routing profile shown on the results sheet.
+    public var routeProfileBadgeLabel: String {
+        if isHGVMode {
+            return "HGV · UK Artic · HeiGIT ORS"
+        }
+        return "Car · HeiGIT ORS"
     }
     #endif
 
@@ -1730,6 +1752,128 @@ public final class RouteViewModel {
         isNavigationActive = false
         navigationCoordinator.stopNavigation()
         voiceGuidanceCoordinator.teardown()
+    }
+
+    /// Whether a Live GPS follow session or route simulation is actively running.
+    public var isNavigationSessionActiveFromResults: Bool {
+        if preferredTelemetryMode == .simulation {
+            return simulationEngine.isRunning
+        }
+        return isFollowModeEnabled || isNavigationActive
+    }
+
+    /// Starts navigation or simulation from the iOS route results sheet.
+    public func startNavigationFromResults() async {
+        guard result != nil, !isCalculating, !isRouteDimensionBlocked else { return }
+        switch preferredTelemetryMode {
+        case .simulation:
+            if !simulationEngine.isRunning {
+                simulationEngine.toggleSimulation()
+            }
+        case .hardwareGPS:
+            isFollowModeEnabled = true
+            isNavigationActive = true
+            await startLocationServicesIfNeeded()
+        }
+    }
+
+    /// Stops navigation or simulation started from the iOS route results sheet.
+    public func stopNavigationFromResults() {
+        switch preferredTelemetryMode {
+        case .simulation:
+            if simulationEngine.isRunning {
+                simulationEngine.stop()
+            }
+        case .hardwareGPS:
+            stopNavigation()
+        }
+    }
+
+    /// Builds the live vehicle marker for the map (preview, simulation, and GPS follow).
+    public func liveMapVehicleState() -> SimulatedVehicleState? {
+        guard result != nil, let coordinate = simulationEngine.currentCoordinate else { return nil }
+        let profile = resolvedSpecificationProfile ?? mapBridge?.activeSpecificationProfile
+        let length = profile?.lengthMeters ?? simulationEngine.vehicleLengthMeters
+        let width = profile?.widthMeters ?? simulationEngine.vehicleWidthMeters
+        let isPassengerCar = !isHGVMode
+        let bearing = simulationEngine.currentBearing
+        let parts = VehicleGeometryCalculator.generateFootprintParts(
+            rearAxle: coordinate,
+            headingDegrees: bearing,
+            lengthMeters: length,
+            widthMeters: width,
+            isPassengerCar: isPassengerCar
+        )
+        let footprint = parts.first
+            ?? VehicleGeometryCalculator.generateFootprint(
+                rearAxle: coordinate,
+                headingDegrees: bearing,
+                lengthMeters: length,
+                widthMeters: width
+            )
+        return SimulatedVehicleState(
+            latitude: coordinate.latitude,
+            longitude: coordinate.longitude,
+            bearing: bearing,
+            visible: true,
+            lengthMeters: length,
+            widthMeters: width,
+            playbackRevision: simulationEngine.playbackRevision,
+            dimensionRevision: simulationEngine.dimensionRevision,
+            renderMode: .polygon,
+            footprintCoordinates: footprint,
+            footprintParts: parts,
+            isPassengerCar: isPassengerCar,
+            wheelbaseMeters: isPassengerCar ? 2.7 : 6.5
+        )
+    }
+
+    /// Exits follow mode and fits the full route north-up on the map.
+    public func resetMapToRouteOverview() {
+        if isFollowModeEnabled || isNavigationActive || simulationEngine.isRunning {
+            if preferredTelemetryMode == .simulation, simulationEngine.isRunning {
+                simulationEngine.stop()
+            } else {
+                stopNavigation()
+            }
+        }
+        isFollowModeEnabled = false
+        mapBridge?.setCameraMode(.freePan)
+        fitMapToRoute(padding: .iosRouteOverviewFit)
+    }
+
+    /// When true, iOS map chrome should present the route results sheet (UI tests).
+    public var uiTestForceResultsSheet = false
+
+    /// Seeds a short demo route so UI tests can assert the Start Navigation control.
+    public func seedUITestDemoRouteIfNeeded() {
+        let shouldSeed = ProcessInfo.processInfo.arguments.contains("UITEST_SEED_ROUTE")
+            || UserDefaults.standard.bool(forKey: "RouteFinder.uitestSeedRoute")
+        guard shouldSeed else { return }
+        guard result == nil else {
+            uiTestForceResultsSheet = true
+            return
+        }
+
+        let displayCoordinates = [
+            CLLocationCoordinate2D(latitude: 51.5074, longitude: -0.1278),
+            CLLocationCoordinate2D(latitude: 51.5150, longitude: -0.1400),
+            CLLocationCoordinate2D(latitude: 51.5200, longitude: -0.1550),
+            CLLocationCoordinate2D(latitude: 51.5300, longitude: -0.1700)
+        ]
+        result = SearchResult(
+            path: displayCoordinates.indices.map { "uitest-\($0)" },
+            totalDistance: 4_200,
+            totalTime: 600,
+            nodesVisited: displayCoordinates.count,
+            runtime: 0.01,
+            explanation: "UI test demo route"
+        )
+        routeCoordinates = displayCoordinates
+        preferredTelemetryMode = .hardwareGPS
+        cloudRoutingBanner = "UI test demo route"
+        uiTestForceResultsSheet = true
+        UserDefaults.standard.set(false, forKey: "RouteFinder.uitestSeedRoute")
     }
     #endif
 

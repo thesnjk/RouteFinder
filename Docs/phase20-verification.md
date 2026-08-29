@@ -237,7 +237,61 @@ Scope: API unit economics metering, remote request policy, coordinator decomposi
 | P47-3 | Architecture ADR | **Pass** (doc) | [`architecture.md`](architecture.md) |
 | P48-1 | `swift test` 100% on PR | **Pass** (local) | All targets green 2026-08-29 |
 | P48-2 | UI smoke 3 tests (ios CI job) | **Pass** (code) | Unchanged from Ph43 |
-| P48-3 | iPhone C1–C9 device QA | **Deferred** | After reliability gate |
+| P48-3 | iPhone C1–C9 device QA | **Unblocked** | See Phase 49b — still **Pending local** |
+
+### Phase 49a — CI green (MapKit Sendable) (2026-08-29)
+
+Scope: restore macOS CI after Swift 6 / MapKit concurrency failure on `macos-15` Xcode 16.4.
+
+| # | SLO / evidence | Automated | Notes |
+|---|---|---|---|
+| P49a-1 | `swift build -c release` succeeds | **Pass** (local) | `@preconcurrency import MapKit` in `AppleGeocodeSearch` |
+| P49a-2 | `swift test` green | **Pass** (local) | All package targets |
+| P49a-3 | Fleet E2E smoke | **Pass** (local) | `Scripts/fleet-e2e-smoke.sh` 9/9 |
+| P49a-4 | GitHub Actions macos + ios | **Follow-up** | `e45180c3` still failed on `LocationResolver` CLGeocoder; hardened in same wave as Ph50 |
+
+#### Phase 49a code surfaces
+
+| Feature | Primary files |
+|---|---|
+| MapKit Sendable fix | `AppleGeocodeSearch.swift` |
+| CLGeocoder Sendable fix | `LocationResolver.swift` (`@preconcurrency` + `nonisolated(unsafe)`) |
+
+### Phase 50 — Route planning coordinator (2026-08-29)
+
+Scope: extract route-planning helpers and async orchestration from `RouteViewModel`.
+
+| # | SLO / evidence | Automated | Notes |
+|---|---|---|---|
+| P50-1 | `RoutePlanningCoordinator` + `RoutePlanningHost` | **Pass** (code) | SearchResult mapping, LEZ rings, failure presentation |
+| P50-2 | Recalculate debounce / lane enrichment / traffic reroute owned by coordinator | **Pass** (code) | Tasks moved off `RouteViewModel` |
+| P50-3 | Coordinator integration tests | **Pass** (unit) | `RoutePlanningCoordinatorTests` |
+
+#### Phase 50 code surfaces
+
+| Feature | Primary files |
+|---|---|
+| Route planning coordinator | `RoutePlanningCoordinator.swift`, `RouteViewModel` (`RoutePlanningHost`) |
+
+### Phase 49b — Device validation gate (2026-08-29)
+
+Reliability gate (Ph48) is complete; CI Sendable fixes (Ph49a) unblocked. **Physical iPhone C1–C9 and Fleet Part B remain operator-run** (~30–40 min). Agent cannot execute device QA in this environment.
+
+**Run order (recommended):**
+
+| Priority | Rows | Focus |
+|---|---|---|
+| P0 | C1–C2 | Cold install, login, map tiles |
+| P0 | C8 | Settings hub (includes **API Usage Today**) |
+| P1 | C3, C6–C7, C9 | Walkaround, hazards, roadworks, TomTom |
+| P2 | C4–C5 | Layby voice, fuel-card banner |
+| Fleet | Part B | Mac dispatch ↔ iPhone LAN — [`fleet-e2e-qa.md`](fleet-e2e-qa.md) |
+
+| # | Scenario | Result | Notes |
+|---|---|---|---|
+| P49b-1 | C1–C9 physical iPhone checklist | **Pending local** | Table below; mark Pass/Fail when run |
+| P49b-2 | Fleet Part B LAN walkaround → dispatch inspection | **Pending local** | [`fleet-e2e-qa.md`](fleet-e2e-qa.md) steps 1–9 |
+| P49b-3 | Settings API Usage Today visible under API Keys | **Pending local** | Part of C8 after Ph45 |
 
 #### Phase 45–48 code surfaces
 
@@ -315,15 +369,15 @@ Run once on a **physical iPhone** after each major driver-facing wave.
 
 | # | Scenario | Result | Notes |
 |---|---|---|---|
-| C1 | Delete app → Clean Build → run to device | **Pending local** | Same as A1–A2 |
-| C2 | Login → liability → map tiles (no sandbox error) | **Pending local** | Phase A |
-| C3 | Walkaround v2: zones, defect note, PDF share | **Pending local** | Phase 31 |
-| C4 | Layby voice alert on HGV route (Settings on) | **Pending local** | Phase 30 |
-| C5 | Fuel card picker → ahead banner on route | **Pending local** | Phase 32 |
-| C6 | Report closure → hazard ahead banner + voice | **Pending local** | Phase 33 |
-| C7 | Roadworks ahead banner (OSM construction corridor) | **Pending local** | Phase 35 |
-| C8 | Settings hub drill-down opens all sub-menus | **Pending local** | Phase 34 |
-| C9 | TomTom key set → live traffic hazard ahead during nav | **Pending local** | Phase 36; requires TomTom API key |
+| C1 | Delete app → Clean Build → run to device | **Pending local** (after Ph49a) | Same as A1–A2; P0 |
+| C2 | Login → liability → map tiles (no sandbox error) | **Pending local** (after Ph49a) | Phase A; P0 |
+| C3 | Walkaround v2: zones, defect note, PDF share | **Pending local** | Phase 31; P1 |
+| C4 | Layby voice alert on HGV route (Settings on) | **Pending local** | Phase 30; P2 |
+| C5 | Fuel card picker → ahead banner on route | **Pending local** | Phase 32; P2 |
+| C6 | Report closure → hazard ahead banner + voice | **Pending local** | Phase 33; P1 |
+| C7 | Roadworks ahead banner (OSM construction corridor) | **Pending local** | Phase 35; P1 |
+| C8 | Settings hub drill-down opens all sub-menus | **Pending local** (after Ph49a) | Phase 34 + API Usage Today; P0 |
+| C9 | TomTom key set → live traffic hazard ahead during nav | **Pending local** | Phase 36; requires TomTom API key; P1 |
 
 ### Phase 30–32 driver-facing wins (2026-08-28)
 

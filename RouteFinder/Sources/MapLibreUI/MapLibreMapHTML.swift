@@ -378,6 +378,7 @@ enum MapLibreMapHTML {
               const lngs = routeCoordinatesCache.map(c => c[0]);
               const lats = routeCoordinatesCache.map(c => c[1]);
               programmaticMove = true;
+              map.easeTo({ bearing: 0, pitch: 0, duration: 300 });
               map.fitBounds(
                 [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
                 {
@@ -423,7 +424,16 @@ enum MapLibreMapHTML {
               map.on('moveend', postMoveEnd);
               map.on('zoomend', () => {
                 updateVehicleIconRadius();
-                postMoveEnd();
+              });
+              const mapContainer = document.getElementById('map');
+              if (mapContainer && typeof ResizeObserver !== 'undefined') {
+                const resizeObserver = new ResizeObserver(() => {
+                  if (map) map.resize();
+                });
+                resizeObserver.observe(mapContainer);
+              }
+              window.addEventListener('resize', () => {
+                if (map) map.resize();
               });
               map.on('click', (e) => {
                 post('click', { lng: e.lngLat.lng, lat: e.lngLat.lat, button: 0 });

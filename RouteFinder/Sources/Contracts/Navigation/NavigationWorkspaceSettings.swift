@@ -16,6 +16,9 @@ public enum NavigationWorkspaceSettings {
     private static let fuelCardProviderKey = "RouteFinder.fuelCardProvider"
     private static let hazardVoiceAlertsEnabledKey = "RouteFinder.hazardVoiceAlertsEnabled"
     private static let hazardAlertDistanceMetersKey = "RouteFinder.hazardAlertDistanceMeters"
+    private static let speechVoiceIdentifierKey = "RouteFinder.speechVoiceIdentifier"
+    private static let speechRateKey = "RouteFinder.speechRate"
+    private static let vehicleModeOnboardingCompletedKey = "RouteFinder.vehicleModeOnboardingCompleted"
 
     /// Loads the preferred telemetry source mode.
     public static func loadTelemetrySourceMode(defaults: UserDefaults = .standard) -> LocationProviderMode {
@@ -183,5 +186,42 @@ public enum NavigationWorkspaceSettings {
     /// Persists hazard announce distance threshold in meters.
     public static func saveHazardAlertDistanceMeters(_ meters: Double, defaults: UserDefaults = .standard) {
         defaults.set(max(300, meters), forKey: hazardAlertDistanceMetersKey)
+    }
+
+    /// Selected AVSpeechSynthesisVoice identifier for navigation prompts.
+    public static func loadSpeechVoiceIdentifier(defaults: UserDefaults = .standard) -> String? {
+        defaults.string(forKey: speechVoiceIdentifierKey)
+    }
+
+    /// Persists the selected speech voice identifier.
+    public static func saveSpeechVoiceIdentifier(_ identifier: String?, defaults: UserDefaults = .standard) {
+        if let identifier {
+            defaults.set(identifier, forKey: speechVoiceIdentifierKey)
+        } else {
+            defaults.removeObject(forKey: speechVoiceIdentifierKey)
+        }
+    }
+
+    /// Speech rate for navigation prompts (AVSpeechUtterance rate scale, default ~0.5).
+    public static func loadSpeechRate(defaults: UserDefaults = .standard) -> Float {
+        if defaults.object(forKey: speechRateKey) == nil {
+            return 0.5
+        }
+        return defaults.float(forKey: speechRateKey)
+    }
+
+    /// Persists speech rate for navigation prompts.
+    public static func saveSpeechRate(_ rate: Float, defaults: UserDefaults = .standard) {
+        defaults.set(min(max(rate, 0.35), 0.65), forKey: speechRateKey)
+    }
+
+    /// Whether the driver completed the Car vs HGV onboarding pick.
+    public static func loadHasCompletedVehicleModeOnboarding(defaults: UserDefaults = .standard) -> Bool {
+        defaults.bool(forKey: vehicleModeOnboardingCompletedKey)
+    }
+
+    /// Persists completion of the Car vs HGV onboarding pick.
+    public static func saveHasCompletedVehicleModeOnboarding(_ completed: Bool, defaults: UserDefaults = .standard) {
+        defaults.set(completed, forKey: vehicleModeOnboardingCompletedKey)
     }
 }

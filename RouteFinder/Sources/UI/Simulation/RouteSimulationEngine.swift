@@ -599,6 +599,7 @@ public final class RouteSimulationEngine: ObservableObject {
       lastBridgeLatitude = coordinate.latitude
       lastBridgeLongitude = coordinate.longitude
       lastBridgeBearing = currentBearing
+      SimulationMapBridge.shared.push(makeSimulatedVehicleState(coordinate: coordinate))
     }
   }
 

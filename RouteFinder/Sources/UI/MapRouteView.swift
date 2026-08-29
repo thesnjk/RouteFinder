@@ -98,6 +98,8 @@ public struct MapRouteView: View {
             MapAttributionOverlay()
                 .padding(RFSpacing.sm)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
     }
 
     private var libreInteractionMode: MapLibreInteractionMode {

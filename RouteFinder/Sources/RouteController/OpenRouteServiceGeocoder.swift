@@ -1,6 +1,7 @@
 import Contracts
 import DataLayer
 import Foundation
+import os
 
 /// Errors from the HeiGIT OpenRouteService geocoding client.
 public enum OpenRouteServiceGeocoderError: Error, Sendable, LocalizedError {
@@ -187,11 +188,14 @@ public actor OpenRouteServiceGeocoder {
         var request = URLRequest(url: url)
         request.applyAppIdentity()
 
-        let (data, response) = try await session.data(for: request)
-        logGeocodeResponse(request: request, response: response, data: data)
-        guard let http = response as? HTTPURLResponse else {
-            throw OpenRouteServiceGeocoderError.invalidResponse
-        }
+        let policy = RemoteRequestPolicy.default
+        let (data, http) = try await policy.data(
+            for: request,
+            session: session,
+            logger: RouteFinderLog.geocode
+        )
+        logGeocodeResponse(request: request, response: http, data: data)
+        await APIUsageLedger.shared.record(provider: .orsGeocode)
         if http.statusCode == 401 || http.statusCode == 403 {
             throw OpenRouteServiceGeocoderError.unauthorized(status: http.statusCode)
         }
@@ -302,29 +306,19 @@ public actor OpenRouteServiceGeocoder {
         lastRequestTime = Date()
     }
 
-    private func logGeocodeResponse(request: URLRequest, response: URLResponse, data: Data) {
+    private func logGeocodeResponse(request: URLRequest, response: HTTPURLResponse, data: Data) {
         let urlString = request.url?.absoluteString ?? "<nil>"
         let redactedURL = urlString.replacingOccurrences(
             of: #"api_key=[^&]+"#,
             with: "api_key=***",
             options: .regularExpression
         )
-        print("[Geocode Debug] Targeting URL: \(redactedURL)")
+        RouteFinderLog.geocode.debug("Targeting URL: \(redactedURL, privacy: .public)")
 
-        if let headers = request.allHTTPHeaderFields, !headers.isEmpty {
-            print("[Geocode Debug] Request Headers: \(headers)")
-        } else {
-            print("[Geocode Debug] Request Headers: <none>")
-        }
-
-        if let http = response as? HTTPURLResponse {
-            print("[Geocode Debug] Status Code: \(http.statusCode)")
-            if !(200..<300).contains(http.statusCode) {
-                print("[Geocode Debug] Response Body: \(DecodingDiagnostics.preview(of: data))")
-            }
-        } else {
-            print("[Geocode Debug] Status Code: <non-HTTP response>")
-            print("[Geocode Debug] Response Body: \(DecodingDiagnostics.preview(of: data))")
+        if !(200..<300).contains(response.statusCode) {
+            RouteFinderLog.geocode.error(
+                "Geocode HTTP \(response.statusCode, privacy: .public): \(DecodingDiagnostics.preview(of: data), privacy: .public)"
+            )
         }
     }
 }

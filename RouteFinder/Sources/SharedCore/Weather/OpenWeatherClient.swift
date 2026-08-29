@@ -66,6 +66,7 @@ public struct OpenWeatherClient: WeatherService, Sendable {
         guard !data.isEmpty else {
             throw Error.emptyPayload
         }
+        await APIUsageLedger.shared.record(provider: .openWeather)
 
         let payload = try JSONDecoder().decode(OpenWeatherResponse.self, from: data)
         return WeatherConditionMapping.condition(

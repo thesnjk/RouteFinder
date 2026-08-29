@@ -65,10 +65,13 @@ public struct OpenRouteServiceRoutingClient: ExternalRoutingClient, Sendable {
             throw ExternalRoutingError.invalidConfiguration
         }
 
-        let (data, response) = try await session.data(for: urlRequest)
-        guard let http = response as? HTTPURLResponse else {
-            throw ExternalRoutingError.serverError(status: -1, body: "Invalid response")
-        }
+        let policy = RemoteRequestPolicy.default
+        let (data, http) = try await policy.data(
+            for: urlRequest,
+            session: session,
+            logger: RouteFinderLog.routing
+        )
+        await APIUsageLedger.shared.record(provider: .orsRoute)
         return (data, http)
     }
 

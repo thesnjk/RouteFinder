@@ -35,6 +35,7 @@ flowchart BT
 |-------------|----------------|------|
 | `FleetDispatchCoordinator` | Poll/SSE dispatch, snapshot publish, Bonjour discovery, fleet store reload | `RouteViewModel` (`FleetDispatchHost`) |
 | `HazardNavigationCoordinator` | TomTom sampling, roadworks corridor, crowd hydrate, hazard overlay/voice | `RouteViewModel` (hazard state + context) |
+| `RoutePlanningCoordinator` | SearchResult mapping, LEZ avoid rings, recalculate debounce, lane enrichment, traffic reroute evaluation, route failure presentation | `RouteViewModel` (`RoutePlanningHost`) |
 
 `RouteViewModel` remains the SwiftUI observation root. Coordinators hold logic; the view model holds `@Observable` state for bindings.
 
@@ -51,15 +52,17 @@ flowchart LR
     Views --> RouteViewModel
     RouteViewModel --> FleetDispatchCoordinator
     RouteViewModel --> HazardNavigationCoordinator
+    RouteViewModel --> RoutePlanningCoordinator
     RouteViewModel --> NavigationCoordinator
     FleetDispatchCoordinator --> HTTPFleetStore
     HazardNavigationCoordinator --> TomTomTrafficFlowClient
     HazardNavigationCoordinator --> RoadworksAlongRouteRepository
+    RoutePlanningCoordinator --> OpenRouteServiceRoutingClient
     RouteViewModel --> RouteController
     RouteController --> APIUsageLedger
 ```
 
-Future extractions (post Ph47): routing/simulation/HOS coordinators using the same host-delegation pattern.
+Future extractions (post Ph50): simulation and HOS coordinators using the same host-delegation pattern.
 
 ## ADR: Incremental god-object decomposition
 

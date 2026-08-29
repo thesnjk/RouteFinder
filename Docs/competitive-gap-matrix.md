@@ -76,7 +76,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **46** | Unified remote request policy + fleet CI smoke | **Done** — `RemoteRequestPolicy`, `fleet-e2e-smoke.sh` in CI |
 | **47** | Fleet + hazard coordinator extraction | **Done** — `FleetDispatchCoordinator`, `HazardNavigationCoordinator`, [`architecture.md`](architecture.md) |
 | **48** | Reliability SLO verification gate | **Done** — [`phase20-verification.md`](phase20-verification.md#phase-4548-reliability-economics-program-2026-08-29); C1–C9 unblocked |
-| **49a** | Fix MapKit Sendable macOS CI failure | **Done** — `@preconcurrency import MapKit` in `AppleGeocodeSearch` |
+| **49a** | Fix MapKit/CLGeocoder Sendable macOS CI failure | **Done** — CI green on `8f4ff6ee` ([run 33253641183](https://github.com/thesnjk/RouteFinder/actions/runs/33253641183)) |
 | **49b** | iPhone C1–C9 + fleet Part B device gate | **Pending local** — checklist ready; see [`phase20-verification.md`](phase20-verification.md#phase-49b--device-validation-gate-2026-08-29) |
 | **50** | Route planning coordinator extraction | **Done** — `RoutePlanningCoordinator`, `RoutePlanningHost`, tests |
 

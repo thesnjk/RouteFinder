@@ -417,13 +417,13 @@ public final class RouteViewModel {
     private let locationResolver = LocationResolver()
     private var vehicleRegistryClient = VehicleRegistryClient()
     private let plateLibraryStore = VehiclePlateLibraryStore()
-    private var recalculateTask: Task<Void, Never>?
     private var searchTasks: [UUID: Task<Void, Never>] = [:]
     private var hasCompletedCloudRoute = false
     private let laybyCatalogService = LaybyCatalogService()
     private let truckPoiRepository = OverpassTruckPoiRepository()
     private let hazardState = HazardNavigationState()
     @ObservationIgnored private var fleetDispatchCoordinator: FleetDispatchCoordinator!
+    @ObservationIgnored private var routePlanningCoordinator: RoutePlanningCoordinator!
     @ObservationIgnored private let hazardNavigationCoordinator = HazardNavigationCoordinator()
     @ObservationIgnored private let fleetStoreConfigurationObserver = FleetStoreConfigurationObserver()
     /// In-memory driver alert bus (HOS and related).
@@ -443,8 +443,8 @@ public final class RouteViewModel {
     private let laybyAdvisor = LaybyAdvisor()
     private var laybyLoadTask: Task<Void, Never>?
     private var truckPoiLoadTask: Task<Void, Never>?
-    private var trafficRerouteTask: Task<Void, Never>?
-    private var pendingTrafficAlternate: ExternalRouteResponse?
+    /// Pending traffic-aware alternate response when `trafficRerouteAvailable` is true.
+    public var pendingTrafficAlternate: ExternalRouteResponse?
     private var lastExternalRouteRequest: ExternalRouteRequest?
 
     #if os(iOS)
@@ -453,8 +453,6 @@ public final class RouteViewModel {
     private let kineticAdvisoryCoordinator = KineticAdvisoryCoordinator()
     private var rehearseTask: Task<Void, Never>?
     private var vehicleWorkspacePersistTask: Task<Void, Never>?
-    private var laneEnrichmentTask: Task<Void, Never>?
-    private var activeRouteGeneration: UInt64 = 0
     private let laneGuidanceNavigationAdapter = LaneGuidanceNavigationAdapter()
     private let navigationProgressRefreshAdapter = NavigationProgressRefreshAdapter()
     private var lastAnnouncedLaybyId: String?
@@ -504,6 +502,7 @@ public final class RouteViewModel {
         #endif
         wireNavigationPipeline()
         fleetDispatchCoordinator = FleetDispatchCoordinator(host: self)
+        routePlanningCoordinator = RoutePlanningCoordinator(host: self)
         hazardNavigationCoordinator.onStateChanged = { [weak self] in
             self?.hazardStateVersion &+= 1
         }
@@ -2044,20 +2043,10 @@ public final class RouteViewModel {
     }
 
     public func recalculateIfReady() async {
-        recalculateTask?.cancel()
-        recalculateTask = Task {
-            try? await Task.sleep(for: .milliseconds(500))
-            guard !Task.isCancelled else { return }
-            guard originWaypoint.isResolved, destinationWaypoint.isResolved else {
-                await MainActor.run {
-                    clearRouteGeometry()
-                    result = nil
-                    errorMessage = nil
-                }
-                return
-            }
-            await calculateRoute()
-        }
+        routePlanningCoordinator.recalculateIfReady(
+            originResolved: originWaypoint.isResolved,
+            destinationResolved: destinationWaypoint.isResolved
+        )
     }
 
     public func calculateRoute() async {
@@ -2086,7 +2075,7 @@ public final class RouteViewModel {
             routeFailure = nil
             updateCloudRoutingBanner()
         } catch {
-            presentRouteError(error, preferences: preferences)
+            routePlanningCoordinator.presentRouteError(error, preferences: preferences)
         }
     }
 
@@ -2316,13 +2305,12 @@ public final class RouteViewModel {
         origin: RoutingCoordinate,
         destination: RoutingCoordinate
     ) -> [[[Double]]]? {
-        let rings = LEZAvoidPolicy.polygons(
+        RoutePlanningCoordinator.lezAvoidPolygons(
             emissionClass: emissionClass,
             avoidEnabled: avoidNonCompliantLEZ,
-            destination: Coordinate(latitude: destination.latitude, longitude: destination.longitude),
-            origin: Coordinate(latitude: origin.latitude, longitude: origin.longitude)
+            origin: origin,
+            destination: destination
         )
-        return rings.isEmpty ? nil : rings
     }
 
     /// Applies an external route response to map, simulation, and HGV living-layer hooks.
@@ -2330,42 +2318,11 @@ public final class RouteViewModel {
         _ response: ExternalRouteResponse,
         preferences: RoutingPreferences
     ) async throws {
-        let turnInstructions: [TurnInstruction]
-        if !response.maneuvers.isEmpty {
-            turnInstructions = ORSTurnInstructionMapper.map(
-                maneuvers: response.maneuvers,
-                coordinates: response.coordinates
-            )
-        } else {
-            turnInstructions = PolylineTurnInstructionGenerator.generate(
-                coordinates: response.coordinates
-            )
-        }
-        let heuristicInstructions = LaneGuidanceEnricher.enrichWithHeuristics(
-            instructions: turnInstructions
-        )
-
-        let distanceLabel = response.distanceMeters >= 1000
-            ? String(format: "%.1f km", response.distanceMeters / 1000)
-            : String(format: "%.0f m", response.distanceMeters)
-        let profileLabel = preferences.isHGVMode ? "HGV" : "Car"
-        let searchResult = SearchResult(
-            path: ["external-ors"],
-            totalDistance: response.distanceMeters,
-            totalTime: response.durationSeconds,
-            nodesVisited: response.coordinates.count,
-            runtime: 0,
-            explanation: "HeiGIT \(profileLabel) route · \(distanceLabel)",
-            turnInstructions: heuristicInstructions,
-            metrics: RouteMetrics(
-                totalDistance: response.distanceMeters,
-                totalTime: response.durationSeconds,
-                searchCost: response.durationSeconds,
-                speedCameraCount: 0,
-                tollSegmentCount: 0,
-                ferrySegmentCount: 0,
-                tunnelSegmentCount: 0
-            )
+        let heuristicInstructions = RoutePlanningCoordinator.heuristicTurnInstructions(from: response)
+        let searchResult = RoutePlanningCoordinator.searchResult(
+            from: response,
+            preferences: preferences,
+            turnInstructions: heuristicInstructions
         )
 
         result = searchResult
@@ -2426,26 +2383,14 @@ public final class RouteViewModel {
         coordinates: [Coordinate],
         queryOverpass: Bool = true
     ) {
-        laneEnrichmentTask?.cancel()
-        OverpassLaneGuidanceClient.clearCache()
-        activeRouteGeneration &+= 1
-        let generation = activeRouteGeneration
-        let options = LaneGuidanceEnrichmentOptions(queryOverpass: queryOverpass)
-
-        laneEnrichmentTask = Task { @MainActor [weak self] in
-            let enriched = await LaneGuidanceEnricher.enrichWithOverpass(
-                instructions: instructions,
-                coordinates: coordinates,
-                options: options
-            )
-            guard !Task.isCancelled,
-                  let self,
-                  self.activeRouteGeneration == generation else { return }
-            self.applyLaneGuidanceEnrichment(enriched)
-        }
+        routePlanningCoordinator.scheduleLaneGuidanceEnrichment(
+            instructions: instructions,
+            coordinates: coordinates,
+            queryOverpass: queryOverpass
+        )
     }
 
-    private func applyLaneGuidanceEnrichment(_ instructions: [TurnInstruction]) {
+    public func applyLaneGuidanceEnrichment(_ instructions: [TurnInstruction]) {
         guard let current = result else { return }
         result = SearchResult(
             path: current.path,
@@ -2467,51 +2412,17 @@ public final class RouteViewModel {
         request: ExternalRouteRequest,
         original: ExternalRouteResponse
     ) {
-        trafficRerouteTask?.cancel()
-        trafficRerouteAvailable = false
-        pendingTrafficAlternate = nil
-        guard avoidTrafficDelaysWhenRouting,
-              !tomTomAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-              !orsAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            isEvaluatingTrafficReroute = false
-            return
-        }
-
-        isEvaluatingTrafficReroute = true
-        let vehicleProfile = currentVehicleSpecificationProfile()
-        let measurementSystem = displayMeasurementSystem
-        trafficRerouteTask = Task { @MainActor in
-            defer { isEvaluatingTrafficReroute = false }
-            do {
-                let trafficClient = try TomTomTrafficFlowClient(apiKey: tomTomAPIKey)
-                let routingClient = try OpenRouteServiceRoutingClient(apiKey: orsAPIKey)
-                let coordinator = TrafficRerouteCoordinator(
-                    trafficClient: trafficClient,
-                    routingClient: routingClient
-                )
-                let context = TrafficRerouteEvaluationContext(
-                    vehicleProfile: vehicleProfile,
-                    measurementSystem: measurementSystem
-                )
-                let outcome = await coordinator.evaluate(
-                    request: request,
-                    original: original,
-                    context: context
-                )
-                guard !Task.isCancelled else { return }
-                if let alternate = outcome.alternate {
-                    pendingTrafficAlternate = alternate
-                    trafficRerouteAvailable = true
-                } else {
-                    trafficRerouteAvailable = false
-                    pendingTrafficAlternate = nil
-                }
-            } catch {
-                guard !Task.isCancelled else { return }
-                trafficRerouteAvailable = false
-                pendingTrafficAlternate = nil
-            }
-        }
+        routePlanningCoordinator.scheduleTrafficRerouteEvaluation(
+            inputs: TrafficRerouteScheduleInputs(
+                request: request,
+                original: original,
+                avoidTrafficDelaysWhenRouting: avoidTrafficDelaysWhenRouting,
+                tomTomAPIKey: tomTomAPIKey,
+                orsAPIKey: orsAPIKey,
+                vehicleProfile: currentVehicleSpecificationProfile(),
+                measurementSystem: displayMeasurementSystem
+            )
+        )
     }
 
     private var physicsEstimateTask: Task<Void, Never>?
@@ -2957,15 +2868,14 @@ public final class RouteViewModel {
         return result
     }
 
-    private func clearRouteGeometry() {
+    public func clearRouteGeometry() {
         routeCoordinates = []
         routeCumulativeLengths = []
         routeGeometry = nil
         routeEncodedPolyline = nil
         simulationEngine.stop()
         navigationCoordinator.clearRoute()
-        laneEnrichmentTask?.cancel()
-        laneEnrichmentTask = nil
+        routePlanningCoordinator.cancelPendingWork()
         activeLaneGuidance = nil
         activeLaneManeuver = nil
         activeLaneDistanceMeters = nil
@@ -2989,7 +2899,6 @@ public final class RouteViewModel {
         isLoadingTruckPois = false
         restrictionAnnouncements = []
         activeRestrictionAnnouncement = nil
-        trafficRerouteTask?.cancel()
         trafficRerouteAvailable = false
         isEvaluatingTrafficReroute = false
         pendingTrafficAlternate = nil
@@ -2997,20 +2906,6 @@ public final class RouteViewModel {
         Task {
             await laybyAdvisor.reset()
         }
-    }
-
-    private func presentRouteError(_ error: Error, preferences: RoutingPreferences) {
-        let presentation = RouteFailureMapper.map(
-            error,
-            vehicle: preferences.vehicle,
-            isHGVMode: preferences.isHGVMode
-        )
-        // Prefer the modal message; keep a short inline hint only when the sheet is dismissed later.
-        errorMessage = presentation.message
-        routeFailure = presentation
-        routeDetailCollapseTick &+= 1
-        result = nil
-        clearRouteGeometry()
     }
 
     private func status(for resolved: ResolvedEndpoint?, text: String) -> EndpointResolutionStatus {
@@ -3370,6 +3265,8 @@ extension RouteViewModel: FleetDispatchHost {
         )
     }
 }
+
+extension RouteViewModel: RoutePlanningHost {}
 
 private final class LaneGuidanceNavigationAdapter: NavigationSessionDelegate {
     var onProgress: (() -> Void)?

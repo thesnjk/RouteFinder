@@ -257,6 +257,22 @@ Scope: restore macOS CI after Swift 6 / MapKit concurrency failure on `macos-15`
 | MapKit Sendable fix | `AppleGeocodeSearch.swift` |
 | CLGeocoder Sendable fix | `LocationResolver.swift` (`@preconcurrency` + `nonisolated(unsafe)`) |
 
+### Phase 49c — Fleet SSE CI flake hardening (2026-08-29)
+
+Scope: replace fixed 300 ms server startup sleeps with health-endpoint polling so Hummingbird bind races do not fail CI.
+
+| # | SLO / evidence | Automated | Notes |
+|---|---|---|---|
+| P49c-1 | `waitForFleetServerReady` polls `GET /health` | **Pass** (code) | `FleetTestServerSupport.swift` |
+| P49c-2 | Fleet SSE / Auth / HTTP LAN tests use readiness helper | **Pass** (code) | No fixed 300 ms startup sleep |
+| P49c-3 | Fleet E2E smoke | **Pass** (local) | `Scripts/fleet-e2e-smoke.sh` |
+
+#### Phase 49c code surfaces
+
+| Feature | Primary files |
+|---|---|
+| Server readiness poll | `FleetTestServerSupport.swift`, `FleetSSETests`, `FleetAuthTests`, `HTTPFleetStoreTests` |
+
 ### Phase 50 — Route planning coordinator (2026-08-29)
 
 Scope: extract route-planning helpers and async orchestration from `RouteViewModel`.
@@ -273,23 +289,50 @@ Scope: extract route-planning helpers and async orchestration from `RouteViewMod
 |---|---|
 | Route planning coordinator | `RoutePlanningCoordinator.swift`, `RouteViewModel` (`RoutePlanningHost`) |
 
+### Phase 51 — Route simulation coordinator (2026-08-29)
+
+Scope: extract simulation callbacks, kinetic advisories, physics ETA/rehearse, and Break Now from `RouteViewModel`.
+
+| # | SLO / evidence | Automated | Notes |
+|---|---|---|---|
+| P51-1 | `RouteSimulationCoordinator` + `RouteSimulationHost` | **Pass** (code) | Callbacks, kinetic, camera zoom |
+| P51-2 | Physics estimate / rehearse / Break Now owned by coordinator | **Pass** (code) | Tasks moved off `RouteViewModel` |
+| P51-3 | Coordinator integration tests | **Pass** (unit) | `RouteSimulationCoordinatorTests` |
+
+#### Phase 51 code surfaces
+
+| Feature | Primary files |
+|---|---|
+| Simulation coordinator | `RouteSimulationCoordinator.swift`, `RouteViewModel` (`RouteSimulationHost`) |
+
+### Phase 52 — HOS advisory coordinator (2026-08-29)
+
+Scope: extract HOS clock, tacho import, and rest forecast orchestration from `RouteViewModel`.
+
+| # | SLO / evidence | Automated | Notes |
+|---|---|---|---|
+| P52-1 | `HosAdvisoryCoordinator` + `HosAdvisoryHost` | **Pass** (code) | Transitions, can-I-drive, tacho persistence |
+| P52-2 | Rest forecast + path metrics owned by coordinator | **Pass** (code) | `hosPath*` helpers moved |
+| P52-3 | Coordinator integration tests | **Pass** (unit) | `HosAdvisoryCoordinatorTests` |
+
+#### Phase 52 code surfaces
+
+| Feature | Primary files |
+|---|---|
+| HOS advisory coordinator | `HosAdvisoryCoordinator.swift`, `RouteViewModel` (`HosAdvisoryHost`) |
+
 ### Phase 49b — Device validation gate (2026-08-29)
 
-Reliability gate (Ph48) is complete; CI Sendable fixes (Ph49a) unblocked. **Physical iPhone C1–C9 and Fleet Part B remain operator-run** (~30–40 min). Agent cannot execute device QA in this environment.
+Reliability gate (Ph48) + CI green (Ph49a) are complete. **Physical iPhone C1–C9 and Fleet Part B remain operator-run** (~30–40 min). Agent cannot execute device QA in this environment; checklist + run order are ready.
 
-**Run order (recommended):**
+**P0 first (~10 min):** C1–C2 (cold install, login, map tiles) then C8 (Settings hub including **API Usage Today**). Mark Pass/Fail in the consolidated C1–C9 table below when run.
 
-| Priority | Rows | Focus |
-|---|---|---|
-| P0 | C1–C2 | Cold install, login, map tiles |
-| P0 | C8 | Settings hub (includes **API Usage Today**) |
-| P1 | C3, C6–C7, C9 | Walkaround, hazards, roadworks, TomTom |
-| P2 | C4–C5 | Layby voice, fuel-card banner |
-| Fleet | Part B | Mac dispatch ↔ iPhone LAN — [`fleet-e2e-qa.md`](fleet-e2e-qa.md) |
+**Then P1 / P2 / Fleet:** C3, C6–C7, C9 → C4–C5 → Fleet Part B LAN ([`fleet-e2e-qa.md`](fleet-e2e-qa.md)).
 
 | # | Scenario | Result | Notes |
 |---|---|---|---|
-| P49b-1 | C1–C9 physical iPhone checklist | **Pending local** | Table below; mark Pass/Fail when run |
+| P49b-P0 | C1–C2 + C8 physical iPhone | **Pending local** | Operator — mark Pass/Fail in C table |
+| P49b-1 | C1–C9 physical iPhone checklist | **Pending local** | Full table below |
 | P49b-2 | Fleet Part B LAN walkaround → dispatch inspection | **Pending local** | [`fleet-e2e-qa.md`](fleet-e2e-qa.md) steps 1–9 |
 | P49b-3 | Settings API Usage Today visible under API Keys | **Pending local** | Part of C8 after Ph45 |
 

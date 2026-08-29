@@ -61,6 +61,8 @@ Exit code `0` = all targeted tests passed.
 | 8 | Dispatch console shows updated trip status / physics ETA snapshot from driver publish | — |
 | 9 | Dispatch console shows **Walkaround defects** card with defect count; tap **PDF** share when driver saved inspection with defects (remote fleet enabled) | Complete zoned walkaround with ≥1 defect → **Save** on driver device |
 
+**After run:** mark P49b-2 + Fleet Part B rows in [`phase20-verification.md`](phase20-verification.md) Pass/Fail. Part A automated smoke last verified **Pass** local 2026-08-29 (9/9).
+
 Last updated: 2026-08-29 (Phase 41 dispatch inspection visibility)
 
 ### API surface (for curl debugging)

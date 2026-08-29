@@ -24,6 +24,9 @@ jobs:
       - name: Run tests
         run: swift test
 
+      - name: Fleet E2E smoke
+        run: bash Scripts/fleet-e2e-smoke.sh
+
       - name: Dependency audit
         run: swift package audit || true
 

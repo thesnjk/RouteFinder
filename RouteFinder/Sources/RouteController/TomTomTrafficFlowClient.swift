@@ -40,10 +40,13 @@ public struct TomTomTrafficFlowClient: Sendable {
             throw TomTomTrafficError.invalidConfiguration
         }
 
-        let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse else {
-            throw TomTomTrafficError.serverError(status: -1)
-        }
+        let policy = RemoteRequestPolicy.default
+        let (data, http) = try await policy.data(
+            for: request,
+            session: session,
+            logger: RouteFinderLog.routing
+        )
+        await APIUsageLedger.shared.record(provider: .tomTomFlow)
         guard http.statusCode == 200 else {
             throw TomTomTrafficError.serverError(status: http.statusCode)
         }

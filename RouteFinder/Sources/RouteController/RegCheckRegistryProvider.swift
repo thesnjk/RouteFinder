@@ -1,6 +1,7 @@
 import Contracts
 import DataLayer
 import Foundation
+import os
 
 // MARK: - RegCheck Provider
 
@@ -53,16 +54,14 @@ public struct RegCheckRegistryProvider: VehicleRegistryProvider {
             throw VehicleRegistryError.invalidConfiguration
         }
 
-        let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse else {
-            throw VehicleRegistryError.networkFailure("Invalid response")
-        }
-
+        let policy = RemoteRequestPolicy.default
+        let (data, http) = try await policy.data(for: request, session: session)
         switch http.statusCode {
         case 200:
+            await APIUsageLedger.shared.record(provider: .regCheck)
             break
         case 404:
-            print("[RegCheck API Error] Asset not found in registry cluster")
+            RouteFinderLog.routing.error("RegCheck asset not found in registry cluster")
             throw VehicleRegistryError.notFound(registration: normalized)
         case 401, 403:
             throw VehicleRegistryError.notConfigured

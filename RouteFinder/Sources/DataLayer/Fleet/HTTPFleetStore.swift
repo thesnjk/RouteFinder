@@ -164,10 +164,17 @@ public actor HTTPFleetStore: FleetDispatchPort {
             request.httpBody = body
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
-        let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse else {
-            throw HTTPFleetStoreError.invalidResponse
-        }
+        let policy = RemoteRequestPolicy(
+            timeoutInterval: 30,
+            maxRetries: 2,
+            initialBackoff: 0.5,
+            maxBackoff: 15
+        )
+        let (data, http) = try await policy.data(
+            for: request,
+            session: session,
+            logger: RouteFinderLog.fleet
+        )
         return (data, http)
     }
 

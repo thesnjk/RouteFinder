@@ -1,4 +1,5 @@
 import Contracts
+import DataLayer
 import RouteController
 import SwiftUI
 
@@ -84,6 +85,7 @@ struct SettingsSheet: View {
 
             NavigationLink {
                 settingsDetailPage(title: "API Keys") {
+                    apiUsageSection
                     orsAPIKeySection
                     openWeatherAPIKeySection
                     regCheckUsernameSection
@@ -569,6 +571,45 @@ struct SettingsSheet: View {
         }
     }
     #endif
+
+    private var apiUsageSection: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.sm) {
+            Text("API Usage Today")
+                .font(RFFont.sectionTitle)
+
+            if let banner = viewModel.apiUsageBudgetBanner {
+                Text(banner)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+
+            if let summary = viewModel.apiUsageSummary {
+                ForEach(APIUsageProvider.allCases, id: \.self) { provider in
+                    let count = summary.count(for: provider)
+                    let budget = APIUsageBudget.defaultBudget(for: provider).softDailyLimit
+                    HStack {
+                        Text(provider.displayName)
+                        Spacer()
+                        Text("\(count) / \(budget)")
+                            .foregroundStyle(count >= budget ? .orange : .secondary)
+                    }
+                    .font(.caption)
+                }
+            } else {
+                Text("Loading usage…")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Button("Refresh Usage") {
+                Task { await viewModel.refreshAPIUsageSummary() }
+            }
+            .buttonStyle(.borderless)
+        }
+        .task {
+            await viewModel.refreshAPIUsageSummary()
+        }
+    }
 
     private var orsAPIKeySection: some View {
         VStack(alignment: .leading, spacing: RFSpacing.sm) {

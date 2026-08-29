@@ -97,10 +97,15 @@ public actor RoadworksAlongRouteRepository {
         components.queryItems = [URLQueryItem(name: "data", value: query)]
         request.httpBody = components.percentEncodedQuery?.data(using: .utf8)
 
+        guard await APIUsageLedger.shared.allowsNonCriticalRequest(provider: .overpass) else {
+            return []
+        }
+
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             return []
         }
+        await APIUsageLedger.shared.record(provider: .overpass)
         return try Self.parseFixture(data: data)
     }
 

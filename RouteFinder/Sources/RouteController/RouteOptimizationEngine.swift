@@ -351,10 +351,12 @@ public actor RouteOptimizationEngine {
         guard request.isSecureHTTPS else { return nil }
 
         do {
-            let (data, response) = try await session.data(for: request)
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+            let policy = RemoteRequestPolicy.default
+            let (data, http) = try await policy.data(for: request, session: session)
+            guard http.statusCode == 200 else {
                 return nil
             }
+            await APIUsageLedger.shared.record(provider: .orsMatrix)
             let envelope = try JSONDecoder().decode(ORSMatrixEnvelope.self, from: data)
             return MatrixPayloadGenerator.parseResponse(envelope, locationCount: coordinates.count)?.primaryCostMatrix
         } catch {
@@ -487,10 +489,12 @@ public actor RouteOptimizationEngine {
         guard request.isSecureHTTPS else { return nil }
 
         do {
-            let (data, response) = try await session.data(for: request)
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+            let policy = RemoteRequestPolicy.default
+            let (data, http) = try await policy.data(for: request, session: session)
+            guard http.statusCode == 200 else {
                 return nil
             }
+            await APIUsageLedger.shared.record(provider: .orsMatrix)
             let envelope = try JSONDecoder().decode(ORSMatrixEnvelope.self, from: data)
             return MatrixPayloadGenerator.parseResponse(envelope, locationCount: coordinates.count)
         } catch {

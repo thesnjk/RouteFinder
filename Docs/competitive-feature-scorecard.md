@@ -1,6 +1,6 @@
 # Competitive Feature Scorecard — August 2026
 
-Last updated: 2026-08-29 (Phase 43–44 CI fix + dispatch defect toast)
+Last updated: 2026-08-29 (Phase 45–48 reliability economics program)
 
 Scoring: **0** Absent · **1** Weak · **2** Parity · **3** Lead  
 Personas: **OO** = UK owner-operator · **SF** = small fleet (2–20 vehicles)
@@ -34,7 +34,7 @@ RouteFinder scores from code inventory + Phase 20/26/27/30–44 verification. Co
 | Dispatch push | 20% | **3** | 2 | 2 | 3 | RF SSE + native console + walkaround PDF + defect card + poll toast (Ph39–44) |
 | Physics ETA to depot | 15% | **3** | 1 | 2 | 2 | RF wedge |
 | Trip brief PDF | 15% | **3** | 1 | 2 | 2 | RF shipped Ph15; defect warning line Ph39 |
-| LAN sync / Bonjour | 15% | **3** | 0 | 1 | 0 | RF $0 LAN; repo-root CI Ph43 |
+| LAN sync / Bonjour | 15% | **3** | 0 | 1 | 0 | RF $0 LAN; repo-root CI + fleet smoke Ph43–46 |
 | Layby on trip | 10% | **3** | 2 | 1 | 0 | RF prediction + Break Now |
 | Constraint routing | 10% | **3** | 3 | 3 | 2 | Parity |
 | Auth/TLS fleet server | 10% | **2** | 3 | 3 | 3 | RF API key + optional TLS |
@@ -73,3 +73,4 @@ Formula: `(competitor best − RF) × persona weight × feasibility ($0, no CarP
 | Legal LEZ cadastre | Sygic / TomTom | Simplified authored rings + honest disclaimer |
 | Hosted multi-tenant SaaS | CoPilot Account Manager | LAN dispatch at $0 instead |
 | Toll tariff tables | PTV / TomTom | Deferred |
+| Per-seat API burn visibility | Enterprise fleet SaaS | On-device ledger + soft budgets (Ph45); $0 sustainable ops |

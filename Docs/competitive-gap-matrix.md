@@ -1,7 +1,9 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-29 (Phase 43–44 CI root fix + dispatch defect toast)  
+Last updated: 2026-08-29 (Phase 45–48 reliability economics program)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then advisory tacho + offline packs. **CarPlay deferred** until paid-team signing.
+
+> **Aug 29 Phase 45–48:** On-device API usage ledger + soft budget guards; unified remote retry policy; `FleetDispatchCoordinator` + `HazardNavigationCoordinator` extracted from `RouteViewModel`; fleet E2E smoke in CI; architecture ADR. See [`unit-economics.md`](unit-economics.md), [`architecture.md`](architecture.md), and [`phase20-verification.md`](phase20-verification.md#phase-4548-reliability-economics-program-2026-08-29).
 
 > **Aug 29 Phase 43–44:** GitHub Actions moved to repo-root `.github/workflows/ci.yml` with correct package working directory; dispatch toast when walkaround defects arrive via poll. See [`phase20-verification.md`](phase20-verification.md#phase-4344-ci-fix--dispatch-defect-toast-2026-08-29).
 
@@ -70,6 +72,10 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **42** | Fleet E2E inspection snapshot + CI UI smoke | **Done** — `FleetSSETests`, `.github/workflows/ci.yml` |
 | **43** | GitHub Actions repo-root CI fix | **Done** — root `.github/workflows/ci.yml`, `RouteFinder/` working directory |
 | **44** | Dispatch toast on walkaround defects via poll | **Done** — `DispatchInspectionAnnouncer`, `DispatchViewModel` |
+| **45** | API usage ledger + soft budget guards | **Done** — `APIUsageLedger`, Settings usage panel, [`unit-economics.md`](unit-economics.md) |
+| **46** | Unified remote request policy + fleet CI smoke | **Done** — `RemoteRequestPolicy`, `fleet-e2e-smoke.sh` in CI |
+| **47** | Fleet + hazard coordinator extraction | **Done** — `FleetDispatchCoordinator`, `HazardNavigationCoordinator`, [`architecture.md`](architecture.md) |
+| **48** | Reliability SLO verification gate | **Done** — [`phase20-verification.md`](phase20-verification.md#phase-4548-reliability-economics-program-2026-08-29); C1–C9 deferred |
 
 ### Remaining gaps (explicitly not claiming parity)
 

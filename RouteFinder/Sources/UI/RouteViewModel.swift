@@ -149,9 +149,21 @@ public final class RouteViewModel {
     /// Whether spoken closure/traffic hazard-ahead alerts are enabled.
     public var hazardVoiceAlertsEnabled = NavigationWorkspaceSettings.loadHazardVoiceAlertsEnabled()
     /// Nearest proactive hazard announcement along the active route, if any.
-    public var activeHazardAheadAnnouncement: HazardAheadAnnouncement?
+    public var activeHazardAheadAnnouncement: HazardAheadAnnouncement? {
+        get { hazardState.activeHazardAheadAnnouncement }
+        set { hazardState.activeHazardAheadAnnouncement = newValue }
+    }
     /// Nearest roadworks site ahead on the active route, if any.
-    public var activeRoadworksAhead: RoadworkSite?
+    public var activeRoadworksAhead: RoadworkSite? {
+        get { hazardState.activeRoadworksAhead }
+        set { hazardState.activeRoadworksAhead = newValue }
+    }
+    /// Rolled-up external API usage for Settings.
+    public var apiUsageSummary: APIUsageDaySummary?
+    /// Banner when non-critical API polls are paused for budget protection.
+    public var apiUsageBudgetBanner: String?
+    /// Bumped when hazard coordinator mutates shared hazard state asynchronously.
+    public private(set) var hazardStateVersion = 0
     /// Preferred Pelias search language code (BCP-47).
     public var preferredSearchLanguage = LanguageWorkspaceSettings.loadPreferredSearchLanguage()
     /// When true, run a secondary English Pelias pass when localized results are sparse.
@@ -199,7 +211,10 @@ public final class RouteViewModel {
     public var routeGeometry: RouteGeometry?
     public var routeEncodedPolyline: String?
     public var routeEncodedPolylinePrecision: Int = 6
-    public var hazardOverlayJSON = HazardOverlayBuilder.emptyFeatureCollection
+    public var hazardOverlayJSON: String {
+        get { hazardState.hazardOverlayJSON }
+        set { hazardState.hazardOverlayJSON = newValue }
+    }
 
     #if os(iOS)
     public var isFollowModeEnabled = false
@@ -407,9 +422,9 @@ public final class RouteViewModel {
     private var hasCompletedCloudRoute = false
     private let laybyCatalogService = LaybyCatalogService()
     private let truckPoiRepository = OverpassTruckPoiRepository()
-    private let roadworksRepository = RoadworksAlongRouteRepository()
-    private let crowdEventIngest = LocalCrowdEventIngest()
-    private var fleetStore: any FleetDispatchPort
+    private let hazardState = HazardNavigationState()
+    @ObservationIgnored private var fleetDispatchCoordinator: FleetDispatchCoordinator!
+    @ObservationIgnored private let hazardNavigationCoordinator = HazardNavigationCoordinator()
     @ObservationIgnored private let fleetStoreConfigurationObserver = FleetStoreConfigurationObserver()
     /// In-memory driver alert bus (HOS and related).
     public let hosAlertBus: InMemoryDriverAlertBus
@@ -421,11 +436,13 @@ public final class RouteViewModel {
     public let inspectionStore = DiskInspectionStore()
     /// Active walkaround checklist for the inspection sheet.
     public var activeInspection: InspectionRecord?
-    private var crowdReports: [CrowdReport] = []
+    private var crowdReports: [CrowdReport] {
+        get { hazardState.crowdReports }
+        set { hazardState.crowdReports = newValue }
+    }
     private let laybyAdvisor = LaybyAdvisor()
     private var laybyLoadTask: Task<Void, Never>?
     private var truckPoiLoadTask: Task<Void, Never>?
-    private var roadworksLoadTask: Task<Void, Never>?
     private var trafficRerouteTask: Task<Void, Never>?
     private var pendingTrafficAlternate: ExternalRouteResponse?
     private var lastExternalRouteRequest: ExternalRouteRequest?
@@ -435,19 +452,12 @@ public final class RouteViewModel {
     #endif
     private let kineticAdvisoryCoordinator = KineticAdvisoryCoordinator()
     private var rehearseTask: Task<Void, Never>?
-    private var fleetDispatchToastDismissTask: Task<Void, Never>?
     private var vehicleWorkspacePersistTask: Task<Void, Never>?
     private var laneEnrichmentTask: Task<Void, Never>?
     private var activeRouteGeneration: UInt64 = 0
     private let laneGuidanceNavigationAdapter = LaneGuidanceNavigationAdapter()
     private let navigationProgressRefreshAdapter = NavigationProgressRefreshAdapter()
     private var lastAnnouncedLaybyId: String?
-    private var lastAnnouncedHazardId: String?
-    private var activeHazards: [HazardEvent] = []
-    private var tomTomTrafficHazardHit: TomTomTrafficHazardHit?
-    private var lastTomTomHazardSampleDate: Date?
-    private var tomTomHazardSampleTask: Task<Void, Never>?
-    private var upcomingRoadworks: [RoadworkSite] = []
 
     private var apiKeyVault: APIKeyVault?
 
@@ -463,7 +473,6 @@ public final class RouteViewModel {
         let tileURLString = VehicleProfileStore.loadTileServerURL()
         let tileBase = tileURLString.flatMap { URL(string: $0) }
         offlineGraphStore = DiskOfflineGraphStore(tileBaseURL: tileBase)
-        fleetStore = FleetStoreFactory.makeStore()
         let snapshot = Self.loadSecretsSnapshot(from: vault)
         let secrets = snapshot.secrets
         let savedTomTomKey = secrets[.tomTom] ?? VehicleProfileStore.loadTomTomAPIKey()
@@ -494,6 +503,10 @@ public final class RouteViewModel {
         }
         #endif
         wireNavigationPipeline()
+        fleetDispatchCoordinator = FleetDispatchCoordinator(host: self)
+        hazardNavigationCoordinator.onStateChanged = { [weak self] in
+            self?.hazardStateVersion &+= 1
+        }
         restoreVehicleWorkspace()
         #if os(iOS)
         if VehicleWorkspaceSettings.load() == nil {
@@ -502,15 +515,10 @@ public final class RouteViewModel {
         }
         #endif
         updateCloudRoutingBanner()
-        if let savedFleetVehicleId = FleetWorkspaceSettings.loadFleetVehicleId() {
-            fleetVehicleId = savedFleetVehicleId
-            fleetVehicleIdText = savedFleetVehicleId.uuidString
-        }
-        useRemoteFleetServer = FleetWorkspaceSettings.useRemoteFleetServer()
-        if let serverURL = FleetWorkspaceSettings.loadFleetServerURL() {
-            fleetServerURLText = serverURL.absoluteString
-        }
-        fleetServerAPIKeyText = (try? FleetServerCredentials.loadAPIKey()) ?? ""
+        fleetDispatchCoordinator.restoreWorkspaceSettings()
+        #if os(iOS)
+        hazardNavigationCoordinator.bindVoiceAnnouncer(voiceGuidanceCoordinator)
+        #endif
         fleetStoreConfigurationObserver.token = NotificationCenter.default.addObserver(
             forName: .fleetStoreConfigurationDidChange,
             object: nil,
@@ -529,7 +537,14 @@ public final class RouteViewModel {
             await self?.refreshOfflineMapPackStatus()
             try? await self?.offlineGraphStore.loadLocalTiles()
             await self?.hydrateCrowdReportsFromDisk()
+            await self?.refreshAPIUsageSummary()
         }
+    }
+
+    /// Refreshes API usage summary and budget banner for Settings.
+    public func refreshAPIUsageSummary() async {
+        apiUsageSummary = await APIUsageLedger.shared.summary()
+        apiUsageBudgetBanner = await APIUsageLedger.shared.budgetBannerMessage()
     }
 
     /// Attaches or refreshes the on-disk API vault after login without re-reading when unchanged.
@@ -1609,164 +1624,76 @@ public final class RouteViewModel {
 
     /// Seeds a demo 3-stop UK job and applies it to the driver device.
     public func acceptDemoFleetDispatch() async throws {
-        do {
-            let seeded = try await DiskFleetStore().seedDemoThreeStopJob()
-            fleetVehicleId = seeded.vehicle.id
-            fleetVehicleIdText = seeded.vehicle.id.uuidString
-            FleetWorkspaceSettings.saveFleetVehicleId(seeded.vehicle.id)
-            await applyDispatchedTrip(seeded.trip)
-        } catch {
-            // Fall back to in-memory seed if disk persistence fails.
-            let fallback = InMemoryFleetStore()
-            let seeded = try await fallback.seedDemoThreeStopJob()
-            fleetVehicleId = seeded.vehicle.id
-            fleetVehicleIdText = seeded.vehicle.id.uuidString
-            FleetWorkspaceSettings.saveFleetVehicleId(seeded.vehicle.id)
-            await applyDispatchedTrip(seeded.trip)
-        }
+        try await fleetDispatchCoordinator.acceptDemoFleetDispatch()
     }
 
     /// Persists the fleet vehicle id from Settings text entry.
     public func saveFleetVehicleIdFromSettings() {
-        let trimmed = fleetVehicleIdText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let vehicleId = UUID(uuidString: trimmed) else { return }
-        fleetVehicleId = vehicleId
-        FleetWorkspaceSettings.saveFleetVehicleId(vehicleId)
+        fleetDispatchCoordinator.saveFleetVehicleIdFromSettings()
     }
 
     /// Persists fleet server settings from Settings text fields.
     public func saveFleetServerURLFromSettings() {
-        let trimmed = fleetServerURLText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let serverURL = trimmed.isEmpty ? nil : URL(string: trimmed)
-        if let serverURL {
-            fleetServerURLText = serverURL.absoluteString
-        }
-        FleetWorkspaceSettings.saveRemoteFleetConfiguration(
-            useRemote: useRemoteFleetServer,
-            serverURL: serverURL
-        )
-        try? FleetServerCredentials.saveAPIKey(fleetServerAPIKeyText)
+        fleetDispatchCoordinator.saveFleetServerURLFromSettings()
     }
 
     /// Replaces the active fleet store from current workspace settings.
     public func reloadFleetStore() {
-        fleetStore = FleetStoreFactory.makeStore()
-        if FleetWorkspaceSettings.useRemoteFleetServer(),
-           FleetWorkspaceSettings.loadFleetServerURL() != nil {
-            fleetServerConnectionStatus = "Fleet store switched to remote."
-        } else {
-            fleetServerConnectionStatus = "Fleet store switched to local disk."
-        }
+        fleetDispatchCoordinator.reloadFleetStore()
     }
 
     /// Tests connectivity to the configured fleet HTTP server.
     public func testFleetServerConnection() async {
-        saveFleetServerURLFromSettings()
-        guard let url = FleetWorkspaceSettings.loadFleetServerURL() else {
-            fleetServerConnectionStatus = "Enter a fleet server URL first."
-            return
-        }
-        let trimmedKey = fleetServerAPIKeyText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let apiKey = trimmedKey.isEmpty ? nil : trimmedKey
-        let client = HTTPFleetStore(baseURL: url, apiKey: apiKey)
-        do {
-            let health = try await client.checkHealth()
-            fleetServerConnectionStatus = health.ok ? "Connected to fleet server." : "Server responded but health check failed."
-        } catch {
-            fleetServerConnectionStatus = error.localizedDescription
-        }
+        await fleetDispatchCoordinator.testFleetServerConnection()
     }
 
     /// Scans the local network for fleet servers advertised via Bonjour.
     public func discoverFleetServersOnLAN() async {
-        isDiscoveringFleetServers = true
-        fleetDiscoveryStatus = "Searching for fleet servers…"
-        discoveredFleetServers = []
-        let servers = await FleetBonjourBrowser.discover()
-        discoveredFleetServers = servers
-        isDiscoveringFleetServers = false
-        if servers.isEmpty {
-            fleetDiscoveryStatus = "No fleet servers found. Ensure the dispatch Mac is running RouteFinderFleetServer on the same Wi‑Fi."
-        } else {
-            fleetDiscoveryStatus = "Found \(servers.count) server\(servers.count == 1 ? "" : "s"). Tap one to apply."
-        }
+        await fleetDispatchCoordinator.discoverFleetServersOnLAN()
     }
 
     /// Applies a Bonjour-discovered fleet server URL and enables remote sync.
     public func applyDiscoveredFleetServer(_ server: DiscoveredFleetServer) {
-        fleetServerURLText = server.baseURL.absoluteString
-        useRemoteFleetServer = true
-        saveFleetServerURLFromSettings()
-        reloadFleetStore()
-        fleetServerConnectionStatus = "Applied \(server.displayName)."
-        fleetDiscoveryStatus = nil
+        fleetDispatchCoordinator.applyDiscoveredFleetServer(server)
     }
 
     /// Polls disk store for a newly pushed trip and applies it on the driver device.
     public func pollAndApplyFleetDispatch() async {
-        saveFleetVehicleIdFromSettings()
-        guard let vehicleId = fleetVehicleId else { return }
-        guard let trip = try? await fleetStore.activeTrip(forVehicleId: vehicleId) else { return }
-        guard trip.id != activeDispatchTripId else { return }
-        await applyDispatchedTrip(trip)
+        await fleetDispatchCoordinator.pollAndApplyFleetDispatch()
     }
 
     /// Subscribes to fleet SSE events with fallback polling until the task is cancelled.
     public func startFleetDispatchListener() async {
-        await runFleetDispatchListener()
+        await fleetDispatchCoordinator.startFleetDispatchListener()
     }
 
-    private func runFleetDispatchListener() async {
-        var backoffSeconds: UInt64 = 1
-        while !Task.isCancelled {
-            guard FleetWorkspaceSettings.useRemoteFleetServer(),
-                  let baseURL = FleetWorkspaceSettings.loadFleetServerURL(),
-                  let vehicleId = fleetVehicleId else {
-                await pollAndApplyFleetDispatch()
-                try? await Task.sleep(nanoseconds: 30_000_000_000)
-                continue
-            }
-
-            let trimmedKey = fleetServerAPIKeyText.trimmingCharacters(in: .whitespacesAndNewlines)
-            let apiKey = trimmedKey.isEmpty ? (try? FleetServerCredentials.loadAPIKey()) : trimmedKey
-            let stream = FleetSSEClient.events(baseURL: baseURL, apiKey: apiKey, vehicleId: vehicleId)
-
-            await withTaskGroup(of: Void.self) { group in
-                group.addTask { [weak self] in
-                    for await event in stream {
-                        guard event.kind == .tripPushed else { continue }
-                        await self?.handleRemoteTripPushed()
-                    }
-                }
-                group.addTask { [weak self] in
-                    while !Task.isCancelled {
-                        try? await Task.sleep(nanoseconds: 30_000_000_000)
-                        await self?.pollAndApplyFleetDispatch()
-                    }
-                }
-                await group.next()
-                group.cancelAll()
-            }
-
-            guard !Task.isCancelled else { return }
-            try? await Task.sleep(nanoseconds: backoffSeconds * 1_000_000_000)
-            backoffSeconds = min(backoffSeconds * 2, 30)
-        }
+    /// Publishes trip status + physics ETA for the dispatch console.
+    public func publishDispatchSnapshot(
+        status: FleetTripStatus? = nil,
+        inspectionSummary: TripBriefInspectionSummary? = nil,
+        inspectionReportPDFBase64: String? = nil
+    ) async {
+        await fleetDispatchCoordinator.publishDispatchSnapshot(
+            status: status,
+            inspectionSummary: inspectionSummary,
+            inspectionReportPDFBase64: inspectionReportPDFBase64
+        )
     }
 
-    private func handleRemoteTripPushed() async {
-        showFleetDispatchToast("New dispatch received — loading route…")
-        await pollAndApplyFleetDispatch()
+    private func publishInspectionFleetHandoff(
+        record: InspectionRecord,
+        summary: TripBriefInspectionSummary
+    ) async {
+        await fleetDispatchCoordinator.publishInspectionFleetHandoff(record: record, summary: summary)
+    }
+
+    /// Returns the current trip as seen by dispatch (after driver snapshot publish).
+    public func fetchDispatchTrip() async -> FleetTrip? {
+        await fleetDispatchCoordinator.fetchDispatchTrip()
     }
 
     private func showFleetDispatchToast(_ message: String) {
-        fleetDispatchToast = message
-        fleetDispatchToastDismissTask?.cancel()
-        fleetDispatchToastDismissTask = Task { [weak self] in
-            try? await Task.sleep(nanoseconds: 4_000_000_000)
-            guard !Task.isCancelled else { return }
-            self?.fleetDispatchToast = nil
-        }
+        fleetDispatchCoordinator.showFleetDispatchToast(message)
     }
 
     /// Applies a pending traffic-aware alternate route when available.
@@ -1780,47 +1707,6 @@ public final class RouteViewModel {
         } catch {
             errorMessage = "Could not apply traffic re-route: \(error.localizedDescription)"
         }
-    }
-
-    /// Publishes trip status + physics ETA for the dispatch console.
-    public func publishDispatchSnapshot(
-        status: FleetTripStatus? = nil,
-        inspectionSummary: TripBriefInspectionSummary? = nil,
-        inspectionReportPDFBase64: String? = nil
-    ) async {
-        guard let tripId = activeDispatchTripId else { return }
-        let resolvedStatus = status
-            ?? (simulationEngine.telemetryReport != nil ? .rehearsed : .active)
-        let snapshot = FleetTripSnapshot(
-            tripId: tripId,
-            status: resolvedStatus,
-            orderedStopIds: routeWaypoints.map(\.id),
-            physicsETASeconds: journeyPhysicsETASeconds ?? physicsPredictedDurationSeconds,
-            predictiveReport: simulationEngine.telemetryReport,
-            predictedLayby: laybyAdvisory,
-            latestInspectionSummary: inspectionSummary,
-            inspectionReportPDFBase64: inspectionReportPDFBase64
-        )
-        lastPublishedFleetSnapshot = snapshot
-        _ = try? await fleetStore.applySnapshot(snapshot)
-    }
-
-    private func publishInspectionFleetHandoff(
-        record: InspectionRecord,
-        summary: TripBriefInspectionSummary
-    ) async {
-        guard activeDispatchTripId != nil, useRemoteFleetServer else { return }
-        let pdfBase64 = InspectionReportPDFRenderer.pdfData(from: record).base64EncodedString()
-        await publishDispatchSnapshot(
-            inspectionSummary: summary,
-            inspectionReportPDFBase64: pdfBase64
-        )
-    }
-
-    /// Returns the current trip as seen by dispatch (after driver snapshot publish).
-    public func fetchDispatchTrip() async -> FleetTrip? {
-        guard let tripId = activeDispatchTripId else { return nil }
-        return try? await fleetStore.trip(id: tripId)
     }
 
     private func applyOptimizedIndices(_ indices: [Int]) {
@@ -2755,15 +2641,7 @@ public final class RouteViewModel {
         laybyLoadTask?.cancel()
         laybyAdvisory = nil
         lastAnnouncedLaybyId = nil
-        lastAnnouncedHazardId = nil
-        activeHazardAheadAnnouncement = nil
-        activeHazards = []
-        tomTomTrafficHazardHit = nil
-        lastTomTomHazardSampleDate = nil
-        tomTomHazardSampleTask?.cancel()
-        tomTomHazardSampleTask = nil
-        upcomingRoadworks = []
-        activeRoadworksAhead = nil
+        hazardNavigationCoordinator.resetRouteHazardState(state: hazardState)
         upcomingLaybys = []
         isLoadingLaybys = true
 
@@ -2819,28 +2697,11 @@ public final class RouteViewModel {
 
     /// Searches OSM roadworks / construction nodes within ~20 miles ahead along the route.
     public func loadRoadworksAlongRoute(_ coordinates: [Coordinate]) {
-        roadworksLoadTask?.cancel()
-        upcomingRoadworks = []
-        activeRoadworksAhead = nil
-
-        roadworksLoadTask = Task { @MainActor in
-            do {
-                let fromArc = simulationEngine.currentArcLengthMeters
-                let sites = try await roadworksRepository.queryAlongRoute(
-                    route: coordinates,
-                    aheadMeters: TruckPoiSearchDefaults.twentyMilesMeters,
-                    fromArcLengthMeters: fromArc,
-                    corridorHalfWidthMeters: TruckPoiSearchDefaults.corridorHalfWidthMeters
-                )
-                guard !Task.isCancelled else { return }
-                upcomingRoadworks = sites
-                refreshActiveRoadworksAhead()
-            } catch {
-                guard !Task.isCancelled else { return }
-                upcomingRoadworks = []
-                activeRoadworksAhead = nil
-            }
-        }
+        hazardNavigationCoordinator.loadRoadworksAlongRoute(
+            state: hazardState,
+            coordinates: coordinates,
+            currentArcLengthMeters: simulationEngine.currentArcLengthMeters
+        )
     }
 
     /// Refreshes LEZ / restriction / driving-ban announcements for the given route coordinates.
@@ -2892,86 +2753,28 @@ public final class RouteViewModel {
 
     /// Refreshes the nearest closure/traffic hazard ahead on the active route.
     public func refreshHazardAheadAnnouncement() {
-        let coordinates = routeCoordinates.map {
-            Coordinate(latitude: $0.latitude, longitude: $0.longitude)
-        }
-        guard coordinates.count >= 2 else {
-            activeHazardAheadAnnouncement = nil
-            return
-        }
-        activeHazardAheadAnnouncement = HazardAheadFormatter.nearestAhead(
-            hazards: activeHazards,
-            crowdReports: crowdReports,
-            route: coordinates,
-            currentArcLengthMeters: currentRouteArcLengthMeters,
-            tomTomHits: tomTomTrafficHazardHit.map { [$0] } ?? []
+        hazardNavigationCoordinator.refreshHazardAheadAnnouncement(
+            state: hazardState,
+            context: hazardNavigationContext()
         )
-        processHazardVoiceAlertIfNeeded()
     }
 
     /// Polls TomTom flow ahead of the vehicle when keyed and throttled.
     public func sampleTomTomHazardAheadIfNeeded() {
-        guard hasTomTomAPIKey, result != nil else { return }
-        guard LiveTrafficHazardSampler.shouldPoll(lastSampleDate: lastTomTomHazardSampleDate) else { return }
-
-        let coordinates = routeCoordinates.map {
-            Coordinate(latitude: $0.latitude, longitude: $0.longitude)
-        }
-        guard coordinates.count >= 2 else { return }
-
-        let arcLength = currentRouteArcLengthMeters
-        let apiKey = tomTomAPIKey
-        let vehicleClass = resolvedVehicleClass
-        let measurementSystem = displayMeasurementSystem
-
-        tomTomHazardSampleTask?.cancel()
-        tomTomHazardSampleTask = Task { @MainActor in
-            do {
-                let client = try TomTomTrafficFlowClient(apiKey: apiKey)
-                let hit = await LiveTrafficHazardSampler.sampleAhead(
-                    route: coordinates,
-                    currentArcLengthMeters: arcLength,
-                    trafficClient: client,
-                    vehicleClass: vehicleClass,
-                    measurementSystem: measurementSystem
-                )
-                guard !Task.isCancelled else { return }
-                lastTomTomHazardSampleDate = Date()
-                tomTomTrafficHazardHit = hit
-                refreshHazardAheadAnnouncement()
-            } catch {
-                guard !Task.isCancelled else { return }
-                lastTomTomHazardSampleDate = Date()
-            }
-        }
+        guard let context = hazardNavigationContext() else { return }
+        hazardNavigationCoordinator.sampleTomTomHazardAheadIfNeeded(
+            state: hazardState,
+            context: context
+        )
     }
 
     /// Updates the nearest roadworks site ahead from the cached corridor query.
     public func refreshActiveRoadworksAhead() {
-        activeRoadworksAhead = RoadworksAheadFormatter.nearestAhead(
-            sites: upcomingRoadworks,
+        hazardNavigationCoordinator.refreshActiveRoadworksAhead(
+            state: hazardState,
             currentArcLengthMeters: currentRouteArcLengthMeters
         )
     }
-
-    #if os(iOS)
-    private func processHazardVoiceAlertIfNeeded() {
-        guard hazardVoiceAlertsEnabled, let announcement = activeHazardAheadAnnouncement else { return }
-        let threshold = NavigationWorkspaceSettings.loadHazardAlertDistanceMeters()
-        guard HazardAheadFormatter.shouldAnnounce(
-            announcement: announcement,
-            lastAnnouncedHazardId: lastAnnouncedHazardId,
-            alertDistanceMeters: threshold
-        ) else { return }
-        voiceGuidanceCoordinator.speakHazardAdvisory(
-            HazardAheadFormatter.spokenPrompt(for: announcement),
-            hazardId: announcement.id
-        )
-        lastAnnouncedHazardId = announcement.id
-    }
-    #else
-    private func processHazardVoiceAlertIfNeeded() {}
-    #endif
 
     #if os(iOS)
     private func processLaybyVoiceAlertIfNeeded() {
@@ -3084,15 +2887,13 @@ public final class RouteViewModel {
     }
 
     private func hydrateCrowdReportsFromDisk() async {
-        let stored = await crowdEventIngest.allReports()
-        crowdReports = stored
-        activeHazards = HazardAheadFormatter.promotedHazards(from: crowdReports)
-        hazardOverlayJSON = HazardOverlayBuilder.geoJSON(from: activeHazards)
+        await hazardNavigationCoordinator.hydrateCrowdReportsFromDisk(
+            state: hazardState,
+            hasActiveRoute: result != nil,
+            context: hazardNavigationContext()
+        )
         if !upcomingTruckPois.isEmpty {
             upcomingTruckPois = PoiConfidenceAdjuster.adjust(pois: upcomingTruckPois, reports: crowdReports)
-        }
-        if result != nil {
-            refreshHazardAheadAnnouncement()
         }
     }
 
@@ -3103,15 +2904,14 @@ public final class RouteViewModel {
             reporterId: currentVaultUserID ?? "local-driver"
         )
         // Keep same-stop history so age-weighted fusion can corroborate / contradict.
-        crowdReports.append(report)
-        try? await crowdEventIngest.submit(report)
         let peers = crowdReports.filter {
             $0.note == stop.id && ($0.type == .laybyFull || $0.type == .laybySpaces)
         }
         let uniqueReporters = Set(peers.map(\.reporterId)).count
-        _ = await crowdEventIngest.score(
-            reportId: report.id,
-            inputs: CrowdConfidenceInputs(
+        crowdReports.append(report)
+        await hazardNavigationCoordinator.persistCrowdReport(
+            report,
+            scoreInputs: CrowdConfidenceInputs(
                 uniqueVehiclesNearby: max(1, uniqueReporters),
                 ageSeconds: 0,
                 reporterReputation: 0.85,
@@ -3171,7 +2971,7 @@ public final class RouteViewModel {
         activeLaneDistanceMeters = nil
         laybyLoadTask?.cancel()
         truckPoiLoadTask?.cancel()
-        roadworksLoadTask?.cancel()
+        hazardNavigationCoordinator.resetRouteHazardState(state: hazardState)
         physicsEstimateTask?.cancel()
         rehearseTask?.cancel()
         physicsPredictedDurationSeconds = nil
@@ -3189,15 +2989,6 @@ public final class RouteViewModel {
         isLoadingTruckPois = false
         restrictionAnnouncements = []
         activeRestrictionAnnouncement = nil
-        activeHazardAheadAnnouncement = nil
-        activeRoadworksAhead = nil
-        upcomingRoadworks = []
-        activeHazards = []
-        lastAnnouncedHazardId = nil
-        tomTomTrafficHazardHit = nil
-        lastTomTomHazardSampleDate = nil
-        tomTomHazardSampleTask?.cancel()
-        tomTomHazardSampleTask = nil
         trafficRerouteTask?.cancel()
         trafficRerouteAvailable = false
         isEvaluatingTrafficReroute = false
@@ -3496,25 +3287,10 @@ public final class RouteViewModel {
         )
         crowdReports.append(report)
         Task {
-            try? await crowdEventIngest.submit(report)
-            _ = await crowdEventIngest.score(
-                reportId: report.id,
-                inputs: CrowdConfidenceInputs(
-                    uniqueVehiclesNearby: 3,
-                    ageSeconds: 0,
-                    reporterReputation: 0.8,
-                    corroborationCount: 1
-                )
-            )
+            await hazardNavigationCoordinator.persistCrowdReport(report)
         }
         upcomingTruckPois = PoiConfidenceAdjuster.adjust(pois: upcomingTruckPois, reports: crowdReports)
-        let inputs = CrowdConfidenceInputs(
-            uniqueVehiclesNearby: 3,
-            ageSeconds: 0,
-            reporterReputation: 0.8,
-            corroborationCount: 1
-        )
-        if let hazard = CrowdEventBus.promoteIfConfident(report: report, inputs: inputs, severity: .moderate) {
+        if let hazard = hazardNavigationCoordinator.recordCrowdReport(report, state: hazardState) {
             appendHazardOverlay(hazard)
         }
         presentHazardReportSheet = false
@@ -3556,9 +3332,42 @@ public final class RouteViewModel {
     }
 
     private func appendHazardOverlay(_ hazard: HazardEvent) {
-        activeHazards.append(hazard)
-        refreshHazardAheadAnnouncement()
-        hazardOverlayJSON = HazardOverlayBuilder.geoJSON(from: activeHazards)
+        hazardNavigationCoordinator.appendHazardOverlay(
+            hazard,
+            state: hazardState,
+            context: hazardNavigationContext()
+        )
+    }
+
+    private func hazardNavigationContext() -> HazardNavigationContext? {
+        let coordinates = routeCoordinates.map {
+            Coordinate(latitude: $0.latitude, longitude: $0.longitude)
+        }
+        guard coordinates.count >= 2, result != nil else { return nil }
+        return HazardNavigationContext(
+            routeCoordinates: coordinates,
+            currentRouteArcLengthMeters: currentRouteArcLengthMeters,
+            hasActiveRoute: true,
+            tomTomAPIKey: tomTomAPIKey,
+            hasTomTomAPIKey: hasTomTomAPIKey,
+            vehicleClass: resolvedVehicleClass,
+            displayMeasurementSystem: displayMeasurementSystem,
+            hazardVoiceAlertsEnabled: hazardVoiceAlertsEnabled
+        )
+    }
+}
+
+extension RouteViewModel: FleetDispatchHost {
+    public func fleetSnapshotBuildInputs() -> FleetSnapshotBuildInputs? {
+        guard let tripId = activeDispatchTripId else { return nil }
+        return FleetSnapshotBuildInputs(
+            tripId: tripId,
+            orderedStopIds: routeWaypoints.map(\.id),
+            physicsETASeconds: journeyPhysicsETASeconds ?? physicsPredictedDurationSeconds,
+            predictiveReport: simulationEngine.telemetryReport,
+            predictedLayby: laybyAdvisory,
+            rehearsed: simulationEngine.telemetryReport != nil
+        )
     }
 }
 

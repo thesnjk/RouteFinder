@@ -204,7 +204,7 @@ Run on a **physical iPhone** before treating Phase 30+ as fully verified (person
 | A5 | ⋯ toolbar → Walkaround check opens zoned checklist | **Pass** (code) | Default HGV mode on iOS; interactive **Pending local** |
 | A6 | On failure: capture device log | **N/A** | Look for `SIGABRT`, `WebKit`, `Jetsam` in Console |
 
-**Automated gate (2026-08-29):** `swift test` green; Ph38–42 pass locally. **Phase 43–44** moves GitHub Actions to repo-root [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) with correct `RouteFinder/` working directory and adds dispatch toast on walkaround defects. Physical device execution of **C1–C9** remains **your ~20 min checklist** before production confidence.
+**Automated gate (2026-08-29):** **Ph45–48 reliability economics program** — `swift test` green (~504 cases across targets); fleet E2E smoke in CI; API usage ledger + soft budget guards; unified `RemoteRequestPolicy`; fleet + hazard coordinators extracted from `RouteViewModel`. Physical device execution of **C1–C9** deferred until after reliability gate — **Pending local** (~20 min checklist).
 
 ### Phase 43–44 CI fix + dispatch defect toast (2026-08-29)
 
@@ -217,6 +217,36 @@ Scope: repo-root GitHub Actions workflow, dispatch poll toast when inspection de
 | P43-3 | RouteFinderApp UI smoke in CI with simulator fallback | **Pass** (code) | ios job `xcodebuild test` |
 | P44-1 | Dispatch toast when poll detects new walkaround defects | **Pass** (unit) | `DispatchInspectionAnnouncerTests` |
 | P44-2 | Dispatch console shows defect card + toast on LAN poll | **Pass** (code) | `DispatchViewModel.refreshActiveTrip` — **Pending local** Part B |
+
+### Phase 45–48 reliability economics program (2026-08-29)
+
+Scope: API unit economics metering, remote request policy, coordinator decomposition, reliability SLO gate.
+
+| # | SLO / evidence | Automated | Notes |
+|---|---|---|---|
+| P45-1 | `APIUsageLedger` daily roll-up + persistence | **Pass** (unit) | `APIUsageLedgerTests` |
+| P45-2 | Soft budget skips TomTom / Overpass polls | **Pass** (unit) | `allowsNonCriticalRequest` |
+| P45-3 | Settings “API Usage Today” panel | **Pass** (code) | `SettingsSheet.apiUsageSection` |
+| P45-4 | Unit economics doc | **Pass** (doc) | [`unit-economics.md`](unit-economics.md) |
+| P46-1 | `RemoteRequestPolicy` retry / 429 / backoff | **Pass** (unit) | `RemoteRequestPolicyTests` |
+| P46-2 | ORS / TomTom / fleet HTTP use policy | **Pass** (code) | Client boundaries instrumented |
+| P46-3 | Geocoder `print` → `RouteFinderLog.geocode` | **Pass** (code) | `OpenRouteServiceGeocoder` |
+| P46-4 | Fleet E2E smoke in CI macos job | **Pass** (code) | `Scripts/fleet-e2e-smoke.sh` |
+| P47-1 | `FleetDispatchCoordinator` + integration test | **Pass** (unit) | `FleetDispatchCoordinatorTests` |
+| P47-2 | `HazardNavigationCoordinator` + integration test | **Pass** (unit) | `HazardNavigationCoordinatorTests` |
+| P47-3 | Architecture ADR | **Pass** (doc) | [`architecture.md`](architecture.md) |
+| P48-1 | `swift test` 100% on PR | **Pass** (local) | All targets green 2026-08-29 |
+| P48-2 | UI smoke 3 tests (ios CI job) | **Pass** (code) | Unchanged from Ph43 |
+| P48-3 | iPhone C1–C9 device QA | **Deferred** | After reliability gate |
+
+#### Phase 45–48 code surfaces
+
+| Feature | Primary files |
+|---|---|
+| API metering | `APIUsageModels`, `APIUsageLedger`, `SettingsSheet.apiUsageSection` |
+| Remote policy | `RemoteRequestPolicy`, `RouteFinderLog` |
+| Fleet coordinator | `FleetDispatchCoordinator`, `RouteViewModel` (`FleetDispatchHost`) |
+| Hazard coordinator | `HazardNavigationCoordinator`, `HazardNavigationState` |
 
 #### Phase 43–44 code surfaces
 

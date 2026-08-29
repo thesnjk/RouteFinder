@@ -293,6 +293,7 @@ let package = Package(
             name: "RouteControllerTests",
             dependencies: [
                 "RouteController",
+                "DataLayer",
             ]
         ),
         .testTarget(

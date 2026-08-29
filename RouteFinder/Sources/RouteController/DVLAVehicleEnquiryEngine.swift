@@ -37,13 +37,11 @@ public struct DVLAVehicleEnquiryEngine: Sendable {
             throw VehicleRegistryError.invalidConfiguration
         }
 
-        let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse else {
-            throw VehicleRegistryError.networkFailure("Invalid response")
-        }
-
+        let policy = RemoteRequestPolicy.default
+        let (data, http) = try await policy.data(for: request, session: session)
         switch http.statusCode {
         case 200:
+            await APIUsageLedger.shared.record(provider: .dvla)
             return try decodeResponse(data)
         case 404:
             throw VehicleRegistryError.notFound(registration: normalized)

@@ -111,7 +111,7 @@ For LAN HTTPS with a self-signed certificate, [mkcert](https://github.com/FiloSo
 
 On the driver iPhone (same Wi‑Fi/LAN), open **Settings → Fleet dispatch**, tap **Discover fleet servers on LAN**, pick the dispatch Mac entry (or manually enter `http://<dispatch-mac-ip>:8080` / `https://` when TLS is enabled), add the matching **Fleet API key** if required, and tap **Test fleet connection**. Store mode switches immediately — no app restart required. When remote fleet sync is enabled, the driver app subscribes to dispatch events over **SSE** (`GET /v1/vehicles/{id}/events`) for near-instant trip delivery, with a 30-second fallback poll for resilience. Open the **Dispatch Console** window on macOS to push trips.
 
-**Fleet QA playbook:** See [Docs/fleet-e2e-qa.md](Docs/fleet-e2e-qa.md) for automated smoke (`RouteFinder/Scripts/fleet-e2e-smoke.sh`) and Mac↔iPhone manual checklist.
+**Fleet QA playbook:** See [Docs/fleet-e2e-qa.md](Docs/fleet-e2e-qa.md) for automated smoke (`RouteFinder/Scripts/fleet-e2e-smoke.sh`) and Mac↔iPhone manual checklist. For pilot meetings, use [Docs/pilot-fleet-pack.md](Docs/pilot-fleet-pack.md) and [Docs/pilot-outreach.md](Docs/pilot-outreach.md).
 
 **LAN / VPN only.** Do not expose the fleet server to the public internet without proper network controls.
 

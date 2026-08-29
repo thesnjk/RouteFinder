@@ -323,18 +323,37 @@ Scope: extract HOS clock, tacho import, and rest forecast orchestration from `Ro
 
 ### Phase 49b — Device validation gate (2026-08-29)
 
-Reliability gate (Ph48) + CI green (Ph49a) are complete. **Physical iPhone C1–C9 and Fleet Part B remain operator-run** (~30–40 min). Agent cannot execute device QA in this environment; checklist + run order are ready.
+Reliability gate (Ph48) + CI green (Ph49a/Ph51–52 wave) are complete. **Physical iPhone C1–C9 and Fleet Part B remain operator-run** (~30–40 min). Agent cannot execute device QA; checklist is ready. **Do not start fleet pitching until P0 Pass.**
 
-**P0 first (~10 min):** C1–C2 (cold install, login, map tiles) then C8 (Settings hub including **API Usage Today**). Mark Pass/Fail in the consolidated C1–C9 table below when run.
+**P0 first (~10 min):** C1–C2 (cold install, login, map tiles, **Driver Terms** acceptance) then C8 (Settings hub including **API Usage Today** + **Legal → Driver Terms**). Mark Pass/Fail in the consolidated C1–C9 table below when run.
 
-**Then P1 / P2 / Fleet:** C3, C6–C7, C9 → C4–C5 → Fleet Part B LAN ([`fleet-e2e-qa.md`](fleet-e2e-qa.md)).
+**Then P1 / P2 / Fleet:** C3, C6–C7, C9 → C4–C5 → Fleet Part B LAN ([`fleet-e2e-qa.md`](fleet-e2e-qa.md)). After P0: book meetings via [`pilot-outreach.md`](pilot-outreach.md).
 
 | # | Scenario | Result | Notes |
 |---|---|---|---|
-| P49b-P0 | C1–C2 + C8 physical iPhone | **Pending local** | Operator — mark Pass/Fail in C table |
+| P49b-P0 | C1–C2 + C8 physical iPhone | **Pending local** | Operator — includes mandatory Driver Terms; mark Pass/Fail in C table |
 | P49b-1 | C1–C9 physical iPhone checklist | **Pending local** | Full table below |
-| P49b-2 | Fleet Part B LAN walkaround → dispatch inspection | **Pending local** | [`fleet-e2e-qa.md`](fleet-e2e-qa.md) steps 1–9 |
-| P49b-3 | Settings API Usage Today visible under API Keys | **Pending local** | Part of C8 after Ph45 |
+| P49b-2 | Fleet Part B LAN walkaround → dispatch inspection | **Pending local** | [`fleet-e2e-qa.md`](fleet-e2e-qa.md) steps 1–9; dry-run before pilot visits |
+| P49b-3 | Settings API Usage Today + Legal Driver Terms | **Pending local** | Part of C8 |
+
+### Phase 53 — Pilot GTM prep (2026-08-29)
+
+Scope: strengthen Driver Terms, ship pilot pack / outreach / feedback backlog docs. Physical pilots remain operator-run.
+
+| # | SLO / evidence | Automated | Notes |
+|---|---|---|---|
+| P53-1 | Driver Terms bridge-strike wording + non-dismissible first launch | **Pass** (code) | `ProductOnboardingSheet`, `ContentView.interactiveDismissDisabled` |
+| P53-2 | Settings → Legal shows Driver Terms | **Pass** (code) | `SettingsSheet.legalSection` |
+| P53-3 | Pilot pack (agreement, API, checklist, feedback form) | **Pass** (doc) | [`pilot-fleet-pack.md`](pilot-fleet-pack.md) |
+| P53-4 | Outreach script + target table | **Pass** (doc) | [`pilot-outreach.md`](pilot-outreach.md) — meetings **Pending local** |
+| P53-5 | Feedback triage backlog template | **Pass** (doc) | [`pilot-feedback-backlog.md`](pilot-feedback-backlog.md) — fill after week 2 |
+
+#### Phase 53 code / doc surfaces
+
+| Feature | Primary files |
+|---|---|
+| Driver Terms | `ProductOnboardingSheet`, `ContentView`, `SettingsSheet` |
+| Pilot pack | `Docs/pilot-fleet-pack.md`, `Docs/pilot-outreach.md`, `Docs/pilot-feedback-backlog.md` |
 
 #### Phase 45–48 code surfaces
 
@@ -413,13 +432,13 @@ Run once on a **physical iPhone** after each major driver-facing wave.
 | # | Scenario | Result | Notes |
 |---|---|---|---|
 | C1 | Delete app → Clean Build → run to device | **Pending local** (after Ph49a) | Same as A1–A2; P0 |
-| C2 | Login → liability → map tiles (no sandbox error) | **Pending local** (after Ph49a) | Phase A; P0 |
+| C2 | Login → Driver Terms → map tiles (no sandbox error) | **Pending local** (after Ph49a) | P0; Terms non-dismissible until accepted |
 | C3 | Walkaround v2: zones, defect note, PDF share | **Pending local** | Phase 31; P1 |
 | C4 | Layby voice alert on HGV route (Settings on) | **Pending local** | Phase 30; P2 |
 | C5 | Fuel card picker → ahead banner on route | **Pending local** | Phase 32; P2 |
 | C6 | Report closure → hazard ahead banner + voice | **Pending local** | Phase 33; P1 |
 | C7 | Roadworks ahead banner (OSM construction corridor) | **Pending local** | Phase 35; P1 |
-| C8 | Settings hub drill-down opens all sub-menus | **Pending local** (after Ph49a) | Phase 34 + API Usage Today; P0 |
+| C8 | Settings hub drill-down (API Usage + Legal Driver Terms) | **Pending local** (after Ph49a) | Phase 34 + Ph45 + Ph53; P0 |
 | C9 | TomTom key set → live traffic hazard ahead during nav | **Pending local** | Phase 36; requires TomTom API key; P1 |
 
 ### Phase 30–32 driver-facing wins (2026-08-28)

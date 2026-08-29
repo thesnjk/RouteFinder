@@ -424,6 +424,8 @@ public final class RouteViewModel {
     private let hazardState = HazardNavigationState()
     @ObservationIgnored private var fleetDispatchCoordinator: FleetDispatchCoordinator!
     @ObservationIgnored private var routePlanningCoordinator: RoutePlanningCoordinator!
+    @ObservationIgnored private var routeSimulationCoordinator: RouteSimulationCoordinator!
+    @ObservationIgnored private var hosAdvisoryCoordinator: HosAdvisoryCoordinator!
     @ObservationIgnored private let hazardNavigationCoordinator = HazardNavigationCoordinator()
     @ObservationIgnored private let fleetStoreConfigurationObserver = FleetStoreConfigurationObserver()
     /// In-memory driver alert bus (HOS and related).
@@ -450,12 +452,10 @@ public final class RouteViewModel {
     #if os(iOS)
     private let voiceGuidanceCoordinator = VoiceGuidanceCoordinator()
     #endif
-    private let kineticAdvisoryCoordinator = KineticAdvisoryCoordinator()
-    private var rehearseTask: Task<Void, Never>?
     private var vehicleWorkspacePersistTask: Task<Void, Never>?
     private let laneGuidanceNavigationAdapter = LaneGuidanceNavigationAdapter()
     private let navigationProgressRefreshAdapter = NavigationProgressRefreshAdapter()
-    private var lastAnnouncedLaybyId: String?
+
 
     private var apiKeyVault: APIKeyVault?
 
@@ -503,6 +503,9 @@ public final class RouteViewModel {
         wireNavigationPipeline()
         fleetDispatchCoordinator = FleetDispatchCoordinator(host: self)
         routePlanningCoordinator = RoutePlanningCoordinator(host: self)
+        routeSimulationCoordinator = RouteSimulationCoordinator(host: self)
+        hosAdvisoryCoordinator = HosAdvisoryCoordinator(host: self)
+        routeSimulationCoordinator.wireSimulationCallbacks()
         hazardNavigationCoordinator.onStateChanged = { [weak self] in
             self?.hazardStateVersion &+= 1
         }
@@ -529,10 +532,7 @@ public final class RouteViewModel {
             }
         }
         Task { @MainActor [weak self] in
-            await self?.hosClock.loadPersistedLog()
-            self?.loadPersistedTachoSummary()
-            await self?.refreshHosSnapshot()
-            await self?.refreshCanIDriveStatus()
+            await self?.hosAdvisoryCoordinator.bootstrapFromDisk()
             await self?.refreshOfflineMapPackStatus()
             try? await self?.offlineGraphStore.loadLocalTiles()
             await self?.hydrateCrowdReportsFromDisk()
@@ -655,45 +655,6 @@ public final class RouteViewModel {
     }
 
     private func wireNavigationPipeline() {
-        navigationCoordinator.configureSimulationPoseSource { [weak self] in
-            guard let self, let coordinate = self.simulationEngine.currentCoordinate else { return nil }
-            return (
-                coordinate: coordinate,
-                bearing: self.simulationEngine.currentBearing,
-                speedKmh: self.simulationEngine.currentSpeedKmh,
-                arcLengthMeters: self.simulationEngine.currentArcLengthMeters
-            )
-        }
-        simulationEngine.onDisplayFrameTick = { [weak self] in
-            self?.navigationCoordinator.emitSimulationPose()
-            Task { @MainActor in
-                await self?.refreshLaybyAdvisory()
-                self?.refreshHazardAheadAnnouncement()
-                self?.sampleTomTomHazardAheadIfNeeded()
-                self?.refreshActiveRoadworksAhead()
-                self?.refreshActiveLaneGuidance()
-            }
-        }
-        simulationEngine.onSimulationStarting = { [weak self] in
-            try? await self?.navigationCoordinator.startSimulationNavigation()
-        }
-        simulationEngine.onSimulationStarted = { [weak self] in
-            self?.navigationCoordinator.emitSimulationPose()
-            if let self {
-                self.mapBridge?.trackingZoomLevel = self.simulationCameraZoom
-                if self.simulationZoomLockedByUser {
-                    self.mapBridge?.setZoom(self.simulationCameraZoom)
-                }
-            }
-        }
-        simulationEngine.onSimulationStopped = { [weak self] in
-            self?.navigationCoordinator.stopNavigation()
-            self?.kineticAdvisoryCoordinator.reset()
-            self?.latestKineticAdvisory = nil
-        }
-        simulationEngine.onUIStatePublished = { [weak self] uiState in
-            self?.handleKineticUIState(uiState)
-        }
         laneGuidanceNavigationAdapter.onProgress = { [weak self] in
             self?.refreshActiveLaneGuidance()
         }
@@ -707,12 +668,6 @@ public final class RouteViewModel {
         }
         navigationCoordinator.session.addDelegate(laneGuidanceNavigationAdapter)
         navigationCoordinator.session.addDelegate(navigationProgressRefreshAdapter)
-        kineticAdvisoryCoordinator.onAdvisory = { [weak self] advisory in
-            self?.latestKineticAdvisory = advisory
-            #if os(iOS)
-            self?.voiceGuidanceCoordinator.speakKineticAdvisory(advisory)
-            #endif
-        }
         NavigationSessionRegistry.shared = navigationCoordinator.session
         #if os(iOS)
         CarPlayServices.publish(session: navigationCoordinator.session)
@@ -997,7 +952,7 @@ public final class RouteViewModel {
 
     /// Sets simulation playback speed from the segmented control.
     public func setSimulationSpeed(_ multiplier: SpeedMultiplier) {
-        simulationEngine.simulationSpeedMultiplier = multiplier.rawValue
+        routeSimulationCoordinator.setSimulationSpeed(multiplier)
     }
 
     /// Updates map vehicle dimensions after profile changes.
@@ -1060,7 +1015,7 @@ public final class RouteViewModel {
 
     /// Re-applies the active environmental context to the running simulation.
     public func refreshSimulationEnvironment() {
-        simulationEngine.updateEnvironmentalContext(environmentalContext)
+        routeSimulationCoordinator.refreshSimulationEnvironment()
     }
 
     public var canOptimizeSequence: Bool {
@@ -1308,64 +1263,27 @@ public final class RouteViewModel {
 
     /// Transitions the advisory HOS duty mode and refreshes the HUD snapshot.
     public func transitionHosMode(_ mode: HosDutyMode, note: String? = nil) async {
-        guard hosEnabled else { return }
-        do {
-            _ = try await hosClock.transition(mode: HosDutyEvent(mode: mode, note: note))
-            await refreshHosSnapshot()
-            await refreshHosForecast()
-        } catch {
-            errorMessage = "Could not update hours clock: \(error.localizedDescription)"
-        }
+        await hosAdvisoryCoordinator.transitionHosMode(mode, note: note)
     }
 
     /// Refreshes the HOS HUD snapshot from the clock.
     public func refreshHosSnapshot() async {
-        guard hosEnabled else {
-            hosSnapshot = nil
-            await refreshCanIDriveStatus()
-            return
-        }
-        hosSnapshot = await hosClock.snapshot()
-        await refreshCanIDriveStatus()
+        await hosAdvisoryCoordinator.refreshHosSnapshot()
     }
 
     /// Recomputes the advisory “Can I drive now?” status from import + clock.
     public func refreshCanIDriveStatus() async {
-        let snapshot: HosClockSnapshot
-        if let hosSnapshot {
-            snapshot = hosSnapshot
-        } else {
-            snapshot = await hosClock.snapshot()
-        }
-        canIDriveStatus = CanIDriveEvaluator.evaluate(
-            imported: tachoSummary,
-            clockSnapshot: snapshot
-        )
+        await hosAdvisoryCoordinator.refreshCanIDriveStatus()
     }
 
     /// Imports a driver-card JSON / DDD file and refreshes can-I-drive status.
     public func importTachoFile(url: URL) async {
-        tachoImportError = nil
-        let accessed = url.startAccessingSecurityScopedResource()
-        defer {
-            if accessed { url.stopAccessingSecurityScopedResource() }
-        }
-        do {
-            let summary = try tachoImporter.importDriverCard(from: url)
-            tachoSummary = summary
-            persistTachoSummary(summary)
-            await refreshCanIDriveStatus()
-        } catch {
-            tachoImportError = error.localizedDescription
-        }
+        await hosAdvisoryCoordinator.importTachoFile(url: url)
     }
 
     /// Clears the imported tachograph summary.
     public func clearImportedTachoSummary() {
-        tachoSummary = nil
-        tachoImportError = nil
-        Self.removePersistedTachoSummary()
-        Task { await refreshCanIDriveStatus() }
+        Task { await hosAdvisoryCoordinator.clearImportedTachoSummary() }
     }
 
     /// Starts a new DVSA-style walkaround checklist for the current vehicle.
@@ -1398,122 +1316,12 @@ public final class RouteViewModel {
         }
     }
 
-    private func persistTachoSummary(_ summary: TachoCardSummary) {
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        guard let data = try? encoder.encode(summary) else { return }
-        try? data.write(to: Self.tachoSummaryURL(), options: .atomic)
-    }
-
-    private func loadPersistedTachoSummary() {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        guard let data = try? Data(contentsOf: Self.tachoSummaryURL()),
-              let summary = try? decoder.decode(TachoCardSummary.self, from: data) else {
-            return
-        }
-        tachoSummary = summary
-    }
-
-    private static func removePersistedTachoSummary() {
-        try? FileManager.default.removeItem(at: tachoSummaryURL())
-    }
-
-    private static func tachoSummaryURL() -> URL {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let dir = support.appendingPathComponent("RouteFinder/tacho", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("imported_card.json")
-    }
-
     /// Rebuilds the HOS rest forecast for the current route using POIs and path durations.
     public func refreshHosForecast() async {
-        guard hosEnabled else {
-            hosForecast = nil
-            return
-        }
-        let durations = hosPathDurationsSeconds()
-        guard !durations.isEmpty else {
-            hosForecast = await hosClock.forecast(pathDurationsSeconds: [])
-            await refreshHosSnapshot()
-            return
-        }
-        let snap = await hosClock.snapshot()
-        hosSnapshot = snap
-        let arcs: [Double]? = routeCumulativeLengths.count == durations.count
-            ? Array(routeCumulativeLengths.dropFirst())
-            : (routeCumulativeLengths.count == durations.count + 1
-                ? Array(routeCumulativeLengths.dropFirst())
-                : nil)
-        let insertions = HosRestInserter.insertions(
-            remainingContinuousDriveSeconds: snap.remainingContinuousDriveSeconds,
-            remainingDailyDriveSeconds: snap.remainingDailyDriveSeconds,
-            pathDurationsSeconds: durations,
-            pathArcLengthsMeters: arcs,
-            upcomingTruckPois: upcomingTruckPois,
-            kineticStress: hosPathKineticStress()
-        )
-        let base = await hosClock.forecast(pathDurationsSeconds: durations)
-        hosForecast = HosRestInsertionResult(
-            remainingContinuousDriveSeconds: snap.remainingContinuousDriveSeconds,
-            remainingDailyDriveSeconds: snap.remainingDailyDriveSeconds,
-            insertions: insertions.isEmpty ? base.insertions : insertions,
-            summary: base.summary
-        )
-        refreshTripBriefShareText()
-        if let forecast = hosForecast, !forecast.insertions.isEmpty {
-            NotificationCenter.default.post(
-                name: .routeFinderHosAdvisory,
-                object: nil,
-                userInfo: ["summary": forecast.summary]
-            )
-        }
+        await hosAdvisoryCoordinator.refreshHosForecast()
     }
 
-    private func hosPathDurationsSeconds() -> [TimeInterval] {
-        guard let total = physicsPredictedDurationSeconds ?? result?.metrics.totalTime, total > 0 else {
-            return []
-        }
-        let segmentCount = max(routeCoordinates.count - 1, 1)
-        if routeCumulativeLengths.count >= 2 {
-            let totalLength = routeCumulativeLengths.last ?? 0
-            guard totalLength > 0 else {
-                return Array(repeating: total / Double(segmentCount), count: segmentCount)
-            }
-            var durations: [TimeInterval] = []
-            for index in 1..<routeCumulativeLengths.count {
-                let delta = routeCumulativeLengths[index] - routeCumulativeLengths[index - 1]
-                durations.append(total * (delta / totalLength))
-            }
-            return durations
-        }
-        return Array(repeating: total / Double(segmentCount), count: segmentCount)
-    }
-
-    private func hosPathArcLengthsMeters() -> [Double]? {
-        guard routeCumulativeLengths.count >= 2 else { return nil }
-        let durations = hosPathDurationsSeconds()
-        if routeCumulativeLengths.count == durations.count + 1 {
-            return Array(routeCumulativeLengths.dropFirst())
-        }
-        if routeCumulativeLengths.count == durations.count {
-            return routeCumulativeLengths
-        }
-        return nil
-    }
-
-    private func hosPathKineticStress() -> [SegmentKineticStress]? {
-        guard routeCoordinates.count >= 2 else { return nil }
-        let path = routeCoordinates.map {
-            GeoCoordinate3D(latitude: $0.latitude, longitude: $0.longitude, elevationMeters: nil)
-        }
-        let weightTons = VehicleDimensionParser.parseOptional(vehicleWeight) ?? 44
-        let segments = KineticGradientAnalyzer.analyzeTopology(path: path, weightTons: weightTons)
-        guard !segments.isEmpty else { return nil }
-        return segments
-    }
-
-    private func laybyPredictionInput(
+    public func laybyPredictionInput(
         currentArcLengthMeters: Double,
         speedMps: Double
     ) -> LaybyPredictionInput {
@@ -1526,12 +1334,12 @@ public final class RouteViewModel {
             candidates: upcomingLaybys,
             currentArcLengthMeters: currentArcLengthMeters,
             speedMps: speedMps,
-            pathDurationsSeconds: hosPathDurationsSeconds(),
-            pathArcLengthsMeters: hosPathArcLengthsMeters(),
+            pathDurationsSeconds: hosAdvisoryCoordinator.hosPathDurationsSeconds(),
+            pathArcLengthsMeters: hosAdvisoryCoordinator.hosPathArcLengthsMeters(),
             remainingContinuousDriveSeconds: hosRemainingContinuous,
             remainingDailyDriveSeconds: hosRemainingDaily,
             companyBreaks: activeDispatchCompanyBreaks,
-            kineticStress: hosPathKineticStress(),
+            kineticStress: hosAdvisoryCoordinator.hosPathKineticStress(),
             trafficInflationFactor: trafficFactor,
             crowdReports: crowdReports
         )
@@ -2425,68 +2233,17 @@ public final class RouteViewModel {
         )
     }
 
-    private var physicsEstimateTask: Task<Void, Never>?
-
     private func estimatePhysicsDuration(
         for searchResult: SearchResult,
         canonical: RouteGeometryCanonicalizer.CanonicalRouteGeometry
     ) {
-        physicsEstimateTask?.cancel()
-        physicsPredictedDurationSeconds = nil
-        journeyPhysicsETASeconds = nil
-        journeyETAAnchorDate = nil
-        isEstimatingPhysicsDuration = true
-
-        physicsEstimateTask = Task { @MainActor in
-            defer { isEstimatingPhysicsDuration = false }
-            guard !Task.isCancelled else { return }
-            let estimate = await simulationEngine.estimatePhysicsDuration()
-            guard !Task.isCancelled else { return }
-            if let estimate {
-                let capped = cappedPhysicsETA(
-                    kinetic: estimate.kineticDurationSeconds,
-                    webETA: searchResult.metrics.totalTime
-                )
-                physicsPredictedDurationSeconds = capped
-                journeyPhysicsETASeconds = capped
-                journeyETAAnchorDate = Date()
-                navigationCoordinator.updateStaticTotalTime(capped)
-            } else {
-                // Timeout / cancel / failure: keep web ETA visible; clear spinner via defer.
-                journeyPhysicsETASeconds = nil
-                journeyETAAnchorDate = nil
-            }
-        }
-    }
-
-    private func cappedPhysicsETA(kinetic: TimeInterval, webETA: TimeInterval) -> TimeInterval {
-        guard webETA > 0 else { return kinetic }
-        return min(kinetic, webETA * 3)
+        routeSimulationCoordinator.estimatePhysicsDuration(for: searchResult, canonical: canonical)
     }
 
     /// Runs a full pre-trip physics rehearsal and publishes a shareable predictive trip brief.
     public func rehearseRoute() {
         guard result != nil, routeCoordinates.count >= 3 else { return }
-        rehearseTask?.cancel()
-        isRehearsingRoute = true
-        rehearseTask = Task { @MainActor in
-            defer { isRehearsingRoute = false }
-            guard !Task.isCancelled else { return }
-            let report = await simulationEngine.rehearseRoute()
-            guard !Task.isCancelled else { return }
-            if let report {
-                let webETA = result?.metrics.totalTime ?? report.staticWebETASeconds
-                let capped = cappedPhysicsETA(kinetic: report.kineticPhysicsETASeconds, webETA: webETA)
-                physicsPredictedDurationSeconds = capped
-                journeyPhysicsETASeconds = capped
-                journeyETAAnchorDate = Date()
-                navigationCoordinator.updateStaticTotalTime(capped)
-                tripBriefShareText = TripBriefFormatter.plainText(from: tripBriefContext())
-                if activeDispatchTripId != nil {
-                    await publishDispatchSnapshot(status: .rehearsed)
-                }
-            }
-        }
+        routeSimulationCoordinator.rehearseRoute()
     }
 
     /// Refreshes share text from the current predictive telemetry report, if any.
@@ -2544,14 +2301,14 @@ public final class RouteViewModel {
     }
 
     private func handleKineticUIState(_ uiState: SimulationUIState) {
-        kineticAdvisoryCoordinator.ingest(uiState: uiState)
+        routeSimulationCoordinator.handleKineticUIState(uiState)
     }
 
     /// Fetches layby POIs along the route and configures the layby advisor.
     public func loadLaybysAlongRoute(_ coordinates: [Coordinate]) {
         laybyLoadTask?.cancel()
         laybyAdvisory = nil
-        lastAnnouncedLaybyId = nil
+        routeSimulationCoordinator.clearLastAnnouncedLayby()
         hazardNavigationCoordinator.resetRouteHazardState(state: hazardState)
         upcomingLaybys = []
         isLoadingLaybys = true
@@ -2658,7 +2415,7 @@ public final class RouteViewModel {
             speedMps: speedMps,
             predictionInput: input
         )
-        processLaybyVoiceAlertIfNeeded()
+        routeSimulationCoordinator.processLaybyVoiceAlertIfNeeded()
         refreshTripBriefShareText()
     }
 
@@ -2687,25 +2444,6 @@ public final class RouteViewModel {
         )
     }
 
-    #if os(iOS)
-    private func processLaybyVoiceAlertIfNeeded() {
-        guard laybyVoiceAlertsEnabled, let advisory = laybyAdvisory else { return }
-        let threshold = NavigationWorkspaceSettings.loadLaybyAlertDistanceMeters()
-        guard LaybyAlertFormatter.shouldAnnounce(
-            advisory: advisory,
-            lastAnnouncedLaybyId: lastAnnouncedLaybyId,
-            alertDistanceMeters: threshold
-        ) else { return }
-        voiceGuidanceCoordinator.speakLaybyAdvisory(
-            LaybyAlertFormatter.spokenPrompt(for: advisory),
-            laybyId: advisory.stop.id
-        )
-        lastAnnouncedLaybyId = advisory.stop.id
-    }
-    #else
-    private func processLaybyVoiceAlertIfNeeded() {}
-    #endif
-
     /// Arc length along the active route for HUD distance labels.
     public var currentRouteArcLengthForDisplay: Double {
         currentRouteArcLengthMeters
@@ -2733,26 +2471,7 @@ public final class RouteViewModel {
 
     /// Break Now: rank nearest layby ahead and center the map on the top candidate.
     public func findBreakNow() async {
-        guard breakNowQuickActionEnabled else { return }
-        guard !upcomingLaybys.isEmpty else { return }
-        if hosEnabled {
-            hosSnapshot = await hosClock.snapshot()
-        }
-        let arcLength = simulationEngine.currentArcLengthMeters
-        let speedMps = max(simulationEngine.currentSpeedKmh / 3.6, 1.0)
-        let input = laybyPredictionInput(
-            currentArcLengthMeters: arcLength,
-            speedMps: speedMps
-        )
-        await laybyAdvisor.updatePredictionContext(input)
-        guard let advisory = await laybyAdvisor.breakNowAdvisory(
-            currentArcLengthMeters: arcLength,
-            speedMps: speedMps,
-            predictionInput: input
-        ) else { return }
-        laybyAdvisory = advisory
-        focusMapOnLayby(advisory)
-        refreshTripBriefShareText()
+        await routeSimulationCoordinator.findBreakNow()
     }
 
     /// Centers the map on a layby stop coordinate.
@@ -2782,7 +2501,7 @@ public final class RouteViewModel {
                 speedMps: speedMps,
                 predictionInput: input
             )
-            lastAnnouncedLaybyId = nil
+            routeSimulationCoordinator.clearLastAnnouncedLayby()
             await refreshLaybyAdvisory()
             showFleetDispatchToast(LaybyAlertFormatter.nextLaybyToast(next: laybyAdvisory))
         }
@@ -2882,16 +2601,8 @@ public final class RouteViewModel {
         laybyLoadTask?.cancel()
         truckPoiLoadTask?.cancel()
         hazardNavigationCoordinator.resetRouteHazardState(state: hazardState)
-        physicsEstimateTask?.cancel()
-        rehearseTask?.cancel()
-        physicsPredictedDurationSeconds = nil
-        journeyPhysicsETASeconds = nil
-        journeyETAAnchorDate = nil
-        isEstimatingPhysicsDuration = false
-        isRehearsingRoute = false
+        routeSimulationCoordinator.cancelPhysicsWork()
         tripBriefShareText = nil
-        latestKineticAdvisory = nil
-        kineticAdvisoryCoordinator.reset()
         laybyAdvisory = nil
         upcomingLaybys = []
         isLoadingLaybys = false
@@ -3103,11 +2814,7 @@ public final class RouteViewModel {
 
     /// Applies a user-chosen simulation camera zoom and keeps tracking from overriding it.
     public func setSimulationCameraZoom(_ zoom: Double) {
-        let clamped = min(19, max(12, zoom))
-        simulationCameraZoom = clamped
-        simulationZoomLockedByUser = true
-        mapBridge?.trackingZoomLevel = clamped
-        mapBridge?.setZoom(clamped)
+        routeSimulationCoordinator.setSimulationCameraZoom(zoom)
     }
 
     /// Updates the lane-keep popup from the upcoming turn instruction.
@@ -3267,6 +2974,37 @@ extension RouteViewModel: FleetDispatchHost {
 }
 
 extension RouteViewModel: RoutePlanningHost {}
+
+extension RouteViewModel: RouteSimulationHost {
+    public func rankBreakNowLayby(
+        currentArcLengthMeters: Double,
+        speedMps: Double,
+        predictionInput: LaybyPredictionInput
+    ) async -> LaybyAdvisory? {
+        await laybyAdvisor.updatePredictionContext(predictionInput)
+        return await laybyAdvisor.breakNowAdvisory(
+            currentArcLengthMeters: currentArcLengthMeters,
+            speedMps: speedMps,
+            predictionInput: predictionInput
+        )
+    }
+
+    public func publishRehearsedDispatchSnapshot() async {
+        await publishDispatchSnapshot(status: .rehearsed)
+    }
+
+#if os(iOS)
+    public func speakKineticAdvisory(_ advisory: KineticAdvisory) {
+        voiceGuidanceCoordinator.speakKineticAdvisory(advisory)
+    }
+
+    public func speakLaybyAdvisory(_ prompt: String, laybyId: String) {
+        voiceGuidanceCoordinator.speakLaybyAdvisory(prompt, laybyId: laybyId)
+    }
+#endif
+}
+
+extension RouteViewModel: HosAdvisoryHost {}
 
 private final class LaneGuidanceNavigationAdapter: NavigationSessionDelegate {
     var onProgress: (() -> Void)?

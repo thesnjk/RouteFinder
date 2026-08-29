@@ -82,6 +82,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **50** | Route planning coordinator extraction | **Done** — `RoutePlanningCoordinator`, `RoutePlanningHost`, tests |
 | **51** | Route simulation coordinator extraction | **Done** — `RouteSimulationCoordinator`, `RouteSimulationHost`, tests |
 | **52** | HOS advisory coordinator extraction | **Done** — `HosAdvisoryCoordinator`, `HosAdvisoryHost`, tests |
+| **53** | Pilot GTM prep (Driver Terms + pilot pack) | **Done** — docs + liability hardening; device/pilot meetings **Pending local** |
 
 ### Remaining gaps (explicitly not claiming parity)
 

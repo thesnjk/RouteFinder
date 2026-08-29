@@ -112,6 +112,15 @@ struct SettingsSheet: View {
                 Label("Offline Routing", systemImage: "arrow.triangle.branch")
             }
 
+            NavigationLink {
+                settingsDetailPage(title: "Legal") {
+                    legalSection
+                }
+            } label: {
+                Label("Legal", systemImage: "doc.text")
+            }
+            .accessibilityIdentifier("settingsLegal")
+
             Section {
                 helpSection
                 OSMAttributionFooter()
@@ -412,6 +421,30 @@ struct SettingsSheet: View {
             }
             .buttonStyle(.plain)
         }
+    }
+
+    private var legalSection: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.sm) {
+            Text("Driver Terms")
+                .font(RFFont.sectionTitle)
+
+            Text(ProductOnboardingSheet.driverTermsBody)
+                .font(RFFont.body)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if NavigationWorkspaceSettings.loadHasAcceptedRoutingLiability() {
+                Text("Accepted on this device.")
+                    .font(RFFont.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("Not yet accepted — Terms appear again on next cold launch.")
+                    .font(RFFont.caption)
+                    .foregroundStyle(.orange)
+            }
+        }
+        .padding(RFSpacing.md)
+        .glassPanel(cornerRadius: 14)
     }
 
     private var offlineRoutingSection: some View {

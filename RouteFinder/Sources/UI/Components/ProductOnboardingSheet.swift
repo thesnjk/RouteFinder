@@ -44,6 +44,7 @@ struct ProductOnboardingSheet: View {
                 }
             }
         }
+        .interactiveDismissDisabled(requireLiabilityAcceptance && !liabilityAccepted)
         #if os(macOS)
         .frame(width: 520, height: 640)
         #endif
@@ -195,10 +196,10 @@ struct ProductOnboardingSheet: View {
 
     private var liabilitySection: some View {
         VStack(alignment: .leading, spacing: RFSpacing.sm) {
-            Text("Routing disclaimer")
+            Text("Driver Terms")
                 .font(RFFont.sectionTitle)
 
-            Text("RouteFinder routing, layby suggestions, and guidance are advisory tools only. Road conditions, signage, and regulations can change. You remain responsible for safe and lawful driving.")
+            Text(Self.driverTermsBody)
                 .font(RFFont.body)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -206,15 +207,29 @@ struct ProductOnboardingSheet: View {
             Toggle(
                 isOn: $liabilityAccepted,
                 label: {
-                    Text("I understand routing and guidance are advisory only; the developer is not liable for incorrect routing.")
+                    Text(Self.driverTermsAcceptanceLabel)
                         .font(RFFont.caption)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             )
+            .accessibilityIdentifier("routingLiabilityToggle")
         }
         .padding(RFSpacing.md)
         .glassPanel(cornerRadius: 14)
     }
+
+    /// Full Driver Terms copy shown on first launch and in Settings → Legal.
+    static let driverTermsBody = """
+    Routing, physics rehearsal, layby suggestions, HOS advisories, and turn-by-turn guidance in RouteFinder are advisory planning aids only.
+
+    Physical road signs, bridge height and weight plates, temporary restrictions, and immediate traffic conditions always supersede navigation instructions. Bridge strikes and constraint violations can trigger Traffic Commissioner action against operators and driver conduct hearings.
+
+    You (and your operator, where applicable) remain solely responsible for safe, lawful driving and for verifying vehicle dimensions against the route before departure. The developer accepts no liability for incorrect routing, missed restrictions, or reliance on advisory outputs.
+    """
+
+    /// Checkbox label for mandatory first-launch acceptance.
+    static let driverTermsAcceptanceLabel =
+        "I understand routing and guidance are advisory only; physical signs and bridge plates always supersede the app; the developer is not liable for incorrect routing."
 
     private func onboardingSection(title: String, icon: String, body: String) -> some View {
         VStack(alignment: .leading, spacing: RFSpacing.sm) {

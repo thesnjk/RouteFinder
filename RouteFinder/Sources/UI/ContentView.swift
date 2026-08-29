@@ -210,6 +210,13 @@ private struct MapWorkspaceView: View {
     }
 
     private func markProductOnboardingSeen() {
+        let liabilityAccepted = NavigationWorkspaceSettings.loadHasAcceptedRoutingLiability()
+        let previouslySeen = NavigationWorkspaceSettings.loadHasSeenProductOnboarding()
+        // First-launch liability gate: do not clear the sheet if Terms were never accepted.
+        if !liabilityAccepted, !previouslySeen {
+            showProductOnboarding = true
+            return
+        }
         NavigationWorkspaceSettings.saveHasSeenProductOnboarding(true)
     }
 

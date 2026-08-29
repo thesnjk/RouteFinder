@@ -250,10 +250,14 @@ private struct MapLibreWebMapContainer: View {
     @ViewBuilder
     private func mapLoadErrorOverlay(message: String) -> some View {
         VStack(spacing: 12) {
-            Text("Map failed to load")
+            Text("Basemap failed to load")
                 .font(.headline)
-            Text(message)
+            Text(Self.userFacingBasemapMessage(message))
                 .font(.caption)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+            Text("Routing uses HeiGIT ORS (Settings → API Keys) and is separate from map tiles.")
+                .font(.caption2)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
             HStack(spacing: 12) {
@@ -277,6 +281,14 @@ private struct MapLibreWebMapContainer: View {
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
         .padding(20)
         .accessibilityElement(children: .combine)
+    }
+
+    private static func userFacingBasemapMessage(_ raw: String) -> String {
+        let lowered = raw.lowercased()
+        if lowered.contains("network") || lowered.contains("connection") || lowered.contains("offline") {
+            return "OpenFreeMap basemap tiles could not be reached (\(raw)). Check Wi‑Fi or cellular, then Retry."
+        }
+        return raw
     }
 }
 
@@ -467,6 +479,8 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
     private var suppressUserMoveEventCount = 0
     private var webContentTerminateReloadCount = 0
     private let maxWebContentTerminateReloads = 2
+    private var styleNetworkRetryCount = 0
+    private let maxStyleNetworkRetries = 1
     private let vehicleCoalescer = BridgeFrameCoalescer()
 
     private var shouldSuppressUserMoveEvents: Bool {
@@ -657,15 +671,36 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        Task { @MainActor in
-            loadState?.markFailed(error.localizedDescription)
-        }
+        handleNativeNavigationFailure(webView: webView, error: error)
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        Task { @MainActor in
-            loadState?.markFailed(error.localizedDescription)
+        handleNativeNavigationFailure(webView: webView, error: error)
+    }
+
+    private func handleNativeNavigationFailure(webView: WKWebView, error: Error) {
+        let message = error.localizedDescription
+        if shouldAutoRetryStyleLoad(message: message) {
+            styleNetworkRetryCount += 1
+            Task { @MainActor in
+                loadState?.resetForReload()
+            }
+            reloadMap(in: webView)
+            return
         }
+        Task { @MainActor in
+            loadState?.markFailed(message)
+        }
+    }
+
+    private func shouldAutoRetryStyleLoad(message: String) -> Bool {
+        guard styleNetworkRetryCount < maxStyleNetworkRetries else { return false }
+        let lowered = message.lowercased()
+        return lowered.contains("network")
+            || lowered.contains("connection")
+            || lowered.contains("offline")
+            || lowered.contains("timed out")
+            || lowered.contains("timeout")
     }
 
     #if os(iOS)
@@ -791,12 +826,21 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
         case "ready":
             isReady = true
             webContentTerminateReloadCount = 0
+            styleNetworkRetryCount = 0
             Task { @MainActor in
                 loadState?.markReady()
             }
             webView.flatMap { syncState(to: $0) }
         case "error":
             let message = body["message"] as? String ?? "Map failed to load"
+            if shouldAutoRetryStyleLoad(message: message), let webView {
+                styleNetworkRetryCount += 1
+                Task { @MainActor in
+                    loadState?.resetForReload()
+                }
+                reloadMap(in: webView)
+                return
+            }
             isReady = false
             Task { @MainActor in
                 loadState?.markFailed(message)

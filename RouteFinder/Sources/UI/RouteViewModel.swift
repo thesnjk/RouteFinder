@@ -206,6 +206,8 @@ public final class RouteViewModel {
     /// Incremented when a route failure should collapse the bottom sheet detail.
     public var routeDetailCollapseTick: Int = 0
     public var cloudRoutingBanner: String?
+    /// Brief Settings confirmation after saving an API key (cleared on next edit or dismiss).
+    public var settingsSaveConfirmation: String?
     public var routeCoordinates: [CLLocationCoordinate2D] = []
     public var routeCumulativeLengths: [Double] = []
     public var routeGeometry: RouteGeometry?
@@ -1646,6 +1648,18 @@ public final class RouteViewModel {
         mapViewportCenter = Coordinate(latitude: center.latitude, longitude: center.longitude)
     }
 
+    /// Whether iOS map chrome should show the cloud-routing status / missing-key nag.
+    ///
+    /// Hides the idle status line once a key is saved; still shows during calculation
+    /// or after a completed route, and shows the missing-key nag when unkeyed.
+    public var showCloudRoutingStatusBanner: Bool {
+        guard let banner = cloudRoutingBanner, !banner.isEmpty else { return false }
+        if isCalculating { return true }
+        if hasCompletedCloudRoute, result != nil { return true }
+        return !hasORSAPIKey
+            && orsAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     /// Persists the HeiGIT API key to the on-disk vault.
     public func persistORSAPIKey() {
         let value = orsAPIKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1654,6 +1668,7 @@ public final class RouteViewModel {
         hasORSAPIKey = true
         orsAPIKeyDraft = ""
         persistSecret(value, kind: .ors)
+        settingsSaveConfirmation = "HeiGIT API key saved"
         updateCloudRoutingBanner()
     }
 

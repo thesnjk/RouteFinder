@@ -56,6 +56,15 @@ public struct AuthGateView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
+            #if os(iOS)
+            Text(
+                """
+                RouteFinder cannot email a password reset for local-only accounts. \
+                This permanently deletes the account on this device and all API keys stored \
+                for it in the Keychain. You can then create a new local account.
+                """
+            )
+            #else
             Text(
                 """
                 RouteFinder cannot email a password reset for local-only accounts. \
@@ -63,6 +72,7 @@ public struct AuthGateView: View {
                 for it in the Keychain. You can then create a new local account.
                 """
             )
+            #endif
         }
     }
 
@@ -137,12 +147,22 @@ public struct AuthGateView: View {
                 .buttonStyle(.plain)
                 .font(RFFont.caption)
                 .foregroundStyle(.secondary)
+                #if os(iOS)
+                .help("Erase this device’s local account and API keys, then sign up again.")
+                #else
                 .help("Erase this Mac’s local account and API keys, then sign up again.")
+                #endif
             }
 
+            #if os(iOS)
+            Text("Accounts and API keys stay on this device (Keychain). They are never uploaded by RouteFinder.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            #else
             Text("Accounts and API keys stay on this Mac (Keychain). They are never uploaded by RouteFinder.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+            #endif
         }
         .padding(RFSpacing.xl)
         .frame(maxWidth: 440)
@@ -179,12 +199,21 @@ public struct AuthGateView: View {
     }
 
     private var privacyNotice: String {
+        #if os(iOS)
+        """
+        I understand RouteFinder stores my email, password verifier, and API keys only on this device \
+        (Keychain, this-device-only) to unlock the app and call third-party routing/weather APIs I configure. \
+        Keys are not shared with other devices or uploaded by RouteFinder. I can log out or delete my \
+        account to erase local credentials.
+        """
+        #else
         """
         I understand RouteFinder stores my email, password verifier, and API keys only on this Mac \
         (Keychain, this-device-only) to unlock the app and call third-party routing/weather APIs I configure. \
         Keys are not shared with other Mac users or uploaded by RouteFinder. I can log out or delete my \
         account to erase local credentials.
         """
+        #endif
     }
 
     private var canSubmit: Bool {

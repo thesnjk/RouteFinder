@@ -14,17 +14,19 @@ Last updated: 2026-08-29
 
 ---
 
-## Target list (fill in)
+## Target list (draft — northern England / Midlands; swap for nearer firms if needed)
 
 | # | Company | Contact | Size | Date contacted | Meeting | Outcome |
 |---|---|---|---|---|---|---|
-| 1 | | | | | | |
-| 2 | | | | | | |
-| 3 | | | | | | |
-| 4 | | | | | | |
-| 5 | | | | | | |
+| 1 | Direct Driver Ltd (Huddersfield) | [directdriver.co.uk](https://directdriver.co.uk/) · door / site | ~10 vehicles | | | |
+| 2 | Alfie Adams Transport (Bolton / Manchester) | 07941 633788 · [alfieadamstransport.co.uk](https://www.alfieadamstransport.co.uk/) | ~4 wagons | | | |
+| 3 | Allan Greenwood Haulage (Halifax) | [allangreenwoodhaulage.co.uk](https://allangreenwoodhaulage.co.uk/) · door / site | Family + ~3 drivers | | | |
+| 4 | F.C. Transport Leeds Ltd (Wakefield) | [fctransportleedsltd.co.uk](https://www.fctransportleedsltd.co.uk/) · door / site | Small mixed fleet | | | |
+| 5 | Harris Haulage Ltd (Dudley / Bridgnorth) | 07733 118 973 · craigharrishaulage@outlook.com | Family mixed fleet | | | |
 
-Aim for **3 signed pilots**; overbook to 5 conversations.
+**Reserves:** Froggatt’s (Chesterfield · 01246 826 771), Fosters Haulage (Bury · 07778 742089), Smalldene Midlands (Birmingham tippers).
+
+Aim for **3 signed pilots**; overbook to 5 conversations. **Do not send until P0 C1–C2+C8 and Fleet Part B Pass.**
 
 ---
 
@@ -33,6 +35,23 @@ Aim for **3 signed pilots**; overbook to 5 conversations.
 > Hi [Name] — I’m building **RouteFinder**, an HGV navigation app with vehicle physics rehearsal and a **Mac dispatch console** that pushes trips to driver iPhones on your office Wi‑Fi (no per-seat SaaS).  
 > I’d like **10 minutes** on site: free **60-day pilot** for up to 3 phones in exchange for brutal feedback on routing edge cases (bridges, weight limits, LEZ).  
 > Can I buy a coffee next week and run a live push → route → walkaround demo?
+
+### Ready-to-send variants (copy after P0 Pass)
+
+**1 — Direct Driver (Huddersfield)**  
+> Hi Kurtis / team — I’m building **RouteFinder**, HGV nav with physics rehearsal and a **Mac dispatch console** on your office Wi‑Fi (no per-seat SaaS). Ten minutes on site: free **60-day pilot** for up to 3 phones for brutal feedback on bridges / weight / LEZ. Coffee next week for a live push → route → walkaround demo?
+
+**2 — Alfie Adams (Bolton)**  
+> Hi — small family fleets like yours are exactly who I’m building for. **RouteFinder** does HGV constraint routing + a Mac dispatch push to driver iPhones on LAN. Free **60-day / 3-phone** pilot for frank routing feedback. Can I buy a coffee and demo push → route → walkaround next week? 07941 is on your site if a call is easier.
+
+**3 — Allan Greenwood (Halifax)**  
+> Hi Sheridan / Pete / Gavin — I’m nearby and building **RouteFinder** (HGV nav + Mac LAN dispatch, not a monthly portal). Looking for **10 minutes** on site: free **60-day pilot** (3 phones) for brutal feedback on edge-case routing. Coffee + live demo next week?
+
+**4 — F.C. Transport (Wakefield)**  
+> Hi — I’m building **RouteFinder** for independents: physics-aware HGV routing and a **Mac dispatch console** that pushes jobs to iPhones on your Wi‑Fi. Free **60-day / 3-phone** pilot for honest feedback. Ten minutes on site next week for push → route → walkaround?
+
+**5 — Harris Haulage (Dudley / Bridgnorth)**  
+> Hi Craig — I’m building **RouteFinder**, HGV nav with physics rehearsal and Mac LAN dispatch (no SaaS seats). Free **60-day pilot** for up to 3 phones in exchange for brutal bridge / weight / LEZ feedback. Coffee next week for a live demo?
 
 ---
 

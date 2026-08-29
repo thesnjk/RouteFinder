@@ -1,5 +1,5 @@
 import Contracts
-import CoreLocation
+@preconcurrency import CoreLocation
 import Foundation
 import GraphCore
 
@@ -7,7 +7,8 @@ import GraphCore
 public actor LocationResolver {
     private var cache: [String: String] = [:]
     private var reverseCache: [String: String] = [:]
-    private let geocoder = CLGeocoder()
+    /// CLGeocoder is not Sendable; isolated to this actor and never shared across actors.
+    nonisolated(unsafe) private let geocoder = CLGeocoder()
 
     public init() {}
 

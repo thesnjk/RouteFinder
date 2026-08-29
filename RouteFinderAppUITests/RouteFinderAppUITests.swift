@@ -45,6 +45,42 @@ final class RouteFinderAppUITests: XCTestCase {
         XCTAssertTrue(app.buttons["walkaroundToolbarEntry"].waitForExistence(timeout: menuTimeout))
     }
 
+    /// C8 proxy: Settings → API Keys (API Usage Today) + Legal → Driver Terms.
+    @MainActor
+    func testSettingsAPIUsageAndLegalDriverTerms() throws {
+        let app = launchApp(skipAuth: true)
+        openSettingsHub(in: app)
+
+        // Hub list: Vehicle → Navigation → Search → API Keys → Fleet → Offline → Legal
+        app.swipeUp()
+        let apiKeys = app.buttons["settingsAPIKeys"]
+        XCTAssertTrue(apiKeys.waitForExistence(timeout: menuTimeout), "settingsAPIKeys")
+        apiKeys.tap()
+        XCTAssertTrue(app.staticTexts["API Usage Today"].waitForExistence(timeout: menuTimeout))
+
+        app.navigationBars.buttons["Settings"].tap()
+        XCTAssertTrue(app.buttons["settingsVehicleHGV"].waitForExistence(timeout: menuTimeout))
+
+        app.swipeUp()
+        let legal = app.buttons["settingsLegal"]
+        XCTAssertTrue(legal.waitForExistence(timeout: menuTimeout), "settingsLegal")
+        legal.tap()
+        XCTAssertTrue(app.staticTexts["Driver Terms"].waitForExistence(timeout: menuTimeout))
+    }
+
+    @MainActor
+    private func openSettingsHub(in app: XCUIApplication) {
+        let mapMenu = app.buttons["mapToolbarMenu"]
+        XCTAssertTrue(mapMenu.waitForExistence(timeout: launchTimeout))
+        mapMenu.tap()
+
+        let settingsEntry = app.buttons["mapToolbarSettings"]
+        XCTAssertTrue(settingsEntry.waitForExistence(timeout: menuTimeout))
+        settingsEntry.tap()
+
+        XCTAssertTrue(app.buttons["settingsVehicleHGV"].waitForExistence(timeout: menuTimeout))
+    }
+
     @MainActor
     private func launchApp(skipAuth: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()

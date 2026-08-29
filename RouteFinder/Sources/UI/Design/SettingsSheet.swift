@@ -95,6 +95,7 @@ struct SettingsSheet: View {
             } label: {
                 Label("API Keys", systemImage: "key.fill")
             }
+            .accessibilityIdentifier("settingsAPIKeys")
 
             NavigationLink {
                 settingsDetailPage(title: "Fleet & Dispatch") {
@@ -464,6 +465,12 @@ struct SettingsSheet: View {
                 }
                 .help("When on, skip ORS and route on local/CDN graph tiles first.")
 
+            if viewModel.offlineRoutingEnabled {
+                Text("No offline tiles installed yet — a cloud ORS key is required until you Download demo corridor or place `*.graphjson` under Application Support/RouteFinder/tiles/.")
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+            }
+
             TextField("Tile server URL (HTTPS)", text: $viewModel.tileServerURL)
                 .textFieldStyle(GlassTextFieldStyle())
                 .onSubmit { viewModel.persistTileServerURL() }
@@ -658,15 +665,34 @@ struct SettingsSheet: View {
             SecureField("OpenRouteService API key", text: $viewModel.orsAPIKeyDraft)
                 .textFieldStyle(GlassTextFieldStyle())
                 .onSubmit { viewModel.persistORSAPIKey() }
+                .onChange(of: viewModel.orsAPIKeyDraft) { _, _ in
+                    if viewModel.settingsSaveConfirmation != nil {
+                        viewModel.settingsSaveConfirmation = nil
+                    }
+                }
 
+            #if os(iOS)
+            Text("Required for geocoding (`api.heigit.org/pelias/v1`) and HGV routing (`api.heigit.org/openrouteservice/v2`). Obtain a key from HeiGIT. Paste the key, then tap Save API Key — typing alone does not save. After an update, re-save once if the Saved line disappears.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            #else
             Text("Required for geocoding (`api.heigit.org/pelias/v1`) and HGV routing (`api.heigit.org/openrouteservice/v2`). Obtain a key from HeiGIT. Use the signed RouteFinderMac Xcode scheme. After an update, re-save this key once if it looks empty. If Keychain still prompts every launch, delete `com.routefinder.vault.*` in Keychain Access (login keychain) and re-save here.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+            #endif
 
             Button("Save API Key") {
                 viewModel.persistORSAPIKey()
             }
             .buttonStyle(.borderless)
+            .accessibilityIdentifier("settingsSaveORSAPIKey")
+
+            if let confirmation = viewModel.settingsSaveConfirmation {
+                Text(confirmation)
+                    .font(.caption2)
+                    .foregroundStyle(.green)
+                    .accessibilityIdentifier("settingsORSAPIKeySaved")
+            }
         }
     }
 

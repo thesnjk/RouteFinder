@@ -31,9 +31,9 @@ private func startFleetServer(
     let port = 18090
     let serverTask = startFleetServer(port: port, storageDirectory: storageDir, apiKey: nil)
     defer { serverTask.cancel() }
-    try await Task.sleep(nanoseconds: 300_000_000)
 
     let baseURL = URL(string: "http://127.0.0.1:\(port)")!
+    try await waitForFleetServerReady(baseURL: baseURL)
     let client = HTTPFleetStore(baseURL: baseURL)
     let org = try await client.createOrg(name: "SSE Test Ltd")
     let vehicle = try await client.registerVehicle(
@@ -85,7 +85,7 @@ private func startFleetServer(
     let port = 18091
     let serverTask = startFleetServer(port: port, storageDirectory: storageDir, apiKey: "secret-key")
     defer { serverTask.cancel() }
-    try await Task.sleep(nanoseconds: 300_000_000)
+    try await waitForFleetServerReady(baseURL: URL(string: "http://127.0.0.1:\(port)")!)
 
     let vehicleId = UUID()
     guard let url = URL(string: "http://127.0.0.1:\(port)/v1/vehicles/\(vehicleId.uuidString)/events") else {
@@ -115,9 +115,9 @@ private func startFleetServer(
         eventHub: eventHub
     )
     defer { serverTask.cancel() }
-    try await Task.sleep(nanoseconds: 300_000_000)
 
     let baseURL = URL(string: "http://127.0.0.1:\(port)")!
+    try await waitForFleetServerReady(baseURL: baseURL)
     let client = HTTPFleetStore(baseURL: baseURL)
     let org = try await client.createOrg(name: "Heartbeat Ltd")
     let vehicle = try await client.registerVehicle(
@@ -168,9 +168,9 @@ private func startFleetServer(
     let port = 18093
     let serverTask = startFleetServer(port: port, storageDirectory: storageDir, apiKey: nil)
     defer { serverTask.cancel() }
-    try await Task.sleep(nanoseconds: 300_000_000)
 
     let baseURL = URL(string: "http://127.0.0.1:\(port)")!
+    try await waitForFleetServerReady(baseURL: baseURL)
     let client = HTTPFleetStore(baseURL: baseURL)
     let org = try await client.createOrg(name: "E2E Workflow Ltd")
     let vehicle = try await client.registerVehicle(

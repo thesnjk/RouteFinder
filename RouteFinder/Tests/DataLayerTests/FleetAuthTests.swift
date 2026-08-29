@@ -30,9 +30,10 @@ private func startFleetServer(
     let port = 18081
     let serverTask = startFleetServer(port: port, storageDirectory: storageDir, apiKey: "secret-key")
     defer { serverTask.cancel() }
-    try await Task.sleep(nanoseconds: 300_000_000)
+    let baseURL = URL(string: "http://127.0.0.1:\(port)")!
+    try await waitForFleetServerReady(baseURL: baseURL)
 
-    let client = HTTPFleetStore(baseURL: URL(string: "http://127.0.0.1:\(port)")!)
+    let client = HTTPFleetStore(baseURL: baseURL)
     let health = try await client.checkHealth()
     #expect(health.ok)
 }
@@ -46,9 +47,10 @@ private func startFleetServer(
     let port = 18082
     let serverTask = startFleetServer(port: port, storageDirectory: storageDir, apiKey: "secret-key")
     defer { serverTask.cancel() }
-    try await Task.sleep(nanoseconds: 300_000_000)
+    let baseURL = URL(string: "http://127.0.0.1:\(port)")!
+    try await waitForFleetServerReady(baseURL: baseURL)
 
-    let client = HTTPFleetStore(baseURL: URL(string: "http://127.0.0.1:\(port)")!)
+    let client = HTTPFleetStore(baseURL: baseURL)
     do {
         _ = try await client.orgs()
         Issue.record("Expected unauthorized error for missing API key.")
@@ -72,10 +74,11 @@ private func startFleetServer(
     let apiKey = "fleet-test-secret"
     let serverTask = startFleetServer(port: port, storageDirectory: storageDir, apiKey: apiKey)
     defer { serverTask.cancel() }
-    try await Task.sleep(nanoseconds: 300_000_000)
+    let baseURL = URL(string: "http://127.0.0.1:\(port)")!
+    try await waitForFleetServerReady(baseURL: baseURL)
 
     let client = HTTPFleetStore(
-        baseURL: URL(string: "http://127.0.0.1:\(port)")!,
+        baseURL: baseURL,
         apiKey: apiKey
     )
     let org = try await client.createOrg(name: "Auth Test Ltd")
@@ -92,10 +95,11 @@ private func startFleetServer(
     let port = 18084
     let serverTask = startFleetServer(port: port, storageDirectory: storageDir, apiKey: "expected-key")
     defer { serverTask.cancel() }
-    try await Task.sleep(nanoseconds: 300_000_000)
+    let baseURL = URL(string: "http://127.0.0.1:\(port)")!
+    try await waitForFleetServerReady(baseURL: baseURL)
 
     let client = HTTPFleetStore(
-        baseURL: URL(string: "http://127.0.0.1:\(port)")!,
+        baseURL: baseURL,
         apiKey: "wrong-key"
     )
     do {

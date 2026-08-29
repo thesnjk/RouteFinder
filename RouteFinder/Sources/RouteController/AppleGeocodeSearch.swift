@@ -1,7 +1,7 @@
 import Contracts
 import CoreLocation
 import Foundation
-import MapKit
+@preconcurrency import MapKit
 
 /// Apple MapKit local search fallback when HeiGIT Pelias is unavailable or returns no results.
 public actor AppleGeocodeSearch {

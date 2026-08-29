@@ -248,7 +248,7 @@ Scope: restore macOS CI after Swift 6 / MapKit concurrency failure on `macos-15`
 | P49a-1 | `swift build -c release` succeeds | **Pass** (local) | `@preconcurrency import MapKit` in `AppleGeocodeSearch` |
 | P49a-2 | `swift test` green | **Pass** (local) | All package targets |
 | P49a-3 | Fleet E2E smoke | **Pass** (local) | `Scripts/fleet-e2e-smoke.sh` 9/9 |
-| P49a-4 | GitHub Actions macos + ios | **Follow-up** | `e45180c3` still failed on `LocationResolver` CLGeocoder; hardened in same wave as Ph50 |
+| P49a-4 | GitHub Actions macos + ios | **Pass** (CI) | [run 33253641183](https://github.com/thesnjk/RouteFinder/actions/runs/33253641183) on `8f4ff6ee` (MapKit + CLGeocoder Sendable) |
 
 #### Phase 49a code surfaces
 

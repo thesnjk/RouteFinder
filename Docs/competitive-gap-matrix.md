@@ -86,7 +86,8 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **54** | iOS routing UX unblock (banner / save / basemap) | **Done** (code) — device Save key + London→Manchester **Pending local** |
 | **55** | Start Navigation primary CTA on iOS results sheet | **Done** (code) — `NavigationStartRow` + UI smoke with `UITEST_SEED_ROUTE` |
 | **56** | iOS native map feel (full-bleed, vehicle, overview, alerts) | **Done** (code) — `MapCanvasBackdrop`, `CompactAlertStack`, device QA pending |
-| **57** | Map resize, voice, Car/HGV onboarding, bottom peek sheet  | **Done** (code) — `map.resize()`, `VehicleModeOnboardingSheet`, device QA pending |
+| **57** | Map resize, voice, Car/HGV onboarding, bottom peek sheet  | **Done** (code) — P57-7 device QA **Pending local** |
+| **58** | Device-feedback fixes (post-P0)                             | **Blocked** — agent implements after operator marks P0 Pass/Fail |
 
 ### Remaining gaps (explicitly not claiming parity)
 

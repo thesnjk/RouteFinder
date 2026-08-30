@@ -2,13 +2,13 @@
 
 Operator-run playbook for booking **3–5** small independent haulage/courier meetings (5–15 trucks), within driving distance for LAN demos.
 
-Last updated: 2026-08-29
+Last updated: 2026-08-30
 
 ---
 
 ## Prerequisites (do not pitch until done)
 
-1. Physical iPhone **P0** rows C1–C2 + C8 Pass — [`phase20-verification.md`](phase20-verification.md)
+1. Physical iPhone **P0** rows C1–C2 + C8 Pass on build **606dff4d** (Ph55–57) — [`phase20-verification.md`](phase20-verification.md) or one-page [`operator-next-steps.md`](operator-next-steps.md) Block 1
 2. At least one dry-run of [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B on your own Mac + phone
 3. Print [`pilot-fleet-pack.md`](pilot-fleet-pack.md) (agreement + feedback form)
 

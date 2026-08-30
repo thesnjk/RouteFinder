@@ -262,7 +262,7 @@ Run on a **physical iPhone** before treating Phase 30+ as fully verified (person
 | A2  | Xcode → Clean Build Folder → run `RouteFinderApp` to device | **Pending local**           | Use `RouteFinderApp.xcodeproj` scheme                               |
 | A3  | Login screen appears on cold launch                         | **Pass** (code)             | `RootAuthContainer` gate wired in `RouteFinderAppApp.swift`         |
 | A4  | Liability onboarding → accept → map loads tiles             | **Pass** (code + sim smoke) | `MapBootstrapServer` loopback; physical tile load **Pending local** |
-| A5  | ⋯ toolbar → Walkaround check opens zoned checklist          | **Pass** (code)             | Default HGV mode on iOS; interactive **Pending local**              |
+| A5  | ⋯ toolbar → Walkaround check opens zoned checklist          | **Pass** (code)             | Enable HGV in ⋯ menu first (Ph57 onboarding picks Car or HGV); interactive **Pending local** |
 | A6  | On failure: capture device log                              | **N/A**                     | Look for `SIGABRT`, `WebKit`, `Jetsam` in Console                   |
 
 
@@ -439,6 +439,8 @@ Reliability gate (Ph48) + CI green (Ph49a/Ph51–52 wave) are complete. **Physic
 
 #### Operator P0 runbook (physical iPhone)
 
+**Build under test:** `606dff4d` on `main` (Ph55–57). Use **Car** on vehicle onboarding for Waze-comparable London→Manchester.
+
 1. Unlock iPhone + plug USB (UDID `00008101-000E6C41226A001E` was Offline on 2026-08-29).
 2. Delete RouteFinder from the phone.
 3. Xcode → open `RouteFinderApp.xcodeproj` → scheme **RouteFinderApp** → destination = your iPhone → **Product → Clean Build Folder** → **Run**.
@@ -504,6 +506,7 @@ Scope: `map.resize()` fix, voice quality, Car vs HGV onboarding, Waze-style bott
 | P57-4 | First launch asks Car vs HGV before first route             | **Pass** (code)   | `VehicleModeOnboardingSheet`; no silent HGV default                     |
 | P57-5 | Bottom peek "Where to?" + route profile badge               | **Pass** (code + UI test) | `mapSearchPeekBar`, `routeProfileBadge`, `activeRouteChip`        |
 | P57-6 | UI tests: peek bar + Start + Route Overview on seeded route | **Pass** (UI test)| `testMapSearchPeekBarAtLaunch`, existing Ph55/Ph56 tests              |
+| P57-7 | Physical iPhone: P0 runbook after `606dff4d`                | **Pending local** | Operator — cube/voice/peek/Car route; mark C1/C2/C8 Pass/Fail         |
 
 
 

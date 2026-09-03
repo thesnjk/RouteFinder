@@ -1,4 +1,5 @@
 import Contracts
+import MapLibreUI
 import RouteController
 import SwiftUI
 
@@ -11,6 +12,7 @@ struct MapFirstShell: View {
     @Bindable var viewModel: RouteViewModel
     var onOpenProfile: () -> Void = {}
     var onOpenSettings: () -> Void = {}
+    var hideRouteSheet: Bool = false
 
     #if os(iOS)
     @State private var presentedModal: IOSModal?
@@ -22,14 +24,29 @@ struct MapFirstShell: View {
         IOSMapChrome(
             viewModel: viewModel,
             isRouteSheetVisible: $isRouteSheetVisible,
+            hideRouteSheet: hideRouteSheet || presentedModal != nil,
             onPresentModal: { presentedModal = $0 },
             onOpenWalkaround: {
                 viewModel.startWalkaroundInspection()
                 presentedModal = .walkaround
             }
         )
-        .sheet(item: $presentedModal) { modal in
-            iosModalContent(modal)
+        .overlay {
+            if let presentedModal {
+                iosModalContent(presentedModal)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(MapCanvasBackdrop.color)
+                    .ignoresSafeArea()
+                    .zIndex(20)
+            }
+        }
+        .onAppear {
+            #if DEBUG
+            if UserDefaults.standard.bool(forKey: "RouteFinder.uitestOpenSettings") {
+                UserDefaults.standard.set(false, forKey: "RouteFinder.uitestOpenSettings")
+                presentedModal = .settings
+            }
+            #endif
         }
         .onChange(of: viewModel.routeFailure) { _, failure in
             guard let failure else { return }
@@ -59,7 +76,7 @@ struct MapFirstShell: View {
     private func iosModalContent(_ modal: IOSModal) -> some View {
         switch modal {
         case .settings:
-            SettingsSheet(viewModel: viewModel)
+            SettingsSheet(viewModel: viewModel, onDismiss: { presentedModal = nil })
         case .profile:
             NavigationStack {
                 VehicleProfileManager(viewModel: viewModel)

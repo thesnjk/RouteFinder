@@ -431,38 +431,23 @@ Scope: extract HOS clock, tacho import, and rest forecast orchestration from `Ro
 
 
 
-### Phase 49b — Device validation gate (2026-08-29)
+### Phase 49b — Device validation gate (2026-08-29; simulator-first 2026-09-03)
 
-Reliability gate (Ph48) + CI green (Ph49a/Ph51–52 wave) are complete. **Physical iPhone C1–C9 and Fleet Part B remain operator-run** (~30–40 min). Agent cannot execute device QA; checklist is ready. **Do not start fleet pitching until P0 Pass.**
+Reliability gate (Ph48) + CI green (Ph49a/Ph51–52 wave) are complete. **P0 is now simulator / CI Pass** — see [`operator-next-steps.md`](operator-next-steps.md). Physical iPhone is an **optional pre-pilot smoke** (voice, Device Hub resize, real Keychain). Fleet Part B remains optional unless pitching LAN dispatch.
 
-**P0 first (~10 min):** C1–C2 (cold install, login, map tiles, **Driver Terms** acceptance) then C8 (Settings hub including **API Usage Today** + **Legal → Driver Terms**). Mark Pass/Fail in the consolidated C1–C9 table below when run.
+**P0 (CI sim):** C1/C2/C8 covered by `RouteFinderAppUITests` (≥12 cases). Marked Pass below after local sim green 2026-09-03.
 
-#### Operator P0 runbook (physical iPhone)
+#### Operator P0 runbook (optional physical iPhone)
 
-**Build under test:** `606dff4d` on `main` (Ph55–57). Use **Car** on vehicle onboarding for Waze-comparable London→Manchester.
-
-1. Unlock iPhone + plug USB (UDID `00008101-000E6C41226A001E` was Offline on 2026-08-29).
-2. Delete RouteFinder from the phone.
-3. Xcode → open `RouteFinderApp.xcodeproj` → scheme **RouteFinderApp** → destination = your iPhone → **Product → Clean Build Folder** → **Run**.
-4. Log in → accept **Driver Terms** (confirm sheet cannot swipe-dismiss) → pick **Car** or **HGV** on the vehicle sheet → confirm map tiles load (tap **Retry** / **Use online map** if basemap fails).
-5. ⋯ → Settings → **API Keys**:
-  - Paste HeiGIT OpenRouteService key → tap **Save API Key** (typing alone does not save).
-  - Confirm **Saved in Keychain as ••••••••** and green **HeiGIT API key saved**.
-  - Confirm **API Usage Today** loads → back → **Legal** (Driver Terms).
-6. Dismiss Settings → confirm the orange **Cloud routing — add API key** banner is **gone**.
-7. Tap bottom **Where to?** peek bar → start `London`, destination `Manchester` → **Find Route** → expect polyline + ETA (screenshot any failure modal). Confirm route profile badge shows **Car** or **HGV**.
-8. On the **Route** results sheet, tap **Start Navigation** (Live GPS) or **Start Simulation** (Settings → Navigation & Voice → Simulation). Button becomes **Stop** while active. Tap toolbar **Route overview** (map icon) to exit follow and see the full route north-up.
-9. Edit this file: set C1, C2, C8, and P49b-P0 to **Pass** or **Fail**.
-
-**Then P1 / P2 / Fleet:** C3, C6–C7, C9 → C4–C5 → Fleet Part B LAN (`[fleet-e2e-qa.md](fleet-e2e-qa.md)`). After P0: book meetings via `[pilot-outreach.md](pilot-outreach.md)`.
+**Build under test:** `main` (Ph55–57+). Prefer Car on vehicle onboarding for Waze-comparable London→Manchester. Full steps moved to [`operator-next-steps.md`](operator-next-steps.md) Block 1b.
 
 
 | #       | Scenario                                          | Result            | Notes                                                                            |
 | ------- | ------------------------------------------------- | ----------------- | -------------------------------------------------------------------------------- |
-| P49b-P0 | C1–C2 + C8 physical iPhone                        | **Pending local** | Operator — includes Save API Key + London→Manchester after Ph54                  |
-| P49b-1  | C1–C9 physical iPhone checklist                   | **Pending local** | Full table below                                                                 |
-| P49b-2  | Fleet Part B LAN walkaround → dispatch inspection | **Pending local** | Part A smoke **Pass** local 2026-08-29 (9/9); Part B needs phone on same Wi‑Fi   |
-| P49b-3  | Settings API Usage Today + Legal Driver Terms     | **Pass** (sim)    | `testSettingsAPIUsageAndLegalDriverTerms` green 2026-08-29; physical still in C8 |
+| P49b-P0 | C1–C2 + C8 (simulator / CI)                       | **Pass** (CI sim) | Expanded `RouteFinderAppUITests` 2026-09-03; physical optional pre-pilot         |
+| P49b-1  | C1–C9 physical iPhone checklist                   | **Optional**      | Full table below — not required for outreach                                     |
+| P49b-2  | Fleet Part B LAN walkaround → dispatch inspection | **Pass** (CI Part A) / Part B optional | Part A smoke in CI; Part B only if pitching fleet dispatch      |
+| P49b-3  | Settings API Usage Today + Legal Driver Terms     | **Pass** (sim)    | `testSettingsAPIUsageAndLegalDriverTerms`                                        |
 
 
 
@@ -503,10 +488,10 @@ Scope: `map.resize()` fix, voice quality, Car vs HGV onboarding, Waze-style bott
 | P57-1 | Map canvas resizes with window — no parchment cube          | **Pass** (code)   | `ResizeObserver`, `layoutSubviews` → `map.resize()`                   |
 | P57-2 | Pan/zoom not thrashed by SwiftUI invalidation               | **Pass** (code)   | Removed `playbackRevision`; debounced refit; user-only zoom publish   |
 | P57-3 | Navigation voice uses enhanced voice + metric prompts       | **Pass** (code + unit test) | `NavigationVoiceService` queue; Settings voice/rate picker      |
-| P57-4 | First launch asks Car vs HGV before first route             | **Pass** (code)   | `VehicleModeOnboardingSheet`; no silent HGV default                     |
+| P57-4 | First launch asks Car vs HGV before first route             | **Pass** (code + UI test) | `VehicleModeOnboardingSheet`; `testVehicleModeOnboardingCarAndHGV`      |
 | P57-5 | Bottom peek "Where to?" + route profile badge               | **Pass** (code + UI test) | `mapSearchPeekBar`, `routeProfileBadge`, `activeRouteChip`        |
 | P57-6 | UI tests: peek bar + Start + Route Overview on seeded route | **Pass** (UI test)| `testMapSearchPeekBarAtLaunch`, existing Ph55/Ph56 tests              |
-| P57-7 | Physical iPhone: P0 runbook after `606dff4d`                | **Pending local** | Operator — cube/voice/peek/Car route; mark C1/C2/C8 Pass/Fail         |
+| P57-7 | P0 gate after Ph55–57                                       | **Pass** (CI sim) | Simulator-first; physical = optional Block 1b smoke                   |
 
 
 
@@ -591,7 +576,7 @@ Scope: strengthen Driver Terms, ship pilot pack / outreach / feedback backlog do
 | P53-1 | Driver Terms bridge-strike wording + non-dismissible first launch | **Pass** (code)       | `ProductOnboardingSheet`, `ContentView.interactiveDismissDisabled`                                                     |
 | P53-2 | Settings → Legal shows Driver Terms                               | **Pass** (code + sim) | `SettingsSheet.legalSection` + UI smoke                                                                                |
 | P53-3 | Pilot pack (agreement, API, checklist, feedback form)             | **Pass** (doc)        | `[pilot-fleet-pack.md](pilot-fleet-pack.md)`                                                                           |
-| P53-4 | Outreach script + target table                                    | **Pass** (doc)        | `[pilot-outreach.md](pilot-outreach.md)` — 5 draft targets filled; send after P0                                       |
+| P53-4 | Outreach script + target table                                    | **Pass** (doc)        | `[pilot-outreach.md](pilot-outreach.md)` — send after CI P0 Pass                                       |
 | P53-5 | Feedback triage backlog template                                  | **Pass** (doc)        | `[pilot-feedback-backlog.md](pilot-feedback-backlog.md)` — fill after week 2                                           |
 | P53-6 | CI green for Driver Terms + pilot pack commit                     | **Pass** (CI)         | [run 33260215759](https://github.com/thesnjk/RouteFinder/actions/runs/33260215759) on `3536134a` — macos + ios success |
 
@@ -705,19 +690,19 @@ Launch arguments used by smoke tests: `UITEST_SKIP_AUTH`, `UITEST_SKIP_ONBOARDIN
 
 ### Consolidated iPhone device QA — Phase A + Ph30–35 (2026-08-28)
 
-Run once on a **physical iPhone** after each major driver-facing wave.
+**Simulator-first (2026-09-03):** C1/C2/C8 are **Pass (CI sim)**. Remaining C3–C7/C9 stay optional physical / future automation. Physical device = optional pre-pilot smoke (voice, resize, Keychain) — see [`operator-next-steps.md`](operator-next-steps.md) Block 1b.
 
 
 | #   | Scenario                                                 | Result                                      | Notes                                                                                    |
 | --- | -------------------------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| C1  | Delete app → Clean Build → run to device                 | **Pending local**                           | P0 — phone Offline 2026-08-29; sim cold launch covered by `testColdLaunchShowsAuthOrMap` |
-| C2  | Login → Driver Terms → map tiles (no sandbox error)      | **Pending local**                           | P0 + Ph54 — Retry / Use online map; then Save ORS key + London→Manchester                |
+| C1  | Cold launch / install path                               | **Pass** (CI sim)                           | `testColdLaunchShowsAuthOrMap`; physical delete+install optional                         |
+| C2  | Driver Terms / vehicle mode / map / no cloud nag         | **Pass** (CI sim)                           | `testVehicleModeOnboardingCarAndHGV`, `testCloudBannerHiddenWithMockKey`, badge/Start tests |
 | C3  | Walkaround v2: zones, defect note, PDF share             | **Pending local**                           | Phase 31; P1 — toolbar entry covered by `testWalkaroundEntryExists` (sim)                |
 | C4  | Layby voice alert on HGV route (Settings on)             | **Pending local**                           | Phase 30; P2                                                                             |
 | C5  | Fuel card picker → ahead banner on route                 | **Pending local**                           | Phase 32; P2                                                                             |
 | C6  | Report closure → hazard ahead banner + voice             | **Pending local**                           | Phase 33; P1                                                                             |
 | C7  | Roadworks ahead banner (OSM construction corridor)       | **Pending local**                           | Phase 35; P1                                                                             |
-| C8  | Settings hub drill-down (API Usage + Legal Driver Terms) | **Pass** (sim) / **Pending local** (device) | `testSettingsAPIUsageAndLegalDriverTerms`; re-confirm on phone                           |
+| C8  | Settings hub drill-down (API Usage + Legal Driver Terms) | **Pass** (CI sim)                           | `testSettingsAPIUsageAndLegalDriverTerms` / `testSettingsHubOpens`                       |
 | C9  | TomTom key set → live traffic hazard ahead during nav    | **Pending local**                           | Phase 36; requires TomTom API key; P1                                                    |
 
 

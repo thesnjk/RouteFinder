@@ -1,28 +1,67 @@
 #if DEBUG
 import Contracts
+import DataLayer
 import Foundation
 #if canImport(UIKit)
 import UIKit
 #endif
 
 /// Applies launch-argument overrides for RouteFinderApp UI tests.
-enum UITestLaunchConfigurator {
-    static func applyIfNeeded() {
+public enum UITestLaunchConfigurator {
+    /// Interprets `UITEST_*` process arguments and writes workspace overrides.
+    public static func applyIfNeeded() {
         let arguments = ProcessInfo.processInfo.arguments
-        guard arguments.contains("UITEST_SKIP_ONBOARDING")
+        let isUITest = arguments.contains("UITEST_SKIP_ONBOARDING")
             || arguments.contains("UITEST_SKIP_AUTH")
-            || arguments.contains("UITEST_SEED_ROUTE") else {
-            return
-        }
-        NavigationWorkspaceSettings.saveHasSeenProductOnboarding(true)
-        NavigationWorkspaceSettings.saveHasAcceptedRoutingLiability(true)
-        NavigationWorkspaceSettings.saveHasCompletedVehicleModeOnboarding(true)
-        if arguments.contains("UITEST_SEED_ROUTE") {
-            UserDefaults.standard.set(true, forKey: "RouteFinder.uitestSeedRoute")
-        }
+            || arguments.contains("UITEST_SEED_ROUTE")
+            || arguments.contains("UITEST_MOCK_ORS_KEY")
+            || arguments.contains("UITEST_CAR_MODE")
+            || arguments.contains("UITEST_HGV_MODE")
+            || arguments.contains("UITEST_RESET_ONBOARDING")
+            || arguments.contains("UITEST_PEEK_SHEET")
+            || arguments.contains("UITEST_OPEN_SETTINGS")
+        guard isUITest else { return }
+
         #if canImport(UIKit)
         UIView.setAnimationsEnabled(false)
         #endif
+
+        if arguments.contains("UITEST_RESET_ONBOARDING") {
+            // Product sheet already seen so VehicleModeOnboardingSheet can present.
+            NavigationWorkspaceSettings.saveHasSeenProductOnboarding(true)
+            NavigationWorkspaceSettings.saveHasAcceptedRoutingLiability(true)
+            NavigationWorkspaceSettings.saveHasCompletedVehicleModeOnboarding(false)
+        } else if arguments.contains("UITEST_SKIP_ONBOARDING")
+            || arguments.contains("UITEST_SKIP_AUTH")
+            || arguments.contains("UITEST_SEED_ROUTE") {
+            NavigationWorkspaceSettings.saveHasSeenProductOnboarding(true)
+            NavigationWorkspaceSettings.saveHasAcceptedRoutingLiability(true)
+            NavigationWorkspaceSettings.saveHasCompletedVehicleModeOnboarding(true)
+        }
+
+        if arguments.contains("UITEST_MOCK_ORS_KEY") {
+            VehicleProfileStore.saveORSAPIKey("uitest-mock-key")
+        }
+
+        if arguments.contains("UITEST_CAR_MODE") || arguments.contains("UITEST_HGV_MODE") {
+            var snapshot = VehicleWorkspaceSettings.load() ?? VehicleWorkspaceSnapshot()
+            snapshot.isHGVMode = arguments.contains("UITEST_HGV_MODE")
+            VehicleWorkspaceSettings.save(snapshot)
+        }
+
+        if arguments.contains("UITEST_SEED_ROUTE") {
+            UserDefaults.standard.set(true, forKey: "RouteFinder.uitestSeedRoute")
+        } else {
+            UserDefaults.standard.set(false, forKey: "RouteFinder.uitestSeedRoute")
+        }
+        UserDefaults.standard.set(
+            arguments.contains("UITEST_PEEK_SHEET"),
+            forKey: "RouteFinder.uitestPeekSheet"
+        )
+        UserDefaults.standard.set(
+            arguments.contains("UITEST_OPEN_SETTINGS"),
+            forKey: "RouteFinder.uitestOpenSettings"
+        )
     }
 }
 #endif

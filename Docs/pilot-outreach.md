@@ -2,15 +2,16 @@
 
 Operator-run playbook for booking **3–5** small independent haulage/courier meetings (5–15 trucks), within driving distance for LAN demos.
 
-Last updated: 2026-08-30
+Last updated: 2026-09-03
 
 ---
 
 ## Prerequisites (do not pitch until done)
 
-1. Physical iPhone **P0** rows C1–C2 + C8 Pass on build **606dff4d** (Ph55–57) — [`phase20-verification.md`](phase20-verification.md) or one-page [`operator-next-steps.md`](operator-next-steps.md) Block 1
-2. At least one dry-run of [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B on your own Mac + phone
+1. **CI green on `main`** (simulator P0) — [`phase20-verification.md`](phase20-verification.md) P49b-P0 / P57-7 **Pass (CI sim)**, or [`operator-next-steps.md`](operator-next-steps.md) Block 1
+2. Optional: Block 1b phone smoke (voice, Device Hub resize, real Keychain) before first meeting
 3. Print [`pilot-fleet-pack.md`](pilot-fleet-pack.md) (agreement + feedback form)
+4. Fleet Part B LAN dry-run only if pitching dispatch console on site
 
 ---
 
@@ -26,7 +27,7 @@ Last updated: 2026-08-30
 
 **Reserves:** Froggatt’s (Chesterfield · 01246 826 771), Fosters Haulage (Bury · 07778 742089), Smalldene Midlands (Birmingham tippers).
 
-Aim for **3 signed pilots**; overbook to 5 conversations. **Do not send until P0 C1–C2+C8 and Fleet Part B Pass.**
+Aim for **3 signed pilots**; overbook to 5 conversations. **Do not send until CI P0 (sim) is green.** Fleet Part B is optional unless the pitch includes live LAN dispatch.
 
 ---
 
@@ -36,7 +37,7 @@ Aim for **3 signed pilots**; overbook to 5 conversations. **Do not send until P0
 > I’d like **10 minutes** on site: free **60-day pilot** for up to 3 phones in exchange for brutal feedback on routing edge cases (bridges, weight limits, LEZ).  
 > Can I buy a coffee next week and run a live push → route → walkaround demo?
 
-### Ready-to-send variants (copy after P0 Pass)
+### Ready-to-send variants (copy after CI P0 Pass)
 
 **1 — Direct Driver (Huddersfield)**  
 > Hi Kurtis / team — I’m building **RouteFinder**, HGV nav with physics rehearsal and a **Mac dispatch console** on your office Wi‑Fi (no per-seat SaaS). Ten minutes on site: free **60-day pilot** for up to 3 phones for brutal feedback on bridges / weight / LEZ. Coffee next week for a live push → route → walkaround demo?

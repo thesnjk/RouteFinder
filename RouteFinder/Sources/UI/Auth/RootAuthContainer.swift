@@ -5,7 +5,11 @@ import SwiftUI
 public struct RootAuthContainer: View {
     @State private var session = SessionController()
 
-    public init() {}
+    public init() {
+        #if DEBUG
+        UITestLaunchConfigurator.applyIfNeeded()
+        #endif
+    }
 
     public var body: some View {
         Group {

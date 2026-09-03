@@ -10,6 +10,7 @@ private let iosMapPeekDetent = PresentationDetent.fraction(0.12)
 struct IOSMapChrome: View {
     @Bindable var viewModel: RouteViewModel
     @Binding var isRouteSheetVisible: Bool
+    var hideRouteSheet: Bool = false
     var onPresentModal: (IOSModal) -> Void
     var onOpenWalkaround: () -> Void = {}
 
@@ -26,6 +27,17 @@ struct IOSMapChrome: View {
 
     private static let peekDetent = iosMapPeekDetent
 
+    private var routeSheetPresented: Binding<Bool> {
+        Binding(
+            get: { isBottomSheetPresented && !hideRouteSheet },
+            set: { newValue in
+                if !hideRouteSheet {
+                    isBottomSheetPresented = newValue
+                }
+            }
+        )
+    }
+
     var body: some View {
         Color.clear
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -37,6 +49,7 @@ struct IOSMapChrome: View {
                 topChrome
                     .padding(.horizontal, RFSpacing.md)
                     .safeAreaPadding(.top, RFSpacing.sm)
+                    .allowsHitTesting(true)
             }
             .overlay(alignment: .bottomTrailing) {
                 IOSMapToolbar(
@@ -48,8 +61,9 @@ struct IOSMapChrome: View {
                 .padding(.trailing, RFSpacing.md)
                 .padding(.bottom, toolbarBottomPadding)
                 .safeAreaPadding(.bottom)
+                .allowsHitTesting(true)
             }
-            .sheet(isPresented: $isBottomSheetPresented) {
+            .sheet(isPresented: routeSheetPresented) {
                 IOSRouteSheet(
                     viewModel: viewModel,
                     phase: sheetPhase,
@@ -144,21 +158,21 @@ struct IOSMapChrome: View {
     private func presentSeededResultsIfNeeded() {
         guard viewModel.uiTestForceResultsSheet, viewModel.result != nil else { return }
         sheetPhase = .results
-        selectedDetent = .medium
+        let peekForUITest = UserDefaults.standard.bool(forKey: "RouteFinder.uitestPeekSheet")
+        selectedDetent = peekForUITest ? Self.peekDetent : .medium
         isDetailExpanded = false
     }
 
     private func requestModal(_ modal: IOSModal) {
         dismissKeyboard()
         isKeyboardVisible = false
+        // Hide the route sheet via MapFirstShell when a modal is presented; present immediately.
+        onPresentModal(modal)
         if sheetPhase != .peek {
-            pendingModal = modal
             withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
                 sheetPhase = .peek
                 selectedDetent = Self.peekDetent
             }
-        } else {
-            onPresentModal(modal)
         }
     }
 
@@ -282,6 +296,8 @@ struct IOSMapChrome: View {
         .padding(.horizontal, RFSpacing.md)
         .padding(.vertical, RFSpacing.sm)
         .glassPanel(cornerRadius: 12)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("cloudRoutingBanner")
     }
 
     private var compactCloudBannerText: String {
@@ -937,7 +953,9 @@ private struct RouteProfileBadge: View {
         .padding(.horizontal, RFSpacing.md)
         .padding(.vertical, RFSpacing.sm)
         .glassPanel(cornerRadius: 12)
+        .accessibilityElement(children: .combine)
         .accessibilityIdentifier("routeProfileBadge")
+        .accessibilityLabel(label)
     }
 }
 
@@ -959,6 +977,20 @@ private struct IOSMapToolbar: View {
                 }
             }
             .accessibilityLabel("Map layers")
+
+            MapControlButton(icon: "gearshape.fill") {
+                onOpenSettings()
+            }
+            .accessibilityLabel("Settings")
+            .accessibilityIdentifier("mapToolbarSettings")
+
+            if viewModel.isHGVMode {
+                MapControlButton(icon: "checklist") {
+                    onOpenWalkaround()
+                }
+                .accessibilityLabel("Walkaround check")
+                .accessibilityIdentifier("walkaroundToolbarEntry")
+            }
 
             if viewModel.result != nil {
                 MapControlButton(icon: "map") {

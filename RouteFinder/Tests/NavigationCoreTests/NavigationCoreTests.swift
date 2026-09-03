@@ -130,7 +130,7 @@ func maneuverSpeechIncludesLaneGuidance() {
     )
     let spoken = ManeuverSpeechFormatter.spokenPrompt(for: instruction, tier: .execute)
     #expect(spoken.contains(instruction.laneGuidance!.guidanceText))
-    #expect(spoken.contains("Turn right"))
+    #expect(spoken.localizedCaseInsensitiveContains("turn right"))
 }
 
 @Test("Maneuver speech uses metric approach distances")

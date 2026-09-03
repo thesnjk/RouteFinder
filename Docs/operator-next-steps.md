@@ -54,6 +54,15 @@ Mac + iPhone on same Wi‑Fi. Full steps: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) P
 
 ---
 
-## Agent follow-up (Ph58)
+## Agent follow-up (Ph58+)
 
-If CI fails or Block 1b reports a concrete regression (cube, voice, route corridor, peek sheet), agent implements tight fixes only. No new features until pilots start.
+If CI fails or Block 1b reports a concrete regression (cube, voice, route corridor, peek sheet), agent implements tight fixes only.
+
+**Platform expansion (scaffolded 2026-09-03):**
+
+- Legal drafts: [`legal/`](legal/) — complete [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md)
+- Web LAN dispatch: [`../web-dispatch/`](../web-dispatch/)
+- Android C1 fleet receive: [`../android-fleet-driver/`](../android-fleet-driver/)
+- Full Android nav gated: [`android-c2-gate.md`](android-c2-gate.md)
+
+Do not start Android C2 until the gate document says unlock.

@@ -2,7 +2,7 @@
 
 Materials for a **60-day free pilot** with small UK independents (5–15 trucks). RouteFinder already ships native Mac/iPad dispatch + LAN HTTP/SSE — this pack documents what you bring to a meeting, not a new web portal.
 
-Last updated: 2026-08-29
+Last updated: 2026-09-03
 
 ---
 
@@ -35,6 +35,15 @@ Routing, physics rehearsal, layby/HOS advisories, and turn-by-turn guidance are 
 - Default: trip and inspection data stay on Operator’s LAN devices and local fleet store.
 - Optional remote URL / TLS is Operator’s choice and Operator’s network risk.
 - Provider does not sell Operator data. Provider may use **anonymised** feedback to improve the product.
+- Privacy draft: [`legal/privacy-policy.md`](legal/privacy-policy.md) (solicitor review pending).
+
+**Confidentiality**
+
+Operator must keep confidential Provider’s non-public product demos, unpublished features, pricing discussions, source materials, and technical architecture disclosed during the pilot. Operator may not copy, photograph for publication, or disclose those materials to competitors or the press without Provider’s prior written consent, except information that is already public or that Operator must disclose by law. Provider likewise keeps Operator’s operational data and commercial details confidential. This clause survives for **three (3) years** after the pilot ends.
+
+**Intellectual property**
+
+All RouteFinder software, branding, and documentation remain Provider’s property. Feedback may be used by Provider in anonymised form. No licence to Provider’s source code is granted by this pilot.
 
 **Pricing after pilot**
 

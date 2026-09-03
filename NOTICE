@@ -1,0 +1,59 @@
+RouteFinder — Third-party notices
+=================================
+
+This product includes software and data from third parties. Their licenses
+remain in force. RouteFinder proprietary code is covered by LICENSE.
+
+-------------------------------------------------------------------------------
+Apple Swift Collections
+https://github.com/apple/swift-collections
+License: Apache License 2.0
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+Apple Swift Algorithms
+https://github.com/apple/swift-algorithms
+License: Apache License 2.0
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+Hummingbird
+https://github.com/hummingbird-project/hummingbird
+License: Apache License 2.0
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+MapLibre GL JS
+https://github.com/maplibre/maplibre-gl-js
+License: BSD-3-Clause
+Vendored notes: RouteFinder/Sources/MapLibreUI/VENDOR_MAPLIBRE.md
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+OpenStreetMap data
+https://www.openstreetmap.org/copyright
+© OpenStreetMap contributors — ODbL
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+OpenRouteService (HeiGIT)
+https://openrouteservice.org/
+API and attribution requirements per HeiGIT terms of use
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+OpenFreeMap / Nominatim (where used for basemap or geocoding)
+Attribution required in map chrome
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+TomTom (optional traffic / services when keyed)
+https://developer.tomtom.com/
+Subject to TomTom developer terms when an API key is configured
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+OpenWeather (optional weather when keyed)
+https://openweathermap.org/
+Subject to OpenWeather terms when an API key is configured
+-------------------------------------------------------------------------------

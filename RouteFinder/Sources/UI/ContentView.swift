@@ -193,7 +193,13 @@ private struct MapWorkspaceView: View {
                 routeCumulativeLengths: viewModel.routeCumulativeLengths,
                 pins: viewModel.displayMapPins,
                 hazardsGeoJSON: viewModel.hazardOverlayJSON,
-                simulatedVehicle: viewModel.liveMapVehicleState(),
+                simulatedVehicle: {
+                    #if os(iOS)
+                    viewModel.liveMapVehicleState()
+                    #else
+                    nil
+                    #endif
+                }(),
                 interactionMode: viewModel.interactionMode,
                 initialRegion: viewModel.mapRegion,
                 styleURL: viewModel.mapStyleURL,

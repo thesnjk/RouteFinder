@@ -96,22 +96,22 @@ export class FleetApiClient {
     return parseJson(response)
   }
 
-  /** Build a minimal two-stop dispatched trip for LAN demos. */
+  /** Build a minimal two-stop dispatched trip for LAN demos (Norwich → King's Lynn coords). */
   buildDemoTrip(orgId: string, vehicleId: string, originLabel: string, destLabel: string): FleetTrip {
     const origin: FleetTripStop = {
       id: crypto.randomUUID(),
       sequence: 0,
       label: originLabel,
-      latitude: 53.4808,
-      longitude: -2.2426,
+      latitude: 52.6309,
+      longitude: 1.2974,
       role: 'origin',
     }
     const destination: FleetTripStop = {
       id: crypto.randomUUID(),
       sequence: 1,
       label: destLabel,
-      latitude: 53.4084,
-      longitude: -2.9916,
+      latitude: 52.7519,
+      longitude: 0.3955,
       role: 'destination',
     }
     return {

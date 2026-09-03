@@ -7,8 +7,22 @@ import DataLayer
 
 @main
 struct FleetServerApp {
-    static func main() async throws {
+    static func main() async {
+        do {
+            try await run()
+        } catch let error as FleetServerStartupError {
+            fputs("RouteFinder fleet server: \(error)\n", stderr)
+            exit(1)
+        } catch {
+            fputs("RouteFinder fleet server failed: \(error)\n", stderr)
+            exit(1)
+        }
+    }
+
+    private static func run() async throws {
         let config = FleetServerConfig.parse()
+        try FleetPortAvailability.ensureAvailable(port: config.port)
+
         let store = DiskFleetStore(storageDirectory: config.storageDirectory)
         let eventHub = FleetEventHub()
         let router = FleetRouterBuilder.buildRouter(
@@ -25,10 +39,10 @@ struct FleetServerApp {
                 privateKeyPath: privateKeyPath
             )
             serverBuilder = try HTTPServerBuilder.tls(.http1(), tlsConfiguration: tlsConfiguration)
-            print("RouteFinder fleet server listening with TLS on 0.0.0.0:\(config.port)")
+            print("RouteFinder fleet server starting with TLS on 0.0.0.0:\(config.port)")
         } else {
             serverBuilder = HTTPServerBuilder.http1()
-            print("RouteFinder fleet server listening on 0.0.0.0:\(config.port)")
+            print("RouteFinder fleet server starting on 0.0.0.0:\(config.port)")
         }
 
         if config.apiKey != nil {

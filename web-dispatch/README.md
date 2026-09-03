@@ -22,7 +22,8 @@ npm run dev
 
 Open http://127.0.0.1:5173
 
-- Connection → `http://127.0.0.1:8080` (or `http://127.0.0.1:5173/fleet` to use the Vite CORS proxy)
+- Connection base URL defaults to **`/fleet`** (Vite CORS proxy → `:8080`)
+- Or use `http://127.0.0.1:8080` directly once fleet CORS middleware is enabled
 - Create org → register vehicle → copy vehicle UUID into the iOS app Fleet settings → Push trip
 
 ## Scripts

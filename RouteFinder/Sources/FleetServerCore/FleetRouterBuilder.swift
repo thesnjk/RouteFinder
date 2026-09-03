@@ -13,6 +13,7 @@ public enum FleetRouterBuilder {
         eventHub: FleetEventHub = FleetEventHub()
     ) -> Router<BasicRequestContext> {
         let router = Router(context: BasicRequestContext.self)
+        router.add(middleware: FleetCORSMiddleware())
 
         router.get("health") { _, _ async throws -> Response in
             try jsonResponse(FleetServerHealthResponse(ok: true, version: "1"))

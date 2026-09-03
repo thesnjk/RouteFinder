@@ -19,6 +19,10 @@ public struct FleetAuthMiddleware<Context: RequestContext>: MiddlewareProtocol {
         context: Context,
         next: (Request, Context) async throws -> Response
     ) async throws -> Response {
+        // Browser CORS preflight must not require an API key.
+        if request.method == .options {
+            return try await next(request, context)
+        }
         guard matchesConfiguredKey(extractAPIKey(from: request)) else {
             return unauthorizedResponse()
         }

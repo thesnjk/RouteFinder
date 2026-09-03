@@ -20,7 +20,7 @@ Last updated: 2026-09-03
 | # | Company | Contact | Size | Date contacted | Meeting | Outcome |
 |---|---|---|---|---|---|---|
 | 1 | Direct Driver Ltd (Huddersfield) | [directdriver.co.uk](https://directdriver.co.uk/) · door / site | ~10 vehicles | | | |
-| 2 | Alfie Adams Transport (Bolton / Manchester) | 07941 633788 · [alfieadamstransport.co.uk](https://www.alfieadamstransport.co.uk/) | ~4 wagons | | | |
+| 2 | Alfie Adams Transport (Bolton / Manchester) | 07941 633788 · Alfieadamstransport@gmail.com · [alfieadamstransport.co.uk](https://www.alfieadamstransport.co.uk/) | ~4 wagons | 2026-09-03 | | mailto open — **hit Send** or call 07941 633788; then set Outcome to email sent / voicemail / spoke |
 | 3 | Allan Greenwood Haulage (Halifax) | [allangreenwoodhaulage.co.uk](https://allangreenwoodhaulage.co.uk/) · door / site | Family + ~3 drivers | | | |
 | 4 | F.C. Transport Leeds Ltd (Wakefield) | [fctransportleedsltd.co.uk](https://www.fctransportleedsltd.co.uk/) · door / site | Small mixed fleet | | | |
 | 5 | Harris Haulage Ltd (Dudley / Bridgnorth) | 07733 118 973 · craigharrishaulage@outlook.com | Family mixed fleet | | | |
@@ -63,7 +63,21 @@ Aim for **3 signed pilots**; overbook to 5 conversations. **Do not send until CI
 3. **Ask (20 s):** “Three phones, sixty days, one feedback form. If it wastes your time, we stop. If it helps, we talk a small desk fee after.”
 4. **Close (20 s):** Leave pilot agreement; book install day; get vehicle UUID process agreed.
 
-**Do not promise:** live telematics map, hosted web portal, CarPlay, Android Auto, remote VU, or 24/7 support.
+**Do not promise:** live telematics map, hosted web portal, CarPlay, Android Auto, full Android navigation, remote VU, or 24/7 support.
+
+**If asked about Android:** “Pilots run on iPhone today; Android driver app for trip receive is on the roadmap; full Android navigation follows pilot feedback.”
+
+**If asked about Windows office PCs:** “Native dispatch is Mac/iPad today; a LAN web dispatch console is in progress so the office can push trips from a browser.”
+
+---
+
+## Device / platform objections log
+
+When a prospect objects to iPhone-only or Mac-only, log here **and** add a row in [`pilot-feedback-backlog.md`](pilot-feedback-backlog.md).
+
+| Date | Company | Objection | Detail |
+|------|---------|----------|--------|
+| | | Android drivers / Windows office / other | |
 
 ---
 

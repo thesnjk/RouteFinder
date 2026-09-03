@@ -1,0 +1,8 @@
+# RouteFinder Android Fleet Driver — local secrets
+*.iml
+.gradle/
+.idea/
+local.properties
+**/build/
+captures/
+.DS_Store

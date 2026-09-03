@@ -73,3 +73,19 @@ jobs:
             -scheme RouteFinderApp \
             -destination 'generic/platform=iOS Simulator' \
             -only-testing:RouteFinderAppUITests/RouteFinderAppUITests
+
+  web-dispatch:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-dispatch
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web-dispatch/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build

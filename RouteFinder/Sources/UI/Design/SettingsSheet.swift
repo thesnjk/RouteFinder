@@ -468,22 +468,49 @@ struct SettingsSheet: View {
 
     private var legalSection: some View {
         VStack(alignment: .leading, spacing: RFSpacing.sm) {
-            Text("Driver Terms")
+            Text("Legal")
                 .font(RFFont.sectionTitle)
 
-            Text(ProductOnboardingSheet.driverTermsBody)
-                .font(RFFont.body)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            if NavigationWorkspaceSettings.loadHasAcceptedRoutingLiability() {
-                Text("Accepted on this device.")
-                    .font(RFFont.caption)
+            DisclosureGroup("Driver Terms") {
+                Text(ProductOnboardingSheet.driverTermsBody)
+                    .font(RFFont.body)
                     .foregroundStyle(.secondary)
-            } else {
-                Text("Not yet accepted — Terms appear again on next cold launch.")
-                    .font(RFFont.caption)
-                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, RFSpacing.xs)
+
+                if NavigationWorkspaceSettings.loadHasAcceptedRoutingLiability() {
+                    Text("Accepted on this device.")
+                        .font(RFFont.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Not yet accepted — Terms appear again on next cold launch.")
+                        .font(RFFont.caption)
+                        .foregroundStyle(.orange)
+                }
+            }
+
+            DisclosureGroup("Privacy Policy") {
+                Text(ProductLegalDocuments.privacyPolicySummary)
+                    .font(RFFont.body)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, RFSpacing.xs)
+                if let url = ProductLegalDocuments.privacyPolicyURL {
+                    Link("Open full Privacy Policy", destination: url)
+                        .font(RFFont.caption)
+                }
+            }
+
+            DisclosureGroup("Terms of Service") {
+                Text(ProductLegalDocuments.termsOfServiceSummary)
+                    .font(RFFont.body)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, RFSpacing.xs)
+                if let url = ProductLegalDocuments.termsOfServiceURL {
+                    Link("Open full Terms of Service", destination: url)
+                        .font(RFFont.caption)
+                }
             }
         }
         .padding(RFSpacing.md)

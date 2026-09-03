@@ -136,12 +136,20 @@ public struct ContentView: View {
 
 /// Map workspace that observes simulation engine updates for the vehicle marker.
 private struct MapWorkspaceView: View {
+    private enum LaunchCover: String, Identifiable {
+        case product
+        case vehicle
+        var id: String { rawValue }
+    }
+
     @Bindable var viewModel: RouteViewModel
     @ObservedObject private var simulationEngine: RouteSimulationEngine
     @ObservedObject private var mapBridge: MapViewControllerBridge
-    @State private var showProductOnboarding = !NavigationWorkspaceSettings.loadHasSeenProductOnboarding()
     #if os(iOS)
-    @State private var showVehicleModeOnboarding = false
+    @State private var launchCover: LaunchCover?
+    @State private var vehicleCoverDismissed = false
+    #else
+    @State private var showProductOnboarding: Bool
     #endif
     var onOpenProfile: () -> Void
     var onOpenSettings: () -> Void
@@ -152,12 +160,28 @@ private struct MapWorkspaceView: View {
         onOpenProfile: @escaping () -> Void = {},
         onOpenSettings: @escaping () -> Void = {}
     ) {
+        #if DEBUG
+        UITestLaunchConfigurator.applyIfNeeded()
+        #endif
         self.viewModel = viewModel
         self._simulationEngine = ObservedObject(wrappedValue: viewModel.simulationEngine)
         self._mapBridge = ObservedObject(wrappedValue: mapBridge)
         self.onOpenProfile = onOpenProfile
         self.onOpenSettings = onOpenSettings
         viewModel.mapBridge = mapBridge
+        let seenProduct = NavigationWorkspaceSettings.loadHasSeenProductOnboarding()
+        let vehicleDone = NavigationWorkspaceSettings.loadHasCompletedVehicleModeOnboarding()
+        #if os(iOS)
+        if !seenProduct {
+            _launchCover = State(initialValue: .product)
+        } else if !vehicleDone {
+            _launchCover = State(initialValue: .vehicle)
+        } else {
+            _launchCover = State(initialValue: nil)
+        }
+        #else
+        _showProductOnboarding = State(initialValue: !seenProduct)
+        #endif
     }
 
     var body: some View {
@@ -200,7 +224,29 @@ private struct MapWorkspaceView: View {
                 }
             )
 
-            MapFirstShell(viewModel: viewModel, onOpenProfile: onOpenProfile, onOpenSettings: onOpenSettings)
+            MapFirstShell(
+                viewModel: viewModel,
+                onOpenProfile: onOpenProfile,
+                onOpenSettings: onOpenSettings,
+                hideRouteSheet: {
+                    #if os(iOS)
+                    shouldShowLaunchCover
+                    #else
+                    false
+                    #endif
+                }()
+            )
+
+            #if os(iOS)
+            if shouldShowLaunchCover {
+                launchCoverView(launchCover ?? .vehicle)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(MapCanvasBackdrop.color)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                    .zIndex(10)
+            }
+            #endif
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(MapCanvasBackdrop.color)
@@ -211,40 +257,78 @@ private struct MapWorkspaceView: View {
                     .padding(.bottom, RFSpacing.lg + 120)
             }
         }
+        #if os(iOS)
+        .onAppear {
+            presentLaunchCoverIfNeeded()
+        }
+        #else
         .sheet(isPresented: $showProductOnboarding, onDismiss: markProductOnboardingSeen) {
             ProductOnboardingSheet(
                 requireLiabilityAcceptance: !NavigationWorkspaceSettings.loadHasAcceptedRoutingLiability()
             )
         }
-        #if os(iOS)
-        .sheet(isPresented: $showVehicleModeOnboarding) {
-            VehicleModeOnboardingSheet { passengerCar in
-                viewModel.applyVehicleModeFromOnboarding(passengerCar: passengerCar)
-                showVehicleModeOnboarding = false
-            }
-        }
-        .onAppear {
-            if NavigationWorkspaceSettings.loadHasSeenProductOnboarding(),
-               !NavigationWorkspaceSettings.loadHasCompletedVehicleModeOnboarding() {
-                showVehicleModeOnboarding = true
-            }
-        }
         #endif
     }
+
+    #if os(iOS)
+    private var shouldShowLaunchCover: Bool {
+        if vehicleCoverDismissed { return false }
+        if launchCover != nil { return true }
+        #if DEBUG
+        return ProcessInfo.processInfo.arguments.contains("UITEST_RESET_ONBOARDING")
+        #else
+        return false
+        #endif
+    }
+
+    @ViewBuilder
+    private func launchCoverView(_ cover: LaunchCover) -> some View {
+        switch cover {
+        case .product:
+            ProductOnboardingSheet(
+                requireLiabilityAcceptance: !NavigationWorkspaceSettings.loadHasAcceptedRoutingLiability()
+            )
+            .onDisappear(perform: markProductOnboardingSeen)
+            case .vehicle:
+            VehicleModeOnboardingSheet { passengerCar in
+                viewModel.applyVehicleModeFromOnboarding(passengerCar: passengerCar)
+                vehicleCoverDismissed = true
+                launchCover = nil
+            }
+        }
+    }
+
+    private func presentLaunchCoverIfNeeded() {
+        #if DEBUG
+        UITestLaunchConfigurator.applyIfNeeded()
+        #endif
+        guard launchCover == nil else { return }
+        if !NavigationWorkspaceSettings.loadHasSeenProductOnboarding() {
+            launchCover = .product
+        } else if !NavigationWorkspaceSettings.loadHasCompletedVehicleModeOnboarding() {
+            launchCover = .vehicle
+        }
+    }
+    #endif
 
     private func markProductOnboardingSeen() {
         let liabilityAccepted = NavigationWorkspaceSettings.loadHasAcceptedRoutingLiability()
         let previouslySeen = NavigationWorkspaceSettings.loadHasSeenProductOnboarding()
         // First-launch liability gate: do not clear the sheet if Terms were never accepted.
         if !liabilityAccepted, !previouslySeen {
+            #if os(iOS)
+            launchCover = .product
+            #else
             showProductOnboarding = true
+            #endif
             return
         }
         NavigationWorkspaceSettings.saveHasSeenProductOnboarding(true)
         #if os(iOS)
         if !NavigationWorkspaceSettings.loadHasCompletedVehicleModeOnboarding() {
-            showVehicleModeOnboarding = true
+            launchCover = .vehicle
         }
         #endif
     }
 }
+

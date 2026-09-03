@@ -81,6 +81,7 @@ struct VehicleModeOnboardingSheet: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier(accessibilityIdentifier)
+        .accessibilityAddTraits(.isButton)
     }
 }
 #endif

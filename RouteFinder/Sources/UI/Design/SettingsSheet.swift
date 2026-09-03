@@ -9,6 +9,7 @@ import AVFoundation
 /// Settings sheet for algorithm, vehicle, avoidance, and HeiGIT API configuration.
 struct SettingsSheet: View {
     @Bindable var viewModel: RouteViewModel
+    var onDismiss: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     #if os(iOS)
     @EnvironmentObject private var weatherViewModel: WeatherViewModel
@@ -30,7 +31,10 @@ struct SettingsSheet: View {
             #endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+                    Button("Done") {
+                        onDismiss?()
+                        dismiss()
+                    }
                 }
             }
             .sheet(isPresented: $showInspectionSheet) {

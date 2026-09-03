@@ -4,15 +4,24 @@ import { FleetApiClient } from './fleet/client'
 import type { FleetOrg, FleetTrip, FleetVehicle } from './fleet/types'
 
 const STORAGE_KEY = 'routefinder.webDispatch.connection'
+/** Dev default: Vite proxy avoids CORS. Direct :8080 works once fleet CORS is enabled. */
+const DEFAULT_BASE_URL = '/fleet'
 
 function loadConnection(): { baseUrl: string; apiKey: string } {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw) as { baseUrl: string; apiKey: string }
+    if (raw) {
+      const parsed = JSON.parse(raw) as { baseUrl: string; apiKey: string }
+      // Migrate the old default that triggered browser CORS failures.
+      if (parsed.baseUrl === 'http://127.0.0.1:8080' || parsed.baseUrl === 'http://localhost:8080') {
+        return { baseUrl: DEFAULT_BASE_URL, apiKey: parsed.apiKey ?? '' }
+      }
+      return parsed
+    }
   } catch {
     /* ignore */
   }
-  return { baseUrl: 'http://127.0.0.1:8080', apiKey: '' }
+  return { baseUrl: DEFAULT_BASE_URL, apiKey: '' }
 }
 
 export default function App() {
@@ -25,8 +34,8 @@ export default function App() {
   const [vehicleId, setVehicleId] = useState('')
   const [newOrgName, setNewOrgName] = useState('Pilot fleet')
   const [newVehicleLabel, setNewVehicleLabel] = useState('Unit 1')
-  const [originLabel, setOriginLabel] = useState('Manchester')
-  const [destLabel, setDestLabel] = useState('Liverpool')
+  const [originLabel, setOriginLabel] = useState('Norwich')
+  const [destLabel, setDestLabel] = useState("King's Lynn")
   const [lastTrip, setLastTrip] = useState<FleetTrip | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -71,7 +80,7 @@ export default function App() {
           <input
             value={baseUrl}
             onChange={(e) => setBaseUrl(e.target.value)}
-            placeholder="http://192.168.1.10:8080"
+            placeholder="/fleet or http://192.168.1.10:8080"
           />
         </label>
         <label>
@@ -202,7 +211,8 @@ export default function App() {
           <input value={destLabel} onChange={(e) => setDestLabel(e.target.value)} />
         </label>
         <p className="muted">
-          Demo coordinates: Manchester → Liverpool. Geocoding / MapLibre preview comes in a follow-up.
+          Demo coordinates: Norwich → King&apos;s Lynn. Geocoding / MapLibre preview comes in a follow-up.
+          Dev tip: use base URL <code>/fleet</code> (Vite proxy) if direct :8080 fails with CORS.
         </p>
         <button
           disabled={busy || !orgId || !vehicleId}

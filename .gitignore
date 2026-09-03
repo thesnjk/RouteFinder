@@ -16,3 +16,14 @@ RouteFinder/RouteFinderMacApp.app/
 
 # Research scrape archive (summaries committed under Docs/)
 .firecrawl/
+
+# Web dispatch (Vite)
+web-dispatch/node_modules/
+web-dispatch/dist/
+
+# Android fleet driver
+android-fleet-driver/.gradle/
+android-fleet-driver/**/build/
+android-fleet-driver/local.properties
+android-fleet-driver/.idea/
+

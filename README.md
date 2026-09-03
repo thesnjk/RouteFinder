@@ -259,4 +259,4 @@ git status -sb
 
 ## Licence & data
 
-Map data © OpenStreetMap contributors. Third-party APIs are subject to their own terms. RouteFinder does not provide legal advice on drivers’ hours.
+RouteFinder application source is **proprietary** — see [`LICENSE`](LICENSE) and third-party attributions in [`NOTICE`](NOTICE). Legal drafts (solicitor review pending): [`Docs/legal/`](Docs/legal/). Map data © OpenStreetMap contributors. Third-party APIs are subject to their own terms. RouteFinder does not provide legal advice on drivers’ hours.

@@ -77,6 +77,18 @@ public final class RouteViewModel {
     /// Draft text for Settings SecureField (never pre-filled from the vault).
     public var orsAPIKeyDraft: String = ""
     public var hasORSAPIKey = false
+    /// True when remote fleet server is enabled — cloud routing can use the operator-paid ORS proxy.
+    public var usesFleetORSProxy: Bool {
+        FleetORSRoutingFactory.usesFleetProxy(
+            useRemoteFleetServer: useRemoteFleetServer,
+            fleetServerURL: URL(string: fleetServerURLText.trimmingCharacters(in: .whitespacesAndNewlines))
+                ?? FleetWorkspaceSettings.loadFleetServerURL()
+        )
+    }
+    /// Local HeiGIT key or fleet ORS proxy is enough for cloud routing.
+    public var hasCloudRoutingCapability: Bool {
+        hasORSAPIKey || usesFleetORSProxy
+    }
     public var vehicleHeight: String = ""
     public var vehicleWeight: String = ""
     public var vehicleWidth: String = ""
@@ -1678,7 +1690,7 @@ public final class RouteViewModel {
         guard let banner = cloudRoutingBanner, !banner.isEmpty else { return false }
         if isCalculating { return true }
         if hasCompletedCloudRoute, result != nil { return true }
-        return !hasORSAPIKey
+        return !hasCloudRoutingCapability
             && orsAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
@@ -2139,7 +2151,7 @@ public final class RouteViewModel {
         let policy = HybridRoutingPolicy(
             preferOfflineRouting: preferOfflineRouting,
             offlineRoutingEnabled: offlineRoutingEnabled,
-            hasORSAPIKey: hasORSAPIKey,
+            hasORSAPIKey: hasCloudRoutingCapability,
             hasOfflineTilesAvailable: offlineAvailable
         )
 
@@ -2936,7 +2948,15 @@ public final class RouteViewModel {
     }
 
     private func makeExternalPlanner() throws -> RoutePlanner {
-        let client = try OpenRouteServiceRoutingClient(apiKey: orsAPIKey)
+        let fleetKey = (try? FleetServerCredentials.loadAPIKey())
+            ?? fleetServerAPIKeyText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let client = try FleetORSRoutingFactory.makeRoutingClient(
+            localORSAPIKey: orsAPIKey,
+            useRemoteFleetServer: useRemoteFleetServer,
+            fleetServerURL: URL(string: fleetServerURLText.trimmingCharacters(in: .whitespacesAndNewlines))
+                ?? FleetWorkspaceSettings.loadFleetServerURL(),
+            fleetAPIKey: fleetKey
+        )
         return RoutePlanner(externalClient: client)
     }
 
@@ -2944,6 +2964,8 @@ public final class RouteViewModel {
         let serviceLabel: String
         if preferOfflineRouting, offlineRoutingEnabled {
             serviceLabel = "Offline tiled routing (preferred)"
+        } else if usesFleetORSProxy {
+            serviceLabel = "Routing via fleet server (operator-paid ORS proxy)"
         } else if hasORSAPIKey {
             serviceLabel = "Routing via HeiGIT OpenRouteService (`api.heigit.org/openrouteservice/v2`)"
         } else if offlineRoutingEnabled {
@@ -2952,9 +2974,8 @@ public final class RouteViewModel {
             serviceLabel = "Routing via HeiGIT OpenRouteService (`api.heigit.org/openrouteservice/v2`)"
         }
 
-        if orsAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-           !offlineRoutingEnabled {
-            cloudRoutingBanner = "\(serviceLabel) — add your API key in Settings."
+        if !hasCloudRoutingCapability, !offlineRoutingEnabled {
+            cloudRoutingBanner = "\(serviceLabel) — add your API key in Settings, or enable fleet sync with an office ORS proxy."
             return
         }
 

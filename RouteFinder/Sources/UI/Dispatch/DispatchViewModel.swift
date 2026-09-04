@@ -305,8 +305,11 @@ public final class DispatchViewModel {
             return
         }
 
-        let apiKey = VehicleProfileStore.loadORSAPIKey()?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard !apiKey.isEmpty, let request = buildPreviewRequest(from: fallback) else {
+        let localKey = VehicleProfileStore.loadORSAPIKey()?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let useRemote = FleetWorkspaceSettings.useRemoteFleetServer()
+        let fleetURL = FleetWorkspaceSettings.loadFleetServerURL()
+        let canRoute = !localKey.isEmpty || FleetORSRoutingFactory.usesFleetProxy(useRemoteFleetServer: useRemote, fleetServerURL: fleetURL)
+        guard canRoute, let request = buildPreviewRequest(from: fallback) else {
             previewCoordinates = fallback
             return
         }
@@ -315,7 +318,13 @@ public final class DispatchViewModel {
         defer { isPreviewLoading = false }
 
         do {
-            let client = try OpenRouteServiceRoutingClient(apiKey: apiKey)
+            let fleetKey = try? FleetServerCredentials.loadAPIKey()
+            let client = try FleetORSRoutingFactory.makeRoutingClient(
+                localORSAPIKey: localKey.isEmpty ? "unused" : localKey,
+                useRemoteFleetServer: useRemote,
+                fleetServerURL: fleetURL,
+                fleetAPIKey: fleetKey
+            )
             let response = try await client.route(request: request)
             guard !Task.isCancelled else { return }
             let coords = response.coordinates.map {

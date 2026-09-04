@@ -8,12 +8,16 @@ public struct FleetServerConfig: Sendable {
     public let storageDirectory: URL?
     /// Optional shared secret required on `/v1/*` routes.
     public let apiKey: String?
+    /// Optional HeiGIT ORS API key held by the operator for `/v1/proxy/*` routes.
+    public let orsAPIKey: String?
     /// Optional PEM certificate path for TLS.
     public let tlsCertificatePath: URL?
     /// Optional PEM private key path for TLS.
     public let tlsPrivateKeyPath: URL?
     /// Whether to advertise the server via Bonjour on the local network.
     public let advertiseBonjour: Bool
+    /// Daily hard caps for proxied ORS usage.
+    public let proxyBudget: FleetProxyUsageBudget
 
     /// Whether TLS is enabled for this server instance.
     public var usesTLS: Bool {
@@ -25,16 +29,20 @@ public struct FleetServerConfig: Sendable {
         port: Int = 8080,
         storageDirectory: URL? = nil,
         apiKey: String? = nil,
+        orsAPIKey: String? = nil,
         tlsCertificatePath: URL? = nil,
         tlsPrivateKeyPath: URL? = nil,
-        advertiseBonjour: Bool = true
+        advertiseBonjour: Bool = true,
+        proxyBudget: FleetProxyUsageBudget = .default
     ) {
         self.port = port
         self.storageDirectory = storageDirectory
         self.apiKey = apiKey
+        self.orsAPIKey = orsAPIKey
         self.tlsCertificatePath = tlsCertificatePath
         self.tlsPrivateKeyPath = tlsPrivateKeyPath
         self.advertiseBonjour = advertiseBonjour
+        self.proxyBudget = proxyBudget
     }
 
     /// Parses command-line arguments into server configuration.
@@ -42,9 +50,11 @@ public struct FleetServerConfig: Sendable {
         var port = 8080
         var storageDirectory: URL?
         var apiKey: String?
+        var orsAPIKey: String?
         var tlsCertificatePath: URL?
         var tlsPrivateKeyPath: URL?
         var advertiseBonjour = true
+        var proxyBudget = FleetProxyUsageBudget.default
 
         var index = 1
         while index < arguments.count {
@@ -63,6 +73,21 @@ public struct FleetServerConfig: Sendable {
                 index += 1
                 if index < arguments.count {
                     apiKey = arguments[index]
+                }
+            case "--ors-key":
+                index += 1
+                if index < arguments.count {
+                    orsAPIKey = arguments[index]
+                }
+            case "--route-daily-cap":
+                index += 1
+                if index < arguments.count, let parsed = Int(arguments[index]) {
+                    proxyBudget.routeDailyCap = parsed
+                }
+            case "--geocode-daily-cap":
+                index += 1
+                if index < arguments.count, let parsed = Int(arguments[index]) {
+                    proxyBudget.geocodeDailyCap = parsed
                 }
             case "--tls-cert":
                 index += 1
@@ -88,6 +113,13 @@ public struct FleetServerConfig: Sendable {
                 apiKey = trimmed
             }
         }
+        if orsAPIKey == nil, let envORS = ProcessInfo.processInfo.environment["ORS_API_KEY"]
+            ?? ProcessInfo.processInfo.environment["ROUTEFINDER_ORS_API_KEY"] {
+            let trimmed = envORS.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                orsAPIKey = trimmed
+            }
+        }
         if tlsCertificatePath == nil,
            let envCert = ProcessInfo.processInfo.environment["ROUTEFINDER_FLEET_TLS_CERT"] {
             tlsCertificatePath = URL(fileURLWithPath: envCert)
@@ -101,9 +133,11 @@ public struct FleetServerConfig: Sendable {
             port: port,
             storageDirectory: storageDirectory,
             apiKey: apiKey,
+            orsAPIKey: orsAPIKey,
             tlsCertificatePath: tlsCertificatePath,
             tlsPrivateKeyPath: tlsPrivateKeyPath,
-            advertiseBonjour: advertiseBonjour
+            advertiseBonjour: advertiseBonjour,
+            proxyBudget: proxyBudget
         )
     }
 }

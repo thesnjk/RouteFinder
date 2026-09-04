@@ -86,6 +86,10 @@ struct DispatchTripFormView: View {
                         Text(vehicleLabel(vehicle)).tag(Optional(vehicle.id))
                     }
                 }
+                if let vehicleId = viewModel.selectedVehicleId {
+                    let label = viewModel.vehicles.first(where: { $0.id == vehicleId }).map(vehicleLabel) ?? "Vehicle"
+                    VehiclePairingQRView(vehicleId: vehicleId, vehicleLabel: label)
+                }
             }
         }
         .glassPanel(cornerRadius: 14)

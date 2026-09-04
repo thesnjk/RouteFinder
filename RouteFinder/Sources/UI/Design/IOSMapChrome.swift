@@ -206,7 +206,7 @@ struct IOSMapChrome: View {
 
     private var topChrome: some View {
         VStack(spacing: RFSpacing.sm) {
-            if !viewModel.hasORSAPIKey, !isCloudBannerDismissed {
+            if !viewModel.hasCloudRoutingCapability, !isCloudBannerDismissed {
                 compactCloudBanner
             }
             if let dispatchToast = viewModel.fleetDispatchToast {
@@ -270,7 +270,7 @@ struct IOSMapChrome: View {
                 HStack(spacing: RFSpacing.sm) {
                     Image(systemName: "cloud.fill")
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(viewModel.hasORSAPIKey ? Color.secondary : Color.orange)
+                        .foregroundStyle(viewModel.hasCloudRoutingCapability ? Color.secondary : Color.orange)
                     Text(compactCloudBannerText)
                         .font(RFFont.caption)
                         .lineLimit(1)
@@ -301,8 +301,8 @@ struct IOSMapChrome: View {
     }
 
     private var compactCloudBannerText: String {
-        if !viewModel.hasORSAPIKey {
-            return "Cloud routing — add API key"
+        if !viewModel.hasCloudRoutingCapability {
+            return "Cloud routing — add API key or fleet"
         }
         let full = viewModel.cloudRoutingBanner ?? "Cloud routing"
         if full.count > 42 {

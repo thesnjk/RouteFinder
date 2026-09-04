@@ -46,6 +46,15 @@ export interface FleetServerHealth {
   version: string
 }
 
+/** Operator-paid ORS proxy metering from GET /v1/proxy/status */
+export interface FleetProxyStatus {
+  orsConfigured: boolean
+  routesToday: number
+  routeDailyCap: number
+  geocodeToday: number
+  geocodeDailyCap: number
+}
+
 export interface FleetConnection {
   /** Base URL of RouteFinderFleetServer, e.g. http://192.168.1.10:8080 */
   baseUrl: string

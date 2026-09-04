@@ -56,12 +56,17 @@ Last updated: 2026-09-03
 | Mass ads | B2B haulage = referrals |
 | Further `RouteViewModel` decomposition | Ph51/52 done; stop until pilot bugs |
 
-## In progress (scaffolded 2026-09-03)
+In progress (scaffolded 2026-09-03; continuity + ORS proxy 2026-09-04):
 
 | Item | Path | Notes |
 |---|---|---|
-| LAN web dispatch console | [`../web-dispatch/`](../web-dispatch/) | Thin client over existing fleet REST/SSE |
+| LAN web dispatch console | [`../web-dispatch/`](../web-dispatch/) | v1.5: tour, QR, snapshots, MapLibre |
 | Android C1 fleet driver | [`../android-fleet-driver/`](../android-fleet-driver/) | Trip receive + snapshot; not full nav |
+| Fleet ORS proxy | `RouteFinderFleetServer --ors-key` | Operator-paid; drivers skip HeiGIT keys |
+| Fleet setup wizard + QR | iOS Settings / Mac Dispatch / web | Pairing without Terminal docs |
+
+**Phase 3 (pilot-driven — do not build yet):** Android C2, hosted relay, live telematics map, CarPlay production. Gate: [`android-c2-gate.md`](android-c2-gate.md).
+
 
 ---
 

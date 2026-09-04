@@ -2,14 +2,12 @@
 
 Browser console for office PCs (Windows / Linux / Mac) that talks to the existing **`RouteFinderFleetServer`** over HTTP. This is **not** a hosted multi-tenant SaaS portal.
 
-Scaffolded with Vite + React + TypeScript (SPA fits LAN better than SSR).
-
 ## Prerequisites
 
 ```bash
-# Terminal A — fleet server
+# Terminal A — fleet server (operator-paid ORS when keyed)
 cd /Users/admin/Developer/RouteFinder/RouteFinder
-swift run RouteFinderFleetServer --port 8080
+swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY"
 ```
 
 ## Run
@@ -23,8 +21,11 @@ npm run dev
 Open http://127.0.0.1:5173
 
 - Connection base URL defaults to **`/fleet`** (Vite CORS proxy → `:8080`)
-- Or use `http://127.0.0.1:8080` directly once fleet CORS middleware is enabled
-- Create org → register vehicle → copy vehicle UUID into the iOS app Fleet settings → Push trip
+- Or use `http://<mac-ip>:8080` directly (fleet CORS enabled)
+- First-run tour → Create org → register vehicle → show **QR** → Push trip
+- Driver snapshot panel + MapLibre corridor preview
+
+Operator steps: [`../Docs/web-dispatch-operator-guide.md`](../Docs/web-dispatch-operator-guide.md)
 
 ## Scripts
 
@@ -35,10 +36,11 @@ Open http://127.0.0.1:5173
 | `npm test` | URL / auth header smoke |
 | `npm run lint` | oxlint |
 
-## v1 scope
+## v1.5 scope
 
 - Org / vehicle / push trip against REST API
-- Manual server URL + optional API key
-- **Not yet:** MapLibre preview, ORS geocode, snapshot status panel, hosted relay
-
-API contract: [`Docs/pilot-fleet-pack.md`](../Docs/pilot-fleet-pack.md)
+- Onboarding tour + connection health pill
+- Vehicle pairing QR (`routefinder-vehicle:<uuid>`)
+- Active-trip snapshot poll + MapLibre preview
+- ORS proxy status from `/v1/proxy/status`
+- **Not yet:** hosted relay, geocode stop search, live GPS fleet map

@@ -20,6 +20,8 @@
     <string>1</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
+    <key>NSCameraUsageDescription</key>
+    <string>RouteFinder scans the vehicle pairing QR from dispatch to connect this phone to your fleet.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>RouteFinder uses your location for map follow-mode and turn-by-turn navigation.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

@@ -8,19 +8,37 @@ public struct OpenRouteServiceRoutingClient: ExternalRoutingClient, Sendable {
     private let apiKey: String
     private let baseURL: URL
     private let session: URLSession
+    private let allowLANHTTP: Bool
 
     /// Creates an ORS routing client with the given HeiGIT API key.
-    public init(apiKey: String, session: URLSession = SecureURLSession.shared) throws {
+    ///
+    /// - Parameters:
+    ///   - apiKey: HeiGIT key, or fleet shared-secret when `baseURL` points at the fleet ORS proxy.
+    ///   - baseURL: Defaults to HeiGIT hosted ORS; pass fleet `…/v1/proxy/ors/v2` for operator-paid routing.
+    ///   - session: URL session (use `.shared` for LAN HTTP proxy).
+    ///   - allowLANHTTP: When true, permits `http://` private-network fleet proxy URLs.
+    public init(
+        apiKey: String,
+        baseURL: URL? = nil,
+        session: URLSession = SecureURLSession.shared,
+        allowLANHTTP: Bool = false
+    ) throws {
         let trimmed = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             throw ExternalRoutingError.notConfigured
         }
-        guard let url = URL(string: ORSAPIDefaults.baseURL) else {
+        let resolvedBase: URL
+        if let baseURL {
+            resolvedBase = baseURL
+        } else if let url = URL(string: ORSAPIDefaults.baseURL) {
+            resolvedBase = url
+        } else {
             throw ExternalRoutingError.invalidConfiguration
         }
         self.apiKey = trimmed
-        self.baseURL = url
+        self.baseURL = resolvedBase
         self.session = session
+        self.allowLANHTTP = allowLANHTTP
     }
 
     /// Calculates a route via the configured OpenRouteService profile.
@@ -61,7 +79,9 @@ public struct OpenRouteServiceRoutingClient: ExternalRoutingClient, Sendable {
         urlRequest.setValue(ORSAPIDefaults.userAgent, forHTTPHeaderField: "User-Agent")
         urlRequest.httpBody = try OpenRouteServicePayloadBuilder.buildData(from: request)
 
-        guard urlRequest.isSecureHTTPS else {
+        let scheme = url.scheme?.lowercased()
+        let schemeOK = scheme == "https" || (allowLANHTTP && scheme == "http")
+        guard schemeOK else {
             throw ExternalRoutingError.invalidConfiguration
         }
 

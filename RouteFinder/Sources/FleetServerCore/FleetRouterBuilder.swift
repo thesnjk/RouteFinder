@@ -10,7 +10,9 @@ public enum FleetRouterBuilder {
     public static func buildRouter(
         store: DiskFleetStore,
         apiKey: String? = nil,
-        eventHub: FleetEventHub = FleetEventHub()
+        orsAPIKey: String? = nil,
+        eventHub: FleetEventHub = FleetEventHub(),
+        proxyMeter: FleetProxyUsageMeter = FleetProxyUsageMeter()
     ) -> Router<BasicRequestContext> {
         let router = Router(context: BasicRequestContext.self)
         router.add(middleware: FleetCORSMiddleware())
@@ -22,6 +24,8 @@ public enum FleetRouterBuilder {
         if let apiKey, !apiKey.isEmpty {
             router.add(middleware: FleetAuthMiddleware(apiKey: apiKey))
         }
+
+        FleetORSProxy.registerRoutes(on: router, orsAPIKey: orsAPIKey, meter: proxyMeter)
 
         router.get("v1/orgs") { _, _ async throws -> Response in
             try jsonResponse(try await store.orgs())

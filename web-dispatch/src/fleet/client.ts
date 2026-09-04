@@ -3,6 +3,7 @@ import {
   joinUrl,
   type FleetConnection,
   type FleetOrg,
+  type FleetProxyStatus,
   type FleetServerHealth,
   type FleetTrip,
   type FleetTripStop,
@@ -35,6 +36,11 @@ export class FleetApiClient {
 
   async health(): Promise<FleetServerHealth> {
     const response = await fetch(this.url('/health'), { headers: this.headers() })
+    return parseJson(response)
+  }
+
+  async proxyStatus(): Promise<FleetProxyStatus> {
+    const response = await fetch(this.url('/v1/proxy/status'), { headers: this.headers() })
     return parseJson(response)
   }
 

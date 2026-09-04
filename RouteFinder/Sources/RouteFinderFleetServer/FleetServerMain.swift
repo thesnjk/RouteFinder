@@ -25,10 +25,13 @@ struct FleetServerApp {
 
         let store = DiskFleetStore(storageDirectory: config.storageDirectory)
         let eventHub = FleetEventHub()
+        let proxyMeter = FleetProxyUsageMeter(budget: config.proxyBudget)
         let router = FleetRouterBuilder.buildRouter(
             store: store,
             apiKey: config.apiKey,
-            eventHub: eventHub
+            orsAPIKey: config.orsAPIKey,
+            eventHub: eventHub,
+            proxyMeter: proxyMeter
         )
 
         let serverBuilder: HTTPServerBuilder
@@ -47,6 +50,11 @@ struct FleetServerApp {
 
         if config.apiKey != nil {
             print("Fleet API key authentication enabled.")
+        }
+        if let ors = config.orsAPIKey, !ors.isEmpty {
+            print("ORS proxy enabled (operator-paid). Caps: \(config.proxyBudget.routeDailyCap) routes / \(config.proxyBudget.geocodeDailyCap) geocodes per day.")
+        } else {
+            print("ORS proxy disabled — pass --ors-key or ORS_API_KEY so drivers need no HeiGIT keys.")
         }
 
         let bonjourAdvertiser = FleetBonjourAdvertiser()

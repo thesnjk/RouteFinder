@@ -47,7 +47,7 @@ All RouteFinder software, branding, and documentation remain Provider’s proper
 
 **Pricing after pilot**
 
-No obligation to buy. If Operator continues, parties may discuss a **dispatch-desk / per-vehicle fee** (indicative: £29–£49/mo for ≤10 trucks on LAN). Owner-operator App Store pricing is deferred until after pilot feedback.
+No obligation to buy. If Operator continues, parties may discuss a **dispatch-desk fee** (indicative: **£29–£49/mo for ≤10 trucks on LAN**) with **routing API cost included** when Provider/operator runs `RouteFinderFleetServer` with `--ors-key` (fair-use daily caps; see [`unit-economics.md`](unit-economics.md)). Owner-operator App Store pricing is deferred until after pilot feedback.
 
 **Signatures**
 
@@ -69,6 +69,8 @@ Ops guide: [README — Fleet LAN server](../README.md#fleet-lan-server-multi-dev
 | Method | Path | Body / notes |
 |---|---|---|
 | `GET` | `/health` | `FleetServerHealthResponse` `{ ok, version }` — public even when API key set |
+| `GET` | `/v1/proxy/status` | `{ orsConfigured, routesToday, routeDailyCap, geocodeToday, geocodeDailyCap }` |
+| `POST` | `/v1/proxy/ors/v2/directions/...` | Operator-paid ORS proxy (requires `--ors-key`) |
 | `POST` | `/v1/orgs` | `{ "name": "…" }` → `FleetOrg` |
 | `GET` | `/v1/orgs` | List orgs |
 | `GET` | `/v1/orgs/{orgId}/vehicles` | List vehicles |

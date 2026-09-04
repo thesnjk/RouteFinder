@@ -1,9 +1,12 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import './App.css'
 import { FleetApiClient } from './fleet/client'
-import type { FleetOrg, FleetTrip, FleetVehicle } from './fleet/types'
+import type { FleetOrg, FleetProxyStatus, FleetTrip, FleetVehicle } from './fleet/types'
+import { TripMapPreview } from './TripMapPreview'
+import { VehicleQR } from './VehicleQR'
 
 const STORAGE_KEY = 'routefinder.webDispatch.connection'
+const ONBOARDING_KEY = 'routefinder.webDispatch.onboardingDone'
 /** Dev default: Vite proxy avoids CORS. Direct :8080 works once fleet CORS is enabled. */
 const DEFAULT_BASE_URL = '/fleet'
 
@@ -12,7 +15,6 @@ function loadConnection(): { baseUrl: string; apiKey: string } {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as { baseUrl: string; apiKey: string }
-      // Migrate the old default that triggered browser CORS failures.
       if (parsed.baseUrl === 'http://127.0.0.1:8080' || parsed.baseUrl === 'http://localhost:8080') {
         return { baseUrl: DEFAULT_BASE_URL, apiKey: parsed.apiKey ?? '' }
       }
@@ -28,6 +30,8 @@ export default function App() {
   const [baseUrl, setBaseUrl] = useState(() => loadConnection().baseUrl)
   const [apiKey, setApiKey] = useState(() => loadConnection().apiKey)
   const [health, setHealth] = useState<string>('Not checked')
+  const [healthOk, setHealthOk] = useState(false)
+  const [proxyStatus, setProxyStatus] = useState<FleetProxyStatus | null>(null)
   const [orgs, setOrgs] = useState<FleetOrg[]>([])
   const [vehicles, setVehicles] = useState<FleetVehicle[]>([])
   const [orgId, setOrgId] = useState('')
@@ -37,8 +41,13 @@ export default function App() {
   const [originLabel, setOriginLabel] = useState('Norwich')
   const [destLabel, setDestLabel] = useState("King's Lynn")
   const [lastTrip, setLastTrip] = useState<FleetTrip | null>(null)
+  const [liveTrip, setLiveTrip] = useState<FleetTrip | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(
+    () => localStorage.getItem(ONBOARDING_KEY) !== '1',
+  )
+  const [tourStep, setTourStep] = useState(0)
 
   const client = useMemo(
     () => new FleetApiClient({ baseUrl, apiKey }),
@@ -64,6 +73,67 @@ export default function App() {
     [],
   )
 
+  const refreshHealth = useCallback(async () => {
+    persist()
+    const h = await client.health()
+    setHealthOk(h.ok)
+    setHealth(h.ok ? `Connected · version ${h.version}` : 'not ok')
+    try {
+      setProxyStatus(await client.proxyStatus())
+    } catch {
+      setProxyStatus(null)
+    }
+  }, [client, persist])
+
+  useEffect(() => {
+    if (!vehicleId) {
+      setLiveTrip(null)
+      return
+    }
+    let cancelled = false
+    const tick = async () => {
+      try {
+        const trip = await client.activeTrip(vehicleId)
+        if (!cancelled) setLiveTrip(trip)
+      } catch {
+        /* ignore poll errors */
+      }
+    }
+    void tick()
+    const id = window.setInterval(() => void tick(), 5000)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [client, vehicleId])
+
+  const selectedVehicle = vehicles.find((v) => v.id === vehicleId)
+  const snapshotTrip = liveTrip ?? lastTrip
+
+  const finishOnboarding = () => {
+    localStorage.setItem(ONBOARDING_KEY, '1')
+    setShowOnboarding(false)
+  }
+
+  const tourCopy = [
+    {
+      title: 'Welcome to Web Dispatch',
+      body: 'This browser console talks to RouteFinderFleetServer on your office LAN. Same Wi‑Fi as driver phones. Not a hosted cloud portal.',
+    },
+    {
+      title: '1 · Connect',
+      body: 'Use /fleet in local dev (Vite proxy) or http://<mac-ip>:8080 on the office network. Tap Test /health until it says Connected.',
+    },
+    {
+      title: '2 · Org & vehicle',
+      body: 'Create an organisation, register a vehicle, then show the QR to the driver (or copy the UUID into the iOS Fleet setup wizard).',
+    },
+    {
+      title: '3 · Push trip',
+      body: 'Push a demo Norwich → King\'s Lynn trip. The driver toast appears within ~5 seconds. Snapshot panel updates when the phone reports ETA / status.',
+    },
+  ]
+
   return (
     <div className="app">
       <header>
@@ -71,7 +141,34 @@ export default function App() {
         <p className="muted">
           LAN console for <code>RouteFinderFleetServer</code> — not a hosted SaaS portal.
         </p>
+        <div className={`health-pill ${healthOk ? 'health-pill--ok' : ''}`}>{health}</div>
       </header>
+
+      {showOnboarding ? (
+        <section className="panel onboarding">
+          <h2>{tourCopy[tourStep].title}</h2>
+          <p>{tourCopy[tourStep].body}</p>
+          <div className="row">
+            {tourStep > 0 ? (
+              <button type="button" onClick={() => setTourStep((s) => s - 1)}>
+                Back
+              </button>
+            ) : null}
+            {tourStep < tourCopy.length - 1 ? (
+              <button type="button" onClick={() => setTourStep((s) => s + 1)}>
+                Next
+              </button>
+            ) : (
+              <button type="button" onClick={finishOnboarding}>
+                Start dispatching
+              </button>
+            )}
+            <button type="button" className="button-secondary" onClick={finishOnboarding}>
+              Skip
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <section className="panel">
         <h2>Connection</h2>
@@ -92,20 +189,28 @@ export default function App() {
           />
         </label>
         <div className="row">
-          <button
-            disabled={busy}
-            onClick={() =>
-              run(async () => {
-                persist()
-                const h = await client.health()
-                setHealth(h.ok ? `ok · version ${h.version}` : 'not ok')
-              })
-            }
-          >
+          <button disabled={busy} onClick={() => run(refreshHealth)}>
             Test /health
           </button>
-          <span className="muted">{health}</span>
+          <button
+            type="button"
+            className="button-secondary"
+            onClick={() => {
+              setShowOnboarding(true)
+              setTourStep(0)
+            }}
+          >
+            Show tour
+          </button>
         </div>
+        {proxyStatus ? (
+          <p className="muted">
+            ORS proxy:{' '}
+            {proxyStatus.orsConfigured
+              ? `on · ${proxyStatus.routesToday}/${proxyStatus.routeDailyCap} routes today`
+              : 'off (start server with --ors-key so drivers need no HeiGIT keys)'}
+          </p>
+        ) : null}
       </section>
 
       <section className="panel">
@@ -193,10 +298,8 @@ export default function App() {
             ))}
           </select>
         </label>
-        {vehicleId ? (
-          <p className="mono">
-            Driver vehicle UUID (paste into iOS Settings → Fleet): <code>{vehicleId}</code>
-          </p>
+        {vehicleId && selectedVehicle ? (
+          <VehicleQR vehicleId={vehicleId} label={selectedVehicle.label} />
         ) : null}
       </section>
 
@@ -211,8 +314,8 @@ export default function App() {
           <input value={destLabel} onChange={(e) => setDestLabel(e.target.value)} />
         </label>
         <p className="muted">
-          Demo coordinates: Norwich → King&apos;s Lynn. Geocoding / MapLibre preview comes in a follow-up.
-          Dev tip: use base URL <code>/fleet</code> (Vite proxy) if direct :8080 fails with CORS.
+          Demo coordinates: Norwich → King&apos;s Lynn. Dev tip: use base URL <code>/fleet</code> if
+          direct :8080 fails with CORS.
         </p>
         <button
           disabled={busy || !orgId || !vehicleId}
@@ -222,32 +325,42 @@ export default function App() {
               const trip = client.buildDemoTrip(orgId, vehicleId, originLabel, destLabel)
               const pushed = await client.pushTrip(trip)
               setLastTrip(pushed)
+              setLiveTrip(pushed)
             })
           }
         >
           Push trip
         </button>
-        {lastTrip ? (
+      </section>
+
+      <section className="panel">
+        <h2>Driver snapshot</h2>
+        {snapshotTrip ? (
           <div className="status">
             <p>
-              Pushed <code>{lastTrip.id}</code> · status <strong>{lastTrip.status}</strong>
+              Trip <code>{snapshotTrip.id}</code> · status <strong>{snapshotTrip.status}</strong>
+              {snapshotTrip.physicsETASeconds != null
+                ? ` · physics ETA ${Math.round(snapshotTrip.physicsETASeconds / 60)} min`
+                : ' · waiting for driver ETA'}
             </p>
             <ul>
-              {lastTrip.stops.map((s) => (
+              {snapshotTrip.stops.map((s) => (
                 <li key={s.id}>
                   {s.role}: {s.label} ({s.latitude.toFixed(4)}, {s.longitude.toFixed(4)})
                 </li>
               ))}
             </ul>
           </div>
-        ) : null}
+        ) : (
+          <p className="muted">No active trip yet. Push a trip, then wait for the driver phone.</p>
+        )}
+        <TripMapPreview trip={snapshotTrip} />
       </section>
 
       {error ? <p className="error">{error}</p> : null}
 
       <footer className="muted">
-        See Docs/pilot-fleet-pack.md for the API contract. Hosted multi-tenant SaaS is out of scope for
-        v1.
+        Operator guide: Docs/web-dispatch-operator-guide.md · API contract: Docs/pilot-fleet-pack.md
       </footer>
     </div>
   )

@@ -18,6 +18,7 @@ struct SettingsSheet: View {
     @State private var showInspectionSheet = false
     @State private var showDispatchConsole = false
     @State private var showProductOnboarding = false
+    @State private var showFleetSetupWizard = false
     #if os(macOS)
     @State private var requireLoginEachLaunch = SessionWorkspaceSettings.loadRequireLoginEachLaunch()
     #endif
@@ -45,6 +46,9 @@ struct SettingsSheet: View {
             }
             .sheet(isPresented: $showProductOnboarding) {
                 ProductOnboardingSheet()
+            }
+            .sheet(isPresented: $showFleetSetupWizard) {
+                FleetSetupWizardView(viewModel: viewModel)
             }
         }
         #if os(macOS)
@@ -725,6 +729,21 @@ struct SettingsSheet: View {
             Text("HeiGIT API Key")
                 .font(RFFont.sectionTitle)
 
+            if viewModel.usesFleetORSProxy {
+                Text("Included with your fleet plan — routing goes through the office fleet server (operator-paid). You do not need a personal HeiGIT key on this device while remote fleet sync is on.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                DisclosureGroup("Advanced: local HeiGIT key (optional offline / solo use)") {
+                    orsKeyFields
+                }
+            } else {
+                orsKeyFields
+            }
+        }
+    }
+
+    private var orsKeyFields: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.sm) {
             if viewModel.hasORSAPIKey {
                 Text("Saved in Keychain as •••••••• — enter a new key to replace.")
                     .font(.caption2)
@@ -741,11 +760,11 @@ struct SettingsSheet: View {
                 }
 
             #if os(iOS)
-            Text("Required for geocoding (`api.heigit.org/pelias/v1`) and HGV routing (`api.heigit.org/openrouteservice/v2`). Obtain a key from HeiGIT. Paste the key, then tap Save API Key — typing alone does not save. After an update, re-save once if the Saved line disappears.")
+            Text("Required for geocoding and HGV routing when not using the fleet ORS proxy. Obtain a key from HeiGIT. Paste the key, then tap Save API Key.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             #else
-            Text("Required for geocoding (`api.heigit.org/pelias/v1`) and HGV routing (`api.heigit.org/openrouteservice/v2`). Obtain a key from HeiGIT. Use the signed RouteFinderMac Xcode scheme. After an update, re-save this key once if it looks empty. If Keychain still prompts every launch, delete `com.routefinder.vault.*` in Keychain Access (login keychain) and re-save here.")
+            Text("Required for geocoding and HGV routing when not using the fleet ORS proxy. Obtain a key from HeiGIT. Use the signed RouteFinderMac Xcode scheme.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             #endif
@@ -756,8 +775,8 @@ struct SettingsSheet: View {
             .buttonStyle(.borderless)
             .accessibilityIdentifier("settingsSaveORSAPIKey")
 
-            if let confirmation = viewModel.settingsSaveConfirmation {
-                Text(confirmation)
+            if viewModel.settingsSaveConfirmation != nil {
+                Text(viewModel.settingsSaveConfirmation ?? "")
                     .font(.caption2)
                     .foregroundStyle(.green)
                     .accessibilityIdentifier("settingsORSAPIKeySaved")
@@ -874,6 +893,12 @@ struct SettingsSheet: View {
             Text("Fleet dispatch")
                 .font(RFFont.sectionTitle)
 
+            Button("Open fleet setup wizard") {
+                showFleetSetupWizard = true
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+
             Toggle("Use remote fleet server", isOn: $viewModel.useRemoteFleetServer)
                 .onChange(of: viewModel.useRemoteFleetServer) { _, _ in
                     viewModel.saveFleetServerURLFromSettings()
@@ -965,7 +990,7 @@ struct SettingsSheet: View {
                 .textFieldStyle(GlassTextFieldStyle())
                 .onSubmit { viewModel.saveFleetVehicleIdFromSettings() }
 
-            Text("Vehicle id must match the dispatch console picker. Enable remote server for multi-device sync over LAN.")
+            Text("Vehicle id must match the dispatch console QR / picker. Prefer the fleet setup wizard to scan QR.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 

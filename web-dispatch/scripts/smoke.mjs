@@ -21,4 +21,6 @@ assert.equal(joinUrl('http://127.0.0.1:8080', '/health'), 'http://127.0.0.1:8080
 assert.equal(joinUrl('http://127.0.0.1:8080/', 'v1/orgs'), 'http://127.0.0.1:8080/v1/orgs')
 assert.equal(authHeaders('').Authorization, undefined)
 assert.equal(authHeaders('secret').Authorization, 'Bearer secret')
+assert.equal(joinUrl('http://127.0.0.1:8080', '/v1/proxy/status'), 'http://127.0.0.1:8080/v1/proxy/status')
+assert.equal(joinUrl('/fleet', '/v1/proxy/status'), '/fleet/v1/proxy/status')
 console.log('fleet types smoke ok')

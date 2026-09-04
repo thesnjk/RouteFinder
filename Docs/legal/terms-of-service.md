@@ -16,7 +16,7 @@ Subject to these Terms and any written agreement, Provider grants Operator a lim
 
 ## 2. Accounts and security
 
-Operator is responsible for credentials, API keys, fleet vehicle UUIDs, and who can access the dispatch Mac / web console / LAN server. Operator must not share production API keys publicly.
+Operator is responsible for credentials, fleet vehicle UUIDs, and who can access the dispatch Mac / web console / LAN server. Where Provider supplies operator-paid routing via the fleet ORS proxy, Provider’s API keys must not be extracted or redistributed. Operator must not share production API keys publicly.
 
 ---
 
@@ -28,6 +28,7 @@ Operator must not:
 - Attempt unauthorised access to other Operators’ fleets or servers
 - Redistribute the Software except as allowed in writing
 - Misrepresent Provider’s advisory outputs as certified legal compliance
+- Circumvent fleet ORS proxy fair-use caps or scrape Provider-held third-party API keys
 
 ---
 
@@ -43,9 +44,9 @@ Default architecture is Operator LAN. Optional remote URL / TLS is Operator’s 
 
 ---
 
-## 6. Fees
+## 6. Fees and included APIs
 
-Pilot programmes may be free under a signed pilot agreement. Ongoing fees (e.g. dispatch-desk / per-vehicle) are agreed separately. App Store pricing, if offered, is shown at purchase time.
+Pilot programmes may be free under a signed pilot agreement. Ongoing fees (e.g. dispatch-desk / per-vehicle) are agreed separately. Where the subscription includes **operator-paid routing**, Provider covers HeiGIT ORS (and agreed optional providers) subject to published **fair-use daily caps** on the fleet proxy. Excess usage may be throttled (HTTP 429) or billed under a written addendum. App Store pricing, if offered, is shown at purchase time.
 
 ---
 

@@ -22,6 +22,7 @@ struct ProductOnboardingSheet: View {
                     walkaroundSection
                     breakNowSection
                     lezSection
+                    fleetSection
                     searchLanguageSection
                     quickReferenceSection
                     if requireLiabilityAcceptance {
@@ -155,6 +156,18 @@ struct ProductOnboardingSheet: View {
             icon: "leaf.fill",
             body: """
             UK LEZ and ULEZ crossings trigger restriction banners with Euro class guidance. Set your emission class in Settings → Vehicle and enable Avoid non-compliant LEZ when routing.
+            """
+        )
+    }
+
+    private var fleetSection: some View {
+        onboardingSection(
+            title: "Fleet dispatch (office LAN)",
+            icon: "antenna.radiowaves.left.and.right",
+            body: """
+            Drivers: Settings → Fleet & Dispatch → Open fleet setup wizard — Discover the office Mac, Test connection, Scan the vehicle QR from Mac or web dispatch.
+
+            Dispatchers: start RouteFinderFleetServer with --ors-key so routing is operator-paid; push trips from the Mac Dispatch window or the web console. No personal HeiGIT key needed on driver phones when the proxy is on.
             """
         )
     }

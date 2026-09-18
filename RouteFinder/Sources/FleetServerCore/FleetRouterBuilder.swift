@@ -95,6 +95,11 @@ public enum FleetRouterBuilder {
             return try jsonResponse(try await store.applySnapshot(snapshot))
         }
 
+        router.post("v1/telematics/ingest") { request, context async throws -> Response in
+            let body = try await request.decode(as: TelematicsIngestRequest.self, context: context)
+            return try jsonResponse(try await store.ingestTelematics(body))
+        }
+
         return router
     }
 

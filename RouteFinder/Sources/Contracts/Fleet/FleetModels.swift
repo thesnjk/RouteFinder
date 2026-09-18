@@ -95,6 +95,12 @@ public struct FleetTrip: Sendable, Hashable, Codable, Equatable, Identifiable {
     public var latestInspectionSummary: TripBriefInspectionSummary?
     /// Base64-encoded inspection PDF attachment for dispatch review.
     public var inspectionReportPDFBase64: String?
+    /// Latest driver latitude merged from snapshots (WGS84).
+    public var driverLatitude: Double?
+    /// Latest driver longitude merged from snapshots (WGS84).
+    public var driverLongitude: Double?
+    /// When the driver location was recorded on device.
+    public var driverLocationRecordedAt: Date?
     public var updatedAt: Date
 
     public init(
@@ -110,6 +116,9 @@ public struct FleetTrip: Sendable, Hashable, Codable, Equatable, Identifiable {
         predictedLayby: LaybyAdvisory? = nil,
         latestInspectionSummary: TripBriefInspectionSummary? = nil,
         inspectionReportPDFBase64: String? = nil,
+        driverLatitude: Double? = nil,
+        driverLongitude: Double? = nil,
+        driverLocationRecordedAt: Date? = nil,
         updatedAt: Date = Date()
     ) {
         self.id = id
@@ -124,6 +133,9 @@ public struct FleetTrip: Sendable, Hashable, Codable, Equatable, Identifiable {
         self.predictedLayby = predictedLayby
         self.latestInspectionSummary = latestInspectionSummary
         self.inspectionReportPDFBase64 = inspectionReportPDFBase64
+        self.driverLatitude = driverLatitude
+        self.driverLongitude = driverLongitude
+        self.driverLocationRecordedAt = driverLocationRecordedAt
         self.updatedAt = updatedAt
     }
 }
@@ -141,6 +153,12 @@ public struct FleetTripSnapshot: Sendable, Hashable, Codable, Equatable {
     public var latestInspectionSummary: TripBriefInspectionSummary?
     /// Optional base64 inspection PDF for dispatch download.
     public var inspectionReportPDFBase64: String?
+    /// Driver latitude at publish time (WGS84).
+    public var driverLatitude: Double?
+    /// Driver longitude at publish time (WGS84).
+    public var driverLongitude: Double?
+    /// When the driver location was recorded on device.
+    public var driverLocationRecordedAt: Date?
     public var updatedAt: Date
 
     public init(
@@ -152,6 +170,9 @@ public struct FleetTripSnapshot: Sendable, Hashable, Codable, Equatable {
         predictedLayby: LaybyAdvisory? = nil,
         latestInspectionSummary: TripBriefInspectionSummary? = nil,
         inspectionReportPDFBase64: String? = nil,
+        driverLatitude: Double? = nil,
+        driverLongitude: Double? = nil,
+        driverLocationRecordedAt: Date? = nil,
         updatedAt: Date = Date()
     ) {
         self.tripId = tripId
@@ -162,6 +183,9 @@ public struct FleetTripSnapshot: Sendable, Hashable, Codable, Equatable {
         self.predictedLayby = predictedLayby
         self.latestInspectionSummary = latestInspectionSummary
         self.inspectionReportPDFBase64 = inspectionReportPDFBase64
+        self.driverLatitude = driverLatitude
+        self.driverLongitude = driverLongitude
+        self.driverLocationRecordedAt = driverLocationRecordedAt
         self.updatedAt = updatedAt
     }
 }

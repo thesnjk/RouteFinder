@@ -1,7 +1,7 @@
 import Contracts
 import SwiftUI
 
-/// Guided first-run / re-entry flow for pairing a driver device to the LAN fleet server.
+/// Guided first-run / re-entry flow for pairing a driver device to LAN or hosted fleet.
 struct FleetSetupWizardView: View {
     @Bindable var viewModel: RouteViewModel
     @Environment(\.dismiss) private var dismiss
@@ -16,6 +16,9 @@ struct FleetSetupWizardView: View {
 
     @State private var step: Step = .enableRemote
     @State private var showScanner = false
+    @State private var connectionKind: FleetConnectionKind = FleetWorkspaceSettings.loadFleetConnectionKind()
+
+    private var isHosted: Bool { connectionKind == .hosted }
 
     var body: some View {
         NavigationStack {
@@ -71,40 +74,64 @@ struct FleetSetupWizardView: View {
                 .onChange(of: viewModel.useRemoteFleetServer) { _, _ in
                     viewModel.saveFleetServerURLFromSettings()
                 }
-            Text("Turn this on so trip pushes from the office reach this phone over Wi‑Fi.")
-                .font(RFFont.caption)
-                .foregroundStyle(.secondary)
+            Picker("Connection", selection: $connectionKind) {
+                Text("Office LAN").tag(FleetConnectionKind.lan)
+                Text("Hosted (HTTPS)").tag(FleetConnectionKind.hosted)
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: connectionKind) { _, kind in
+                FleetWorkspaceSettings.saveFleetConnectionKind(kind)
+            }
+            Text(
+                isHosted
+                    ? "Use a hosted fleet URL from your operator (https://…). Works on cellular — no office Wi‑Fi required."
+                    : "Turn this on so trip pushes from the office reach this phone over Wi‑Fi."
+            )
+            .font(RFFont.caption)
+            .foregroundStyle(.secondary)
 
         case .discover:
-            TextField("Fleet server URL", text: $viewModel.fleetServerURLText)
+            TextField(
+                isHosted ? "Hosted fleet URL (https://…)" : "Fleet server URL",
+                text: $viewModel.fleetServerURLText
+            )
                 .textFieldStyle(GlassTextFieldStyle())
                 #if os(iOS)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.URL)
                 #endif
-            SecureField("Fleet API key (optional)", text: $viewModel.fleetServerAPIKeyText)
+            SecureField(
+                isHosted ? "Org bearer token" : "Fleet API key (optional)",
+                text: $viewModel.fleetServerAPIKeyText
+            )
                 .textFieldStyle(GlassTextFieldStyle())
-            Button("Discover on LAN") {
-                Task { await viewModel.discoverFleetServersOnLAN() }
-            }
-            .buttonStyle(.bordered)
-            .disabled(viewModel.isDiscoveringFleetServers)
-
-            if let status = viewModel.fleetDiscoveryStatus {
-                Text(status).font(RFFont.caption).foregroundStyle(.secondary)
-            }
-            ForEach(viewModel.discoveredFleetServers) { server in
-                Button {
-                    viewModel.applyDiscoveredFleetServer(server)
-                } label: {
-                    VStack(alignment: .leading) {
-                        Text(server.displayName)
-                        Text(server.baseURL.absoluteString)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
+            if isHosted {
+                Text("Example: https://fleet.yourdomain.com — paste the org token from your operator. Never paste the operator ORS key.")
+                    .font(RFFont.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Button("Discover on LAN") {
+                    Task { await viewModel.discoverFleetServersOnLAN() }
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.bordered)
+                .disabled(viewModel.isDiscoveringFleetServers)
+
+                if let status = viewModel.fleetDiscoveryStatus {
+                    Text(status).font(RFFont.caption).foregroundStyle(.secondary)
+                }
+                ForEach(viewModel.discoveredFleetServers) { server in
+                    Button {
+                        viewModel.applyDiscoveredFleetServer(server)
+                    } label: {
+                        VStack(alignment: .leading) {
+                            Text(server.displayName)
+                            Text(server.baseURL.absoluteString)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .buttonStyle(.borderless)
+                }
             }
 
         case .test:
@@ -117,9 +144,13 @@ struct FleetSetupWizardView: View {
                     .font(RFFont.caption)
                     .foregroundStyle(status.contains("Connected") ? .green : .secondary)
             }
-            Text("Same Wi‑Fi as the dispatch Mac. Routing API keys stay on the server when ORS proxy is enabled.")
-                .font(RFFont.caption)
-                .foregroundStyle(.secondary)
+            Text(
+                isHosted
+                    ? "Hosted gateway must respond on /health. Routing keys stay on the server — use your org bearer token only."
+                    : "Same Wi‑Fi as the dispatch Mac. Routing API keys stay on the server when ORS proxy is enabled."
+            )
+            .font(RFFont.caption)
+            .foregroundStyle(.secondary)
 
         case .vehicle:
             TextField("Vehicle UUID", text: $viewModel.fleetVehicleIdText)
@@ -143,8 +174,12 @@ struct FleetSetupWizardView: View {
             Label("You're paired", systemImage: "checkmark.circle.fill")
                 .font(RFFont.sectionTitle)
                 .foregroundStyle(.green)
-            Text("When dispatch pushes a trip, you'll get a toast within a few seconds. Find route → Rehearse → Start as usual. Cloud routing uses the fleet server key when configured — no HeiGIT key needed on this device.")
-                .font(RFFont.body)
+            Text(
+                isHosted
+                    ? "When dispatch pushes a trip, you'll get a toast within a few seconds — even on cellular. Find route → Rehearse → Start as usual. Cloud routing uses the hosted gateway key — no HeiGIT key needed on this device."
+                    : "When dispatch pushes a trip, you'll get a toast within a few seconds. Find route → Rehearse → Start as usual. Cloud routing uses the fleet server key when configured — no HeiGIT key needed on this device."
+            )
+            .font(RFFont.body)
             Button("Check for dispatch now") {
                 Task { await viewModel.pollAndApplyFleetDispatch() }
             }
@@ -163,6 +198,7 @@ struct FleetSetupWizardView: View {
                 Button("Finish") {
                     viewModel.saveFleetServerURLFromSettings()
                     viewModel.saveFleetVehicleIdFromSettings()
+                    FleetWorkspaceSettings.saveFleetConnectionKind(connectionKind)
                     dismiss()
                 }
                 .modifier(GlassButton())
@@ -170,6 +206,7 @@ struct FleetSetupWizardView: View {
                 Button("Next") {
                     if step == .enableRemote {
                         viewModel.useRemoteFleetServer = true
+                        FleetWorkspaceSettings.saveFleetConnectionKind(connectionKind)
                         viewModel.saveFleetServerURLFromSettings()
                     }
                     if step == .discover {
@@ -191,7 +228,12 @@ struct FleetSetupWizardView: View {
         case .enableRemote:
             return true
         case .discover:
-            return !viewModel.fleetServerURLText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            let text = viewModel.fleetServerURLText.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty, let url = URL(string: text), let scheme = url.scheme?.lowercased() else {
+                return false
+            }
+            if isHosted { return scheme == "https" }
+            return scheme == "http" || scheme == "https"
         case .test:
             return (viewModel.fleetServerConnectionStatus ?? "").contains("Connected")
                 || !viewModel.fleetServerURLText.isEmpty
@@ -211,7 +253,7 @@ struct FleetSetupWizardView: View {
     private func title(for step: Step) -> String {
         switch step {
         case .enableRemote: return "Enable fleet sync"
-        case .discover: return "Find the office server"
+        case .discover: return isHosted ? "Enter hosted URL" : "Find the office server"
         case .test: return "Confirm connection"
         case .vehicle: return "Pair this vehicle"
         case .done: return "Ready"
@@ -220,8 +262,14 @@ struct FleetSetupWizardView: View {
 
     private func subtitle(for step: Step) -> String {
         switch step {
-        case .enableRemote: return "Connect this device to RouteFinderFleetServer on the office LAN."
-        case .discover: return "Use Bonjour discovery or paste the Mac’s LAN URL (e.g. http://192.168.1.10:8080)."
+        case .enableRemote:
+            return isHosted
+                ? "Connect this device to your operator’s hosted fleet gateway."
+                : "Connect this device to RouteFinderFleetServer on the office LAN."
+        case .discover:
+            return isHosted
+                ? "Paste the HTTPS base URL (e.g. https://fleet.yourdomain.com) and org bearer token."
+                : "Use Bonjour discovery or paste the Mac’s LAN URL (e.g. http://192.168.1.10:8080)."
         case .test: return "Make sure /health responds before pairing a vehicle."
         case .vehicle: return "Each truck has one UUID from the dispatch console."
         case .done: return "Setup complete for this device."

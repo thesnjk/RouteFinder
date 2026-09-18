@@ -36,20 +36,31 @@ public actor OpenRouteServiceGeocoder {
     private let baseURL: URL
     private let cache: GeocoderCache
     private let hitCache: DiskGeocodeCache
+    private let fleetProxyAuthKey: String?
+    private let allowLANHTTP: Bool
     private var lastRequestTime: Date = .distantPast
     private let minInterval: TimeInterval = 0.25
 
     /// Creates an OpenRouteService geocoder with optional cache.
+    ///
+    /// - Parameters:
+    ///   - fleetProxyAuthKey: When set, targets the fleet Pelias proxy with Bearer auth (no `api_key` query).
+    ///   - allowLANHTTP: When true, permits `http://` private-network fleet proxy URLs.
     public init(
         baseURL: URL = URL(string: ORSAPIDefaults.peliasBaseURL)!,
         session: URLSession = SecureURLSession.shared,
         cache: GeocoderCache = GeocoderCache(),
-        hitCache: DiskGeocodeCache = DiskGeocodeCache()
+        hitCache: DiskGeocodeCache = DiskGeocodeCache(),
+        fleetProxyAuthKey: String? = nil,
+        allowLANHTTP: Bool = false
     ) {
         self.baseURL = baseURL
         self.session = session
         self.cache = cache
         self.hitCache = hitCache
+        let trimmedFleetKey = fleetProxyAuthKey?.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.fleetProxyAuthKey = (trimmedFleetKey?.isEmpty == false) ? trimmedFleetKey : nil
+        self.allowLANHTTP = allowLANHTTP
     }
 
     /// Searches for places near the given coordinate (viewport-biased typeahead).
@@ -164,8 +175,11 @@ public actor OpenRouteServiceGeocoder {
         let trimmed = query.trimmingCharacters(in: .whitespaces)
         guard trimmed.count >= 2 else { return [] }
 
-        let key = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !key.isEmpty else {
+        let usesFleetProxy = fleetProxyAuthKey != nil
+        let key = usesFleetProxy
+            ? (fleetProxyAuthKey ?? "")
+            : apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !usesFleetProxy, key.isEmpty {
             throw OpenRouteServiceGeocoderError.missingAPIKey
         }
 
@@ -180,13 +194,22 @@ public actor OpenRouteServiceGeocoder {
             resolvingAgainstBaseURL: false
         )!
         var items = queryItems
-        items.append(URLQueryItem(name: "api_key", value: key))
+        if !usesFleetProxy {
+            items.append(URLQueryItem(name: "api_key", value: key))
+        }
         components.queryItems = items
 
         guard let url = components.url else { return [] }
 
+        let scheme = url.scheme?.lowercased()
+        let schemeOK = scheme == "https" || (allowLANHTTP && scheme == "http")
+        guard schemeOK else { return [] }
+
         var request = URLRequest(url: url)
         request.applyAppIdentity()
+        if usesFleetProxy {
+            request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        }
 
         let policy = RemoteRequestPolicy.default
         let (data, http) = try await policy.data(

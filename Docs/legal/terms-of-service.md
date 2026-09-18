@@ -1,10 +1,12 @@
 # RouteFinder Terms of Service
 
 **Status:** Draft for solicitor review — not legal advice.  
-**Last updated:** 2026-09-03  
-**Provider:** RouteFinder (update with Ltd company name).
+**Last updated:** 2026-09-17  
+**Provider:** *[Ltd company name]* (replace after incorporation).
 
-These Terms govern use of RouteFinder software, the fleet LAN server, web dispatch console (when provided), and related pilot services. Separate **Driver Terms** in the app govern advisory routing liability. A signed **pilot agreement** may add or modify terms for a specific Operator.
+These Terms govern use of RouteFinder software, the fleet LAN server, **web dispatch** console, **Android** fleet driver app, optional **hosted gateway**, and related pilot services. Separate **Driver Terms** in the app ([`driver-terms.md`](driver-terms.md)) govern advisory routing liability. A signed **pilot agreement** may add or modify terms for a specific Operator.
+
+Hosted copy (after you publish): `https://routefinder.app/legal/terms` — replace domain to match [`site/README.md`](site/README.md).
 
 ---
 
@@ -16,7 +18,7 @@ Subject to these Terms and any written agreement, Provider grants Operator a lim
 
 ## 2. Accounts and security
 
-Operator is responsible for credentials, fleet vehicle UUIDs, and who can access the dispatch Mac / web console / LAN server. Where Provider supplies operator-paid routing via the fleet ORS proxy, Provider’s API keys must not be extracted or redistributed. Operator must not share production API keys publicly.
+Operator is responsible for credentials, fleet vehicle UUIDs, org bearer tokens, and who can access the dispatch Mac / web console / LAN server / hosted gateway. Where Provider or Operator supplies operator-paid routing via the fleet ORS proxy, API keys must not be extracted or redistributed. Operator must not share production API keys or gateway tokens publicly.
 
 ---
 
@@ -27,26 +29,31 @@ Operator must not:
 - Use RouteFinder to violate road traffic, DVSA, or Traffic Commissioner rules
 - Attempt unauthorised access to other Operators’ fleets or servers
 - Redistribute the Software except as allowed in writing
-- Misrepresent Provider’s advisory outputs as certified legal compliance
-- Circumvent fleet ORS proxy fair-use caps or scrape Provider-held third-party API keys
+- Misrepresent Provider’s advisory outputs as certified legal compliance (including LEZ envelopes, UK toll hints, HOS/layby advice, or telematics stubs)
+- Circumvent fleet ORS / Pelias proxy fair-use caps or scrape Provider-held third-party API keys
+- Treat telematics CSV / ingest as a legal Vehicle Unit or tachograph record
 
 ---
 
 ## 4. Advisory services — no warranty
 
-Routing, physics rehearsal, LEZ awareness, HOS/layby advice, and turn-by-turn guidance are **advisory planning aids**. Physical road signs, bridge plates, tachograph rules, and live conditions always supersede the app. Provider gives **no warranty**, **no uptime SLA**, and **no liability** for routing errors, bridge strikes, fines, lost time, or regulatory action. Operator remains responsible for compliance.
+Routing, physics rehearsal, LEZ awareness, **UK toll advisories** (named hints only — not tariffs), HOS/layby advice, parking partner deep links, and turn-by-turn guidance are **advisory planning aids**. Physical road signs, bridge plates, tachograph rules, and live conditions always supersede the app. Provider gives **no warranty**, **no uptime SLA**, and **no liability** for routing errors, bridge strikes, fines, lost time, or regulatory action. Operator remains responsible for compliance.
 
 ---
 
-## 5. Fleet LAN and optional remote access
+## 5. Fleet LAN, snapshots, and optional remote access
 
-Default architecture is Operator LAN. Optional remote URL / TLS is Operator’s choice and Operator’s network risk. Hosted multi-tenant SaaS is not included unless separately agreed.
+Default architecture is Operator LAN (`RouteFinderFleetServer` + Bonjour). Driver apps may publish **periodic GPS fields** on trip snapshots for a dispatch map pin — this is **not** continuous live telematics.
+
+Optional remote URL / TLS or a **hosted gateway** VPS is Operator’s choice and Operator’s network and hosting risk. Hosted multi-tenant SaaS with billing UI is not included unless separately agreed.
 
 ---
 
 ## 6. Fees and included APIs
 
-Pilot programmes may be free under a signed pilot agreement. Ongoing fees (e.g. dispatch-desk / per-vehicle) are agreed separately. Where the subscription includes **operator-paid routing**, Provider covers HeiGIT ORS (and agreed optional providers) subject to published **fair-use daily caps** on the fleet proxy. Excess usage may be throttled (HTTP 429) or billed under a written addendum. App Store pricing, if offered, is shown at purchase time.
+Pilot programmes may be free under a signed pilot agreement. Ongoing fees follow the **API-included desk subscription** model in [`../pilot-fleet-pack.md`](../pilot-fleet-pack.md) and [`../unit-economics.md`](../unit-economics.md) (indicative: **£39/mo** for ≤10 trucks on LAN with ORS/Pelias fair-use caps).
+
+Where the subscription includes **operator-paid routing**, Provider or Operator covers HeiGIT ORS (and agreed optional providers) subject to published **fair-use daily caps** on the fleet proxy or hosted gateway (default 2,000 routes / 2,000 geocodes per day). Excess usage may be throttled (HTTP 429) or billed under a written addendum. Owner-operator App Store pricing, if offered, is shown at purchase time and is **deferred** until after pilot feedback.
 
 ---
 

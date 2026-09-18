@@ -73,19 +73,27 @@ import Testing
         status: .rehearsed,
         orderedStopIds: trip.stops.map(\.id),
         physicsETASeconds: 8_400,
-        predictedLayby: layby
+        predictedLayby: layby,
+        driverLatitude: 52.6309,
+        driverLongitude: 1.2974,
+        driverLocationRecordedAt: Date(timeIntervalSince1970: 1_720_000_000)
     )
     let updated = try await client.applySnapshot(snapshot)
     #expect(updated.predictedLayby?.stop.id == "http-layby")
+    #expect(updated.driverLatitude == 52.6309)
+    #expect(updated.driverLongitude == 1.2974)
 
     let secondClient = HTTPFleetStore(baseURL: baseURL)
     let fetched = try await secondClient.activeTrip(forVehicleId: vehicle.id)
     #expect(fetched?.status == .rehearsed)
     #expect(fetched?.predictedLayby?.stop.label == "Test Layby")
+    #expect(fetched?.driverLatitude == 52.6309)
+    #expect(fetched?.driverLongitude == 1.2974)
 }
 
 @Test func fleetStoreFactoryUsesDiskStoreByDefault() {
     FleetWorkspaceSettings.saveUseRemoteFleetServer(false)
+    FleetWorkspaceSettings.saveFleetServerURL(nil)
     let store = FleetStoreFactory.makeStore()
     #expect(store is DiskFleetStore)
 }

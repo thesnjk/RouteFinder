@@ -8,14 +8,24 @@ import MapKit
 /// Factory helpers for CarPlay trip and route choice construction.
 public enum CarPlayTemplateFactory {
     /// Builds a CarPlay trip from route endpoints and route choices.
+    /// - Parameters:
+    ///   - origin: Start coordinate.
+    ///   - destination: End coordinate.
+    ///   - routeChoices: CarPlay route choice summaries.
+    ///   - originName: Display name for the origin map item (defaults to `"Origin"`).
+    ///   - destinationName: Display name for the destination map item (defaults to `"Destination"`).
+    ///   - routeName: Unused legacy label retained for call-site compatibility.
     public static func makeTrip(
         origin: CLLocationCoordinate2D,
         destination: CLLocationCoordinate2D,
         routeChoices: [CPRouteChoice],
+        originName: String = "Origin",
+        destinationName: String = "Destination",
         routeName: String = "RouteFinder Route"
     ) -> CPTrip {
-        let originItem = mapItem(at: origin, name: "Origin")
-        let destinationItem = mapItem(at: destination, name: "Destination")
+        _ = routeName
+        let originItem = mapItem(at: origin, name: originName)
+        let destinationItem = mapItem(at: destination, name: destinationName)
         return CPTrip(origin: originItem, destination: destinationItem, routeChoices: routeChoices)
     }
 

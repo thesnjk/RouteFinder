@@ -29,15 +29,26 @@ data class FleetDispatchEvent(
     val timestamp: String,
 )
 
-fun FleetTrip.toSnapshotJson(statusOverride: String? = null): JSONObject {
+fun FleetTrip.toSnapshotJson(
+    statusOverride: String? = null,
+    driverLatitude: Double? = null,
+    driverLongitude: Double? = null,
+    driverLocationRecordedAt: String? = null,
+    physicsETASecondsOverride: Double? = null,
+): JSONObject {
     val ordered = JSONArray()
     stops.sortedBy { it.sequence }.forEach { ordered.put(it.id) }
-    return JSONObject()
+    val physics = physicsETASecondsOverride ?: physicsETASeconds
+    val json = JSONObject()
         .put("tripId", id)
         .put("status", statusOverride ?: status)
         .put("orderedStopIds", ordered)
-        .put("physicsETASeconds", physicsETASeconds ?: JSONObject.NULL)
+        .put("physicsETASeconds", physics ?: JSONObject.NULL)
         .put("updatedAt", updatedAt)
+    if (driverLatitude != null) json.put("driverLatitude", driverLatitude)
+    if (driverLongitude != null) json.put("driverLongitude", driverLongitude)
+    if (driverLocationRecordedAt != null) json.put("driverLocationRecordedAt", driverLocationRecordedAt)
+    return json
 }
 
 fun parseTrip(json: JSONObject): FleetTrip {

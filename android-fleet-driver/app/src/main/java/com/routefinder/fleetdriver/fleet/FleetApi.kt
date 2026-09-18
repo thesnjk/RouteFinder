@@ -62,12 +62,26 @@ class FleetApi(
         }
     }
 
-    fun publishSnapshot(trip: FleetTrip, status: String): FleetTrip {
+    fun publishSnapshot(
+        trip: FleetTrip,
+        status: String,
+        driverLatitude: Double? = null,
+        driverLongitude: Double? = null,
+        driverLocationRecordedAt: String? = null,
+        physicsETASeconds: Double? = null,
+    ): FleetTrip {
         val media = "application/json; charset=utf-8".toMediaType()
+        val payload = trip.toSnapshotJson(
+            statusOverride = status,
+            driverLatitude = driverLatitude,
+            driverLongitude = driverLongitude,
+            driverLocationRecordedAt = driverLocationRecordedAt,
+            physicsETASecondsOverride = physicsETASeconds,
+        )
         val request = Request.Builder()
             .url(url("/v1/trips/${trip.id}/snapshot"))
             .auth()
-            .put(trip.toSnapshotJson(status).toString().toRequestBody(media))
+            .put(payload.toString().toRequestBody(media))
             .build()
         client.newCall(request).execute().use { response ->
             val body = response.body?.string().orEmpty()

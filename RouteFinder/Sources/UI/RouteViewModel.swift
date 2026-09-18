@@ -196,6 +196,20 @@ public final class RouteViewModel {
     public var offlineTileStatus: String?
     /// Whether a corridor download is in progress.
     public var isDownloadingOfflineTiles = false
+    /// Fraction 0…1 while downloading offline tiles, otherwise nil.
+    public var offlineDownloadProgress: Double?
+    /// Selected offline download region for Settings.
+    public var selectedOfflineDownloadRegion: OfflineDownloadRegion = .demoNorfolk
+    /// Last telematics CSV import batch (read-only stub).
+    public var telematicsImportBatch: TelematicsImportBatch?
+    /// Error from telematics CSV import, if any.
+    public var telematicsImportError: String?
+    /// Named UK toll advisories intersecting the active route.
+    public var routeTollAdvisories: [UKTollAdvisory] = []
+    /// Next toll advisory within navigation horizon (≈5 km).
+    public var activeTollAdvisory: UKTollAdvisory?
+    /// Distance to ``activeTollAdvisory`` in meters.
+    public var activeTollAdvisoryDistanceMeters: Double?
     /// Whether MapLibre should use a local map pack when present.
     public var useLocalMapStyleWhenPackPresent = VehicleProfileStore.loadUseLocalMapStyleWhenPackPresent()
     /// Human-readable offline map pack status for Settings.
@@ -428,9 +442,9 @@ public final class RouteViewModel {
     }
 
     private let planner = RoutePlanner()
-    private let geocoder = OpenRouteServiceGeocoder()
     private let offlineGraphStore: DiskOfflineGraphStore
     private let mapPackStore = OfflineMapPackStore()
+    private let telematicsImportStore = TelematicsImportStore()
     private let appleGeocodeSearch = AppleGeocodeSearch()
     private let locationResolver = LocationResolver()
     private var vehicleRegistryClient = VehicleRegistryClient()
@@ -676,6 +690,7 @@ public final class RouteViewModel {
                 self?.refreshHazardAheadAnnouncement()
                 self?.sampleTomTomHazardAheadIfNeeded()
                 self?.refreshActiveRoadworksAhead()
+                self?.refreshActiveTollAdvisory()
             }
         }
         navigationCoordinator.session.addDelegate(laneGuidanceNavigationAdapter)
@@ -685,6 +700,23 @@ public final class RouteViewModel {
         CarPlayServices.publish(session: navigationCoordinator.session)
         CarPlayServices.registerDelegate = { [weak self] delegate in
             self?.navigationCoordinator.session.addDelegate(delegate)
+        }
+        CarPlayServices.routeEndpointLabels = { [weak self] in
+            guard let self else { return nil }
+            let origin = self.endpointDisplayLabel(for: self.originWaypoint)
+            let destination = self.endpointDisplayLabel(for: self.destinationWaypoint)
+            guard !origin.isEmpty || !destination.isEmpty else { return nil }
+            return (
+                origin: origin.isEmpty ? "Origin" : origin,
+                destination: destination.isEmpty ? "Destination" : destination
+            )
+        }
+        CarPlayServices.routeChoiceTitle = { [weak self] in
+            guard let self, self.activeDispatchTripId != nil else { return nil }
+            let origin = self.endpointDisplayLabel(for: self.originWaypoint)
+            let destination = self.endpointDisplayLabel(for: self.destinationWaypoint)
+            guard !origin.isEmpty, !destination.isEmpty else { return nil }
+            return "\(origin) → \(destination)"
         }
         voiceGuidanceCoordinator.attach(to: navigationCoordinator.session)
         voiceGuidanceCoordinator.setEnabled(voiceGuidanceEnabled)
@@ -1233,44 +1265,117 @@ public final class RouteViewModel {
         Task { await refreshOfflineMapPackStatus() }
     }
 
-    /// Downloads the small Norfolk demo corridor (MVP). Full UK tiles should be pre-placed.
-    public func downloadDemoOfflineCorridor() async {
+    /// Downloads the selected offline region (Settings picker).
+    public func downloadSelectedOfflineRegion() async {
+        let region = selectedOfflineDownloadRegion
         isDownloadingOfflineTiles = true
-        offlineTileStatus = "Downloading demo corridor tiles…"
-        defer { isDownloadingOfflineTiles = false }
+        offlineDownloadProgress = 0
+        offlineTileStatus = "Downloading \(region.displayName)…"
+        defer {
+            isDownloadingOfflineTiles = false
+            offlineDownloadProgress = nil
+        }
         do {
-            let box = DiskOfflineGraphStore.demoCorridorBoundingBox
+            let box = region.boundingBox
             try await offlineGraphStore.ensureCorridor(
                 minLat: box.minLat,
                 maxLat: box.maxLat,
                 minLon: box.minLon,
-                maxLon: box.maxLon
+                maxLon: box.maxLon,
+                onProgress: { [weak self] completed, total in
+                    Task { @MainActor in
+                        guard total > 0 else { return }
+                        self?.offlineDownloadProgress = Double(completed) / Double(total)
+                        self?.offlineTileStatus = "Downloading \(region.displayName)… \(completed)/\(total)"
+                    }
+                }
             )
             let count = await offlineGraphStore.loadedTileCount()
-            offlineTileStatus = "Demo corridor ready (\(count) tiles). Full UK: pre-place *.graphjson in Application Support/RouteFinder/tiles/"
+            offlineTileStatus = "\(region.displayName) ready (\(count) tiles)."
         } catch {
             offlineTileStatus = error.localizedDescription
         }
     }
 
+    /// Downloads the small Norfolk demo corridor (MVP). Full UK tiles should be pre-placed.
+    public func downloadDemoOfflineCorridor() async {
+        selectedOfflineDownloadRegion = .demoNorfolk
+        await downloadSelectedOfflineRegion()
+    }
+
     /// Attempts to ensure a UK-wide corridor (may request many tiles — prefer pre-placed packs).
     public func downloadUKOfflineCorridor() async {
-        isDownloadingOfflineTiles = true
-        offlineTileStatus = "Ensuring UK corridor (large — prefer pre-placed tiles)…"
-        defer { isDownloadingOfflineTiles = false }
+        selectedOfflineDownloadRegion = .ukCorridor
+        await downloadSelectedOfflineRegion()
+    }
+
+    /// Absolute path to the offline map pack directory for Settings.
+    public var offlineMapPackDirectoryPath: String {
+        OfflineMapPackStore.defaultPackDirectory().path
+    }
+
+    /// Imports a telematics CSV (Geotab/Samsara-style) for read-only display.
+    public func importTelematicsCSV(from url: URL) async {
+        telematicsImportError = nil
         do {
-            let box = DiskOfflineGraphStore.ukBoundingBox
-            try await offlineGraphStore.ensureCorridor(
-                minLat: box.minLat,
-                maxLat: box.maxLat,
-                minLon: box.minLon,
-                maxLon: box.maxLon
+            let accessed = url.startAccessingSecurityScopedResource()
+            defer {
+                if accessed { url.stopAccessingSecurityScopedResource() }
+            }
+            let data = try Data(contentsOf: url)
+            let batch = try TelematicsCSVImporter.parseBatch(
+                data: data,
+                sourceFileName: url.lastPathComponent
             )
-            let count = await offlineGraphStore.loadedTileCount()
-            offlineTileStatus = "UK corridor loaded (\(count) tiles in memory/cache)."
+            try await telematicsImportStore.save(batch)
+            telematicsImportBatch = batch
         } catch {
-            offlineTileStatus = error.localizedDescription + " Place tiles under Application Support/RouteFinder/tiles/ if download is unavailable."
+            telematicsImportError = error.localizedDescription
         }
+    }
+
+    /// Reloads the last telematics import from disk.
+    public func reloadTelematicsImport() async {
+        telematicsImportBatch = await telematicsImportStore.load()
+    }
+
+    /// Clears the last telematics import.
+    public func clearTelematicsImport() async {
+        await telematicsImportStore.clear()
+        telematicsImportBatch = nil
+        telematicsImportError = nil
+    }
+
+    /// Refreshes named UK toll advisories for the active route polyline.
+    public func refreshRouteTollAdvisories(coordinates: [Coordinate]) {
+        routeTollAdvisories = TollAdvisoryAlongRouteMatcher.advisories(along: coordinates)
+        refreshActiveTollAdvisory()
+    }
+
+    /// Updates the near-horizon toll banner from current location / arc progress.
+    public func refreshActiveTollAdvisory() {
+        guard !routeTollAdvisories.isEmpty, !routeCoordinates.isEmpty else {
+            activeTollAdvisory = nil
+            activeTollAdvisoryDistanceMeters = nil
+            return
+        }
+        let coordinates = routeCoordinates.map {
+            Coordinate(latitude: $0.latitude, longitude: $0.longitude)
+        }
+        let location: Coordinate
+        if let cl = simulationEngine.currentCoordinate {
+            location = Coordinate(latitude: cl.latitude, longitude: cl.longitude)
+        } else {
+            location = coordinates[0]
+        }
+        let next = TollAdvisoryAlongRouteMatcher.nextAdvisory(
+            along: coordinates,
+            near: location,
+            horizonMeters: 5_000,
+            catalog: routeTollAdvisories
+        )
+        activeTollAdvisory = next?.advisory
+        activeTollAdvisoryDistanceMeters = next?.distanceMeters
     }
 
     /// Refreshes offline map pack status and starts the local style server when enabled.
@@ -1691,7 +1796,6 @@ public final class RouteViewModel {
         if isCalculating { return true }
         if hasCompletedCloudRoute, result != nil { return true }
         return !hasCloudRoutingCapability
-            && orsAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     /// Persists the HeiGIT API key to the on-disk vault.
@@ -2060,6 +2164,13 @@ public final class RouteViewModel {
 
     // MARK: - Private
 
+    /// Prefer resolved display label, then raw text, for CarPlay / fleet endpoint naming.
+    private func endpointDisplayLabel(for waypoint: RouteWaypoint) -> String {
+        let resolved = waypoint.resolved?.displayLabel.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !resolved.isEmpty { return resolved }
+        return waypoint.rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     @discardableResult
     func geocodeWaypoint(id: UUID) async -> Bool {
         guard let index = routeWaypoints.firstIndex(where: { $0.id == id }) else { return false }
@@ -2347,6 +2458,7 @@ public final class RouteViewModel {
         loadTruckPoisAlongRoute(response.coordinates)
         loadRoadworksAlongRoute(response.coordinates)
         refreshRestrictionAnnouncements(for: response.coordinates)
+        refreshRouteTollAdvisories(coordinates: response.coordinates)
         estimatePhysicsDuration(for: searchResult, canonical: canonical)
         if hosEnabled {
             Task { await refreshHosForecast() }
@@ -2769,6 +2881,9 @@ public final class RouteViewModel {
         activeLaneGuidance = nil
         activeLaneManeuver = nil
         activeLaneDistanceMeters = nil
+        routeTollAdvisories = []
+        activeTollAdvisory = nil
+        activeTollAdvisoryDistanceMeters = nil
         laybyLoadTask?.cancel()
         truckPoiLoadTask?.cancel()
         hazardNavigationCoordinator.resetRouteHazardState(state: hazardState)
@@ -2828,12 +2943,13 @@ public final class RouteViewModel {
 
     private func performGeocodeSearch(query: String) async -> GeocodeSearchOutcome {
         let trimmed = query.trimmingCharacters(in: .whitespaces)
-        let apiKey = orsAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let geocoder = makeGeocoder()
+        let apiKey = resolvedGeocodeAPIKey()
         let near = mapViewportCenter
         let emptyFeedback = "No places found — try a fuller name or city."
 
         #if os(macOS) || os(iOS)
-        if useAppleSearchFallback && apiKey.isEmpty {
+        if useAppleSearchFallback && !hasCloudRoutingCapability {
             let appleResults = await appleGeocodeSearch.search(
                 query: trimmed,
                 near: near,
@@ -2847,7 +2963,7 @@ public final class RouteViewModel {
         }
         #endif
 
-        if apiKey.isEmpty {
+        if !hasCloudRoutingCapability {
             let cached = await geocoder.cachedHits(matching: trimmed)
             if !cached.isEmpty {
                 return GeocodeSearchOutcome(suggestions: cached, feedback: "Offline geocode cache")
@@ -2866,7 +2982,7 @@ public final class RouteViewModel {
             #endif
             return GeocodeSearchOutcome(
                 suggestions: [],
-                feedback: "Add HeiGIT API key in Settings, or enable Apple search fallback"
+                feedback: "Add HeiGIT API key in Settings, enable fleet sync, or turn on Apple search fallback"
             )
         }
 
@@ -2947,6 +3063,27 @@ public final class RouteViewModel {
         return GeocodeSearchOutcome(suggestions: Array(deduped.prefix(8)), feedback: nil)
     }
 
+    private func makeGeocoder() -> OpenRouteServiceGeocoder {
+        let fleetKey = (try? FleetServerCredentials.loadAPIKey())
+            ?? fleetServerAPIKeyText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return FleetORSRoutingFactory.makeGeocoder(
+            localORSAPIKey: orsAPIKey,
+            useRemoteFleetServer: useRemoteFleetServer,
+            fleetServerURL: URL(string: fleetServerURLText.trimmingCharacters(in: .whitespacesAndNewlines))
+                ?? FleetWorkspaceSettings.loadFleetServerURL(),
+            fleetAPIKey: fleetKey.isEmpty ? nil : fleetKey
+        )
+    }
+
+    private func resolvedGeocodeAPIKey() -> String {
+        if usesFleetORSProxy {
+            let fleetKey = (try? FleetServerCredentials.loadAPIKey())
+                ?? fleetServerAPIKeyText.trimmingCharacters(in: .whitespacesAndNewlines)
+            return FleetORSRoutingFactory.fleetProxyAuthKey(fleetAPIKey: fleetKey.isEmpty ? nil : fleetKey)
+        }
+        return orsAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private func makeExternalPlanner() throws -> RoutePlanner {
         let fleetKey = (try? FleetServerCredentials.loadAPIKey())
             ?? fleetServerAPIKeyText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2965,7 +3102,7 @@ public final class RouteViewModel {
         if preferOfflineRouting, offlineRoutingEnabled {
             serviceLabel = "Offline tiled routing (preferred)"
         } else if usesFleetORSProxy {
-            serviceLabel = "Routing via fleet server (operator-paid ORS proxy)"
+            serviceLabel = "Search and routing via fleet server (operator-paid ORS proxy)"
         } else if hasORSAPIKey {
             serviceLabel = "Routing via HeiGIT OpenRouteService (`api.heigit.org/openrouteservice/v2`)"
         } else if offlineRoutingEnabled {
@@ -3029,6 +3166,31 @@ public final class RouteViewModel {
         }
 
         guard let instruction = upcoming, remainingToManeuver <= 250 else {
+            // Within 1.5 km of the next maneuver: refresh OSM lanes if still heuristic-only.
+            if let instruction = upcoming,
+               remainingToManeuver <= 1_500,
+               remainingToManeuver > 250,
+               instruction.laneGuidance?.source != .osm,
+               !routeCoordinates.isEmpty {
+                let coord = routeCoordinates[
+                    min(
+                        max(0, Int(Double(routeCoordinates.count - 1) * 0.5)),
+                        routeCoordinates.count - 1
+                    )
+                ]
+                // Prefer approximate location at current arc by using simulation position when available.
+                let refreshCoord: Coordinate
+                if let cl = simulationEngine.currentCoordinate {
+                    refreshCoord = Coordinate(latitude: cl.latitude, longitude: cl.longitude)
+                } else {
+                    refreshCoord = Coordinate(latitude: coord.latitude, longitude: coord.longitude)
+                }
+                routePlanningCoordinator.scheduleSingleManeuverLaneRefresh(
+                    instruction: instruction,
+                    coordinate: refreshCoord,
+                    allInstructions: result.turnInstructions
+                )
+            }
             activeLaneGuidance = nil
             activeLaneManeuver = nil
             activeLaneDistanceMeters = nil
@@ -3040,6 +3202,21 @@ public final class RouteViewModel {
 
         if let lane = instruction.laneGuidance {
             activeLaneGuidance = lane
+            if lane.source != .osm, remainingToManeuver <= 1_500 {
+                let refreshCoord: Coordinate
+                if let cl = simulationEngine.currentCoordinate {
+                    refreshCoord = Coordinate(latitude: cl.latitude, longitude: cl.longitude)
+                } else if let first = routeCoordinates.first {
+                    refreshCoord = Coordinate(latitude: first.latitude, longitude: first.longitude)
+                } else {
+                    return
+                }
+                routePlanningCoordinator.scheduleSingleManeuverLaneRefresh(
+                    instruction: instruction,
+                    coordinate: refreshCoord,
+                    allInstructions: result.turnInstructions
+                )
+            }
             return
         }
 
@@ -3142,13 +3319,19 @@ public final class RouteViewModel {
 extension RouteViewModel: FleetDispatchHost {
     public func fleetSnapshotBuildInputs() -> FleetSnapshotBuildInputs? {
         guard let tripId = activeDispatchTripId else { return nil }
+        let coordinate = navigationCoordinator.session.latestPosition?.coordinate
+            ?? simulatedCoordinate
+        let recordedAt: Date? = coordinate == nil ? nil : Date()
         return FleetSnapshotBuildInputs(
             tripId: tripId,
             orderedStopIds: routeWaypoints.map(\.id),
             physicsETASeconds: journeyPhysicsETASeconds ?? physicsPredictedDurationSeconds,
             predictiveReport: simulationEngine.telemetryReport,
             predictedLayby: laybyAdvisory,
-            rehearsed: simulationEngine.telemetryReport != nil
+            rehearsed: simulationEngine.telemetryReport != nil,
+            driverLatitude: coordinate?.latitude,
+            driverLongitude: coordinate?.longitude,
+            driverLocationRecordedAt: recordedAt
         )
     }
 }

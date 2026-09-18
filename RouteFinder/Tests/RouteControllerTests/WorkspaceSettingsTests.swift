@@ -126,6 +126,30 @@ struct NavigationWorkspaceSettingsTests {
 
         #expect(NavigationWorkspaceSettings.loadHazardAlertDistanceMeters(defaults: defaults) == 3000)
     }
+
+    @Test func launchRoleRoundTripsThroughUserDefaults() {
+        let suiteName = "RouteFinder.NavigationTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { UserDefaults.standard.removeSuite(named: suiteName) }
+
+        #expect(!NavigationWorkspaceSettings.loadHasCompletedRoleSelection(defaults: defaults))
+        #expect(NavigationWorkspaceSettings.loadLaunchRole(defaults: defaults) == nil)
+        #expect(!NavigationWorkspaceSettings.loadHasCompletedRoleFollowUp(defaults: defaults))
+
+        NavigationWorkspaceSettings.saveLaunchRole(.driver, defaults: defaults)
+        NavigationWorkspaceSettings.saveHasCompletedRoleSelection(true, defaults: defaults)
+        NavigationWorkspaceSettings.saveHasCompletedRoleFollowUp(true, defaults: defaults)
+
+        #expect(NavigationWorkspaceSettings.loadLaunchRole(defaults: defaults) == .driver)
+        #expect(NavigationWorkspaceSettings.loadHasCompletedRoleSelection(defaults: defaults))
+        #expect(NavigationWorkspaceSettings.loadHasCompletedRoleFollowUp(defaults: defaults))
+
+        NavigationWorkspaceSettings.saveLaunchRole(.dispatcherMac, defaults: defaults)
+        #expect(NavigationWorkspaceSettings.loadLaunchRole(defaults: defaults) == .dispatcherMac)
+
+        NavigationWorkspaceSettings.saveLaunchRole(.officePC, defaults: defaults)
+        #expect(NavigationWorkspaceSettings.loadLaunchRole(defaults: defaults) == .officePC)
+    }
 }
 
 struct LanguageWorkspaceSettingsTests {

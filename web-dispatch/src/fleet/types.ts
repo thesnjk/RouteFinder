@@ -39,6 +39,12 @@ export interface FleetTrip {
   physicsETASeconds?: number | null
   updatedAt: string
   latestInspectionSummary?: unknown
+  /** Latest driver latitude from snapshot (WGS84). */
+  driverLatitude?: number | null
+  /** Latest driver longitude from snapshot (WGS84). */
+  driverLongitude?: number | null
+  /** ISO timestamp when driver location was recorded. */
+  driverLocationRecordedAt?: string | null
 }
 
 export interface FleetServerHealth {
@@ -75,4 +81,29 @@ export function joinUrl(baseUrl: string, path: string): string {
   const base = baseUrl.replace(/\/$/, '')
   const suffix = path.startsWith('/') ? path : `/${path}`
   return `${base}${suffix}`
+}
+
+/** Single Pelias geocode suggestion from fleet proxy. */
+export interface GeocodeSuggestion {
+  label: string
+  latitude: number
+  longitude: number
+}
+
+/** Build Pelias proxy search URL (no api_key — fleet server injects operator key). */
+export function geocodeSearchUrl(
+  baseUrl: string,
+  text: string,
+  options?: { size?: number; focusLat?: number; focusLon?: number },
+): string {
+  const params = new URLSearchParams({
+    text,
+    size: String(options?.size ?? 8),
+    'boundary.country': 'GBR',
+  })
+  const focusLat = options?.focusLat ?? 52.6309
+  const focusLon = options?.focusLon ?? 1.2974
+  params.set('focus.point.lat', String(focusLat))
+  params.set('focus.point.lon', String(focusLon))
+  return `${joinUrl(baseUrl, '/v1/proxy/pelias/v1/search')}?${params.toString()}`
 }

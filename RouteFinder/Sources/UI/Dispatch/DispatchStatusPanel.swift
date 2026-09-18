@@ -1,21 +1,25 @@
 import Contracts
 import CoreLocation
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Dispatch detail: trip status, physics ETA, telemetry, predicted layby.
 struct DispatchStatusPanel: View {
     let trip: FleetTrip?
     let vehicleLabel: String?
     let previewCoordinates: [CLLocationCoordinate2D]
+    var telematicsImportBatch: TelematicsImportBatch? = nil
 
     init(
         trip: FleetTrip?,
         vehicleLabel: String? = nil,
-        previewCoordinates: [CLLocationCoordinate2D] = []
+        previewCoordinates: [CLLocationCoordinate2D] = [],
+        telematicsImportBatch: TelematicsImportBatch? = nil
     ) {
         self.trip = trip
         self.vehicleLabel = vehicleLabel
         self.previewCoordinates = previewCoordinates
+        self.telematicsImportBatch = telematicsImportBatch
     }
 
     private func tripBriefContext(for trip: FleetTrip) -> TripBriefContext {
@@ -32,11 +36,17 @@ struct DispatchStatusPanel: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: RFSpacing.md) {
+                if let batch = telematicsImportBatch {
+                    telematicsImportCard(batch)
+                }
                 if let trip {
                     statusHeader(trip)
                     stopList(trip)
                     if let seconds = trip.physicsETASeconds {
                         etaRow(seconds: seconds)
+                    }
+                    if trip.driverLatitude != nil, trip.driverLongitude != nil {
+                        lastPositionRow(trip)
                     }
                     if let report = trip.predictiveReport {
                         PredictiveTelemetryReportView(
@@ -179,11 +189,56 @@ struct DispatchStatusPanel: View {
         .controlSheetStyle()
     }
 
+    private func lastPositionRow(_ trip: FleetTrip) -> some View {
+        let recordedAt = trip.driverLocationRecordedAt
+        let isStale = recordedAt.map { Date().timeIntervalSince($0) > 60 } ?? true
+        return HStack(alignment: .firstTextBaseline) {
+            Text("Last position")
+                .font(RFFont.sectionTitle)
+            Spacer()
+            VStack(alignment: .trailing, spacing: 2) {
+                if let lat = trip.driverLatitude, let lon = trip.driverLongitude {
+                    Text(String(format: "%.5f, %.5f", lat, lon))
+                        .font(RFFont.caption.monospacedDigit())
+                }
+                if let recordedAt {
+                    Text(relativeTime(from: recordedAt))
+                        .font(.caption2)
+                        .foregroundStyle(isStale ? Color.orange : Color.secondary)
+                } else {
+                    Text("Time unknown")
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                }
+            }
+        }
+        .controlSheetStyle()
+    }
+
+    private func relativeTime(from date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: date, relativeTo: Date())
+    }
+
     private func formatDuration(_ seconds: TimeInterval) -> String {
         let totalMinutes = Int(seconds / 60)
         if totalMinutes >= 60 {
             return "\(totalMinutes / 60) h \(totalMinutes % 60) min"
         }
         return "\(max(1, totalMinutes)) min"
+    }
+
+    private func telematicsImportCard(_ batch: TelematicsImportBatch) -> some View {
+        VStack(alignment: .leading, spacing: RFSpacing.xs) {
+            Text("Last telematics import")
+                .font(RFFont.sectionTitle)
+            Text("\(batch.pings.count) vehicle(s) at \(batch.importedAt.formatted())")
+                .font(RFFont.caption)
+            Text("Read-only partner export — not legal VU / not live tracking.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .controlSheetStyle()
     }
 }

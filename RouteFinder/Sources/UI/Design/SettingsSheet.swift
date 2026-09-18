@@ -2,8 +2,12 @@ import Contracts
 import DataLayer
 import RouteController
 import SwiftUI
+import UniformTypeIdentifiers
 #if os(iOS)
 import AVFoundation
+#endif
+#if os(macOS)
+import AppKit
 #endif
 
 /// Settings sheet for algorithm, vehicle, avoidance, and HeiGIT API configuration.
@@ -19,6 +23,8 @@ struct SettingsSheet: View {
     @State private var showDispatchConsole = false
     @State private var showProductOnboarding = false
     @State private var showFleetSetupWizard = false
+    @State private var showLaunchRoleSheet = false
+    @State private var showTelematicsImporter = false
     #if os(macOS)
     @State private var requireLoginEachLaunch = SessionWorkspaceSettings.loadRequireLoginEachLaunch()
     #endif
@@ -49,6 +55,14 @@ struct SettingsSheet: View {
             }
             .sheet(isPresented: $showFleetSetupWizard) {
                 FleetSetupWizardView(viewModel: viewModel)
+            }
+            .sheet(isPresented: $showLaunchRoleSheet) {
+                LaunchRoleSheet { role in
+                    NavigationWorkspaceSettings.saveLaunchRole(role)
+                    NavigationWorkspaceSettings.saveHasCompletedRoleSelection(true)
+                    NavigationWorkspaceSettings.saveHasCompletedRoleFollowUp(false)
+                    showLaunchRoleSheet = false
+                }
             }
         }
         #if os(macOS)
@@ -111,6 +125,7 @@ struct SettingsSheet: View {
             NavigationLink {
                 settingsDetailPage(title: "Fleet & Dispatch") {
                     fleetSection
+                    telematicsSection
                 }
             } label: {
                 Label("Fleet & Dispatch", systemImage: "antenna.radiowaves.left.and.right")
@@ -462,6 +477,20 @@ struct SettingsSheet: View {
                 .font(RFFont.sectionTitle)
 
             Button {
+                showLaunchRoleSheet = true
+            } label: {
+                Label("Getting started", systemImage: "person.3.fill")
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("settingsGettingStarted")
+
+            if let role = NavigationWorkspaceSettings.loadLaunchRole() {
+                Text("Current role: \(role.title)")
+                    .font(RFFont.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Button {
                 showProductOnboarding = true
             } label: {
                 Label("How RouteFinder works", systemImage: "questionmark.circle")
@@ -502,6 +531,7 @@ struct SettingsSheet: View {
                 if let url = ProductLegalDocuments.privacyPolicyURL {
                     Link("Open full Privacy Policy", destination: url)
                         .font(RFFont.caption)
+                        .accessibilityIdentifier("legalPrivacyPolicyLink")
                 }
             }
 
@@ -514,6 +544,7 @@ struct SettingsSheet: View {
                 if let url = ProductLegalDocuments.termsOfServiceURL {
                     Link("Open full Terms of Service", destination: url)
                         .font(RFFont.caption)
+                        .accessibilityIdentifier("legalTermsOfServiceLink")
                 }
             }
         }
@@ -552,18 +583,27 @@ struct SettingsSheet: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 
-            HStack {
-                Button("Download demo corridor") {
-                    Task { await viewModel.downloadDemoOfflineCorridor() }
+            Picker("Download region", selection: $viewModel.selectedOfflineDownloadRegion) {
+                ForEach(OfflineDownloadRegion.allCases) { region in
+                    Text(region.displayName).tag(region)
                 }
-                .disabled(viewModel.isDownloadingOfflineTiles)
+            }
+            .pickerStyle(.menu)
 
-                Button("Ensure UK tiles") {
-                    Task { await viewModel.downloadUKOfflineCorridor() }
-                }
-                .disabled(viewModel.isDownloadingOfflineTiles)
+            Text(viewModel.selectedOfflineDownloadRegion.sizeWarning)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            Button("Download selected region") {
+                Task { await viewModel.downloadSelectedOfflineRegion() }
             }
             .buttonStyle(.borderless)
+            .disabled(viewModel.isDownloadingOfflineTiles)
+
+            if viewModel.isDownloadingOfflineTiles {
+                ProgressView(value: viewModel.offlineDownloadProgress)
+                    .progressViewStyle(.linear)
+            }
 
             if let status = viewModel.offlineTileStatus {
                 Text(status)
@@ -587,14 +627,29 @@ struct SettingsSheet: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 
+            Text("Pack path: \(viewModel.offlineMapPackDirectoryPath)")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .textSelection(.enabled)
+
             Text("Expected layout: Application Support/RouteFinder/map-pack/style.json (+ tiles/). See MapLibreUI Resources/VENDOR_MAPLIBRE.md.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 
-            Button("Refresh pack status") {
-                Task { await viewModel.refreshOfflineMapPackStatus() }
+            HStack {
+                Button("Refresh pack status") {
+                    Task { await viewModel.refreshOfflineMapPackStatus() }
+                }
+                .buttonStyle(.borderless)
+                #if os(macOS)
+                Button("Reveal in Finder") {
+                    NSWorkspace.shared.activateFileViewerSelecting(
+                        [URL(fileURLWithPath: viewModel.offlineMapPackDirectoryPath)]
+                    )
+                }
+                .buttonStyle(.borderless)
+                #endif
             }
-            .buttonStyle(.borderless)
         }
     }
 
@@ -730,7 +785,7 @@ struct SettingsSheet: View {
                 .font(RFFont.sectionTitle)
 
             if viewModel.usesFleetORSProxy {
-                Text("Included with your fleet plan — routing goes through the office fleet server (operator-paid). You do not need a personal HeiGIT key on this device while remote fleet sync is on.")
+                Text("Included with your fleet plan — address search and routing go through the office fleet server (operator-paid). You do not need a personal HeiGIT key on this device while remote fleet sync is on.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 DisclosureGroup("Advanced: local HeiGIT key (optional offline / solo use)") {
@@ -760,11 +815,11 @@ struct SettingsSheet: View {
                 }
 
             #if os(iOS)
-            Text("Required for geocoding and HGV routing when not using the fleet ORS proxy. Obtain a key from HeiGIT. Paste the key, then tap Save API Key.")
+            Text("Required for address search and HGV routing when not using the fleet ORS proxy. Obtain a key from HeiGIT. Paste the key, then tap Save API Key.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             #else
-            Text("Required for geocoding and HGV routing when not using the fleet ORS proxy. Obtain a key from HeiGIT. Use the signed RouteFinderMac Xcode scheme.")
+            Text("Required for address search and HGV routing when not using the fleet ORS proxy. Obtain a key from HeiGIT. Use the signed RouteFinderMac Xcode scheme.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             #endif
@@ -904,13 +959,17 @@ struct SettingsSheet: View {
                     viewModel.saveFleetServerURLFromSettings()
                 }
 
-            TextField("Fleet server URL", text: $viewModel.fleetServerURLText)
+            TextField("Fleet server URL (LAN or https://…)", text: $viewModel.fleetServerURLText)
                 .textFieldStyle(GlassTextFieldStyle())
                 #if os(iOS)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.URL)
                 #endif
                 .onSubmit { viewModel.saveFleetServerURLFromSettings() }
+
+            Text("LAN: http://192.168.x.x:8080 · Hosted: https://fleet.yourdomain.com with org bearer token (never the operator ORS key).")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
 
             Button("Discover fleet servers on LAN") {
                 Task { await viewModel.discoverFleetServersOnLAN() }
@@ -1023,6 +1082,63 @@ struct SettingsSheet: View {
                 .buttonStyle(.borderless)
             }
             #endif
+        }
+    }
+
+    private var telematicsSection: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.sm) {
+            Text("Telematics (read-only)")
+                .font(RFFont.sectionTitle)
+
+            Text("Import a Geotab/Samsara-style CSV of last-known positions for dispatch display. Not legal VU. Not live tracking.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            Button("Import CSV…") {
+                showTelematicsImporter = true
+            }
+            .buttonStyle(.borderless)
+
+            Button("Reload last import") {
+                Task { await viewModel.reloadTelematicsImport() }
+            }
+            .buttonStyle(.borderless)
+
+            if let batch = viewModel.telematicsImportBatch {
+                Text("Last import: \(batch.pings.count) vehicle(s) at \(batch.importedAt.formatted())")
+                    .font(.caption2)
+                ForEach(batch.pings.prefix(5)) { ping in
+                    Text("\(ping.vehicleLabel) · \(String(format: "%.4f", ping.latitude)), \(String(format: "%.4f", ping.longitude))")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                Button("Clear import") {
+                    Task { await viewModel.clearTelematicsImport() }
+                }
+                .buttonStyle(.borderless)
+            }
+
+            if let error = viewModel.telematicsImportError {
+                Text(error)
+                    .font(.caption2)
+                    .foregroundStyle(.red)
+            }
+        }
+        .fileImporter(
+            isPresented: $showTelematicsImporter,
+            allowedContentTypes: [.commaSeparatedText, .plainText],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                guard let url = urls.first else { return }
+                Task { await viewModel.importTelematicsCSV(from: url) }
+            case .failure(let error):
+                viewModel.telematicsImportError = error.localizedDescription
+            }
+        }
+        .task {
+            await viewModel.reloadTelematicsImport()
         }
     }
 }

@@ -17,6 +17,7 @@ struct DispatchMapDetailView: View {
             MapRouteView(
                 coordinates: previewCoordinates.isEmpty ? polylineCoordinates : previewCoordinates,
                 pins: mapPins,
+                simulatedVehicle: driverVehicleState,
                 initialRegion: mapRegion,
                 mapBridge: mapBridge,
                 onMapClick: { _ in },
@@ -73,9 +74,23 @@ struct DispatchMapDetailView: View {
         }
     }
 
+    private var driverVehicleState: SimulatedVehicleState? {
+        guard let trip,
+              let latitude = trip.driverLatitude,
+              let longitude = trip.driverLongitude else {
+            return nil
+        }
+        return SimulatedVehicleState(
+            latitude: latitude,
+            longitude: longitude,
+            bearing: 0,
+            visible: true
+        )
+    }
+
     private var mapRegion: MapRegion {
         let coords = previewCoordinates.isEmpty ? polylineCoordinates : previewCoordinates
-        guard let first = coords.first else {
+        guard coords.first != nil else {
             return MapRegion(
                 center: CLLocationCoordinate2D(latitude: MapDefaults.ukCenter.latitude, longitude: MapDefaults.ukCenter.longitude),
                 latitudeDelta: 6,

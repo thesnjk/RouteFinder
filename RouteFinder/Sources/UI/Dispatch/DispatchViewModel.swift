@@ -24,17 +24,24 @@ public final class DispatchViewModel {
     public var isLoading = false
     public var isPreviewLoading = false
     public private(set) var previewCoordinates: [CLLocationCoordinate2D] = []
+    /// Fleet server health: `true` connected, `false` offline, `nil` not checked / local disk.
+    public private(set) var fleetServerHealthOk: Bool?
+    public private(set) var fleetServerVersion: String?
+    public private(set) var fleetServerModeLabel: String = "Local disk"
+    /// Last telematics CSV import (read-only stub) for status panel.
+    public private(set) var telematicsImportBatch: TelematicsImportBatch?
 
     public var searchSuggestions: [UUID: [GeocodeSuggestion]] = [:]
     public var searchFeedback: [UUID: String] = [:]
 
     private var store: any FleetDispatchPort
+    private let telematicsImportStore = TelematicsImportStore()
     @ObservationIgnored private let fleetStoreConfigurationObserver = FleetStoreConfigurationObserver()
-    private let geocoder = OpenRouteServiceGeocoder()
     #if os(macOS) || os(iOS)
     private let appleGeocodeSearch = AppleGeocodeSearch()
     #endif
     private var pollTask: Task<Void, Never>?
+    private var healthPollTask: Task<Void, Never>?
     private var previewTask: Task<Void, Never>?
     private var toastDismissTask: Task<Void, Never>?
     private var searchTasks: [UUID: Task<Void, Never>] = [:]
@@ -59,12 +66,18 @@ public final class DispatchViewModel {
         store = FleetStoreFactory.makeStore()
         await refreshCatalog()
         await refreshActiveTrip()
+        await refreshFleetServerHealth()
         if FleetWorkspaceSettings.useRemoteFleetServer(),
            FleetWorkspaceSettings.loadFleetServerURL() != nil {
             statusMessage = "Fleet store switched to remote."
         } else {
             statusMessage = "Fleet store switched to local disk."
         }
+    }
+
+    /// Reloads the last telematics CSV import for the status panel.
+    public func reloadTelematicsImport() async {
+        telematicsImportBatch = await telematicsImportStore.load()
     }
 
     /// Loads orgs and vehicles from disk.
@@ -203,6 +216,47 @@ public final class DispatchViewModel {
         pollTask?.cancel()
         pollTask = nil
     }
+
+    /// Starts health polling for remote HTTP fleet stores (every 10s).
+    public func startHealthPolling() {
+        healthPollTask?.cancel()
+        healthPollTask = Task { [weak self] in
+            await self?.refreshFleetServerHealth()
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 10_000_000_000)
+                await self?.refreshFleetServerHealth()
+            }
+        }
+    }
+
+    /// Stops fleet server health polling.
+    public func stopHealthPolling() {
+        healthPollTask?.cancel()
+        healthPollTask = nil
+    }
+
+    /// Refreshes fleet server reachability for the health pill.
+    public func refreshFleetServerHealth() async {
+        guard FleetWorkspaceSettings.useRemoteFleetServer(),
+              let url = FleetWorkspaceSettings.loadFleetServerURL() else {
+            fleetServerModeLabel = "Local disk"
+            fleetServerHealthOk = nil
+            fleetServerVersion = nil
+            return
+        }
+        fleetServerModeLabel = "Remote"
+        let apiKey = try? FleetServerCredentials.loadAPIKey()
+        let client = HTTPFleetStore(baseURL: url, apiKey: apiKey)
+        do {
+            let health = try await client.checkHealth()
+            fleetServerHealthOk = health.ok
+            fleetServerVersion = health.version
+        } catch {
+            fleetServerHealthOk = false
+            fleetServerVersion = nil
+        }
+    }
+
 
     /// Updates vehicle list when org selection changes.
     public func orgSelectionChanged() async {
@@ -381,9 +435,16 @@ public final class DispatchViewModel {
 
     private func performSearch(for stopId: UUID, query: String) async {
         let near = MapDefaults.ukCenter
-        let apiKey = VehicleProfileStore.loadORSAPIKey()?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let localKey = VehicleProfileStore.loadORSAPIKey()?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let useRemote = FleetWorkspaceSettings.useRemoteFleetServer()
+        let fleetURL = FleetWorkspaceSettings.loadFleetServerURL()
+        let usesFleetProxy = FleetORSRoutingFactory.usesFleetProxy(
+            useRemoteFleetServer: useRemote,
+            fleetServerURL: fleetURL
+        )
+        let canGeocode = !localKey.isEmpty || usesFleetProxy
 
-        if apiKey.isEmpty {
+        if !canGeocode {
             #if os(iOS)
             let appleResults = await appleGeocodeSearch.search(
                 query: query,
@@ -398,9 +459,20 @@ public final class DispatchViewModel {
             }
             #endif
             searchSuggestions[stopId] = []
-            searchFeedback[stopId] = "Add HeiGIT API key in Settings for address search."
+            searchFeedback[stopId] = "Add HeiGIT API key in Settings or enable fleet ORS proxy for address search."
             return
         }
+
+        let fleetKey = try? FleetServerCredentials.loadAPIKey()
+        let geocoder = FleetORSRoutingFactory.makeGeocoder(
+            localORSAPIKey: localKey,
+            useRemoteFleetServer: useRemote,
+            fleetServerURL: fleetURL,
+            fleetAPIKey: fleetKey
+        )
+        let apiKey = usesFleetProxy
+            ? FleetORSRoutingFactory.fleetProxyAuthKey(fleetAPIKey: fleetKey)
+            : localKey
 
         var results: [GeocodeSuggestion] = []
         if let global = try? await geocoder.searchGlobal(query: query, near: near, apiKey: apiKey) {

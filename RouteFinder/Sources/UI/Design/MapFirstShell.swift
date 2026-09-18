@@ -175,6 +175,13 @@ struct MapFirstShell: View {
                 fleetDispatchToastView(dispatchToast)
             }
 
+            if let advisory = viewModel.activeTollAdvisory {
+                TollAdvisoryBanner(
+                    advisory: advisory,
+                    distanceMeters: viewModel.activeTollAdvisoryDistanceMeters
+                )
+            }
+
             if let advisory = viewModel.laybyAdvisory {
                 LaybyAdvisoryBanner(
                     advisory: advisory,

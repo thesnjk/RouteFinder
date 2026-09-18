@@ -1,5 +1,6 @@
 import {
   authHeaders,
+  geocodeSearchUrl,
   joinUrl,
   type FleetConnection,
   type FleetOrg,
@@ -8,7 +9,15 @@ import {
   type FleetTrip,
   type FleetTripStop,
   type FleetVehicle,
+  type GeocodeSuggestion,
 } from './types'
+
+interface PeliasFeatureCollection {
+  features?: Array<{
+    geometry?: { coordinates?: [number, number] }
+    properties?: { label?: string; name?: string }
+  }>
+}
 
 async function parseJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
@@ -102,22 +111,52 @@ export class FleetApiClient {
     return parseJson(response)
   }
 
-  /** Build a minimal two-stop dispatched trip for LAN demos (Norwich → King's Lynn coords). */
-  buildDemoTrip(orgId: string, vehicleId: string, originLabel: string, destLabel: string): FleetTrip {
-    const origin: FleetTripStop = {
+  /**
+   * Search UK addresses via fleet Pelias proxy (`GET /v1/proxy/pelias/v1/search`).
+   * Requires fleet server started with `--ors-key`.
+   */
+  async geocodeSearch(
+    text: string,
+    options?: { size?: number; focusLat?: number; focusLon?: number },
+  ): Promise<GeocodeSuggestion[]> {
+    const trimmed = text.trim()
+    if (trimmed.length < 2) return []
+    const url = geocodeSearchUrl(this.connection.baseUrl, trimmed, options)
+    const response = await fetch(url, { headers: this.headers() })
+    const collection = await parseJson<PeliasFeatureCollection>(response)
+    const suggestions: GeocodeSuggestion[] = []
+    for (const feature of collection.features ?? []) {
+      const coords = feature.geometry?.coordinates
+      if (!coords || coords.length < 2) continue
+      const [lon, lat] = coords
+      const label = feature.properties?.label ?? feature.properties?.name
+      if (!label) continue
+      suggestions.push({ label, latitude: lat, longitude: lon })
+    }
+    return suggestions
+  }
+
+  /** Build a two-stop trip from geocoded stop coordinates. */
+  buildTripFromStops(
+    orgId: string,
+    vehicleId: string,
+    origin: { label: string; latitude: number; longitude: number },
+    destination: { label: string; latitude: number; longitude: number },
+  ): FleetTrip {
+    const originStop: FleetTripStop = {
       id: crypto.randomUUID(),
       sequence: 0,
-      label: originLabel,
-      latitude: 52.6309,
-      longitude: 1.2974,
+      label: origin.label,
+      latitude: origin.latitude,
+      longitude: origin.longitude,
       role: 'origin',
     }
-    const destination: FleetTripStop = {
+    const destStop: FleetTripStop = {
       id: crypto.randomUUID(),
       sequence: 1,
-      label: destLabel,
-      latitude: 52.7519,
-      longitude: 0.3955,
+      label: destination.label,
+      latitude: destination.latitude,
+      longitude: destination.longitude,
       role: 'destination',
     }
     return {
@@ -125,8 +164,18 @@ export class FleetApiClient {
       orgId,
       vehicleId,
       status: 'dispatched',
-      stops: [origin, destination],
+      stops: [originStop, destStop],
       updatedAt: new Date().toISOString(),
     }
+  }
+
+  /** @deprecated Prefer buildTripFromStops with geocoded coordinates. */
+  buildDemoTrip(orgId: string, vehicleId: string, originLabel: string, destLabel: string): FleetTrip {
+    return this.buildTripFromStops(
+      orgId,
+      vehicleId,
+      { label: originLabel, latitude: 52.6309, longitude: 1.2974 },
+      { label: destLabel, latitude: 52.7519, longitude: 0.3955 },
+    )
   }
 }

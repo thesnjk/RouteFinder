@@ -1,8 +1,8 @@
 # Pilot fleet pack
 
-Materials for a **60-day free pilot** with small UK independents (5–15 trucks). RouteFinder already ships native Mac/iPad dispatch + LAN HTTP/SSE — this pack documents what you bring to a meeting, not a new web portal.
+Materials for a **60-day free pilot** with small UK independents (5–15 trucks). RouteFinder already ships native Mac/iPad dispatch + LAN HTTP/SSE + web dispatch — this pack documents what you bring to a meeting, not a new SaaS portal.
 
-Last updated: 2026-09-03
+Last updated: 2026-09-17
 
 ---
 
@@ -47,7 +47,17 @@ All RouteFinder software, branding, and documentation remain Provider’s proper
 
 **Pricing after pilot**
 
-No obligation to buy. If Operator continues, parties may discuss a **dispatch-desk fee** (indicative: **£29–£49/mo for ≤10 trucks on LAN**) with **routing API cost included** when Provider/operator runs `RouteFinderFleetServer` with `--ors-key` (fair-use daily caps; see [`unit-economics.md`](unit-economics.md)). Owner-operator App Store pricing is deferred until after pilot feedback.
+No obligation to buy. If Operator continues, parties use the **API-included desk subscription** below (indicative; confirm in writing). **API cost included** means Provider/Operator runs `RouteFinderFleetServer` (or hosted gateway) with `--ors-key` / `ORS_API_KEY` so drivers do not paste HeiGIT keys — subject to **fair-use daily caps** (default 2,000 routes / 2,000 geocodes per day; HTTP 429 when exceeded). Not unlimited planet-scale routing. See [`unit-economics.md`](unit-economics.md).
+
+| Tier | Scope | Indicative price | Included |
+|------|--------|------------------|----------|
+| Pilot | ≤3 phones, 60 days | **£0** | Setup + feedback form |
+| Desk LAN | ≤10 trucks, office LAN server | **£39/mo** (band £29–£49) | Dispatch console + **ORS/Pelias proxy** fair-use |
+| Desk + remote | Hosted gateway VPS | **£49–£79/mo** + VPS pass-through | Same API caps **per org** on gateway; Operator owns VPS |
+| Extra trucks | >10 on same desk | **£3–£5/truck/mo** (negotiable) | Same proxy caps — abuse = 429 |
+| Owner-operator App Store | Single driver | **Deferred** post-pilot | Separate SKU later |
+
+Owner-operator App Store pricing remains deferred until after pilot feedback.
 
 **Signatures**
 
@@ -71,6 +81,7 @@ Ops guide: [README — Fleet LAN server](../README.md#fleet-lan-server-multi-dev
 | `GET` | `/health` | `FleetServerHealthResponse` `{ ok, version }` — public even when API key set |
 | `GET` | `/v1/proxy/status` | `{ orsConfigured, routesToday, routeDailyCap, geocodeToday, geocodeDailyCap }` |
 | `POST` | `/v1/proxy/ors/v2/directions/...` | Operator-paid ORS proxy (requires `--ors-key`) |
+| `GET` | `/v1/proxy/pelias/v1/search` | Operator-paid Pelias geocode proxy |
 | `POST` | `/v1/orgs` | `{ "name": "…" }` → `FleetOrg` |
 | `GET` | `/v1/orgs` | List orgs |
 | `GET` | `/v1/orgs/{orgId}/vehicles` | List vehicles |
@@ -79,11 +90,14 @@ Ops guide: [README — Fleet LAN server](../README.md#fleet-lan-server-multi-dev
 | `GET` | `/v1/trips/{tripId}` | Fetch trip |
 | `GET` | `/v1/vehicles/{vehicleId}/active-trip` | Active trip or 204 |
 | `GET` | `/v1/vehicles/{vehicleId}/events` | **SSE** — `tripPushed` + heartbeats |
-| `PUT` | `/v1/trips/{tripId}/snapshot` | `FleetTripSnapshot` — physics ETA, layby, optional inspection PDF base64 |
+| `PUT` | `/v1/trips/{tripId}/snapshot` | `FleetTripSnapshot` — physics ETA, layby, optional inspection PDF, **periodic GPS** (lat/lon + timestamp) for dispatch map pin |
+| `POST` | `/v1/telematics/ingest` | Read-only partner ping stub (`vehicleId`, lat/lon, `recordedAt`) — capped store; **not** legal VU |
 
 Optional auth: `Authorization: Bearer <api-key>` when server started with `--api-key`.
 
 Bonjour: `_routefinder-fleet._tcp`.
+
+**Hosted gateway:** same REST/SSE + ORS/Pelias + telematics ingest surface for remote depots — see [`hosted-gateway-deployment.md`](hosted-gateway-deployment.md).
 
 ### Example trip push payload
 
@@ -120,11 +134,12 @@ Swift types for stops/roles/status: `FleetTripStop.Role`, `FleetTripStatus`. Veh
 
 ### What is not in the API today
 
-- Live GPS coordinate pings / continuous telematics map
-- Hosted multi-tenant SaaS portal
-- Public internet exposure (LAN/VPN only)
+- Continuous live telematics map / sub-second GPS stream (snapshots are **periodic**, not VU-grade)
+- Legal Vehicle Unit download or certified ELD
+- Hosted multi-tenant SaaS portal with billing UI
+- 24/7 support SLA or toll tariff / booking commerce APIs
 
-Add location snapshots only if a pilot names it as a blocker — see [`pilot-feedback-backlog.md`](pilot-feedback-backlog.md).
+Snapshot GPS + read-only telematics CSV/ingest are enough for desk pin / partner export display — see [`pilot-feedback-backlog.md`](pilot-feedback-backlog.md) before promising more.
 
 ---
 

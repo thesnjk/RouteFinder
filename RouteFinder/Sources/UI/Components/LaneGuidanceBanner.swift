@@ -28,6 +28,10 @@ public struct LaneGuidanceBanner: View {
                     .foregroundStyle(.secondary)
             }
 
+            Text(guidance.source == .osm ? "Lane data: OSM" : "Lane data: estimate")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+
             HStack(spacing: 6) {
                 ForEach(Array(guidance.lanes.enumerated()), id: \.offset) { index, lane in
                     laneTile(lane: lane, highlighted: guidance.recommendedIndices.contains(index))

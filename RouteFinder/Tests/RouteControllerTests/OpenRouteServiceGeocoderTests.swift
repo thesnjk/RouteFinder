@@ -61,6 +61,35 @@ struct OpenRouteServiceGeocoderTests {
         #expect(urlString.hasPrefix("https://api.heigit.org/pelias/v1/search"))
     }
 
+    @Test("fleet proxy search targets Pelias proxy path with Bearer auth")
+    func fleetProxyEndpointURL() async throws {
+        let captured = CapturedRequestBox()
+        let query = "fleet-proxy-\(UUID().uuidString)"
+        let proxyBase = URL(string: "http://127.0.0.1:8080/v1/proxy/pelias/v1")!
+        let client = try makeClient(
+            baseURL: proxyBase,
+            fleetProxyAuthKey: "fleet-secret",
+            allowLANHTTP: true,
+            captured: captured
+        ) { request in
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            return (response, Data("{\"features\":[]}".utf8))
+        }
+
+        _ = try await client.searchGlobal(query: query, apiKey: "ignored")
+
+        let urlString = try #require(captured.request?.url?.absoluteString)
+        #expect(urlString.hasPrefix("http://127.0.0.1:8080/v1/proxy/pelias/v1/search"))
+        #expect(!urlString.contains("api_key="))
+        let authorization = try #require(captured.request?.value(forHTTPHeaderField: "Authorization"))
+        #expect(authorization == "Bearer fleet-secret")
+    }
+
     @Test("search includes api_key query parameter")
     func apiKeyQueryParam() async throws {
         let captured = CapturedRequestBox()
@@ -230,6 +259,9 @@ private final class MockURLProtocol: URLProtocol, @unchecked Sendable {
 }
 
 private func makeClient(
+    baseURL: URL = URL(string: ORSAPIDefaults.peliasBaseURL)!,
+    fleetProxyAuthKey: String? = nil,
+    allowLANHTTP: Bool = false,
     captured: CapturedRequestBox = CapturedRequestBox(),
     handler: @escaping @Sendable (URLRequest) throws -> (HTTPURLResponse, Data)
 ) throws -> OpenRouteServiceGeocoder {
@@ -243,5 +275,11 @@ private func makeClient(
     let cacheDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("ORSTests-\(UUID().uuidString)", isDirectory: true)
     let cache = GeocoderCache(cacheDirectory: cacheDirectory)
-    return OpenRouteServiceGeocoder(session: session, cache: cache)
+    return OpenRouteServiceGeocoder(
+        baseURL: baseURL,
+        session: session,
+        cache: cache,
+        fleetProxyAuthKey: fleetProxyAuthKey,
+        allowLANHTTP: allowLANHTTP
+    )
 }

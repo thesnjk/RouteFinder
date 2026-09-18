@@ -212,6 +212,43 @@ public final class RoutePlanningCoordinator {
         }
     }
 
+    /// Refreshes a single upcoming maneuver with Overpass when guidance is still heuristic-only.
+    public func scheduleSingleManeuverLaneRefresh(
+        instruction: TurnInstruction,
+        coordinate: Coordinate,
+        allInstructions: [TurnInstruction]
+    ) {
+        guard instruction.laneGuidance?.source != .osm else { return }
+        guard instruction.maneuver != .arrive, instruction.maneuver != .depart else { return }
+
+        Task { @MainActor [weak self] in
+            let client = OverpassLaneGuidanceClient()
+            let routingCoord = RoutingCoordinate(
+                latitude: coordinate.latitude,
+                longitude: coordinate.longitude
+            )
+            guard let osm = try? await client.fetchLaneGuidance(
+                near: routingCoord,
+                searchRadiusMeters: 40,
+                maneuver: instruction.maneuver
+            ), let host = self?.host else { return }
+
+            let updated = allInstructions.map { existing in
+                guard existing.id == instruction.id else { return existing }
+                return TurnInstruction(
+                    id: existing.id,
+                    maneuver: existing.maneuver,
+                    roadName: existing.roadName,
+                    distance: existing.distance,
+                    bearing: existing.bearing,
+                    recommendedSpeedKmh: existing.recommendedSpeedKmh,
+                    laneGuidance: osm
+                )
+            }
+            host.applyLaneGuidanceEnrichment(updated)
+        }
+    }
+
     /// Optionally samples TomTom along the route and prepares an avoid-polygon alternate.
     public func scheduleTrafficRerouteEvaluation(inputs: TrafficRerouteScheduleInputs) {
         guard let host else { return }

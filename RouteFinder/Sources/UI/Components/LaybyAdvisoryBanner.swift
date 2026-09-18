@@ -45,8 +45,22 @@ struct LaybyAdvisoryBanner: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
+
+                    Link(
+                        "Find parking (TRAVIS)",
+                        destination: ParkingPartnerLinks.travisURL(
+                            latitude: advisory.stop.coordinate.latitude,
+                            longitude: advisory.stop.coordinate.longitude,
+                            label: advisory.stop.label
+                        )
+                    )
+                    .font(RFFont.caption)
+                    .controlSize(.small)
                 }
                 .padding(.top, 2)
+                Text("Opens partner site — booking and fees are between you and the operator.")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
 
             Spacer(minLength: RFSpacing.sm)

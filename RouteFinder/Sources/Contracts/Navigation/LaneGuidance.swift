@@ -17,11 +17,18 @@ public struct LaneGuidance: Sendable, Hashable, Codable, Equatable {
     public let lanes: [LaneArrow]
     /// Indices into ``lanes`` that the driver should use.
     public let recommendedIndices: [Int]
+    /// Whether guidance came from OSM tags or a heuristic estimate.
+    public let source: LaneGuidanceSource
 
     /// Creates lane guidance.
-    public init(lanes: [LaneArrow], recommendedIndices: [Int]) {
+    public init(
+        lanes: [LaneArrow],
+        recommendedIndices: [Int],
+        source: LaneGuidanceSource = .unknown
+    ) {
         self.lanes = lanes
         self.recommendedIndices = recommendedIndices
+        self.source = source
     }
 
     /// Human-readable guidance for voice and compact labels.

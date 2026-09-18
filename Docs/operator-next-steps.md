@@ -1,16 +1,20 @@
-# Operator next steps (post system audit)
+# Operator next steps (post Phases 1–9 drafts)
 
 Simulator-first gate after code ship on `main`. CI UI tests are the official P0 Pass — physical iPhone is optional once before the first pilot email.
 
-Last updated: 2026-09-04
+Last updated: 2026-09-17
 
 ---
 
-## Phase 0 — This week (you)
+## Prerequisites before outreach
 
-### Block 1 — CI green on `main` (automatic)
+1. **CI green on `main`** — <https://github.com/thesnjk/RouteFinder/actions>
+2. Product stages **1–8** complete (fleet proxy, stranger UX, dispatch, CarPlay when entitled, Android driver, hosted gateway, parity extras)
+3. Phase 9 **drafts** in-repo: [`legal/`](legal/), [`pilot-fleet-pack.md`](pilot-fleet-pack.md), [`app-store-connect-metadata.md`](app-store-connect-metadata.md) — solicitor / hosting still **you**
 
-**Status (2026-09-04): Pass** — latest `main` CI run succeeded (web-dispatch light-mode push and prior fleet/CORS jobs).
+---
+
+## Block 1 — CI green on `main` (automatic)
 
 Confirm anytime: <https://github.com/thesnjk/RouteFinder/actions>
 
@@ -18,18 +22,18 @@ That is **P0 Pass**. No code action required from you for Block 1.
 
 ### Block 1b — Optional pre-pilot phone smoke (~10 min)
 
-**Once** before the first pilot email if you want subjective/device confidence. Not required for CI Pass.
+**Once** before the first pilot email if you want subjective/device confidence.
 
-1. Real HeiGIT key → Settings → API Keys → **Save** → relaunch and confirm it sticks.
+1. Real HeiGIT key on fleet server (`--ors-key`) so drivers need no HeiGIT account — or paste keys only for single-device demos.
 2. Listen for metric voice (“400 metres”); tweak Voice/rate in Settings.
-3. Resize on Mac Device Hub — no parchment cube.
-4. (Optional) Fleet Part B LAN if pitching dispatch — see Block 2.
+3. Optional: spot-check [`phase8-parity-verification.md`](phase8-parity-verification.md) (toll advisory, TRAVIS link, offline progress).
+4. Settings → Legal: Privacy / Terms links present (placeholder URLs until you host HTML).
 
-**Pilot interim (until fleet ORS proxy is in use):** **you** paste ORS (and optional TomTom) keys onto pilot devices during setup. Hauliers should not be asked to create HeiGIT accounts.
+---
 
-### Block 2 — Fleet Part B (~30 min) **optional pre-fleet pilot**
+## Block 2 — Fleet Part B (~30 min) **recommended before first meeting**
 
-Mac + iPhone on same Wi‑Fi. Full steps: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B. Part A smoke already runs in CI.
+Mac + iPhone on same Wi‑Fi. Full steps: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B.
 
 1. Mac: `cd RouteFinder && swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY"`
 2. Mac: Dispatch Console → org + vehicle → show **QR** / copy vehicle UUID
@@ -37,25 +41,33 @@ Mac + iPhone on same Wi‑Fi. Full steps: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) P
 4. Enable **HGV mode** before routing
 5. Mac: Push trip → iPhone toast ~5 s → Find route → Rehearse
 6. iPhone: Walkaround ≥1 defect → Save
-7. Mac: Defect card + PDF on dispatch console
+7. Mac: Defect card + PDF + optional snapshot pin on dispatch console
 
-### Block 3 — Norfolk pilot outreach **(CI is green — do this now)**
+---
 
-1. Print [`pilot-fleet-pack.md`](pilot-fleet-pack.md)
+## Block 3 — Norfolk pilot outreach **(primary)**
+
+1. Print [`pilot-fleet-pack.md`](pilot-fleet-pack.md) (agreement + **£39/mo** API-included pricing table)
 2. Optional: Block 1b phone smoke
-3. Send **3–5** variants from [`pilot-outreach.md`](pilot-outreach.md) (start with Alfie Adams #2)
+3. Send **3–5** Norfolk variants from [`pilot-outreach.md`](pilot-outreach.md) — start with **N1 J Medler** / **N2 Richardson**, not northern reserves
 4. Log date + outcome in the outreach target table
 5. Log every **Android / Windows** objection in [`pilot-feedback-backlog.md`](pilot-feedback-backlog.md)
 
 Pitch line (honest):
 
-> UK HGV nav with physics rehearsal no other app has. Push trips from your office Mac or browser over Wi‑Fi — no per-seat CoPilot tax. We set everything up for you in the pilot.
+> UK HGV nav with physics rehearsal. Push trips from your office Mac or browser over Wi‑Fi — no per-seat CoPilot tax. Free 60-day / 3-phone pilot; after that a small desk fee with routing API included. We set everything up for you.
 
-Do **not** promise: live telematics map, hosted SaaS portal, CarPlay, Android Auto, full Android navigation, remote VU, or 24/7 support.
+**May mention:** dispatch map pin from trip snapshots, read-only partner telematics CSV, optional hosted gateway for remote depots, UK toll **hints**, Android driver app for mixed fleets.
 
-### Block 4 — Free legal checklist
+**Do not promise:** continuous live telematics platform, TRAVIS booking commerce, toll tariff tables, legal VU download, 24/7 SLA, CarPlay (unless paid-team entitled build), Android Auto.
 
-Complete remaining free items in [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md) (Ltd entity, trademark filing decision, solicitor quote). Required before paid pilots / App Store.
+---
+
+## Block 4 — Legal checklist (you)
+
+Complete [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md): Ltd entity, trademark filing decision, solicitor review, host [`legal/site/`](legal/site/) HTML, App Store Connect URLs. Required before **paid** pilots / App Store. Free pilots may start with signed pilot agreement + in-app Driver Terms while solicitor review is booked.
+
+Verification checklist: [`phase9-legal-gtm-verification.md`](phase9-legal-gtm-verification.md).
 
 ---
 
@@ -72,22 +84,4 @@ npm run dev
 # open http://127.0.0.1:5173
 ```
 
-Operator guides: [`getting-started.md`](getting-started.md) · [`fleet-setup-guide.md`](fleet-setup-guide.md) · [`web-dispatch-operator-guide.md`](web-dispatch-operator-guide.md)
-
----
-
-## Agent follow-up (continuity + operator-paid APIs)
-
-Shipped / shipping with this audit sprint:
-
-- Fleet Setup Wizard + QR pair (Mac / iOS / web)
-- Web dispatch v1.5 (onboarding, health, snapshots, map preview)
-- Fleet server ORS proxy + client routing without customer HeiGIT keys
-- Server-side metering + fair-use docs
-
-**Still gated on pilots (do not build yet):**
-
-- Full Android navigator (C2) — [`android-c2-gate.md`](android-c2-gate.md)
-- Hosted multi-tenant portal / live telematics map / CarPlay production
-
-Do not start Android C2 until the gate document says unlock (≥2 paying renewals blocked by Android).
+Operator guides: [`getting-started.md`](getting-started.md) · [`fleet-setup-guide.md`](fleet-setup-guide.md) · [`web-dispatch-operator-guide.md`](web-dispatch-operator-guide.md) · [`hosted-gateway-deployment.md`](hosted-gateway-deployment.md)

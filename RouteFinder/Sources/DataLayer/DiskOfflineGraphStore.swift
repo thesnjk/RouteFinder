@@ -126,6 +126,25 @@ public actor DiskOfflineGraphStore: OfflineGraphStorePort {
         minLon: Double,
         maxLon: Double
     ) async throws {
+        try await ensureCorridor(
+            minLat: minLat,
+            maxLat: maxLat,
+            minLon: minLon,
+            maxLon: maxLon,
+            onProgress: nil
+        )
+    }
+
+    /// Ensures graph tiles covering the bounding box are on disk and assembled in memory.
+    ///
+    /// - Parameter onProgress: Optional callback with completed/total cell count after each cell.
+    public func ensureCorridor(
+        minLat: Double,
+        maxLat: Double,
+        minLon: Double,
+        maxLon: Double,
+        onProgress: (@Sendable (Int, Int) -> Void)?
+    ) async throws {
         let cells = H3Grid.cellsCovering(
             minLat: minLat,
             maxLat: maxLat,
@@ -136,6 +155,8 @@ public actor DiskOfflineGraphStore: OfflineGraphStorePort {
         let index = H3TileIndex(tilesDirectory: tilesDirectory)
         var tiles: [GraphTile] = []
         let decoder = JSONDecoder()
+        let total = cells.count
+        var completed = 0
 
         for cell in cells {
             let localURL = index.tileURL(for: cell)
@@ -143,6 +164,8 @@ public actor DiskOfflineGraphStore: OfflineGraphStorePort {
                 try await downloadTileIfNeeded(cell: cell, destination: localURL)
             }
             guard FileManager.default.fileExists(atPath: localURL.path) else {
+                completed += 1
+                onProgress?(completed, total)
                 continue
             }
             do {
@@ -153,6 +176,8 @@ public actor DiskOfflineGraphStore: OfflineGraphStorePort {
             } catch {
                 throw OfflineGraphStoreError.decodeFailed(cell: cell.description, underlying: error)
             }
+            completed += 1
+            onProgress?(completed, total)
         }
 
         guard !tiles.isEmpty else {

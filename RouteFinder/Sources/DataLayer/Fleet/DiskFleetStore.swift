@@ -93,6 +93,15 @@ public actor DiskFleetStore: FleetDispatchPort {
         if let pdf = snapshot.inspectionReportPDFBase64 {
             trip.inspectionReportPDFBase64 = pdf
         }
+        if let latitude = snapshot.driverLatitude {
+            trip.driverLatitude = latitude
+        }
+        if let longitude = snapshot.driverLongitude {
+            trip.driverLongitude = longitude
+        }
+        if let recordedAt = snapshot.driverLocationRecordedAt {
+            trip.driverLocationRecordedAt = recordedAt
+        }
         trip.updatedAt = snapshot.updatedAt
         tripById[trip.id] = trip
         try persist()
@@ -129,6 +138,46 @@ public actor DiskFleetStore: FleetDispatchPort {
     public func trip(id: UUID) async throws -> FleetTrip? {
         try await loadIfNeeded()
         return tripById[id]
+    }
+
+    /// Appends a read-only telematics ping (webhook stub). Caps at 200 entries.
+    public func ingestTelematics(_ request: TelematicsIngestRequest) async throws -> TelematicsVehiclePing {
+        try await loadIfNeeded()
+        let provider: TelematicsProvider
+        if let raw = request.provider?.lowercased() {
+            if raw.contains("geotab") {
+                provider = .geotab
+            } else if raw.contains("samsara") {
+                provider = .samsara
+            } else {
+                provider = .unknown
+            }
+        } else {
+            provider = .unknown
+        }
+        let label = request.vehicleLabel?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let ping = TelematicsVehiclePing(
+            provider: provider,
+            vehicleLabel: (label?.isEmpty == false ? label! : request.vehicleId.uuidString),
+            latitude: request.latitude,
+            longitude: request.longitude,
+            recordedAt: request.recordedAt
+        )
+        var pings = try loadTelematicsPings()
+        pings.append(ping)
+        if pings.count > 200 {
+            pings = Array(pings.suffix(200))
+        }
+        try saveTelematicsPings(pings)
+        return ping
+    }
+
+    /// Latest telematics pings (newest last), for smoke tests / future GET.
+    public func latestTelematicsPings(limit: Int = 50) async throws -> [TelematicsVehiclePing] {
+        try await loadIfNeeded()
+        let pings = try loadTelematicsPings()
+        guard limit > 0 else { return [] }
+        return Array(pings.suffix(limit))
     }
 
     /// Seeds a demo org, vehicle, and 3-stop UK job (persisted across restarts).
@@ -186,6 +235,21 @@ public actor DiskFleetStore: FleetDispatchPort {
 
     private var snapshotURL: URL {
         directory.appendingPathComponent("fleet-store.json")
+    }
+
+    private var telematicsURL: URL {
+        directory.appendingPathComponent("telematics-pings.json")
+    }
+
+    private func loadTelematicsPings() throws -> [TelematicsVehiclePing] {
+        guard FileManager.default.fileExists(atPath: telematicsURL.path) else { return [] }
+        let data = try Data(contentsOf: telematicsURL)
+        return try decoder.decode([TelematicsVehiclePing].self, from: data)
+    }
+
+    private func saveTelematicsPings(_ pings: [TelematicsVehiclePing]) throws {
+        let data = try encoder.encode(pings)
+        try data.write(to: telematicsURL, options: .atomic)
     }
 
     private func loadIfNeeded() async throws {

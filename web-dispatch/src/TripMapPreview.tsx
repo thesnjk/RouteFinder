@@ -60,6 +60,16 @@ export function TripMapPreview({ trip }: { trip: FleetTrip | null }) {
       markers.push(new Marker({ element: el }).setLngLat([stop.longitude, stop.latitude]).addTo(map))
     }
 
+    if (trip.driverLatitude != null && trip.driverLongitude != null) {
+      bounds.extend([trip.driverLongitude, trip.driverLatitude])
+      const el = document.createElement('div')
+      el.className = 'map-marker map-marker--driver'
+      el.title = 'Driver'
+      markers.push(
+        new Marker({ element: el }).setLngLat([trip.driverLongitude, trip.driverLatitude]).addTo(map),
+      )
+    }
+
     if (trip.stops.length === 1) {
       map.easeTo({ center: [trip.stops[0].longitude, trip.stops[0].latitude], zoom: 11 })
     } else {

@@ -16,6 +16,10 @@ public enum CarPlayServices {
     public static var registerDelegate: ((NavigationSessionDelegate) -> Void)?
     /// Notifies waiting CarPlay scenes that a session is now available.
     public static var onSessionAvailable: (() -> Void)?
+    /// Optional provider of human-readable origin/destination labels for CarPlay trips (e.g. fleet stop names).
+    public static var routeEndpointLabels: (() -> (origin: String, destination: String)?)?
+    /// Optional provider of a CarPlay route-choice title (e.g. `"Norwich → King's Lynn"` for fleet trips).
+    public static var routeChoiceTitle: (() -> String?)?
 
     /// Publishes the active navigation session for CarPlay scene attachment.
     public static func publish(session: NavigationSession) {

@@ -1,40 +1,44 @@
-# RouteFinder Android Fleet Driver (C1)
+# RouteFinder Android Fleet Driver (C2 MVP)
 
-Kotlin + Jetpack Compose scaffold for the **fleet trip receive** client.
+Kotlin + Jetpack Compose **HGV navigator** using the office fleet ORS proxy (no customer API keys on the phone).
 
-**In scope (C1):** connect to `RouteFinderFleetServer`, subscribe to SSE, show active trip stops, publish a basic snapshot / accept status.
+**In scope (C2 MVP):** Driver Terms, fleet wizard (C1), MapLibre Native map, Pelias geocode + ORS `driving-hgv` via `/v1/proxy/*`, metric voice TBT, SSE trip handoff, physics rehearsal (grade-aware ETA).
 
-**Out of scope (C2):** full HGV navigator, physics rehearsal, offline graph, Android Auto — see [`Docs/android-c2-gate.md`](../Docs/android-c2-gate.md).
+**Still deferred:** Android Auto, offline graph/tiles, LEZ avoid, layby/HOS/hazard parity with iOS.
 
-## Open in Android Studio
-
-1. Install Android Studio Ladybug+ with JDK 17.
-2. **File → Open** → `/Users/admin/Developer/RouteFinder/android-fleet-driver`
-3. Sync Gradle → Run on emulator or device (same Wi‑Fi as fleet server).
+## Build
 
 ```bash
 cd /Users/admin/Developer/RouteFinder/android-fleet-driver
+./gradlew :app:testDebugUnitTest
 ./gradlew :app:assembleDebug
 ```
 
-## Configure
+CI: `android-c1` job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs unit tests + assembleDebug.
 
-In-app Settings (or `local.properties` overrides later):
+## First-run flow
 
-| Field | Example |
-|-------|---------|
-| Server base URL | `http://192.168.1.10:8080` |
-| API key | optional Bearer key |
-| Vehicle UUID | from web/Mac dispatch console |
+1. **Driver Terms** (required checkbox)
+2. **Onboarding** (C2: receive + navigate)
+3. **Fleet setup** — Discover on LAN / paste URL → Test /health → vehicle QR
+4. **Navigation map** — search → Find route → Start / Rehearse; SSE trips auto-load
+
+Emulator fleet URL default: `http://10.0.2.2:8080`.
 
 ## Module layout
 
 ```
-android-fleet-driver/
-  app/src/main/java/com/routefinder/fleetdriver/
-    MainActivity.kt
-    ui/DriverScreen.kt
-    fleet/FleetApi.kt
-    fleet/FleetModels.kt
-    fleet/FleetSseClient.kt
+fleet/     REST + SSE + prefs + Bonjour
+routing/   FleetOrsConfig, Pelias, ORS HGV client + parsers
+nav/       NavigationSession, progress, ViewModel
+map/       MapLibreMapView + route line
+voice/     ManeuverSpeechFormatter + TTS
+physics/   RouteRehearsalEngine (Wave 2)
+ui/        Terms, wizard, NavigationMapScreen, geocode field
 ```
+
+## Device QA
+
+[`Docs/phase6b-android-nav-verification.md`](../Docs/phase6b-android-nav-verification.md)
+
+Gate notes: [`Docs/android-c2-gate.md`](../Docs/android-c2-gate.md)

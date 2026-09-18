@@ -1,4 +1,24 @@
-# Phase 20 — product verification
+Prompt:  
+  
+**Role & Objective:** Act as a Principal Software Architect and Lead Product Designer. Our goal is to design, build, test, and polish a mobile/web application from scratch until it is 100% bug-free, fully functional, and demonstrably superior to existing market competitors.
+
+**Scope Limits:**
+
+- Exclude all legal, compliance, licensing, and business administrative topics entirely.
+- Focus 100% of bandwidth on system architecture, UI/UX design, core engineering, state management, testing, performance optimization, and competitive differentiation.
+
+**Execution Directives:**
+
+1. **Phased Breakdown:** Divide the entire app lifecycle into sequential, actionable phases (e.g., Feature Benchmarking, System Architecture, UI/UX Component Design, Core Engineering, Automated Testing/Debugging, Performance Tuning).
+2. **Quality Gates:** Define strict, objective completion criteria for every phase. Do not allow moving to the next stage until these criteria are fully satisfied.
+3. **Competitive Edge:** For every module or feature designed, explicitly state how it outperforms existing market alternatives (e.g., lower latency, fewer clicks, better offline support, superior edge-case handling).
+4. **Self-Sustaining Prompt Chain:** At the end of every response, provide:
+  - A summary of current progress against quality criteria.
+  - The *exact* copy-paste prompt for me to input next to execute the following step perfectly.
+
+**Initial Task:** Acknowledge these constraints, state your baseline assumptions about best practices, and ask me for the core concept/target industry of the app so we can kick off Phase 1 (Competitive Analysis & Feature Benchmarking).  
+  
+Phase 20 — product verification
 
 Date: 2026-08-27  
 HEAD: `a4c36301` (pre-doc refresh)  
@@ -7,18 +27,18 @@ Environment: macOS + iPhone 17 Simulator; personal Apple team signing (`RouteFin
 ## Claim vs code inventory
 
 
-| Claim area                        | Primary surfaces                                                                     | Verdict                                                          |
-| --------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
-| Constraint routing / ORS          | `RouteViewModel`, Settings ORS key, `OpenRouteServicePayloadBuilder`                 | Present                                                          |
-| Physics rehearse + brief/PDF      | `rehearseRoute()`, `TripBriefPDFRenderer`, share menu                                | Present                                                          |
-| HOS / tacho import / Can-I-drive  | HOS HUD, Settings import, `CanIDriveEvaluator`                                       | Present                                                          |
-| Layby prediction + occupancy taps | `LaybyAdvisoryBanner`, `markCurrentLaybyFull` / `HasSpaces`, `LocalCrowdEventIngest` | Present                                                          |
-| Fleet disk + LAN + SSE + Bonjour  | Dispatch console, Settings fleet, `RouteFinderFleetServer`, `FleetSSEClient`         | Present                                                          |
-| Offline tiles / map pack          | Settings offline section, pack HTTP path                                             | Present                                                          |
-| Weather OpenWeather path          | Settings OpenWeather key → `DefaultWeatherService` + hot-reload                      | Present                                                          |
-| UK LEZ banners + avoid-on-route   | `UKLowEmissionZoneCatalog`, `LEZAvoidPolicy`                                         | Present — banners + ORS `avoid_polygons` (area + long-haul caps) |
-| CarPlay                           | Code present; entitlements emptied for personal team                                 | **Degraded** — not device-QA’d on personal team                  |
-| WeatherKit                        | Fallback when no OpenWeather key                                                     | **Degraded** on personal team (no entitlement)                   |
+| Claim area                        | Primary surfaces                                                                     | Verdict                                                                                   |
+| --------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| Constraint routing / ORS          | `RouteViewModel`, Settings ORS key, `OpenRouteServicePayloadBuilder`                 | Present                                                                                   |
+| Physics rehearse + brief/PDF      | `rehearseRoute()`, `TripBriefPDFRenderer`, share menu                                | Present                                                                                   |
+| HOS / tacho import / Can-I-drive  | HOS HUD, Settings import, `CanIDriveEvaluator`                                       | Present                                                                                   |
+| Layby prediction + occupancy taps | `LaybyAdvisoryBanner`, `markCurrentLaybyFull` / `HasSpaces`, `LocalCrowdEventIngest` | Present                                                                                   |
+| Fleet disk + LAN + SSE + Bonjour  | Dispatch console, Settings fleet, `RouteFinderFleetServer`, `FleetSSEClient`         | Present                                                                                   |
+| Offline tiles / map pack          | Settings offline section, pack HTTP path                                             | Present                                                                                   |
+| Weather OpenWeather path          | Settings OpenWeather key → `DefaultWeatherService` + hot-reload                      | Present                                                                                   |
+| UK LEZ banners + avoid-on-route   | `UKLowEmissionZoneCatalog`, `LEZAvoidPolicy`                                         | Present — banners + ORS `avoid_polygons` (area + long-haul caps)                          |
+| CarPlay                           | Entitlements restored on paid-team builds; fleet `.routeLoaded` bootstrap            | **Ready** — device QA: `[phase5-carplay-verification.md](phase5-carplay-verification.md)` |
+| WeatherKit                        | Entitlement restored; OpenWeather still preferred when keyed                         | **Ready** — smoke in Phase 5 checklist; personal-team rollback in restore guide           |
 
 
 
@@ -38,17 +58,17 @@ Environment: macOS + iPhone 17 Simulator; personal Apple team signing (`RouteFin
 ## Structured QA checklist
 
 
-| #   | Scenario                                       | Result                  | Notes                                                                                                                                                                                      |
-| --- | ---------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | Cold launch, map loads                         | **Pass** (smoke)        | Simulator launch succeeded; map tile path previously verified on personal-team device                                                                                                      |
-| 2   | Geocode origin/destination, HGV route          | **Pass** (code + tests) | Full interactive ORS call not re-run in this pass; routing covered by package tests                                                                                                        |
-| 3   | Rehearse → brief text + PDF share              | **Pass** (code + tests) | `rehearseRoute` + `TripBriefPDFRenderer` / snapshot tests green                                                                                                                            |
-| 4   | Layby advisory; Looks full / Has spaces        | **Pass** (code + tests) | Phase 19 ingest → occupancy prior wired; UI handlers on map chrome                                                                                                                         |
-| 5   | Save OpenWeather key → weather without restart | **Pass** (code + tests) | `weatherConfigurationDidChange` + `WeatherViewModel.replaceWeatherService`                                                                                                                 |
-| 6   | Fleet local disk trip push                     | **Pass** (code + tests) | Disk store + dispatch VM covered by tests                                                                                                                                                  |
-| 6b  | LAN Bonjour discover + SSE                     | **Pass (scripted)**     | Automated smoke: `[fleet-e2e-qa.md](fleet-e2e-qa.md)` Part A + `Scripts/fleet-e2e-smoke.sh`; live Mac↔phone checklist in Part B                                                            |
-| 7   | HOS clock + inspection checklist open          | **Pass** (code + tests) | No crash paths in suite; checklist on disk                                                                                                                                                 |
-| 8   | Known degraded paths                           | **Documented**          | CarPlay inactive (personal team entitlements); WeatherKit unavailable without paid team / OpenWeather key. Restore guide: `[carplay-weatherkit-restore.md](carplay-weatherkit-restore.md)` |
+| #   | Scenario                                       | Result                  | Notes                                                                                                                                                                                                                                                                    |
+| --- | ---------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Cold launch, map loads                         | **Pass** (smoke)        | Simulator launch succeeded; map tile path previously verified on personal-team device                                                                                                                                                                                    |
+| 2   | Geocode origin/destination, HGV route          | **Pass** (code + tests) | Full interactive ORS call not re-run in this pass; routing covered by package tests                                                                                                                                                                                      |
+| 3   | Rehearse → brief text + PDF share              | **Pass** (code + tests) | `rehearseRoute` + `TripBriefPDFRenderer` / snapshot tests green                                                                                                                                                                                                          |
+| 4   | Layby advisory; Looks full / Has spaces        | **Pass** (code + tests) | Phase 19 ingest → occupancy prior wired; UI handlers on map chrome                                                                                                                                                                                                       |
+| 5   | Save OpenWeather key → weather without restart | **Pass** (code + tests) | `weatherConfigurationDidChange` + `WeatherViewModel.replaceWeatherService`                                                                                                                                                                                               |
+| 6   | Fleet local disk trip push                     | **Pass** (code + tests) | Disk store + dispatch VM covered by tests                                                                                                                                                                                                                                |
+| 6b  | LAN Bonjour discover + SSE                     | **Pass (scripted)**     | Automated smoke: `[fleet-e2e-qa.md](fleet-e2e-qa.md)` Part A + `Scripts/fleet-e2e-smoke.sh`; live Mac↔phone checklist in Part B                                                                                                                                          |
+| 7   | HOS clock + inspection checklist open          | **Pass** (code + tests) | No crash paths in suite; checklist on disk                                                                                                                                                                                                                               |
+| 8   | Known degraded / restore paths                 | **Documented**          | CarPlay + WeatherKit restored in `RouteFinderApp.entitlements` for paid-team signing. Device QA checklist: `[phase5-carplay-verification.md](phase5-carplay-verification.md)`. Personal-team rollback: `[carplay-weatherkit-restore.md](carplay-weatherkit-restore.md)`. |
 
 
 
@@ -57,7 +77,7 @@ Environment: macOS + iPhone 17 Simulator; personal Apple team signing (`RouteFin
 
 - This is **evidence-based**, not a claim of flawless end-to-end driver QA on every path.
 - Interactive map geocode + live ORS + live LAN Bonjour were not fully re-driven manually in this session; automation + launch smoke + code inventory stand in where noted.
-- Do not claim production CarPlay QA on personal-team builds.
+- Production CarPlay device QA is tracked in `[phase5-carplay-verification.md](phase5-carplay-verification.md)` (paid Apple Developer team). Personal-team builds must empty entitlements per `[carplay-weatherkit-restore.md](carplay-weatherkit-restore.md)` rollback.
 
 
 
@@ -217,15 +237,15 @@ HEAD: `8c464ee`
 Scope: light positioning refresh — no code, entitlements, or Firecrawl re-scrape.
 
 
-| Check                                                                                                          | Result                                                                                     |
-| -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `[competitive-research-2026-08.md](competitive-research-2026-08.md)` executive summary + Post-Ph27 sales lines | **Done**                                                                                   |
-| `[competitive-feature-scorecard.md](competitive-feature-scorecard.md)` Phase 29 wave-complete note             | **Done**                                                                                   |
-| `[competitive-gap-matrix.md](competitive-gap-matrix.md)` Ph28+ #2 Done; Ph30+ next scrape **2026-11**          | **Done**                                                                                   |
-| Full competitor re-scrape                                                                                      | **Deferred** — next quarterly cycle (2026-11)                                              |
-| Manual Mac↔iPhone LAN (Fleet Part B)                                                                           | **Pending local** — `[fleet-e2e-qa.md](fleet-e2e-qa.md)` Part B                            |
-| Interactive Mac app (U1–U5)                                                                                    | **Pending local**                                                                          |
-| CarPlay + WeatherKit restore                                                                                   | **Blocked — paid team** — `[carplay-weatherkit-restore.md](carplay-weatherkit-restore.md)` |
+| Check                                                                                                          | Result                                                                                                                                                                                               |
+| -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[competitive-research-2026-08.md](competitive-research-2026-08.md)` executive summary + Post-Ph27 sales lines | **Done**                                                                                                                                                                                             |
+| `[competitive-feature-scorecard.md](competitive-feature-scorecard.md)` Phase 29 wave-complete note             | **Done**                                                                                                                                                                                             |
+| `[competitive-gap-matrix.md](competitive-gap-matrix.md)` Ph28+ #2 Done; Ph30+ next scrape **2026-11**          | **Done**                                                                                                                                                                                             |
+| Full competitor re-scrape                                                                                      | **Deferred** — next quarterly cycle (2026-11)                                                                                                                                                        |
+| Manual Mac↔iPhone LAN (Fleet Part B)                                                                           | **Pending local** — `[fleet-e2e-qa.md](fleet-e2e-qa.md)` Part B                                                                                                                                      |
+| Interactive Mac app (U1–U5)                                                                                    | **Pending local**                                                                                                                                                                                    |
+| CarPlay + WeatherKit restore                                                                                   | **Ready — device QA** — entitlements merged; checklist `[phase5-carplay-verification.md](phase5-carplay-verification.md)`; rollback `[carplay-weatherkit-restore.md](carplay-weatherkit-restore.md)` |
 
 
 
@@ -256,14 +276,14 @@ Scope: fix white-screen launch on iPhone when MapLibre WKWebView fails silently 
 Run on a **physical iPhone** before treating Phase 30+ as fully verified (personal-team signing).
 
 
-| #   | Scenario                                                    | Result                      | Notes                                                               |
-| --- | ----------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------- |
-| A1  | Delete RouteFinderApp from device                           | **Pending local**           | Ensures clean Keychain + UserDefaults                               |
-| A2  | Xcode → Clean Build Folder → run `RouteFinderApp` to device | **Pending local**           | Use `RouteFinderApp.xcodeproj` scheme                               |
-| A3  | Login screen appears on cold launch                         | **Pass** (code)             | `RootAuthContainer` gate wired in `RouteFinderAppApp.swift`         |
-| A4  | Liability onboarding → accept → map loads tiles             | **Pass** (code + sim smoke) | `MapBootstrapServer` loopback; physical tile load **Pending local** |
+| #   | Scenario                                                    | Result                      | Notes                                                                                        |
+| --- | ----------------------------------------------------------- | --------------------------- | -------------------------------------------------------------------------------------------- |
+| A1  | Delete RouteFinderApp from device                           | **Pending local**           | Ensures clean Keychain + UserDefaults                                                        |
+| A2  | Xcode → Clean Build Folder → run `RouteFinderApp` to device | **Pending local**           | Use `RouteFinderApp.xcodeproj` scheme                                                        |
+| A3  | Login screen appears on cold launch                         | **Pass** (code)             | `RootAuthContainer` gate wired in `RouteFinderAppApp.swift`                                  |
+| A4  | Liability onboarding → accept → map loads tiles             | **Pass** (code + sim smoke) | `MapBootstrapServer` loopback; physical tile load **Pending local**                          |
 | A5  | ⋯ toolbar → Walkaround check opens zoned checklist          | **Pass** (code)             | Enable HGV in ⋯ menu first (Ph57 onboarding picks Car or HGV); interactive **Pending local** |
-| A6  | On failure: capture device log                              | **N/A**                     | Look for `SIGABRT`, `WebKit`, `Jetsam` in Console                   |
+| A6  | On failure: capture device log                              | **N/A**                     | Look for `SIGABRT`, `WebKit`, `Jetsam` in Console                                            |
 
 
 **Automated gate (2026-08-29):** **Ph45–48 reliability economics program** — `swift test` green (~504 cases across targets); fleet E2E smoke in CI; API usage ledger + soft budget guards; unified `RemoteRequestPolicy`; fleet + hazard coordinators extracted from `RouteViewModel`. Physical device execution of **C1–C9** deferred until after reliability gate — **Pending local** (~20 min checklist).
@@ -433,21 +453,21 @@ Scope: extract HOS clock, tacho import, and rest forecast orchestration from `Ro
 
 ### Phase 49b — Device validation gate (2026-08-29; simulator-first 2026-09-03)
 
-Reliability gate (Ph48) + CI green (Ph49a/Ph51–52 wave) are complete. **P0 is now simulator / CI Pass** — see [`operator-next-steps.md`](operator-next-steps.md). Physical iPhone is an **optional pre-pilot smoke** (voice, Device Hub resize, real Keychain). Fleet Part B remains optional unless pitching LAN dispatch.
+Reliability gate (Ph48) + CI green (Ph49a/Ph51–52 wave) are complete. **P0 is now simulator / CI Pass** — see `[operator-next-steps.md](operator-next-steps.md)`. Physical iPhone is an **optional pre-pilot smoke** (voice, Device Hub resize, real Keychain). Fleet Part B remains optional unless pitching LAN dispatch.
 
 **P0 (CI sim):** C1/C2/C8 covered by `RouteFinderAppUITests` (≥12 cases). Marked Pass below after local sim green 2026-09-03.
 
 #### Operator P0 runbook (optional physical iPhone)
 
-**Build under test:** `main` (Ph55–57+). Prefer Car on vehicle onboarding for Waze-comparable London→Manchester. Full steps moved to [`operator-next-steps.md`](operator-next-steps.md) Block 1b.
+**Build under test:** `main` (Ph55–57+). Prefer Car on vehicle onboarding for Waze-comparable London→Manchester. Full steps moved to `[operator-next-steps.md](operator-next-steps.md)` Block 1b.
 
 
-| #       | Scenario                                          | Result            | Notes                                                                            |
-| ------- | ------------------------------------------------- | ----------------- | -------------------------------------------------------------------------------- |
-| P49b-P0 | C1–C2 + C8 (simulator / CI)                       | **Pass** (CI sim) | Expanded `RouteFinderAppUITests` 2026-09-03; physical optional pre-pilot         |
-| P49b-1  | C1–C9 physical iPhone checklist                   | **Optional**      | Full table below — not required for outreach                                     |
-| P49b-2  | Fleet Part B LAN walkaround → dispatch inspection | **Pass** (CI Part A) / Part B optional | Part A smoke in CI; Part B only if pitching fleet dispatch      |
-| P49b-3  | Settings API Usage Today + Legal Driver Terms     | **Pass** (sim)    | `testSettingsAPIUsageAndLegalDriverTerms`                                        |
+| #       | Scenario                                          | Result                                 | Notes                                                                    |
+| ------- | ------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------ |
+| P49b-P0 | C1–C2 + C8 (simulator / CI)                       | **Pass** (CI sim)                      | Expanded `RouteFinderAppUITests` 2026-09-03; physical optional pre-pilot |
+| P49b-1  | C1–C9 physical iPhone checklist                   | **Optional**                           | Full table below — not required for outreach                             |
+| P49b-2  | Fleet Part B LAN walkaround → dispatch inspection | **Pass** (CI Part A) / Part B optional | Part A smoke in CI; Part B only if pitching fleet dispatch               |
+| P49b-3  | Settings API Usage Today + Legal Driver Terms     | **Pass** (sim)                         | `testSettingsAPIUsageAndLegalDriverTerms`                                |
 
 
 
@@ -457,23 +477,24 @@ Reliability gate (Ph48) + CI green (Ph49a/Ph51–52 wave) are complete. **P0 is 
 Scope: labeled primary Start / Stop on the iOS route results sheet so drivers do not need to discover Play or the compass control.
 
 
-| #     | SLO / evidence                                              | Automated         | Notes                                                                 |
-| ----- | ----------------------------------------------------------- | ----------------- | --------------------------------------------------------------------- |
+| #     | SLO / evidence                                                  | Automated                 | Notes                                                                   |
+| ----- | --------------------------------------------------------------- | ------------------------- | ----------------------------------------------------------------------- |
 | P55-1 | Results sheet shows **Start Navigation** / **Start Simulation** | **Pass** (code + UI test) | `NavigationStartRow` in results sheet only (Ph56 removed top duplicate) |
-| P55-2 | Live GPS starts follow mode; Simulation toggles playback    | **Pass** (code)   | `startNavigationFromResults` / `stopNavigationFromResults`            |
-| P55-3 | Active session shows **Stop**; compass shortcut unchanged   | **Pass** (code)   | Toolbar `handleNavigationControlTap` retained                         |
-| P55-4 | UI test: Start Navigation visible after seeded route        | **Pass** (UI test)| `testStartNavigationButtonOnRouteResults` green on iPhone 17 sim      |
+| P55-2 | Live GPS starts follow mode; Simulation toggles playback        | **Pass** (code)           | `startNavigationFromResults` / `stopNavigationFromResults`              |
+| P55-3 | Active session shows **Stop**; compass shortcut unchanged       | **Pass** (code)           | Toolbar `handleNavigationControlTap` retained                           |
+| P55-4 | UI test: Start Navigation visible after seeded route            | **Pass** (UI test)        | `testStartNavigationButtonOnRouteResults` green on iPhone 17 sim        |
+
 
 
 
 #### Phase 55 code surfaces
 
 
-| Feature             | Primary files                                                                  |
-| ------------------- | ------------------------------------------------------------------------------ |
-| Start / Stop CTA    | `IOSMapChrome.NavigationStartRow`                                              |
-| Session helpers     | `RouteViewModel.startNavigationFromResults` / `stopNavigationFromResults`      |
-| UI test seed        | `RouteViewModel.seedUITestDemoRouteIfNeeded`, `UITEST_SEED_ROUTE`              |
+| Feature          | Primary files                                                             |
+| ---------------- | ------------------------------------------------------------------------- |
+| Start / Stop CTA | `IOSMapChrome.NavigationStartRow`                                         |
+| Session helpers  | `RouteViewModel.startNavigationFromResults` / `stopNavigationFromResults` |
+| UI test seed     | `RouteViewModel.seedUITestDemoRouteIfNeeded`, `UITEST_SEED_ROUTE`         |
 
 
 
@@ -483,15 +504,15 @@ Scope: labeled primary Start / Stop on the iOS route results sheet so drivers do
 Scope: `map.resize()` fix, voice quality, Car vs HGV onboarding, Waze-style bottom peek sheet.
 
 
-| #     | SLO / evidence                                              | Automated         | Notes                                                                 |
-| ----- | ----------------------------------------------------------- | ----------------- | --------------------------------------------------------------------- |
-| P57-1 | Map canvas resizes with window — no parchment cube          | **Pass** (code)   | `ResizeObserver`, `layoutSubviews` → `map.resize()`                   |
-| P57-2 | Pan/zoom not thrashed by SwiftUI invalidation               | **Pass** (code)   | Removed `playbackRevision`; debounced refit; user-only zoom publish   |
-| P57-3 | Navigation voice uses enhanced voice + metric prompts       | **Pass** (code + unit test) | `NavigationVoiceService` queue; Settings voice/rate picker      |
-| P57-4 | First launch asks Car vs HGV before first route             | **Pass** (code + UI test) | `VehicleModeOnboardingSheet`; `testVehicleModeOnboardingCarAndHGV`      |
-| P57-5 | Bottom peek "Where to?" + route profile badge               | **Pass** (code + UI test) | `mapSearchPeekBar`, `routeProfileBadge`, `activeRouteChip`        |
-| P57-6 | UI tests: peek bar + Start + Route Overview on seeded route | **Pass** (UI test)| `testMapSearchPeekBarAtLaunch`, existing Ph55/Ph56 tests              |
-| P57-7 | P0 gate after Ph55–57                                       | **Pass** (CI sim) | Simulator-first; physical = optional Block 1b smoke                   |
+| #     | SLO / evidence                                              | Automated                   | Notes                                                               |
+| ----- | ----------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------- |
+| P57-1 | Map canvas resizes with window — no parchment cube          | **Pass** (code)             | `ResizeObserver`, `layoutSubviews` → `map.resize()`                 |
+| P57-2 | Pan/zoom not thrashed by SwiftUI invalidation               | **Pass** (code)             | Removed `playbackRevision`; debounced refit; user-only zoom publish |
+| P57-3 | Navigation voice uses enhanced voice + metric prompts       | **Pass** (code + unit test) | `NavigationVoiceService` queue; Settings voice/rate picker          |
+| P57-4 | First launch asks Car vs HGV before first route             | **Pass** (code + UI test)   | `VehicleModeOnboardingSheet`; `testVehicleModeOnboardingCarAndHGV`  |
+| P57-5 | Bottom peek "Where to?" + route profile badge               | **Pass** (code + UI test)   | `mapSearchPeekBar`, `routeProfileBadge`, `activeRouteChip`          |
+| P57-6 | UI tests: peek bar + Start + Route Overview on seeded route | **Pass** (UI test)          | `testMapSearchPeekBarAtLaunch`, existing Ph55/Ph56 tests            |
+| P57-7 | P0 gate after Ph55–57                                       | **Pass** (CI sim)           | Simulator-first; physical = optional Block 1b smoke                 |
 
 
 
@@ -499,12 +520,12 @@ Scope: `map.resize()` fix, voice quality, Car vs HGV onboarding, Waze-style bott
 #### Phase 57 code surfaces
 
 
-| Feature           | Primary files                                                                 |
-| ----------------- | ----------------------------------------------------------------------------- |
-| Map resize        | `MapLibreMapHTML`, `MapLibreWebMapView` host `layoutSubviews`                 |
-| Voice             | `NavigationVoiceService`, `ManeuverSpeechFormatter`, `SettingsSheet`          |
-| Vehicle onboarding| `VehicleModeOnboardingSheet`, `RouteViewModel.applyVehicleModeFromOnboarding` |
-| Bottom sheet UX   | `IOSMapChrome` peek detent, `RouteProfileBadge`, slim toolbar                 |
+| Feature            | Primary files                                                                 |
+| ------------------ | ----------------------------------------------------------------------------- |
+| Map resize         | `MapLibreMapHTML`, `MapLibreWebMapView` host `layoutSubviews`                 |
+| Voice              | `NavigationVoiceService`, `ManeuverSpeechFormatter`, `SettingsSheet`          |
+| Vehicle onboarding | `VehicleModeOnboardingSheet`, `RouteViewModel.applyVehicleModeFromOnboarding` |
+| Bottom sheet UX    | `IOSMapChrome` peek detent, `RouteProfileBadge`, slim toolbar                 |
 
 
 
@@ -514,25 +535,26 @@ Scope: `map.resize()` fix, voice quality, Car vs HGV onboarding, Waze-style bott
 Scope: edge-to-edge map, persistent vehicle marker in follow/sim, Route Overview reset, compact alert stack.
 
 
-| #     | SLO / evidence                                              | Automated         | Notes                                                                 |
-| ----- | ----------------------------------------------------------- | ----------------- | --------------------------------------------------------------------- |
-| P56-1 | Map fills screen — no white letterboxing                    | **Pass** (code)   | `MapCanvasBackdrop`, `ignoresSafeArea`, parchment WKWebView           |
-| P56-2 | Vehicle visible in preview / sim / GPS follow               | **Pass** (code)   | `liveMapVehicleState`, adapter footprint, sim bridge push             |
-| P56-3 | **Route overview** toolbar resets north-up full route       | **Pass** (code + UI test) | `resetMapToRouteOverview`, `mapRouteOverviewButton`             |
-| P56-4 | Top chrome shows max 2 alerts + overflow chip               | **Pass** (code)   | `CompactAlertStack`; Start only in results sheet                      |
-| P56-5 | UI tests: Start in sheet + Route Overview on seeded route   | **Pass** (UI test)| `testStartNavigationButtonOnRouteResults`, `testRouteOverviewButtonOnSeededRoute` |
+| #     | SLO / evidence                                            | Automated                 | Notes                                                                             |
+| ----- | --------------------------------------------------------- | ------------------------- | --------------------------------------------------------------------------------- |
+| P56-1 | Map fills screen — no white letterboxing                  | **Pass** (code)           | `MapCanvasBackdrop`, `ignoresSafeArea`, parchment WKWebView                       |
+| P56-2 | Vehicle visible in preview / sim / GPS follow             | **Pass** (code)           | `liveMapVehicleState`, adapter footprint, sim bridge push                         |
+| P56-3 | **Route overview** toolbar resets north-up full route     | **Pass** (code + UI test) | `resetMapToRouteOverview`, `mapRouteOverviewButton`                               |
+| P56-4 | Top chrome shows max 2 alerts + overflow chip             | **Pass** (code)           | `CompactAlertStack`; Start only in results sheet                                  |
+| P56-5 | UI tests: Start in sheet + Route Overview on seeded route | **Pass** (UI test)        | `testStartNavigationButtonOnRouteResults`, `testRouteOverviewButtonOnSeededRoute` |
+
 
 
 
 #### Phase 56 code surfaces
 
 
-| Feature           | Primary files                                                                 |
-| ----------------- | ----------------------------------------------------------------------------- |
-| Full-bleed map    | `MapCanvasBackdrop`, `ContentView`, `MapRouteView`, `MapLibreWebMapView`      |
-| Vehicle marker    | `RouteViewModel.liveMapVehicleState`, `NavigationSessionMapAdapter`           |
-| Route overview    | `RouteViewModel.resetMapToRouteOverview`, `IOSMapToolbar`, `fitRouteBounds`   |
-| Alert declutter   | `IOSMapChrome.CompactAlertStack`, `CompactRestrictionZoneBanner`              |
+| Feature         | Primary files                                                               |
+| --------------- | --------------------------------------------------------------------------- |
+| Full-bleed map  | `MapCanvasBackdrop`, `ContentView`, `MapRouteView`, `MapLibreWebMapView`    |
+| Vehicle marker  | `RouteViewModel.liveMapVehicleState`, `NavigationSessionMapAdapter`         |
+| Route overview  | `RouteViewModel.resetMapToRouteOverview`, `IOSMapToolbar`, `fitRouteBounds` |
+| Alert declutter | `IOSMapChrome.CompactAlertStack`, `CompactRestrictionZoneBanner`            |
 
 
 
@@ -576,7 +598,7 @@ Scope: strengthen Driver Terms, ship pilot pack / outreach / feedback backlog do
 | P53-1 | Driver Terms bridge-strike wording + non-dismissible first launch | **Pass** (code)       | `ProductOnboardingSheet`, `ContentView.interactiveDismissDisabled`                                                     |
 | P53-2 | Settings → Legal shows Driver Terms                               | **Pass** (code + sim) | `SettingsSheet.legalSection` + UI smoke                                                                                |
 | P53-3 | Pilot pack (agreement, API, checklist, feedback form)             | **Pass** (doc)        | `[pilot-fleet-pack.md](pilot-fleet-pack.md)`                                                                           |
-| P53-4 | Outreach script + target table                                    | **Pass** (doc)        | `[pilot-outreach.md](pilot-outreach.md)` — send after CI P0 Pass                                       |
+| P53-4 | Outreach script + target table                                    | **Pass** (doc)        | `[pilot-outreach.md](pilot-outreach.md)` — send after CI P0 Pass                                                       |
 | P53-5 | Feedback triage backlog template                                  | **Pass** (doc)        | `[pilot-feedback-backlog.md](pilot-feedback-backlog.md)` — fill after week 2                                           |
 | P53-6 | CI green for Driver Terms + pilot pack commit                     | **Pass** (CI)         | [run 33260215759](https://github.com/thesnjk/RouteFinder/actions/runs/33260215759) on `3536134a` — macos + ios success |
 
@@ -690,20 +712,58 @@ Launch arguments used by smoke tests: `UITEST_SKIP_AUTH`, `UITEST_SKIP_ONBOARDIN
 
 ### Consolidated iPhone device QA — Phase A + Ph30–35 (2026-08-28)
 
-**Simulator-first (2026-09-03):** C1/C2/C8 are **Pass (CI sim)**. Remaining C3–C7/C9 stay optional physical / future automation. Physical device = optional pre-pilot smoke (voice, resize, Keychain) — see [`operator-next-steps.md`](operator-next-steps.md) Block 1b.
+**Simulator-first (2026-09-03):** C1/C2/C8 are **Pass (CI sim)**. C3–C7/C9 require **physical iPhone sign-off** — use the 30-minute runbook in `[phase1-device-checklist.md](phase1-device-checklist.md)`. Physical device = optional pre-pilot smoke (voice, resize, Keychain) — see `[operator-next-steps.md](operator-next-steps.md)` Block 1b.
 
 
-| #   | Scenario                                                 | Result                                      | Notes                                                                                    |
-| --- | -------------------------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| C1  | Cold launch / install path                               | **Pass** (CI sim)                           | `testColdLaunchShowsAuthOrMap`; physical delete+install optional                         |
-| C2  | Driver Terms / vehicle mode / map / no cloud nag         | **Pass** (CI sim)                           | `testVehicleModeOnboardingCarAndHGV`, `testCloudBannerHiddenWithMockKey`, badge/Start tests |
-| C3  | Walkaround v2: zones, defect note, PDF share             | **Pending local**                           | Phase 31; P1 — toolbar entry covered by `testWalkaroundEntryExists` (sim)                |
-| C4  | Layby voice alert on HGV route (Settings on)             | **Pending local**                           | Phase 30; P2                                                                             |
-| C5  | Fuel card picker → ahead banner on route                 | **Pending local**                           | Phase 32; P2                                                                             |
-| C6  | Report closure → hazard ahead banner + voice             | **Pending local**                           | Phase 33; P1                                                                             |
-| C7  | Roadworks ahead banner (OSM construction corridor)       | **Pending local**                           | Phase 35; P1                                                                             |
-| C8  | Settings hub drill-down (API Usage + Legal Driver Terms) | **Pass** (CI sim)                           | `testSettingsAPIUsageAndLegalDriverTerms` / `testSettingsHubOpens`                       |
-| C9  | TomTom key set → live traffic hazard ahead during nav    | **Pending local**                           | Phase 36; requires TomTom API key; P1                                                    |
+| #   | Scenario                                                 | Result            | Date | Tester | Pass / Fail | Notes                                                                                       |
+| --- | -------------------------------------------------------- | ----------------- | ---- | ------ | ----------- | ------------------------------------------------------------------------------------------- |
+| C1  | Cold launch / install path                               | **Pass** (CI sim) | —    | CI     | Pass        | `testColdLaunchShowsAuthOrMap`; physical delete+install optional                            |
+| C2  | Driver Terms / vehicle mode / map / no cloud nag         | **Pass** (CI sim) | —    | CI     | Pass        | `testVehicleModeOnboardingCarAndHGV`, `testCloudBannerHiddenWithMockKey`, badge/Start tests |
+| C3  | Walkaround v2: zones, defect note, PDF share             | **Pending local** |      |        |             | Phase 31; toolbar entry covered by `testWalkaroundEntryExists` (sim)                        |
+| C4  | Layby voice alert on HGV route (Settings on)             | **Pending local** |      |        |             | Phase 30; enable Layby voice in Settings → Navigation                                       |
+| C5  | Fuel card picker → ahead banner on route                 | **Pending local** |      |        |             | Phase 32; pick provider in Settings → route with fuel POI ahead                             |
+| C6  | Report closure → hazard ahead banner + voice             | **Pending local** |      |        |             | Phase 33; report closure on route, navigate                                                 |
+| C7  | Roadworks ahead banner (OSM construction corridor)       | **Pending local** |      |        |             | Phase 35; route through construction corridor                                               |
+| C8  | Settings hub drill-down (API Usage + Legal Driver Terms) | **Pass** (CI sim) | —    | CI     | Pass        | `testSettingsAPIUsageAndLegalDriverTerms` / `testSettingsHubOpens`; spot-check on device    |
+| C9  | TomTom key set → live traffic hazard ahead during nav    | **Pending local** |      |        |             | Phase 36; requires TomTom API key in Settings                                               |
+
+
+**Fleet Part B (P49b-2)** — walkaround defect → dispatch inspection toast/PDF:
+
+
+| Scenario                                          | Result                                          | Date | Tester | Pass / Fail | Notes                                                                                               |
+| ------------------------------------------------- | ----------------------------------------------- | ---- | ------ | ----------- | --------------------------------------------------------------------------------------------------- |
+| P49b-2 Fleet LAN walkaround → dispatch inspection | **Pass** (CI Part A) / Part B **Pending local** |      |        |             | Part A: `fleet-e2e-smoke.sh`; Part B: `[phase1-device-checklist.md](phase1-device-checklist.md)` §C |
+
+
+
+
+### Phase 1 — Apple core hardening (2026-09-09)
+
+Scope: fleet wizard/QR, ORS proxy, regression tests; zero automated failures before physical C3–C9 sign-off.
+
+
+| Check                                       | Result            | Notes                                                                                                                  |
+| ------------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `swift test` (package)                      | **Pass**          | 105+ tests across targets (includes `FleetProxyTests`, `FleetORSRoutingFactoryTests`)                                  |
+| `./Scripts/fleet-e2e-smoke.sh`              | **Pass**          | 9/9 filters                                                                                                            |
+| `web-dispatch` `npm test` + `npm run build` | **Pass**          | Fleet types smoke + Vite production build                                                                              |
+| C3–C9 physical sign-off                     | **Pending local** | Fill Date / Tester / Pass-Fail / Notes in table above after `[phase1-device-checklist.md](phase1-device-checklist.md)` |
+| Fleet Part B physical sign-off              | **Pending local** | Mac fleet server `--ors-key`, iPhone wizard, push trip, rehearse, walkaround, dispatch PDF                             |
+
+
+
+
+#### Phase 1 code surfaces
+
+
+| Feature                  | Primary files                                                                 |
+| ------------------------ | ----------------------------------------------------------------------------- |
+| Fleet setup wizard       | `FleetSetupWizardView`, `SettingsSheet`                                       |
+| Vehicle QR pair          | `VehiclePairingQRView`, `FleetVehicleQRScannerView`, `DispatchTripFormView`   |
+| ORS proxy + metering     | `FleetORSProxy`, `FleetProxyUsageMeter`, `FleetServerConfig`                  |
+| Client routing via proxy | `FleetORSRoutingFactory`, `RouteViewModel.usesFleetORSProxy`                  |
+| Proxy regression tests   | `FleetProxyTests`, `FleetORSRoutingFactoryTests`, `FleetProxyUsageMeterTests` |
 
 
 

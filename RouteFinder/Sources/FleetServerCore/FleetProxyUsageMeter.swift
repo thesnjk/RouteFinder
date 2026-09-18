@@ -13,11 +13,17 @@ public struct FleetProxyUsageBudget: Sendable, Equatable {
     }
 }
 
-/// In-memory calendar-day metering for fleet ORS proxy requests.
+/// Calendar-day metering for fleet ORS proxy requests, optionally persisted to disk.
 public actor FleetProxyUsageMeter {
     public enum Provider: String, Sendable {
         case orsRoute
         case orsGeocode
+    }
+
+    private struct Snapshot: Codable, Sendable {
+        var dayStamp: String
+        var routeCount: Int
+        var geocodeCount: Int
     }
 
     private var dayStamp: String
@@ -25,11 +31,38 @@ public actor FleetProxyUsageMeter {
     private var geocodeCount = 0
     private let budget: FleetProxyUsageBudget
     private let calendar: Calendar
+    private let persistenceURL: URL?
 
-    public init(budget: FleetProxyUsageBudget = .default, calendar: Calendar = .current) {
+    /// Creates a meter. When `persistenceURL` is set, counts are loaded and saved atomically.
+    public init(
+        budget: FleetProxyUsageBudget = .default,
+        calendar: Calendar = .current,
+        persistenceURL: URL? = nil
+    ) {
         self.budget = budget
         self.calendar = calendar
+        self.persistenceURL = persistenceURL
         self.dayStamp = Self.dayKey(Date(), calendar: calendar)
+        if let persistenceURL {
+            Self.loadInto(
+                url: persistenceURL,
+                dayStamp: &dayStamp,
+                routeCount: &routeCount,
+                geocodeCount: &geocodeCount,
+                calendar: calendar
+            )
+        }
+    }
+
+    /// Convenience: persist under `directory/proxy-meter.json`.
+    public init(
+        budget: FleetProxyUsageBudget = .default,
+        storageDirectory: URL,
+        calendar: Calendar = .current
+    ) {
+        let url = storageDirectory.appendingPathComponent("proxy-meter.json")
+        try? FileManager.default.createDirectory(at: storageDirectory, withIntermediateDirectories: true)
+        self.init(budget: budget, calendar: calendar, persistenceURL: url)
     }
 
     /// Returns false when the hard daily cap for this provider is already reached.
@@ -48,6 +81,7 @@ public actor FleetProxyUsageMeter {
         case .orsRoute: routeCount += 1
         case .orsGeocode: geocodeCount += 1
         }
+        persistIfNeeded()
     }
 
     /// Snapshot for `/v1/proxy/status`.
@@ -68,6 +102,44 @@ public actor FleetProxyUsageMeter {
         dayStamp = today
         routeCount = 0
         geocodeCount = 0
+        persistIfNeeded()
+    }
+
+    private func persistIfNeeded() {
+        guard let persistenceURL else { return }
+        let snapshot = Snapshot(dayStamp: dayStamp, routeCount: routeCount, geocodeCount: geocodeCount)
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            let data = try encoder.encode(snapshot)
+            try data.write(to: persistenceURL, options: .atomic)
+        } catch {
+            // Metering must not take down the server; skip failed writes.
+        }
+    }
+
+    private static func loadInto(
+        url: URL,
+        dayStamp: inout String,
+        routeCount: inout Int,
+        geocodeCount: inout Int,
+        calendar: Calendar
+    ) {
+        guard FileManager.default.fileExists(atPath: url.path),
+              let data = try? Data(contentsOf: url),
+              let snapshot = try? JSONDecoder().decode(Snapshot.self, from: data) else {
+            return
+        }
+        let today = dayKey(Date(), calendar: calendar)
+        if snapshot.dayStamp == today {
+            dayStamp = snapshot.dayStamp
+            routeCount = snapshot.routeCount
+            geocodeCount = snapshot.geocodeCount
+        } else {
+            dayStamp = today
+            routeCount = 0
+            geocodeCount = 0
+        }
     }
 
     private static func dayKey(_ date: Date, calendar: Calendar) -> String {

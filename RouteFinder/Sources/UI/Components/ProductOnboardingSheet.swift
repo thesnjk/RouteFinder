@@ -232,6 +232,7 @@ struct ProductOnboardingSheet: View {
     }
 
     /// Full Driver Terms copy shown on first launch and in Settings → Legal.
+    /// Keep aligned with `Docs/legal/driver-terms.md` and Android `DRIVER_TERMS_BODY`.
     static let driverTermsBody = """
     Routing, physics rehearsal, layby suggestions, HOS advisories, and turn-by-turn guidance in RouteFinder are advisory planning aids only.
 
@@ -241,6 +242,7 @@ struct ProductOnboardingSheet: View {
     """
 
     /// Checkbox label for mandatory first-launch acceptance.
+    /// Keep aligned with `Docs/legal/driver-terms.md`.
     static let driverTermsAcceptanceLabel =
         "I understand routing and guidance are advisory only; physical signs and bridge plates always supersede the app; the developer is not liable for incorrect routing."
 

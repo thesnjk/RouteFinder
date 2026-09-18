@@ -42,7 +42,7 @@ Until then: invest in pilots, legal, web dispatch, and C1 polish only.
 
 **C2 unlock date:** _not yet_
 
-**Chosen C2 approach:** _undecided_
+**Chosen C2 approach:** greenfield Kotlin (fleet ORS proxy client) — see Implementation status below
 
 ---
 
@@ -60,3 +60,7 @@ Until then: invest in pilots, legal, web dispatch, and C1 polish only.
 2. Turn-by-turn progress + metric voice
 3. Accept Driver Terms + Privacy Policy in-app
 4. Share vehicle UUID / fleet settings with C1
+
+**Implementation status (2026-09-11):** C2 MVP landed in [`../android-fleet-driver/`](../android-fleet-driver/) (fleet proxy routing, MapLibre, metric TTS, SSE handoff, grade rehearsal). Device QA: [`phase6b-android-nav-verification.md`](phase6b-android-nav-verification.md). Pilot renewal gate above remains the product unlock for prioritizing further parity work.
+
+**Chosen C2 approach:** greenfield Kotlin in-app navigator (thin client calling office fleet ORS/Pelias proxy).

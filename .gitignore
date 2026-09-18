@@ -21,6 +21,11 @@ RouteFinder/RouteFinderMacApp.app/
 web-dispatch/node_modules/
 web-dispatch/dist/
 
+# Hosted gateway (Node)
+hosted-gateway/node_modules/
+hosted-gateway/data/
+hosted-gateway/config/orgs.json
+
 # Android fleet driver
 android-fleet-driver/.gradle/
 android-fleet-driver/**/build/

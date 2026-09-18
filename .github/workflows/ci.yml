@@ -89,3 +89,37 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+
+  android-c1:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android-fleet-driver
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Unit tests
+        run: ./gradlew :app:testDebugUnitTest --no-daemon
+      - name: Assemble debug APK
+        run: ./gradlew :app:assembleDebug --no-daemon
+
+  hosted-gateway:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hosted-gateway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: hosted-gateway/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run typecheck

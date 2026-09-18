@@ -30,7 +30,7 @@ The Swift Package iOS target already declares the intended keys in [`RouteFinder
 
 CarPlay-only reference: [`RouteFinderIOS.carplay.entitlements`](../RouteFinder/Sources/RouteFinderIOS/RouteFinderIOS.carplay.entitlements).
 
-The signed **RouteFinderApp** target currently uses an empty plist for personal-team builds.
+The signed **RouteFinderApp** target includes CarPlay Maps + WeatherKit keys for **paid-team** signing. Personal (free) teams must revert to an empty `<dict/>` per Rollback below.
 
 ---
 
@@ -109,5 +109,6 @@ Routing, fleet dispatch, physics rehearsal, and OpenWeather weather continue to 
 ## Related docs
 
 - [README — Personal team verification](../README.md#ios-app)
+- [Phase 5 CarPlay verification checklist](phase5-carplay-verification.md)
 - [Phase 20 verification — scenario 8](phase20-verification.md)
 - [Competitive gap matrix — Phase 28+ backlog](competitive-gap-matrix.md)

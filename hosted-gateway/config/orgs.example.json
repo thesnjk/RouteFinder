@@ -1,0 +1,9 @@
+[
+  {
+    "id": "11111111-1111-1111-1111-111111111111",
+    "name": "Demo Haulage Ltd",
+    "bearerToken": "replace-with-a-long-random-secret",
+    "routeDailyCap": 2000,
+    "geocodeDailyCap": 2000
+  }
+]

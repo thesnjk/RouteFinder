@@ -9,6 +9,7 @@ public struct OpenRouteServiceRoutingClient: ExternalRoutingClient, Sendable {
     private let baseURL: URL
     private let session: URLSession
     private let allowLANHTTP: Bool
+    private let useBearerAuthorization: Bool
 
     /// Creates an ORS routing client with the given HeiGIT API key.
     ///
@@ -17,11 +18,13 @@ public struct OpenRouteServiceRoutingClient: ExternalRoutingClient, Sendable {
     ///   - baseURL: Defaults to HeiGIT hosted ORS; pass fleet `…/v1/proxy/ors/v2` for operator-paid routing.
     ///   - session: URL session (use `.shared` for LAN HTTP proxy).
     ///   - allowLANHTTP: When true, permits `http://` private-network fleet proxy URLs.
+    ///   - useBearerAuthorization: When true, sends `Authorization: Bearer {apiKey}` (fleet server auth).
     public init(
         apiKey: String,
         baseURL: URL? = nil,
         session: URLSession = SecureURLSession.shared,
-        allowLANHTTP: Bool = false
+        allowLANHTTP: Bool = false,
+        useBearerAuthorization: Bool = false
     ) throws {
         let trimmed = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
@@ -39,6 +42,7 @@ public struct OpenRouteServiceRoutingClient: ExternalRoutingClient, Sendable {
         self.baseURL = resolvedBase
         self.session = session
         self.allowLANHTTP = allowLANHTTP
+        self.useBearerAuthorization = useBearerAuthorization
     }
 
     /// Calculates a route via the configured OpenRouteService profile.
@@ -74,7 +78,8 @@ public struct OpenRouteServiceRoutingClient: ExternalRoutingClient, Sendable {
     ) async throws -> (Data, HTTPURLResponse) {
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
-        urlRequest.setValue(apiKey, forHTTPHeaderField: "Authorization")
+        let authorization = useBearerAuthorization ? "Bearer \(apiKey)" : apiKey
+        urlRequest.setValue(authorization, forHTTPHeaderField: "Authorization")
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         urlRequest.setValue(ORSAPIDefaults.userAgent, forHTTPHeaderField: "User-Agent")
         urlRequest.httpBody = try OpenRouteServicePayloadBuilder.buildData(from: request)

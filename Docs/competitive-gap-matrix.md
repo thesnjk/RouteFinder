@@ -1,7 +1,7 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-08-29 (Phase 45–48 reliability economics program)  
-Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then advisory tacho + offline packs. **CarPlay deferred** until paid-team signing.
+Last updated: 2026-09-15 (Phase 8 competitive parity extras)  
+Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then advisory tacho + offline packs. **CarPlay** ready for paid-team signing.
 
 > **Aug 29 Phase 45–48:** On-device API usage ledger + soft budget guards; unified remote retry policy; `FleetDispatchCoordinator` + `HazardNavigationCoordinator` extracted from `RouteViewModel`; fleet E2E smoke in CI; architecture ADR. See [`unit-economics.md`](unit-economics.md), [`architecture.md`](architecture.md), and [`phase20-verification.md`](phase20-verification.md#phase-4548-reliability-economics-program-2026-08-29).
 
@@ -88,17 +88,18 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **56** | iOS native map feel (full-bleed, vehicle, overview, alerts) | **Done** (code) — `MapCanvasBackdrop`, `CompactAlertStack`, device QA pending |
 | **57** | Map resize, voice, Car/HGV onboarding, bottom peek sheet  | **Done** (code) — P57-7 device QA **Pending local** |
 | **58** | Device-feedback fixes (post-P0)                             | **Blocked** — agent implements after operator marks P0 Pass/Fail |
+| **P8** | Competitive parity extras (toll hints, telematics stub, parking links, offline UX, lane depth) | **Done** (2026-09) — see [`phase8-parity-verification.md`](phase8-parity-verification.md) |
 
 ### Remaining gaps (explicitly not claiming parity)
 
-- **CarPlay / Android Auto** (deferred — personal-team entitlements)
+- **CarPlay / Android Auto** (deferred — personal-team entitlements; CarPlay code restored for paid teams)
 
-- Full multi-country **toll tariff tables**
-- **Remote VU download** (partner SDK — VDO / Stoneridge / Samsara)
+- Full multi-country **toll tariff tables** (Phase 8 ships **named UK toll advisories** only — not live prices)
+- **Remote VU download** (partner SDK — VDO / Stoneridge / Samsara); Phase 8 has **read-only CSV / webhook stub** only
 - **Android Auto**
 - **In-process planet PBF** parser (pipeline uses osmium + `PBFPreprocessor` / tile scripts instead)
-- Paid live fuel-price API / SNAP booking / **TRAVIS parking booking** (CoPilot Jul 2026)
-- **Hosted fleet web portal / multi-tenant SaaS** (native dispatch + secured LAN server shipped; hosted portal deferred)
+- Paid live fuel-price API / SNAP booking / **TRAVIS parking booking** (Phase 8: **deep links** only)
+- **Hosted fleet web portal / multi-tenant SaaS** (hosted gateway exists; no billing UI)
 - Legal cadastral LEZ polygons / diesel vs petrol nuance (authored rings are simplified envelopes)
 
 ## Competitor strengths (Phase 20 refresh — 2026-08-27)
@@ -137,6 +138,9 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | Fleet fuel card POI advisory | **OSM brand/name match banner** (Keyfuels, UK Fuels, AllStar, Esso, BP) | Fuel prices (Sygic) | Weak | Phase 32; no paid fuel API |
 | Live closure / hazard ahead alert | **Voice + banner** (crowd + TomTom live + promoted hazards) | Waze-style crowd | Weak | Phase 33 + 36 |
 | Roadworks ahead advisory | **OSM construction along corridor** | Varies | Weak | Phase 35; $0 Overpass |
+| UK toll awareness (advisory) | **Named authored tolls along route** (hints + operator links; **not** tariff tables) | Strong tariffs | Weak | Phase 8 |
+| Telematics display (read-only) | **CSV import + fleet ingest stub** | Strong live | **Strong** | Phase 8 — not VU |
+| Parking partner redirect | **TRAVIS / SNAP deep links** | Booking (CoPilot) | Weak | Phase 8 — no commerce |
 
 ## White space RouteFinder owns
 
@@ -168,7 +172,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 2. **Map label i18n** — **Done** (Phase 27b) — MapLibre label language preference in Settings.
 3. **Fleet E2E scripted QA** — **Done** (Phase 27c) — [`fleet-e2e-qa.md`](fleet-e2e-qa.md) + `Scripts/fleet-e2e-smoke.sh`.
 4. **Paid-team CarPlay entitlement restore** — playbook only; see [`carplay-weatherkit-restore.md`](carplay-weatherkit-restore.md). Execute when signing allows (explicitly deferred from Phase 26 on personal team).
-5. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs, legal cadastral LEZ polygons, TRAVIS booking integration.
+5. **Defer:** full toll **tariff tables**, remote VU download, Android Auto, hosted fleet SaaS admin, paid SNAP/fuel APIs, legal cadastral LEZ polygons, TRAVIS **booking** integration.
 
 ## Phase 28+ backlog (ranked)
 

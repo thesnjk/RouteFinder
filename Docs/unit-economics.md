@@ -2,7 +2,7 @@
 
 RouteFinder tracks outbound API calls to protect free-tier quotas and to support **operator-paid** fleet routing (customers do not paste HeiGIT keys when the fleet ORS proxy is enabled).
 
-Last updated: 2026-09-04
+Last updated: 2026-09-17
 
 ## Providers (on-device ledger)
 
@@ -45,7 +45,7 @@ Driver apps with **Use remote fleet server** route through this proxy and do not
 
 `APIUsageLedger` (actor, `DataLayer/Metering`) rolls up `(provider, timestamp)` into calendar-day counts persisted under Application Support (`RouteFinder/metering/api-usage.json`).
 
-Fleet proxy metering (`FleetProxyUsageMeter`) is in-memory per server process (resets on restart / calendar day).
+Fleet proxy metering (`FleetProxyUsageMeter`) persists calendar-day counts under the fleet storage directory (`proxy-meter.json`). Hosted gateway meters per org under `data/<orgId>/proxy-meter.json`.
 
 ## Cost model vs physics cost model
 
@@ -53,7 +53,17 @@ The `CostModel` module remains route physics and simulation economics. Unit econ
 
 ## Pricing fair-use (subscription narrative)
 
-Indicative post-pilot desk fee: **£29–£49/mo** for ≤10 trucks on LAN, **API cost included** when the operator runs the fleet ORS proxy. Fair-use = hard caps above; abuse / quota exhaustion is Operator’s responsibility to escalate with Provider. Hosted multi-tenant metering (Phase C) replaces in-memory caps later.
+**API-included desk subscription** (align with [`pilot-fleet-pack.md`](pilot-fleet-pack.md)):
+
+| Tier | Scope | Indicative price | Included |
+|------|--------|------------------|----------|
+| Pilot | ≤3 phones, 60 days | **£0** | Setup + feedback |
+| Desk LAN | ≤10 trucks, office LAN server | **£39/mo** (band £29–£49) | Fleet console + **ORS/Pelias proxy** fair-use (2k route / 2k geocode per day per server) |
+| Desk + remote | Hosted gateway VPS | **£49–£79/mo** + VPS pass-through | Same API caps **per org** on gateway; Operator owns VPS |
+| Extra trucks | >10 on same desk | **£3–£5/truck/mo** (negotiable) | Same proxy caps — abuse = 429 |
+| Owner-operator App Store | Single driver | **Deferred** post-pilot | Separate SKU later |
+
+**API cost included** means Provider/Operator supplies HeiGIT usage via fleet `--ors-key` / hosted `ORS_API_KEY` — **not** unlimited planet-scale routing. Fair-use = hard caps above; abuse / quota exhaustion is Operator’s responsibility to escalate with Provider. Hosted gateway metering is config/token based ([hosted-gateway-deployment.md](hosted-gateway-deployment.md)); billing UI remains deferred.
 
 ## Operational guidance
 

@@ -22,6 +22,27 @@ import Testing
     #expect(trip.routeChoices.count == 1)
 }
 
+@Test func makeTripUsesCustomEndpointNames() {
+    let origin = CLLocationCoordinate2D(latitude: 52.63, longitude: 1.30)
+    let destination = CLLocationCoordinate2D(latitude: 52.75, longitude: 0.40)
+    let routeChoice = CarPlayTemplateFactory.makeRouteChoice(
+        name: "Norwich → King's Lynn",
+        distanceMeters: 70_000,
+        timeSeconds: 3_600
+    )
+    let trip = CarPlayTemplateFactory.makeTrip(
+        origin: origin,
+        destination: destination,
+        routeChoices: [routeChoice],
+        originName: "Norwich",
+        destinationName: "King's Lynn"
+    )
+
+    #expect(trip.origin.name == "Norwich")
+    #expect(trip.destination.name == "King's Lynn")
+    #expect(trip.routeChoices.count == 1)
+}
+
 @Test func carPlayManeuverFactoryMapsTurnInstruction() {
     let instruction = TurnInstruction(
         maneuver: .left,

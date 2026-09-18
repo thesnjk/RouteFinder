@@ -49,6 +49,52 @@ import Testing
     #expect(updated.predictedLayby?.stop.label == "M1 J15 Layby")
 }
 
+@Test func applySnapshotMergesDriverGPSOntoTrip() async throws {
+    let store = InMemoryFleetStore()
+    let seeded = try await store.seedDemoThreeStopJob()
+    let recordedAt = Date(timeIntervalSince1970: 1_720_000_000)
+    let snapshot = FleetTripSnapshot(
+        tripId: seeded.trip.id,
+        status: .active,
+        orderedStopIds: seeded.trip.stops.map(\.id),
+        physicsETASeconds: 7_200,
+        driverLatitude: 52.6309,
+        driverLongitude: 1.2974,
+        driverLocationRecordedAt: recordedAt
+    )
+
+    let updated = try await store.applySnapshot(snapshot)
+    #expect(updated.driverLatitude == 52.6309)
+    #expect(updated.driverLongitude == 1.2974)
+    #expect(updated.driverLocationRecordedAt == recordedAt)
+}
+
+@Test func fleetTripSnapshotGPSRoundTripsThroughJSON() throws {
+    let tripId = UUID()
+    let stopId = UUID()
+    let recordedAt = Date(timeIntervalSince1970: 1_720_000_123)
+    let snapshot = FleetTripSnapshot(
+        tripId: tripId,
+        status: .active,
+        orderedStopIds: [stopId],
+        physicsETASeconds: 1_200,
+        driverLatitude: 52.75,
+        driverLongitude: 0.39,
+        driverLocationRecordedAt: recordedAt
+    )
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
+    let data = try encoder.encode(snapshot)
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    let decoded = try decoder.decode(FleetTripSnapshot.self, from: data)
+    #expect(decoded.tripId == tripId)
+    #expect(decoded.driverLatitude == 52.75)
+    #expect(decoded.driverLongitude == 0.39)
+    #expect(abs(decoded.driverLocationRecordedAt!.timeIntervalSince1970 - recordedAt.timeIntervalSince1970) < 1)
+    #expect(decoded.orderedStopIds == [stopId])
+}
+
 @Test func createAndPushTripAssignsStopRoles() async throws {
     let store = InMemoryFleetStore()
     let org = try await store.createOrg(name: "Dispatch Test Ltd")

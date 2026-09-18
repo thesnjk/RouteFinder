@@ -16,6 +16,12 @@ public struct FleetSnapshotBuildInputs: Sendable {
     public let predictedLayby: LaybyAdvisory?
     /// Whether simulation rehearsal has produced telemetry.
     public let rehearsed: Bool
+    /// Driver latitude (WGS84), when known.
+    public let driverLatitude: Double?
+    /// Driver longitude (WGS84), when known.
+    public let driverLongitude: Double?
+    /// When the driver location was recorded.
+    public let driverLocationRecordedAt: Date?
 
     /// Creates snapshot build inputs.
     public init(
@@ -24,7 +30,10 @@ public struct FleetSnapshotBuildInputs: Sendable {
         physicsETASeconds: Double?,
         predictiveReport: PredictiveTelemetryReport?,
         predictedLayby: LaybyAdvisory?,
-        rehearsed: Bool
+        rehearsed: Bool,
+        driverLatitude: Double? = nil,
+        driverLongitude: Double? = nil,
+        driverLocationRecordedAt: Date? = nil
     ) {
         self.tripId = tripId
         self.orderedStopIds = orderedStopIds
@@ -32,6 +41,9 @@ public struct FleetSnapshotBuildInputs: Sendable {
         self.predictiveReport = predictiveReport
         self.predictedLayby = predictedLayby
         self.rehearsed = rehearsed
+        self.driverLatitude = driverLatitude
+        self.driverLongitude = driverLongitude
+        self.driverLocationRecordedAt = driverLocationRecordedAt
     }
 }
 
@@ -60,6 +72,9 @@ public final class FleetDispatchCoordinator {
     private weak var host: FleetDispatchHost?
     private var fleetStore: any FleetDispatchPort
     private var fleetDispatchToastDismissTask: Task<Void, Never>?
+    private var gpsPublishTask: Task<Void, Never>?
+    private var lastPublishedDriverLatitude: Double?
+    private var lastPublishedDriverLongitude: Double?
 
     /// Creates a fleet dispatch coordinator bound to the given host.
     public init(host: FleetDispatchHost, fleetStore: any FleetDispatchPort = FleetStoreFactory.makeStore()) {
@@ -142,7 +157,7 @@ public final class FleetDispatchCoordinator {
         }
     }
 
-    /// Publishes trip status + physics ETA for the dispatch console.
+    /// Publishes trip status + physics ETA (and GPS when available) for the dispatch console.
     public func publishDispatchSnapshot(
         status: FleetTripStatus? = nil,
         inspectionSummary: TripBriefInspectionSummary? = nil,
@@ -158,10 +173,56 @@ public final class FleetDispatchCoordinator {
             predictiveReport: inputs.predictiveReport,
             predictedLayby: inputs.predictedLayby,
             latestInspectionSummary: inspectionSummary,
-            inspectionReportPDFBase64: inspectionReportPDFBase64
+            inspectionReportPDFBase64: inspectionReportPDFBase64,
+            driverLatitude: inputs.driverLatitude,
+            driverLongitude: inputs.driverLongitude,
+            driverLocationRecordedAt: inputs.driverLocationRecordedAt
         )
+        if let latitude = inputs.driverLatitude, let longitude = inputs.driverLongitude {
+            lastPublishedDriverLatitude = latitude
+            lastPublishedDriverLongitude = longitude
+        }
         host.lastPublishedFleetSnapshot = snapshot
         _ = try? await fleetStore.applySnapshot(snapshot)
+        startPeriodicGPSPublishIfNeeded()
+    }
+
+    /// Starts a 20s GPS snapshot loop while an active dispatch trip is present.
+    public func startPeriodicGPSPublishIfNeeded() {
+        guard gpsPublishTask == nil else { return }
+        guard host?.activeDispatchTripId != nil else { return }
+        gpsPublishTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 20_000_000_000)
+                guard !Task.isCancelled else { return }
+                await self?.publishGPSSnapshotIfChanged()
+            }
+        }
+    }
+
+    /// Stops the periodic GPS publish loop.
+    public func stopPeriodicGPSPublish() {
+        gpsPublishTask?.cancel()
+        gpsPublishTask = nil
+        lastPublishedDriverLatitude = nil
+        lastPublishedDriverLongitude = nil
+    }
+
+    private func publishGPSSnapshotIfChanged() async {
+        guard let host, host.activeDispatchTripId != nil else {
+            stopPeriodicGPSPublish()
+            return
+        }
+        guard let inputs = host.fleetSnapshotBuildInputs(),
+              let latitude = inputs.driverLatitude,
+              let longitude = inputs.driverLongitude else {
+            return
+        }
+        let unchanged =
+            lastPublishedDriverLatitude.map { abs($0 - latitude) < 0.00005 } == true
+            && lastPublishedDriverLongitude.map { abs($0 - longitude) < 0.00005 } == true
+        if unchanged { return }
+        await publishDispatchSnapshot()
     }
 
     /// Publishes inspection handoff to the remote fleet server when configured.

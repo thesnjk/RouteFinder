@@ -218,6 +218,21 @@ final class RouteFinderAppUITests: XCTestCase {
         app.descendants(matching: .any)[identifier]
     }
 
+    /// Phase 3: Getting started role picker is visible when role selection is reset.
+    @MainActor
+    func testLaunchRolePickerVisible() throws {
+        let app = XCUIApplication()
+        app.launchArguments += ["UITEST_SKIP_AUTH", "UITEST_RESET_ROLE_PICKER"]
+        app.launch()
+        XCUIDevice.shared.orientation = .portrait
+
+        let driver = app.buttons["launchRoleDriver"]
+        XCTAssertTrue(driver.waitForExistence(timeout: launchTimeout), "launchRoleDriver")
+        XCTAssertTrue(app.buttons["launchRoleDispatcher"].exists)
+        XCTAssertTrue(app.buttons["launchRoleOfficePC"].exists)
+        driver.tap()
+    }
+
     @MainActor
     private func launchApp(
         skipAuth: Bool = false,
@@ -233,7 +248,7 @@ final class RouteFinderAppUITests: XCTestCase {
         if skipAuth {
             app.launchArguments += ["UITEST_SKIP_AUTH"]
             if !resetOnboarding {
-                app.launchArguments += ["UITEST_SKIP_ONBOARDING"]
+                app.launchArguments += ["UITEST_SKIP_ONBOARDING", "UITEST_SKIP_ROLE_PICKER"]
             }
         }
         if resetOnboarding {

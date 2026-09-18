@@ -19,6 +19,9 @@ public enum NavigationWorkspaceSettings {
     private static let speechVoiceIdentifierKey = "RouteFinder.speechVoiceIdentifier"
     private static let speechRateKey = "RouteFinder.speechRate"
     private static let vehicleModeOnboardingCompletedKey = "RouteFinder.vehicleModeOnboardingCompleted"
+    private static let roleSelectionCompletedKey = "RouteFinder.roleSelectionCompleted"
+    private static let launchRoleKey = "RouteFinder.launchRole"
+    private static let roleFollowUpCompletedKey = "RouteFinder.roleFollowUpCompleted"
 
     /// Loads the preferred telemetry source mode.
     public static func loadTelemetrySourceMode(defaults: UserDefaults = .standard) -> LocationProviderMode {
@@ -223,5 +226,36 @@ public enum NavigationWorkspaceSettings {
     /// Persists completion of the Car vs HGV onboarding pick.
     public static func saveHasCompletedVehicleModeOnboarding(_ completed: Bool, defaults: UserDefaults = .standard) {
         defaults.set(completed, forKey: vehicleModeOnboardingCompletedKey)
+    }
+
+    /// Whether the user completed the first-launch role picker.
+    public static func loadHasCompletedRoleSelection(defaults: UserDefaults = .standard) -> Bool {
+        defaults.bool(forKey: roleSelectionCompletedKey)
+    }
+
+    /// Persists completion of the first-launch role picker.
+    public static func saveHasCompletedRoleSelection(_ completed: Bool, defaults: UserDefaults = .standard) {
+        defaults.set(completed, forKey: roleSelectionCompletedKey)
+    }
+
+    /// Loads the selected launch role, if any.
+    public static func loadLaunchRole(defaults: UserDefaults = .standard) -> LaunchRole? {
+        guard let raw = defaults.string(forKey: launchRoleKey) else { return nil }
+        return LaunchRole(rawValue: raw)
+    }
+
+    /// Persists the selected launch role.
+    public static func saveLaunchRole(_ role: LaunchRole, defaults: UserDefaults = .standard) {
+        defaults.set(role.rawValue, forKey: launchRoleKey)
+    }
+
+    /// Whether the role-specific follow-up sheet (fleet CTA / dispatcher guide / office PC) was dismissed.
+    public static func loadHasCompletedRoleFollowUp(defaults: UserDefaults = .standard) -> Bool {
+        defaults.bool(forKey: roleFollowUpCompletedKey)
+    }
+
+    /// Persists completion of the role-specific follow-up sheet.
+    public static func saveHasCompletedRoleFollowUp(_ completed: Bool, defaults: UserDefaults = .standard) {
+        defaults.set(completed, forKey: roleFollowUpCompletedKey)
     }
 }

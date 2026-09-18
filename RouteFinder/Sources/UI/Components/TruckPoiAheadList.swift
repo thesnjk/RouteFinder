@@ -58,6 +58,27 @@ struct TruckPoiAheadList: View {
                             Text(subtitle(for: poi))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
+                            if showsParkingPartnerLink(poi) {
+                                HStack(spacing: 8) {
+                                    Link(
+                                        "TRAVIS",
+                                        destination: ParkingPartnerLinks.travisURL(
+                                            latitude: poi.latitude,
+                                            longitude: poi.longitude,
+                                            label: poi.label
+                                        )
+                                    )
+                                    Link(
+                                        "SNAP",
+                                        destination: ParkingPartnerLinks.snapURL(
+                                            latitude: poi.latitude,
+                                            longitude: poi.longitude,
+                                            label: poi.label
+                                        )
+                                    )
+                                }
+                                .font(.caption2)
+                            }
                         }
                         Spacer(minLength: 0)
                         if let confidence = poi.confidence {
@@ -80,6 +101,15 @@ struct TruckPoiAheadList: View {
 
     private func acceptsFuelCard(_ poi: TruckPoi) -> Bool {
         FuelCardMatcher.accepts(provider: fuelCardProvider, poi: poi)
+    }
+
+    private func showsParkingPartnerLink(_ poi: TruckPoi) -> Bool {
+        switch poi.kind {
+        case .overnightSecureParking, .adrCompatibleParking, .layby:
+            return true
+        default:
+            return false
+        }
     }
 
     private func icon(for kind: TruckPoiKind) -> String {

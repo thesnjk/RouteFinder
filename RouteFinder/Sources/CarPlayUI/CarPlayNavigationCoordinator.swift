@@ -72,7 +72,12 @@ public final class CarPlayNavigationCoordinator: NavigationSessionDelegate {
             sessionAdapter.cancel()
             tripStarted = false
         case .routeLoaded:
-            break
+            // Fleet re-dispatch (or recalculate) while CarPlay is connected: replace the active trip.
+            if tripStarted {
+                sessionAdapter.cancel()
+                tripStarted = false
+            }
+            bootstrapIfNeeded()
         }
     }
 
@@ -117,8 +122,14 @@ public final class CarPlayNavigationCoordinator: NavigationSessionDelegate {
               let origin = geometry.displayCoordinates.first,
               let destination = geometry.displayCoordinates.last else { return }
 
+        let labels = CarPlayServices.routeEndpointLabels?()
+        let originName = nonEmptyLabel(labels?.origin) ?? "Origin"
+        let destinationName = nonEmptyLabel(labels?.destination) ?? "Destination"
+        let routeChoiceName = nonEmptyLabel(CarPlayServices.routeChoiceTitle?())
+            ?? (labels != nil ? "\(originName) → \(destinationName)" : "Active Route")
+
         let routeChoice = CarPlayTemplateFactory.makeRouteChoice(
-            name: "Active Route",
+            name: routeChoiceName,
             distanceMeters: progress.remainingDistanceMeters > 0
                 ? progress.remainingDistanceMeters
                 : progress.totalLengthMeters,
@@ -127,7 +138,9 @@ public final class CarPlayNavigationCoordinator: NavigationSessionDelegate {
         let trip = CarPlayTemplateFactory.makeTrip(
             origin: origin,
             destination: destination,
-            routeChoices: [routeChoice]
+            routeChoices: [routeChoice],
+            originName: originName,
+            destinationName: destinationName
         )
         let instruction = navigationSession.currentInstruction()
             ?? navigationSession.currentInstruction(atArcLength: 0)
@@ -139,6 +152,12 @@ public final class CarPlayNavigationCoordinator: NavigationSessionDelegate {
             progress: progress
         )
         tripStarted = true
+    }
+
+    private func nonEmptyLabel(_ value: String?) -> String? {
+        guard let value else { return nil }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 }
 #endif

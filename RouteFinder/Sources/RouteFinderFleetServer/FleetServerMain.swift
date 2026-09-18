@@ -25,7 +25,14 @@ struct FleetServerApp {
 
         let store = DiskFleetStore(storageDirectory: config.storageDirectory)
         let eventHub = FleetEventHub()
-        let proxyMeter = FleetProxyUsageMeter(budget: config.proxyBudget)
+        let meterStorage: URL = {
+            if let custom = config.storageDirectory {
+                return custom
+            }
+            let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            return support.appendingPathComponent("RouteFinder/fleet", isDirectory: true)
+        }()
+        let proxyMeter = FleetProxyUsageMeter(budget: config.proxyBudget, storageDirectory: meterStorage)
         let router = FleetRouterBuilder.buildRouter(
             store: store,
             apiKey: config.apiKey,

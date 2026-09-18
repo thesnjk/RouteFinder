@@ -26,7 +26,8 @@ public struct DispatchConsoleView: View {
                 DispatchStatusPanel(
                     trip: viewModel.activeTrip,
                     vehicleLabel: viewModel.selectedVehicleLabel,
-                    previewCoordinates: viewModel.previewCoordinates
+                    previewCoordinates: viewModel.previewCoordinates,
+                    telematicsImportBatch: viewModel.telematicsImportBatch
                 )
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -58,13 +59,46 @@ public struct DispatchConsoleView: View {
                     }
                 }
             }
+            ToolbarItem(placement: .automatic) {
+                fleetHealthPill
+            }
         }
         .task {
             await viewModel.refreshCatalog()
+            await viewModel.reloadTelematicsImport()
             viewModel.startPolling()
+            viewModel.startHealthPolling()
         }
         .onDisappear {
             viewModel.stopPolling()
+            viewModel.stopHealthPolling()
         }
+    }
+
+    @ViewBuilder
+    private var fleetHealthPill: some View {
+        let isLocal = viewModel.fleetServerModeLabel == "Local disk"
+        let ok = isLocal || viewModel.fleetServerHealthOk == true
+        let label: String = {
+            if isLocal {
+                return "Local disk"
+            }
+            if viewModel.fleetServerHealthOk == true {
+                if let version = viewModel.fleetServerVersion {
+                    return "Connected · v\(version)"
+                }
+                return "Connected"
+            }
+            if viewModel.fleetServerHealthOk == false {
+                return "Offline"
+            }
+            return "Checking…"
+        }()
+        Text(label)
+            .font(RFFont.caption.weight(.semibold))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .foregroundStyle(ok ? Color.green : Color.red)
+            .controlSheetStyle()
     }
 }

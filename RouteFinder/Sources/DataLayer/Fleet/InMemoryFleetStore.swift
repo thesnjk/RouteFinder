@@ -59,6 +59,15 @@ public actor InMemoryFleetStore: FleetDispatchPort {
         if let pdf = snapshot.inspectionReportPDFBase64 {
             trip.inspectionReportPDFBase64 = pdf
         }
+        if let latitude = snapshot.driverLatitude {
+            trip.driverLatitude = latitude
+        }
+        if let longitude = snapshot.driverLongitude {
+            trip.driverLongitude = longitude
+        }
+        if let recordedAt = snapshot.driverLocationRecordedAt {
+            trip.driverLocationRecordedAt = recordedAt
+        }
         trip.updatedAt = snapshot.updatedAt
         tripById[trip.id] = trip
         return trip

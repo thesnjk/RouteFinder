@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import './App.css'
 import { FleetApiClient } from './fleet/client'
 import type { FleetOrg, FleetProxyStatus, FleetTrip, FleetVehicle } from './fleet/types'
+import { GeocodeSearchField, type GeocodedStop } from './GeocodeSearchField'
 import { TripMapPreview } from './TripMapPreview'
 import { VehicleQR } from './VehicleQR'
 
@@ -38,8 +39,8 @@ export default function App() {
   const [vehicleId, setVehicleId] = useState('')
   const [newOrgName, setNewOrgName] = useState('Pilot fleet')
   const [newVehicleLabel, setNewVehicleLabel] = useState('Unit 1')
-  const [originLabel, setOriginLabel] = useState('Norwich')
-  const [destLabel, setDestLabel] = useState("King's Lynn")
+  const [originStop, setOriginStop] = useState<GeocodedStop | null>(null)
+  const [destStop, setDestStop] = useState<GeocodedStop | null>(null)
   const [lastTrip, setLastTrip] = useState<FleetTrip | null>(null)
   const [liveTrip, setLiveTrip] = useState<FleetTrip | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -75,9 +76,16 @@ export default function App() {
 
   const refreshHealth = useCallback(async () => {
     persist()
-    const h = await client.health()
-    setHealthOk(h.ok)
-    setHealth(h.ok ? `Connected · version ${h.version}` : 'not ok')
+    try {
+      const h = await client.health()
+      setHealthOk(Boolean(h.ok))
+      setHealth(h.ok ? `Connected · version ${h.version}` : 'Offline · health not ok')
+    } catch (err) {
+      setHealthOk(false)
+      setHealth(`Offline · ${err instanceof Error ? err.message : String(err)}`)
+      setProxyStatus(null)
+      return
+    }
     try {
       setProxyStatus(await client.proxyStatus())
     } catch {
@@ -141,7 +149,7 @@ export default function App() {
         <p className="muted">
           LAN console for <code>RouteFinderFleetServer</code> — not a hosted SaaS portal.
         </p>
-        <div className={`health-pill ${healthOk ? 'health-pill--ok' : ''}`}>{health}</div>
+        <div className={`health-pill ${healthOk ? 'health-pill--ok' : 'health-pill--fail'}`}>{health}</div>
       </header>
 
       {showOnboarding ? (
@@ -177,15 +185,19 @@ export default function App() {
           <input
             value={baseUrl}
             onChange={(e) => setBaseUrl(e.target.value)}
-            placeholder="/fleet or http://192.168.1.10:8080"
+            placeholder="/fleet · http://192.168.1.10:8080 · https://fleet.yourdomain.com"
           />
         </label>
+        <p className="muted">
+          LAN fleet server, Vite proxy <code>/fleet</code>, or hosted gateway HTTPS URL. Use the org
+          bearer token below for hosted — never paste the operator ORS key.
+        </p>
         <label>
-          API key (optional)
+          API key / org bearer token
           <input
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            placeholder="Bearer token if server uses --api-key"
+            placeholder="Bearer token (--api-key or hosted org token)"
           />
         </label>
         <div className="row">
@@ -207,8 +219,8 @@ export default function App() {
           <p className="muted">
             ORS proxy:{' '}
             {proxyStatus.orsConfigured
-              ? `on · ${proxyStatus.routesToday}/${proxyStatus.routeDailyCap} routes today`
-              : 'off (start server with --ors-key so drivers need no HeiGIT keys)'}
+              ? `on · ${proxyStatus.routesToday}/${proxyStatus.routeDailyCap} routes · ${proxyStatus.geocodeToday}/${proxyStatus.geocodeDailyCap} geocodes today`
+              : 'off (start server with --ors-key for address search and driver routing)'}
           </p>
         ) : null}
       </section>
@@ -305,24 +317,33 @@ export default function App() {
 
       <section className="panel">
         <h2>Push trip</h2>
-        <label>
-          Origin label
-          <input value={originLabel} onChange={(e) => setOriginLabel(e.target.value)} />
-        </label>
-        <label>
-          Destination label
-          <input value={destLabel} onChange={(e) => setDestLabel(e.target.value)} />
-        </label>
+        <GeocodeSearchField
+          label="Origin"
+          client={client}
+          value={originStop}
+          onChange={setOriginStop}
+          placeholder="Search UK address…"
+          disabled={busy}
+        />
+        <GeocodeSearchField
+          label="Destination"
+          client={client}
+          value={destStop}
+          onChange={setDestStop}
+          placeholder="Search UK address…"
+          disabled={busy}
+        />
         <p className="muted">
-          Demo coordinates: Norwich → King&apos;s Lynn. Dev tip: use base URL <code>/fleet</code> if
-          direct :8080 fails with CORS.
+          Address search uses the fleet Pelias proxy (requires server <code>--ors-key</code>). Pick a
+          suggestion so lat/lon are set before push.
         </p>
         <button
-          disabled={busy || !orgId || !vehicleId}
+          disabled={busy || !orgId || !vehicleId || !originStop || !destStop}
           onClick={() =>
             run(async () => {
               persist()
-              const trip = client.buildDemoTrip(orgId, vehicleId, originLabel, destLabel)
+              if (!originStop || !destStop) return
+              const trip = client.buildTripFromStops(orgId, vehicleId, originStop, destStop)
               const pushed = await client.pushTrip(trip)
               setLastTrip(pushed)
               setLiveTrip(pushed)
@@ -343,6 +364,17 @@ export default function App() {
                 ? ` · physics ETA ${Math.round(snapshotTrip.physicsETASeconds / 60)} min`
                 : ' · waiting for driver ETA'}
             </p>
+            {snapshotTrip.driverLatitude != null && snapshotTrip.driverLongitude != null ? (
+              <p className="muted">
+                Last GPS:{' '}
+                {snapshotTrip.driverLatitude.toFixed(5)}, {snapshotTrip.driverLongitude.toFixed(5)}
+                {snapshotTrip.driverLocationRecordedAt
+                  ? ` · ${new Date(snapshotTrip.driverLocationRecordedAt).toLocaleTimeString()}`
+                  : ''}
+              </p>
+            ) : (
+              <p className="muted">Last GPS: waiting for driver position</p>
+            )}
             <ul>
               {snapshotTrip.stops.map((s) => (
                 <li key={s.id}>

@@ -14,7 +14,7 @@ public struct LaneGuidanceEnrichmentOptions: Sendable, Equatable {
 
     /// Default enrichment limits for route find.
     public static let `default` = LaneGuidanceEnrichmentOptions(
-        maxOverpassManeuvers: 8,
+        maxOverpassManeuvers: 12,
         maxOverpassDistanceMeters: 50_000,
         queryOverpass: true,
         maxConcurrentOverpassRequests: 3
@@ -22,7 +22,7 @@ public struct LaneGuidanceEnrichmentOptions: Sendable, Equatable {
 
     /// Creates enrichment options.
     public init(
-        maxOverpassManeuvers: Int = 8,
+        maxOverpassManeuvers: Int = 12,
         maxOverpassDistanceMeters: Double = 50_000,
         queryOverpass: Bool = true,
         maxConcurrentOverpassRequests: Int = 3

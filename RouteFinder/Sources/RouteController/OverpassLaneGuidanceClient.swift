@@ -40,6 +40,8 @@ public struct OverpassLaneGuidanceClient: Sendable {
         (
           way(around:\(Int(searchRadiusMeters)),\(coordinate.latitude),\(coordinate.longitude))["turn:lanes"];
           way(around:\(Int(searchRadiusMeters)),\(coordinate.latitude),\(coordinate.longitude))["turn:lanes:forward"];
+          way(around:\(Int(searchRadiusMeters)),\(coordinate.latitude),\(coordinate.longitude))["turn:lanes:backward"];
+          way(around:\(Int(searchRadiusMeters)),\(coordinate.latitude),\(coordinate.longitude))["destination:lanes"];
         );
         out tags;
         """
@@ -67,25 +69,33 @@ public struct OverpassLaneGuidanceClient: Sendable {
         }
 
         let envelope = try JSONDecoder().decode(OverpassLaneResponse.self, from: data)
-        let turnLanes = Self.firstTurnLanesTag(in: envelope.elements)
+        let turnLanes = Self.richestTurnLanesTag(in: envelope.elements)
         cache.store(turnLanes: turnLanes, for: coordinate)
 
         guard let turnLanes else { return nil }
         return TurnLanesParser.parse(turnLanes: turnLanes, forManeuver: maneuver)
     }
 
-    private static func firstTurnLanesTag(in elements: [OverpassLaneElement]) -> String? {
-        for element in elements {
-            if let turnLanes = element.tags?["turn:lanes"] {
-                return turnLanes
+    /// Prefers the richest lane tag: turn:lanes > forward > backward > destination:lanes.
+    public static func richestTurnLanesTag(from tagMaps: [[String: String]]) -> String? {
+        let priorityKeys = ["turn:lanes", "turn:lanes:forward", "turn:lanes:backward", "destination:lanes"]
+        var best: String?
+        var bestScore = -1
+        for tags in tagMaps {
+            for (rank, key) in priorityKeys.enumerated() {
+                guard let value = tags[key], !value.isEmpty else { continue }
+                let richness = value.split(separator: "|").count * 10 - rank
+                if richness > bestScore {
+                    bestScore = richness
+                    best = value
+                }
             }
         }
-        for element in elements {
-            if let turnLanes = element.tags?["turn:lanes:forward"] {
-                return turnLanes
-            }
-        }
-        return nil
+        return best
+    }
+
+    private static func richestTurnLanesTag(in elements: [OverpassLaneElement]) -> String? {
+        richestTurnLanesTag(from: elements.compactMap(\.tags))
     }
 }
 

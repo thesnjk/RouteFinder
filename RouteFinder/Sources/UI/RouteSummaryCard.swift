@@ -220,7 +220,8 @@ struct RouteSummaryCard: View {
         .font(.caption2)
         .foregroundStyle(.secondary)
 
-        if result.metrics.tollSegmentCount > 0 || result.metrics.ferrySegmentCount > 0 || result.metrics.tunnelSegmentCount > 0 {
+        if result.metrics.tollSegmentCount > 0 || result.metrics.ferrySegmentCount > 0 || result.metrics.tunnelSegmentCount > 0
+            || !viewModel.routeTollAdvisories.isEmpty {
             HStack(spacing: 12) {
                 if result.metrics.tollSegmentCount > 0 {
                     Label("\(result.metrics.tollSegmentCount) toll(s)", systemImage: "dollarsign.circle")
@@ -234,6 +235,14 @@ struct RouteSummaryCard: View {
             }
             .font(.caption2)
             .foregroundStyle(.secondary)
+            if !viewModel.routeTollAdvisories.isEmpty {
+                Text(viewModel.routeTollAdvisories.map(\.name).joined(separator: " · "))
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+                Text("Named tolls are advisory only — not live tariffs.")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
         }
     }
 

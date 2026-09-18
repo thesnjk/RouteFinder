@@ -44,7 +44,7 @@ public enum TurnLanesParser: Sendable {
             indices = recommended.isEmpty ? defaultRecommendedIndices(for: lanes, maneuver: nil) : recommended
         }
 
-        return LaneGuidance(lanes: lanes, recommendedIndices: indices)
+        return LaneGuidance(lanes: lanes, recommendedIndices: indices, source: .osm)
     }
 
     /// Builds heuristic lane guidance from a maneuver when OSM data is unavailable.
@@ -66,7 +66,7 @@ public enum TurnLanesParser: Sendable {
             guard adjustedLanes.indices.contains(index) else { continue }
             adjustedLanes[index] = arrow(for: maneuver)
         }
-        return LaneGuidance(lanes: adjustedLanes, recommendedIndices: recommended)
+        return LaneGuidance(lanes: adjustedLanes, recommendedIndices: recommended, source: .heuristic)
     }
 
     private static func compoundSubTokens(from laneToken: String) -> [String] {

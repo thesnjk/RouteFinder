@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RouteFinder Privacy Policy</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.5; max-width: 42rem; margin: 2rem auto; padding: 0 1.25rem; }
+    h1 { font-size: 1.75rem; }
+    h2 { font-size: 1.2rem; margin-top: 1.75rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+    th, td { border: 1px solid #8884; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    .meta { color: #666; font-size: 0.9rem; }
+    .banner { border: 1px solid #c90; background: #fff8e6; color: #442; padding: 0.75rem 1rem; border-radius: 6px; margin: 1rem 0; }
+    a { color: inherit; }
+  </style>
+</head>
+<body>
+  <p class="banner"><strong>Draft for solicitor review</strong> — not legal advice. Publish this file to HTTPS and align the URL with App Store Connect and in-app Settings.</p>
+  <h1>RouteFinder Privacy Policy</h1>
+  <p class="meta">Last updated: 2026-09-17<br />
+  Controller: <em>[Ltd company name]</em> — registered address: <em>[registered address]</em><br />
+  Privacy contact: <code>privacy@[YOUR_DOMAIN]</code></p>
+
+  <h2>1. Scope</h2>
+  <p>This policy describes how RouteFinder processes personal data when you use RouteFinder iOS and macOS apps, RouteFinderFleetServer on a LAN, the web dispatch console, the Android fleet driver app, an optional hosted gateway VPS, and pilot programmes under a signed pilot agreement.</p>
+  <p>RouteFinder is primarily an <strong>on-device / on-LAN</strong> product. Default fleet trip and inspection data stay on Operator devices and the Operator’s LAN (or Operator-controlled hosted gateway) store.</p>
+
+  <h2>2. Data we may process</h2>
+  <table>
+    <thead><tr><th>Category</th><th>Examples</th><th>Typical location</th></tr></thead>
+    <tbody>
+      <tr><td>Account</td><td>Local username / password hash (Keychain / Keystore)</td><td>Device</td></tr>
+      <tr><td>Vehicle</td><td>Registration plate, dimensions, HGV profile</td><td>Device / fleet store</td></tr>
+      <tr><td>Trip</td><td>Stops, status, physics ETA, layby / HOS advice</td><td>Device / fleet store</td></tr>
+      <tr><td>Location snapshots</td><td>Periodic lat/lon + timestamp on FleetTripSnapshot for dispatch map pin</td><td>Device → fleet store</td></tr>
+      <tr><td>Telematics (read-only)</td><td>Partner CSV import; optional telematics ingest pings</td><td>Operator device / fleet store</td></tr>
+      <tr><td>Inspection</td><td>Walkaround defects, optional PDF</td><td>Device / fleet store</td></tr>
+      <tr><td>Usage metering</td><td>ORS / Pelias / TomTom / weather API call counts</td><td>Device / fleet / hosted gateway</td></tr>
+      <tr><td>Technical</td><td>Crash logs you choose to share; OS identifiers</td><td>Device / Apple / Google</td></tr>
+      <tr><td>Pilot feedback</td><td>Forms, emails, meeting notes</td><td>Provider systems</td></tr>
+    </tbody>
+  </table>
+  <p>We do <strong>not</strong> sell personal data. Telematics stubs are <strong>not</strong> legal VU / ELD. UK toll advisories are indicative hints, not live tariffs.</p>
+
+  <h2>3. Lawful bases (UK GDPR)</h2>
+  <ul>
+    <li><strong>Contract</strong> — provide routing, dispatch, and pilot services you request</li>
+    <li><strong>Legitimate interests</strong> — product security, abuse prevention, improving advisory features</li>
+    <li><strong>Consent</strong> — where you tick privacy consent at signup, or optional analytics (if introduced later)</li>
+    <li><strong>Legal obligation</strong> — where required by law</li>
+  </ul>
+
+  <h2>4. Third-party processors / APIs</h2>
+  <p>When API keys or the fleet / hosted ORS/Pelias proxy are enabled, requests may go to HeiGIT OpenRouteService, optional TomTom / OpenWeather / WeatherKit, OpenStreetMap Overpass, map tile providers, and parking partner sites (TRAVIS / SNAP) when the driver opens deep links. Their terms apply. Apple App Store / Google Play process distribution under their policies.</p>
+
+  <h2>5. Retention</h2>
+  <ul>
+    <li>Local account and settings: until you delete the app or clear Keychain / Keystore data</li>
+    <li>LAN / hosted fleet store: controlled by the Operator</li>
+    <li>Pilot correspondence: retained as needed, then deleted or anonymised</li>
+  </ul>
+
+  <h2>6. Your rights (UK)</h2>
+  <p>You may request access, rectification, erasure, restriction, portability, and object to certain processing. Contact the privacy email above. You may complain to the <a href="https://ico.org.uk/">ICO</a>.</p>
+
+  <h2>7. Children</h2>
+  <p>RouteFinder is intended for professional drivers and fleet operators, not for children under 16.</p>
+
+  <h2>8. International transfers</h2>
+  <p>Default LAN keeps data on Operator networks. Remote URL / TLS or a hosted gateway is Operator’s hosting choice and risk.</p>
+
+  <h2>9. Changes</h2>
+  <p>We will update the “Last updated” date and, for material changes, notify in-app or by email to pilot contacts.</p>
+
+  <h2>10. Driver Terms relationship</h2>
+  <p>In-app <strong>Driver Terms</strong> cover routing liability and advisory use. This Privacy Policy covers personal data. Both apply.</p>
+
+  <p class="meta"><a href="terms.html">Terms of Service</a></p>
+</body>
+</html>

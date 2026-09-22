@@ -302,7 +302,7 @@ struct IOSMapChrome: View {
 
     private var compactCloudBannerText: String {
         if !viewModel.hasCloudRoutingCapability {
-            return "Cloud routing — add API key or fleet"
+            return "Add API key or Pair with fleet"
         }
         let full = viewModel.cloudRoutingBanner ?? "Cloud routing"
         if full.count > 42 {
@@ -656,15 +656,22 @@ private struct CompactAlertStack: View {
 
     private var alerts: [MapAlertItem] {
         var items: [MapAlertItem] = []
-        if let hazard = viewModel.activeHazardAheadAnnouncement {
-            items.append(.hazard(hazard))
-        }
-        if let roadworks = viewModel.activeRoadworksAhead,
-           let message = RoadworksAheadFormatter.bannerMessage(
-               site: roadworks,
-               currentArcLengthMeters: viewModel.currentRouteArcLengthForDisplay
-           ) {
-            items.append(.roadworks(message))
+        if let risk = viewModel.primaryRouteRiskAdvisory {
+            items.append(.predictiveRisk(risk))
+        } else {
+            if let hazard = viewModel.activeHazardAheadAnnouncement {
+                items.append(.hazard(hazard))
+            }
+            if let roadworks = viewModel.activeRoadworksAhead,
+               let message = RoadworksAheadFormatter.bannerMessage(
+                   site: roadworks,
+                   currentArcLengthMeters: viewModel.currentRouteArcLengthForDisplay
+               ) {
+                items.append(.roadworks(message))
+            }
+            if let kinetic = viewModel.latestKineticAdvisory {
+                items.append(.kinetic(kinetic.spokenText))
+            }
         }
         if viewModel.trafficRerouteAvailable || viewModel.isEvaluatingTrafficReroute {
             items.append(.trafficReroute(viewModel.isEvaluatingTrafficReroute))
@@ -678,9 +685,6 @@ private struct CompactAlertStack: View {
         }
         if viewModel.hosEnabled, let hos = viewModel.hosSnapshot {
             items.append(.hos(hos))
-        }
-        if let kinetic = viewModel.latestKineticAdvisory {
-            items.append(.kinetic(kinetic.spokenText))
         }
         if navigationActive,
            let lane = viewModel.activeLaneGuidance,
@@ -734,6 +738,7 @@ private struct CompactAlertStack: View {
 }
 
 private enum MapAlertItem {
+    case predictiveRisk(RouteRiskAdvisory)
     case hazard(HazardAheadAnnouncement)
     case roadworks(String)
     case trafficReroute(Bool)
@@ -746,6 +751,8 @@ private enum MapAlertItem {
     @ViewBuilder
     func view(viewModel: RouteViewModel) -> some View {
         switch self {
+        case .predictiveRisk(let advisory):
+            PredictiveRiskPrimaryBanner(advisory: advisory)
         case .hazard(let announcement):
             HazardAheadBanner(announcement: announcement)
         case .roadworks(let message):
@@ -783,15 +790,22 @@ private struct MapAlertOverflowSheet: View {
 
     private var alerts: [MapAlertItem] {
         var items: [MapAlertItem] = []
-        if let hazard = viewModel.activeHazardAheadAnnouncement {
-            items.append(.hazard(hazard))
-        }
-        if let roadworks = viewModel.activeRoadworksAhead,
-           let message = RoadworksAheadFormatter.bannerMessage(
-               site: roadworks,
-               currentArcLengthMeters: viewModel.currentRouteArcLengthForDisplay
-           ) {
-            items.append(.roadworks(message))
+        if let risk = viewModel.primaryRouteRiskAdvisory {
+            items.append(.predictiveRisk(risk))
+        } else {
+            if let hazard = viewModel.activeHazardAheadAnnouncement {
+                items.append(.hazard(hazard))
+            }
+            if let roadworks = viewModel.activeRoadworksAhead,
+               let message = RoadworksAheadFormatter.bannerMessage(
+                   site: roadworks,
+                   currentArcLengthMeters: viewModel.currentRouteArcLengthForDisplay
+               ) {
+                items.append(.roadworks(message))
+            }
+            if let kinetic = viewModel.latestKineticAdvisory {
+                items.append(.kinetic(kinetic.spokenText))
+            }
         }
         if viewModel.trafficRerouteAvailable || viewModel.isEvaluatingTrafficReroute {
             items.append(.trafficReroute(viewModel.isEvaluatingTrafficReroute))
@@ -804,9 +818,6 @@ private struct MapAlertOverflowSheet: View {
         }
         if viewModel.hosEnabled, let hos = viewModel.hosSnapshot {
             items.append(.hos(hos))
-        }
-        if let kinetic = viewModel.latestKineticAdvisory {
-            items.append(.kinetic(kinetic.spokenText))
         }
         if navigationActive,
            let lane = viewModel.activeLaneGuidance,

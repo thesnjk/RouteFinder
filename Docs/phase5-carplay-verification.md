@@ -2,7 +2,7 @@
 
 Device QA for CarPlay Maps + WeatherKit after restoring entitlements. Requires a **paid Apple Developer Program** team. Personal-team builds must keep entitlements empty — see rollback in [`carplay-weatherkit-restore.md`](carplay-weatherkit-restore.md).
 
-Last updated: 2026-09-10
+Last updated: 2026-09-22 (Post-U15 operator gate — engineering ready)
 
 ---
 
@@ -113,19 +113,40 @@ swift test --filter CarPlayUITests
 
 Expect: CarPlayUITests pass (iOS destination for full factory tests; macOS stub still green in package CI).
 
+**Engineering Phase 4 (2026-09-18):** `CarPlayUITests` **Pass** (package); entitlements present in `RouteFinderApp.entitlements`; `RouteFinderApp` **BUILD SUCCEEDED** for iOS Simulator. Interactive CarPlay rows above remain **Pending local (operator)**. Aggregate: [`phase4-platform-parity-verification.md`](phase4-platform-parity-verification.md).
+
+### Ultimate HGV — U5 (2026-09-19)
+
+CarPlay remains **paid-team only**. No code change required for U5; operator exit still the table above. Spec: [`ultimate-hgv-platform-spec.md`](ultimate-hgv-platform-spec.md).
+
+### Post-U15 operator gate (2026-09-22)
+
+Engineering track for Ultimate HGV pillars A–C is complete through U15. **No further CarPlay code work** is required before device QA.
+
+| Item | Owner | Status |
+|------|-------|--------|
+| Paid Apple Developer Program team + regenerate CarPlay Maps / WeatherKit profiles | Operator | **Pending** |
+| Physical iPhone + CarPlay head unit **or** Xcode External Displays → CarPlay | Operator | **Pending** |
+| Entitlements in [`RouteFinderApp.entitlements`](../RouteFinderApp/RouteFinderApp.entitlements) | Engineering | **Present** (repo) |
+| `swift test --filter CarPlayUITests` | Engineering / CI | **Pass** (package) |
+| Solo / fleet handoff interactive rows (tables above) | Operator | **Pending local** |
+| Update [`phase20-verification.md`](phase20-verification.md) CarPlay row on Pass/Fail | Operator | **Pending** — engineering has no blockers after post-U15 audit |
+
+Engineering cannot complete paid-team signing. When operator marks Pass criteria below, update [`phase20-verification.md`](phase20-verification.md) CarPlay row → **Pass**; scenario 8 → reference this checklist. Physical C4/C9/Fleet Part B remain in [`phase1-device-checklist.md`](phase1-device-checklist.md) / phase20 Blocked rows until a device is online.
+
 ---
 
 ## Pass criteria / exit
 
 | Check | Pass |
 |-------|------|
-| Paid-team signed build with entitlements | |
-| Solo CarPlay TBT + voice | |
-| Fleet handoff A (routeLoaded before Start) | |
-| Fleet handoff B (connect after route) | |
-| Fleet handoff C (nav progress) | |
-| WeatherKit smoke (optional if time-boxed) | |
-| `CarPlayUITests` green | |
+| Paid-team signed build with entitlements | Pending local (operator) — keys present in repo |
+| Solo CarPlay TBT + voice | Pending local (operator) |
+| Fleet handoff A (routeLoaded before Start) | Pass (code) — `CarPlayNavigationCoordinator` `.routeLoaded` |
+| Fleet handoff B (connect after route) | Pending local (operator) |
+| Fleet handoff C (nav progress) | Pending local (operator) |
+| WeatherKit smoke (optional if time-boxed) | Pending local (operator) |
+| `CarPlayUITests` green | **Pass** (2026-09-18) |
 
 When all required rows Pass, update [`phase20-verification.md`](phase20-verification.md): CarPlay row → **Pass**; scenario 8 → reference this checklist.
 

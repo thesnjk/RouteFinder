@@ -48,6 +48,7 @@ struct DriverNextStepsSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
         }
+        .accessibilityIdentifier("driverNextStepsSheet")
         .interactiveDismissDisabled()
     }
 

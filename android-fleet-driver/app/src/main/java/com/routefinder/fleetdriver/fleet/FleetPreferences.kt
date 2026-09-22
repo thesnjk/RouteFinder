@@ -36,6 +36,44 @@ class FleetPreferences(context: Context) {
         get() = prefs.getBoolean(KEY_VOICE, true)
         set(value) = prefs.edit().putBoolean(KEY_VOICE, value).apply()
 
+    /** Optional RegCheck username for plate → dims on job intake. */
+    var regCheckUsername: String
+        get() = prefs.getString(KEY_REGCHECK, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_REGCHECK, value.trim()).apply()
+
+    /** Optional TomTom API key for 1–3h forecast traffic samples. */
+    var tomTomApiKey: String
+        get() = prefs.getString(KEY_TOMTOM, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_TOMTOM, value.trim()).apply()
+
+    /** Optional OpenWeather API key for horizon weather advisories. */
+    var openWeatherApiKey: String
+        get() = prefs.getString(KEY_OPENWEATHER, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_OPENWEATHER, value.trim()).apply()
+
+    /** When true, Overpass clearance radar runs after route find (default on). */
+    var clearanceRadarEnabled: Boolean
+        get() = prefs.getBoolean(KEY_CLEARANCE, true)
+        set(value) = prefs.edit().putBoolean(KEY_CLEARANCE, value).apply()
+
+    /** When true, advisory LEZ/CAZ avoidance is enabled (default on). */
+    var lezAvoidEnabled: Boolean
+        get() = prefs.getBoolean(KEY_LEZ, true)
+        set(value) = prefs.edit().putBoolean(KEY_LEZ, value).apply()
+
+    /** Euro emission class label (`EURO6`, `EURO5`, …). */
+    var emissionClass: String
+        get() = prefs.getString(KEY_EMISSION, "EURO6") ?: "EURO6"
+        set(value) = prefs.edit().putString(KEY_EMISSION, value.trim()).apply()
+
+    var continuousDriveSeconds: Double
+        get() = java.lang.Double.longBitsToDouble(prefs.getLong(KEY_HOS_CONT, 0L))
+        set(value) = prefs.edit().putLong(KEY_HOS_CONT, java.lang.Double.doubleToRawLongBits(value)).apply()
+
+    var dailyDriveSeconds: Double
+        get() = java.lang.Double.longBitsToDouble(prefs.getLong(KEY_HOS_DAILY, 0L))
+        set(value) = prefs.edit().putLong(KEY_HOS_DAILY, java.lang.Double.doubleToRawLongBits(value)).apply()
+
     /** `lan` or `hosted` — UX preference for wizard copy. */
     var connectionKind: String
         get() {
@@ -58,6 +96,14 @@ class FleetPreferences(context: Context) {
         const val KEY_ONBOARDING = "onboarding_seen"
         const val KEY_TERMS = "driver_terms_accepted"
         const val KEY_VOICE = "voice_guidance_enabled"
+        const val KEY_REGCHECK = "regcheck_username"
+        const val KEY_TOMTOM = "tomtom_api_key"
+        const val KEY_OPENWEATHER = "openweather_api_key"
+        const val KEY_CLEARANCE = "clearance_radar_enabled"
+        const val KEY_LEZ = "lez_avoid_enabled"
+        const val KEY_EMISSION = "emission_class"
+        const val KEY_HOS_CONT = "hos_continuous_drive_seconds"
+        const val KEY_HOS_DAILY = "hos_daily_drive_seconds"
         const val KEY_CONN_KIND = "connection_kind"
         const val DEFAULT_BASE = "http://10.0.2.2:8080"
         const val VEHICLE_QR_PREFIX = "routefinder-vehicle:"

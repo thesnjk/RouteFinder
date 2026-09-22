@@ -166,3 +166,26 @@ import Testing
     let context = TripBriefContext.from(fleetTrip: trip, vehicleLabel: "Artic 1")
     #expect(context.latestInspectionSummary == summary)
 }
+
+@Test func tripBriefIncludesDispatchTimeWindowsFromJobBrief() {
+    let stopId = UUID()
+    let window = StopTimeWindow(
+        stopId: stopId,
+        earliestArrival: Date(timeIntervalSince1970: 1_700_000_000),
+        latestArrival: Date(timeIntervalSince1970: 1_700_003_600)
+    )
+    let trip = FleetTrip(
+        orgId: UUID(),
+        vehicleId: UUID(),
+        stops: [
+            FleetTripStop(id: stopId, sequence: 0, label: "Manchester Depot", latitude: 53.48, longitude: -2.24, role: .destination),
+            FleetTripStop(sequence: 1, label: "Port", latitude: 51.95, longitude: 1.35, role: .origin),
+        ],
+        jobBrief: FleetJobBrief(timeWindows: [window])
+    )
+    let context = TripBriefContext.from(fleetTrip: trip, vehicleLabel: "Artic 1")
+    #expect(context.dispatchTimeWindows.count == 1)
+    let text = TripBriefFormatter.plainText(from: context)
+    #expect(text.contains("Stop time windows"))
+    #expect(text.contains("Manchester Depot"))
+}

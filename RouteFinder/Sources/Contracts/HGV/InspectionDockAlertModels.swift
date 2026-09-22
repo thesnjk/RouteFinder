@@ -39,6 +39,8 @@ public struct InspectionChecklistItem: Sendable, Hashable, Codable, Equatable, I
     public let label: String
     public var status: InspectionItemStatus
     public var note: String?
+    /// Optional JPEG photo evidence as base64 (size-capped before encode).
+    public var photoJPEGBase64: [String]
 
     /// Creates a checklist item.
     public init(
@@ -46,17 +48,19 @@ public struct InspectionChecklistItem: Sendable, Hashable, Codable, Equatable, I
         zone: InspectionZone,
         label: String,
         status: InspectionItemStatus = .notChecked,
-        note: String? = nil
+        note: String? = nil,
+        photoJPEGBase64: [String] = []
     ) {
         self.id = id
         self.zone = zone
         self.label = label
         self.status = status
         self.note = note
+        self.photoJPEGBase64 = photoJPEGBase64
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, zone, label, status, note
+        case id, zone, label, status, note, photoJPEGBase64
     }
 
     public init(from decoder: Decoder) throws {
@@ -66,6 +70,35 @@ public struct InspectionChecklistItem: Sendable, Hashable, Codable, Equatable, I
         label = try container.decode(String.self, forKey: .label)
         status = try container.decode(InspectionItemStatus.self, forKey: .status)
         note = try container.decodeIfPresent(String.self, forKey: .note)
+        photoJPEGBase64 = try container.decodeIfPresent([String].self, forKey: .photoJPEGBase64) ?? []
+    }
+}
+
+/// Caps walkaround photo / PDF payloads for fleet snapshot upload.
+public enum InspectionMediaBudget: Sendable {
+    /// Max JPEG bytes per photo after compression.
+    public static let maxPhotoBytes = 120_000
+    /// Max photos per checklist item.
+    public static let maxPhotosPerItem = 2
+    /// Max base64 PDF characters on a fleet trip snapshot.
+    public static let maxPDFBase64Characters = 900_000
+
+    /// Truncates raw JPEG bytes when over budget (prefer compressing in UI before encode).
+    public static func cappedJPEG(_ data: Data) -> Data {
+        guard data.count > maxPhotoBytes else { return data }
+        return Data(data.prefix(maxPhotoBytes))
+    }
+
+    /// Encodes a JPEG into a base64 string after size capping.
+    public static func encodePhoto(_ data: Data) -> String {
+        cappedJPEG(data).base64EncodedString()
+    }
+
+    /// Truncates a PDF base64 payload for fleet upload when over budget.
+    public static func cappedPDFBase64(_ base64: String) -> String? {
+        guard !base64.isEmpty else { return nil }
+        if base64.count <= maxPDFBase64Characters { return base64 }
+        return String(base64.prefix(maxPDFBase64Characters))
     }
 }
 

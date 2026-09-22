@@ -25,12 +25,17 @@ struct SettingsSheet: View {
     @State private var showFleetSetupWizard = false
     @State private var showLaunchRoleSheet = false
     @State private var showTelematicsImporter = false
+    @State private var settingsPath = NavigationPath()
     #if os(macOS)
     @State private var requireLoginEachLaunch = SessionWorkspaceSettings.loadRequireLoginEachLaunch()
     #endif
 
+    private enum SettingsHubRoute: Hashable {
+        case apiKeys
+    }
+
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $settingsPath) {
             settingsHub
             .navigationTitle("Settings")
             #if os(iOS)
@@ -42,6 +47,24 @@ struct SettingsSheet: View {
                         onDismiss?()
                         dismiss()
                     }
+                }
+            }
+            .navigationDestination(for: SettingsHubRoute.self) { route in
+                switch route {
+                case .apiKeys:
+                    settingsDetailPage(title: "API Keys") {
+                        apiUsageSection
+                        orsAPIKeySection
+                        openWeatherAPIKeySection
+                        regCheckUsernameSection
+                        dvlaAPIKeySection
+                        tomTomAPIKeySection
+                    }
+                }
+            }
+            .onAppear {
+                if NavigationWorkspaceSettings.consumeSettingsDeepLink() == .apiKeys {
+                    settingsPath.append(SettingsHubRoute.apiKeys)
                 }
             }
             .sheet(isPresented: $showInspectionSheet) {
@@ -98,6 +121,7 @@ struct SettingsSheet: View {
             } label: {
                 Label("Navigation & Voice", systemImage: "location.north.line.fill")
             }
+            .accessibilityIdentifier("settingsNavigation")
 
             NavigationLink {
                 settingsDetailPage(title: "Search & Maps") {
@@ -108,16 +132,7 @@ struct SettingsSheet: View {
                 Label("Search & Maps", systemImage: "map.fill")
             }
 
-            NavigationLink {
-                settingsDetailPage(title: "API Keys") {
-                    apiUsageSection
-                    orsAPIKeySection
-                    openWeatherAPIKeySection
-                    regCheckUsernameSection
-                    dvlaAPIKeySection
-                    tomTomAPIKeySection
-                }
-            } label: {
+            NavigationLink(value: SettingsHubRoute.apiKeys) {
                 Label("API Keys", systemImage: "key.fill")
             }
             .accessibilityIdentifier("settingsAPIKeys")
@@ -130,6 +145,7 @@ struct SettingsSheet: View {
             } label: {
                 Label("Fleet & Dispatch", systemImage: "antenna.radiowaves.left.and.right")
             }
+            .accessibilityIdentifier("settingsFleetDispatch")
 
             NavigationLink {
                 settingsDetailPage(title: "Offline Routing") {
@@ -418,6 +434,12 @@ struct SettingsSheet: View {
                     }
                     .help("Speaks once when a reported closure or traffic hazard enters the advisory window during navigation.")
 
+                Toggle("Clearance radar (bridges)", isOn: $viewModel.clearanceRadarEnabled)
+                    .onChange(of: viewModel.clearanceRadarEnabled) { _, _ in
+                        viewModel.persistClearanceRadarEnabled()
+                    }
+                    .help("Queries OSM maxheight/maxweight along the route corridor and warns when the active HGV profile may not fit.")
+
                 Picker("Fuel card provider", selection: $viewModel.fuelCardProvider) {
                     ForEach(FuelCardProvider.allCases) { provider in
                         Text(provider.displayName).tag(provider)
@@ -426,6 +448,7 @@ struct SettingsSheet: View {
                 .onChange(of: viewModel.fuelCardProvider) { _, _ in
                     viewModel.persistFuelCardProvider()
                 }
+                .accessibilityIdentifier("settingsFuelCardProvider")
                 .help("Highlights truck fuel stops ahead that likely accept your fleet card (name/brand match on OpenStreetMap data).")
             }
 

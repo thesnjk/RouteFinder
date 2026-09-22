@@ -3,6 +3,7 @@ import {
   geocodeSearchUrl,
   joinUrl,
   type FleetConnection,
+  type FleetJobBrief,
   type FleetOrg,
   type FleetProxyStatus,
   type FleetServerHealth,
@@ -140,11 +141,12 @@ export class FleetApiClient {
   buildTripFromStops(
     orgId: string,
     vehicleId: string,
-    origin: { label: string; latitude: number; longitude: number },
-    destination: { label: string; latitude: number; longitude: number },
+    origin: { label: string; latitude: number; longitude: number; id?: string },
+    destination: { label: string; latitude: number; longitude: number; id?: string },
+    jobBrief?: FleetJobBrief | null,
   ): FleetTrip {
     const originStop: FleetTripStop = {
-      id: crypto.randomUUID(),
+      id: origin.id ?? crypto.randomUUID(),
       sequence: 0,
       label: origin.label,
       latitude: origin.latitude,
@@ -152,7 +154,7 @@ export class FleetApiClient {
       role: 'origin',
     }
     const destStop: FleetTripStop = {
-      id: crypto.randomUUID(),
+      id: destination.id ?? crypto.randomUUID(),
       sequence: 1,
       label: destination.label,
       latitude: destination.latitude,
@@ -166,6 +168,7 @@ export class FleetApiClient {
       status: 'dispatched',
       stops: [originStop, destStop],
       updatedAt: new Date().toISOString(),
+      ...(jobBrief ? { jobBrief } : {}),
     }
   }
 

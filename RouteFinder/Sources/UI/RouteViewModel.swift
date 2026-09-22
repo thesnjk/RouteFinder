@@ -164,6 +164,8 @@ public final class RouteViewModel {
     public var fuelCardProvider = NavigationWorkspaceSettings.loadFuelCardProvider()
     /// Whether spoken closure/traffic hazard-ahead alerts are enabled.
     public var hazardVoiceAlertsEnabled = NavigationWorkspaceSettings.loadHazardVoiceAlertsEnabled()
+    /// When true, probe Overpass for maxheight/maxweight along the route corridor.
+    public var clearanceRadarEnabled = NavigationWorkspaceSettings.loadClearanceRadarEnabled()
     /// Nearest proactive hazard announcement along the active route, if any.
     public var activeHazardAheadAnnouncement: HazardAheadAnnouncement? {
         get { hazardState.activeHazardAheadAnnouncement }
@@ -174,6 +176,18 @@ public final class RouteViewModel {
         get { hazardState.activeRoadworksAhead }
         set { hazardState.activeRoadworksAhead = newValue }
     }
+    /// Unified predictive risk advisories (fused kinetic / weather / hazard / roadworks / traffic).
+    public private(set) var routeRiskAdvisories: [RouteRiskAdvisory] = []
+    /// Primary fused risk advisory for HUD / accessibility.
+    public private(set) var primaryRouteRiskAdvisory: RouteRiskAdvisory?
+    /// Cached horizon forecast advisories (U8) — refreshed on throttle.
+    private var cachedForecastRiskItems: [RouteRiskAdvisory] = []
+    /// Cached corridor clearance advisories (U9) — refreshed on route load.
+    private var cachedClearanceRiskItems: [RouteRiskAdvisory] = []
+    /// Off-route heading clearance advisories (U11-B2).
+    private var cachedOffRouteClearanceItems: [RouteRiskAdvisory] = []
+    private var lastForecastRiskRefresh: Date?
+    private let clearanceCorridorProbe = ClearanceCorridorProbe()
     /// Rolled-up external API usage for Settings.
     public var apiUsageSummary: APIUsageDaySummary?
     /// Banner when non-critical API polls are paused for budget protection.
@@ -257,6 +271,10 @@ public final class RouteViewModel {
     public var activeDispatchTripId: UUID?
     /// Company break windows from the active dispatched trip.
     private var activeDispatchCompanyBreaks: [CompanyBreakAllocation] = []
+    /// Dispatch stop time windows from the active job brief.
+    private var activeDispatchTimeWindows: [StopTimeWindow] = []
+    /// Ordered stops from the active dispatch (for time-window labels).
+    private var activeDispatchStops: [FleetTripStop] = []
     /// Shared fleet vehicle id for polling dispatched jobs (demo / MVP).
     public var fleetVehicleId: UUID?
     /// Text binding for Settings fleet vehicle UUID entry.
@@ -459,6 +477,7 @@ public final class RouteViewModel {
     @ObservationIgnored private var routeSimulationCoordinator: RouteSimulationCoordinator!
     @ObservationIgnored private var hosAdvisoryCoordinator: HosAdvisoryCoordinator!
     @ObservationIgnored private let hazardNavigationCoordinator = HazardNavigationCoordinator()
+    @ObservationIgnored private let predictiveRiskCoordinator = PredictiveRiskCoordinator()
     @ObservationIgnored private let fleetStoreConfigurationObserver = FleetStoreConfigurationObserver()
     /// In-memory driver alert bus (HOS and related).
     public let hosAlertBus: InMemoryDriverAlertBus
@@ -691,6 +710,12 @@ public final class RouteViewModel {
                 self?.sampleTomTomHazardAheadIfNeeded()
                 self?.refreshActiveRoadworksAhead()
                 self?.refreshActiveTollAdvisory()
+                await self?.refreshOffRouteClearanceIfNeeded()
+            }
+        }
+        navigationProgressRefreshAdapter.onThrottledPosition = { [weak self] in
+            Task { @MainActor in
+                await self?.refreshOffRouteClearanceIfNeeded()
             }
         }
         navigationCoordinator.session.addDelegate(laneGuidanceNavigationAdapter)
@@ -1163,6 +1188,16 @@ public final class RouteViewModel {
         NavigationWorkspaceSettings.saveHazardVoiceAlertsEnabled(hazardVoiceAlertsEnabled)
     }
 
+    /// Persists clearance radar preference.
+    public func persistClearanceRadarEnabled() {
+        NavigationWorkspaceSettings.saveClearanceRadarEnabled(clearanceRadarEnabled)
+        if !clearanceRadarEnabled {
+            cachedClearanceRiskItems = []
+            cachedOffRouteClearanceItems = []
+            Task { await refreshPredictiveRiskAdvisories() }
+        }
+    }
+
     /// Persists preferred search language and English fallback settings.
     public func persistLanguageWorkspaceSettings() {
         LanguageWorkspaceSettings.savePreferredSearchLanguage(preferredSearchLanguage)
@@ -1431,9 +1466,23 @@ public final class RouteViewModel {
     public func startWalkaroundInspection() {
         let label = activeProfileName?.trimmingCharacters(in: .whitespacesAndNewlines)
         let plate = vehicleRegistration.trimmingCharacters(in: .whitespacesAndNewlines)
+        var items = InspectionRecord.defaultDVSAItems()
+        #if DEBUG
+        let nearComplete = ProcessInfo.processInfo.arguments.contains("UITEST_WALKAROUND_NEAR_COMPLETE")
+            || UserDefaults.standard.bool(forKey: "RouteFinder.uitestWalkaroundNearComplete")
+        if nearComplete, !items.isEmpty {
+            // Leave the first item unchecked so UITests can exercise defect + Save without
+            // tapping ~24 segmented controls.
+            for index in items.indices where index > 0 {
+                items[index].status = .pass
+            }
+            UserDefaults.standard.set(false, forKey: "RouteFinder.uitestWalkaroundNearComplete")
+        }
+        #endif
         activeInspection = InspectionRecord(
             vehicleLabel: (label?.isEmpty == false ? label! : "HGV"),
-            registrationPlate: plate.isEmpty ? nil : plate
+            registrationPlate: plate.isEmpty ? nil : plate,
+            items: items
         )
     }
 
@@ -1534,17 +1583,38 @@ public final class RouteViewModel {
         }
     }
 
-    /// Applies a dispatched fleet trip onto the driver route model (3-stop MVP).
+    /// Applies a dispatched fleet trip onto the driver route model (job intake).
     public func applyDispatchedTrip(_ trip: FleetTrip) async {
+        await applyJobIntake(trip: trip, policy: .fleetPilot)
+    }
+
+    /// Applies stops, profile, and optional auto find/rehearse for a pushed fleet trip.
+    public func applyJobIntake(trip: FleetTrip, policy: JobIntakePolicy) async {
         activeDispatchTripId = trip.id
         fleetVehicleId = trip.vehicleId
         activeDispatchCompanyBreaks = trip.companyBreaks
-        if let profile = trip.vehicleProfile {
+        activeDispatchTimeWindows = trip.jobBrief?.timeWindows ?? []
+        activeDispatchStops = JobIntakeMapper.orderedStops(from: trip)
+        let brief = trip.jobBrief ?? .fleetPilotDefault
+        if let profile = JobIntakeMapper.effectiveProfile(from: trip) {
             applyProfile(profile)
+            isHGVMode = true
+        } else if trip.vehicleProfile != nil {
             isHGVMode = true
         }
 
-        let ordered = trip.stops.sorted { $0.sequence < $1.sequence }
+        if JobIntakeMapper.needsRegistrationLookup(from: trip), hasRegCheckUsername {
+            if let vehicle = await fleetDispatchCoordinator.fleetVehicle(id: trip.vehicleId, orgId: trip.orgId),
+               let plate = vehicle.registrationPlate?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !plate.isEmpty {
+                vehicleRegistration = plate
+                // Never block intake on RegCheck failure — toast via registrationLookupError.
+                await applyRegistrationLookup()
+                isHGVMode = true
+            }
+        }
+
+        let ordered = JobIntakeMapper.orderedStops(from: trip)
         routeWaypoints = ordered.map { stop in
             let role: RouteWaypoint.Role = switch stop.role {
             case .origin: .origin
@@ -1565,8 +1635,12 @@ public final class RouteViewModel {
         }
 
         await publishDispatchSnapshot(status: .accepted)
-        if canFindRoute {
+        let shouldFind = policy.shouldAutoFindRoute(brief: brief)
+        if shouldFind, canFindRoute {
             await findRoute()
+            if policy.shouldAutoRehearse(brief: brief), result != nil {
+                rehearseRoute()
+            }
         }
     }
 
@@ -1965,9 +2039,13 @@ public final class RouteViewModel {
     public func seedUITestDemoRouteIfNeeded() {
         let shouldSeed = ProcessInfo.processInfo.arguments.contains("UITEST_SEED_ROUTE")
             || UserDefaults.standard.bool(forKey: "RouteFinder.uitestSeedRoute")
-        guard shouldSeed else { return }
+        guard shouldSeed else {
+            seedUITestMapBannersIfNeeded()
+            return
+        }
         guard result == nil else {
             uiTestForceResultsSheet = true
+            seedUITestMapBannersIfNeeded()
             return
         }
 
@@ -1990,6 +2068,56 @@ public final class RouteViewModel {
         cloudRoutingBanner = "UI test demo route"
         uiTestForceResultsSheet = true
         UserDefaults.standard.set(false, forKey: "RouteFinder.uitestSeedRoute")
+        seedUITestMapBannersIfNeeded()
+    }
+
+    /// Injects hazard / roadworks HUD banners for C6/C7 simulator UITests.
+    private func seedUITestMapBannersIfNeeded() {
+        let seedHazard = ProcessInfo.processInfo.arguments.contains("UITEST_SEED_HAZARD_BANNER")
+            || UserDefaults.standard.bool(forKey: "RouteFinder.uitestSeedHazardBanner")
+        if seedHazard {
+            activeHazardAheadAnnouncement = HazardAheadAnnouncement(
+                id: "uitest-hazard",
+                type: .closure,
+                distanceRemainingMeters: 1_200,
+                message: "UITest closure ahead in 1.2 km",
+                source: "uitest"
+            )
+            UserDefaults.standard.set(false, forKey: "RouteFinder.uitestSeedHazardBanner")
+        }
+
+        let seedRoadworks = ProcessInfo.processInfo.arguments.contains("UITEST_SEED_ROADWORKS_BANNER")
+            || UserDefaults.standard.bool(forKey: "RouteFinder.uitestSeedRoadworksBanner")
+        if seedRoadworks {
+            activeRoadworksAhead = RoadworkSite(
+                id: "uitest-roadworks",
+                label: "UITest roadworks",
+                latitude: 51.52,
+                longitude: -0.15,
+                arcLengthAlongRouteMeters: 2_000
+            )
+            UserDefaults.standard.set(false, forKey: "RouteFinder.uitestSeedRoadworksBanner")
+        }
+
+        let seedPredictive = ProcessInfo.processInfo.arguments.contains("UITEST_SEED_PREDICTIVE_RISK")
+            || UserDefaults.standard.bool(forKey: "RouteFinder.uitestSeedPredictiveRisk")
+        if seedPredictive {
+            latestKineticAdvisory = KineticAdvisory(
+                kind: .steepGrade,
+                spokenText: "UITest steep grade ahead",
+                priority: 2
+            )
+            environmentalContext = .rain
+            activeHazardAheadAnnouncement = HazardAheadAnnouncement(
+                id: "uitest-predictive-hazard",
+                type: .closure,
+                distanceRemainingMeters: 900,
+                message: "UITest closure ahead in 0.9 km",
+                source: "uitest"
+            )
+            UserDefaults.standard.set(false, forKey: "RouteFinder.uitestSeedPredictiveRisk")
+            Task { await refreshPredictiveRiskAdvisories() }
+        }
     }
     #endif
 
@@ -2457,6 +2585,7 @@ public final class RouteViewModel {
         loadLaybysAlongRoute(response.coordinates)
         loadTruckPoisAlongRoute(response.coordinates)
         loadRoadworksAlongRoute(response.coordinates)
+        Task { await refreshClearanceAndForecastRisk(route: response.coordinates) }
         refreshRestrictionAnnouncements(for: response.coordinates)
         refreshRouteTollAdvisories(coordinates: response.coordinates)
         estimatePhysicsDuration(for: searchResult, canonical: canonical)
@@ -2550,7 +2679,8 @@ public final class RouteViewModel {
             return TripBriefStop(
                 label: label,
                 role: waypoint.role.rawValue,
-                coordinate: waypoint.coordinate
+                coordinate: waypoint.coordinate,
+                stopId: waypoint.id
             )
         }
         let status: String? = activeDispatchTripId.map { _ in
@@ -2569,7 +2699,8 @@ public final class RouteViewModel {
             vehicleLabel: tripBriefVehicleLabel(),
             tripStatus: status,
             routeCoordinates: coordinates,
-            latestInspectionSummary: latestInspectionSummary
+            latestInspectionSummary: latestInspectionSummary,
+            dispatchTimeWindows: activeDispatchTimeWindows
         )
     }
 
@@ -2708,6 +2839,7 @@ public final class RouteViewModel {
             state: hazardState,
             context: hazardNavigationContext()
         )
+        Task { await refreshPredictiveRiskAdvisories() }
     }
 
     /// Polls TomTom flow ahead of the vehicle when keyed and throttled.
@@ -2725,6 +2857,144 @@ public final class RouteViewModel {
             state: hazardState,
             currentArcLengthMeters: currentRouteArcLengthMeters
         )
+        Task { await refreshPredictiveRiskAdvisories() }
+    }
+
+    /// Fuses existing navigation signals into unified ``RouteRiskAdvisory`` values.
+    public func refreshPredictiveRiskAdvisories() async {
+        await refreshForecastRiskIfNeeded()
+        let arc = currentRouteArcLengthMeters
+        var roadworksMessage: String?
+        var roadworksDistance: Double?
+        if let site = activeRoadworksAhead,
+           let message = RoadworksAheadFormatter.bannerMessage(site: site, currentArcLengthMeters: arc) {
+            roadworksMessage = message
+            if let siteArc = site.arcLengthAlongRouteMeters {
+                roadworksDistance = max(0, siteArc - arc)
+            }
+        }
+        let kinetic = latestKineticAdvisory
+        let weatherMessage: String? = switch environmentalContext {
+        case .dry: nil
+        case .rain: "Wet road — reduced grip on corridor"
+        case .ice: "Icy conditions — extend braking distance"
+        }
+        let hazard = activeHazardAheadAnnouncement
+        var scheduleLateMessage: String?
+        var scheduleLateDistance: Double?
+        if let schedule = TimeWindowRiskEvaluator.advisory(
+            windows: activeDispatchTimeWindows,
+            stops: activeDispatchStops,
+            physicsETASeconds: journeyPhysicsETASeconds ?? physicsPredictedDurationSeconds
+        ) {
+            scheduleLateMessage = schedule.message
+            scheduleLateDistance = schedule.distanceMeters
+        }
+        let snapshot = PredictiveRiskSnapshot(
+            kineticMessage: kinetic?.spokenText,
+            kineticDistanceMeters: kinetic == nil ? nil : 1_500,
+            weatherMessage: weatherMessage,
+            weatherDistanceMeters: weatherMessage == nil ? nil : 3_000,
+            hazard: hazard?.type == .traffic ? nil : hazard,
+            roadworksMessage: roadworksMessage,
+            roadworksDistanceMeters: roadworksDistance,
+            trafficMessage: hazard?.type == .traffic ? hazard?.message : nil,
+            trafficDistanceMeters: hazard?.type == .traffic ? hazard?.distanceRemainingMeters : nil,
+            scheduleLateMessage: scheduleLateMessage,
+            scheduleLateDistanceMeters: scheduleLateDistance,
+            forecastItems: cachedForecastRiskItems,
+            clearanceItems: cachedClearanceRiskItems + cachedOffRouteClearanceItems
+        )
+        await predictiveRiskCoordinator.refresh(snapshot: snapshot)
+        routeRiskAdvisories = predictiveRiskCoordinator.advisories
+        primaryRouteRiskAdvisory = predictiveRiskCoordinator.primaryAdvisory
+        // Fuse owns primary TTS; legacy hazard path skips when fusedHazardVoiceId matches.
+        if let primary = primaryRouteRiskAdvisory,
+           let spoken = predictiveRiskCoordinator.consumeSpokenPromptIfNeeded(),
+           hazardVoiceAlertsEnabled {
+            #if os(iOS)
+            voiceGuidanceCoordinator.speakHazardAdvisory(spoken, hazardId: primary.id)
+            #endif
+        }
+    }
+
+    /// Refreshes clearance radar + forecast horizon caches after a route find.
+    public func refreshClearanceAndForecastRisk(route: [Coordinate]) async {
+        if clearanceRadarEnabled, isHGVMode, route.count >= 2 {
+            let profile = resolvedVehicleProfile()
+            cachedClearanceRiskItems = await clearanceCorridorProbe.advisoriesAlongRoute(
+                route: route,
+                profile: profile,
+                currentArcLengthMeters: currentRouteArcLengthMeters
+            )
+        } else {
+            cachedClearanceRiskItems = []
+        }
+        cachedOffRouteClearanceItems = []
+        lastForecastRiskRefresh = nil
+        await refreshForecastRiskIfNeeded(force: true)
+        await refreshPredictiveRiskAdvisories()
+    }
+
+    /// When GPS is off the planned spine, probe clearance along the current heading.
+    public func refreshOffRouteClearanceIfNeeded() async {
+        guard clearanceRadarEnabled, isHGVMode else {
+            if !cachedOffRouteClearanceItems.isEmpty {
+                cachedOffRouteClearanceItems = []
+                await refreshPredictiveRiskAdvisories()
+            }
+            return
+        }
+        let route = routeCoordinates.map { Coordinate(latitude: $0.latitude, longitude: $0.longitude) }
+        guard route.count >= 2,
+              let update = navigationCoordinator.session.latestPosition else {
+            return
+        }
+        let point = Coordinate(
+            latitude: update.coordinate.latitude,
+            longitude: update.coordinate.longitude
+        )
+        let status = ClearanceCorridorProbe.isOffRoute(point: point, route: route)
+        guard status.offRoute else {
+            if !cachedOffRouteClearanceItems.isEmpty {
+                cachedOffRouteClearanceItems = []
+                await refreshPredictiveRiskAdvisories()
+            }
+            return
+        }
+        guard let bearing = update.bearingDegrees else { return }
+        let profile = resolvedVehicleProfile()
+        let items = await clearanceCorridorProbe.advisoriesAlongHeading(
+            from: point,
+            bearingDegrees: bearing,
+            profile: profile
+        )
+        // Empty result may be throttle — keep prior off-route advisories.
+        if !items.isEmpty || cachedOffRouteClearanceItems.isEmpty {
+            cachedOffRouteClearanceItems = items
+            await refreshPredictiveRiskAdvisories()
+        }
+    }
+
+    private func refreshForecastRiskIfNeeded(force: Bool = false) async {
+        let route = routeCoordinates.map { Coordinate(latitude: $0.latitude, longitude: $0.longitude) }
+        guard route.count >= 2 else { return }
+        guard force || ForecastRiskSampler.shouldRefresh(lastRefresh: lastForecastRiskRefresh) else {
+            return
+        }
+        let tomTom = tomTomAPIKey.isEmpty ? nil : tomTomAPIKey
+        let openWeather = openWeatherAPIKey.isEmpty ? nil : openWeatherAPIKey
+        guard tomTom != nil || openWeather != nil else {
+            cachedForecastRiskItems = []
+            return
+        }
+        cachedForecastRiskItems = await ForecastRiskSampler.sampleHorizon(
+            route: route,
+            currentArcLengthMeters: currentRouteArcLengthMeters,
+            tomTomAPIKey: tomTom,
+            openWeatherAPIKey: openWeather
+        )
+        lastForecastRiskRefresh = Date()
     }
 
     /// Arc length along the active route for HUD distance labels.
@@ -3303,6 +3573,11 @@ public final class RouteViewModel {
             Coordinate(latitude: $0.latitude, longitude: $0.longitude)
         }
         guard coordinates.count >= 2, result != nil else { return nil }
+        let fusedVoiceId: String? = {
+            guard let primary = primaryRouteRiskAdvisory,
+                  primary.kind == .hazard || primary.kind == .traffic else { return nil }
+            return primary.id
+        }()
         return HazardNavigationContext(
             routeCoordinates: coordinates,
             currentRouteArcLengthMeters: currentRouteArcLengthMeters,
@@ -3311,7 +3586,8 @@ public final class RouteViewModel {
             hasTomTomAPIKey: hasTomTomAPIKey,
             vehicleClass: resolvedVehicleClass,
             displayMeasurementSystem: displayMeasurementSystem,
-            hazardVoiceAlertsEnabled: hazardVoiceAlertsEnabled
+            hazardVoiceAlertsEnabled: hazardVoiceAlertsEnabled,
+            fusedHazardVoiceId: fusedVoiceId
         )
     }
 }
@@ -3335,6 +3611,8 @@ extension RouteViewModel: FleetDispatchHost {
         )
     }
 }
+
+extension RouteViewModel: JobIntakeHandling {}
 
 extension RouteViewModel: RoutePlanningHost {}
 
@@ -3379,8 +3657,11 @@ private final class LaneGuidanceNavigationAdapter: NavigationSessionDelegate {
 
 private final class NavigationProgressRefreshAdapter: NavigationSessionDelegate {
     var onThrottledProgress: (() -> Void)?
+    var onThrottledPosition: (() -> Void)?
     private var lastRefresh: Date?
+    private var lastPositionRefresh: Date?
     private let minimumIntervalSeconds: TimeInterval = 10
+    private let minimumPositionIntervalSeconds: TimeInterval = 15
 
     func navigationSession(_ session: NavigationSession, didUpdateProgress snapshot: NavigationProgressSnapshot) {
         let now = Date()
@@ -3389,6 +3670,15 @@ private final class NavigationProgressRefreshAdapter: NavigationSessionDelegate 
         }
         self.lastRefresh = now
         onThrottledProgress?()
+    }
+
+    func navigationSession(_ session: NavigationSession, didUpdatePosition update: NavigationPositionUpdate) {
+        let now = Date()
+        if let lastPositionRefresh, now.timeIntervalSince(lastPositionRefresh) < minimumPositionIntervalSeconds {
+            return
+        }
+        self.lastPositionRefresh = now
+        onThrottledPosition?()
     }
 }
 

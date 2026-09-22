@@ -155,6 +155,7 @@ struct HazardAheadBanner: View {
         .padding(.vertical, RFSpacing.sm)
         .controlSheetStyle()
         .accessibilityLabel(announcement.message)
+        .accessibilityIdentifier("hazardAheadBanner")
     }
 
     private var iconName: String {
@@ -191,6 +192,7 @@ struct RoadworksAheadBanner: View {
         .padding(.vertical, RFSpacing.sm)
         .controlSheetStyle()
         .accessibilityLabel(message)
+        .accessibilityIdentifier("roadworksAheadBanner")
     }
 }
 

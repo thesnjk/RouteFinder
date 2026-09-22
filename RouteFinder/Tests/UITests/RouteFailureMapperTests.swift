@@ -1,5 +1,6 @@
 import Contracts
 import DataLayer
+import RouteController
 import Testing
 @testable import UI
 
@@ -22,4 +23,14 @@ import Testing
     )
     #expect(presentation.kind == .coverage)
     #expect(presentation.message == OfflineGraphStoreError.missingBackendUserMessage)
+}
+
+@Test func routeFailureMapperMapsFleetProxy429ToCapCopy() {
+    let presentation = RouteFailureMapper.map(
+        ExternalRoutingError.serverError(status: 429, body: "Fleet ORS route daily cap reached."),
+        vehicle: .ukArtic,
+        isHGVMode: true
+    )
+    #expect(presentation.title == "Routing Cap Reached")
+    #expect(presentation.message.contains("daily cap"))
 }

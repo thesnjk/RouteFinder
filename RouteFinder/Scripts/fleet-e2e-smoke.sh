@@ -25,6 +25,11 @@ TESTS=(
   fleetBonjour
   createAndPushTripAssignsStopRoles
   fleetE2EWorkflowPushSnapshotAndSSE
+  fleetCreateAndPushTripRoundTripsJobBrief
+  fleetProxyStatusReportsORSConfigured
+  fleetTelematicsIngestPersists
+  fleetTelematicsIngestViaHTTP
+  applySnapshotMergesDriverGPSOntoTrip
 )
 
 echo "RouteFinder fleet E2E smoke"

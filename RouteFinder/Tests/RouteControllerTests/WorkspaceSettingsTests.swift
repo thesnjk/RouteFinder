@@ -150,6 +150,17 @@ struct NavigationWorkspaceSettingsTests {
         NavigationWorkspaceSettings.saveLaunchRole(.officePC, defaults: defaults)
         #expect(NavigationWorkspaceSettings.loadLaunchRole(defaults: defaults) == .officePC)
     }
+
+    @Test func settingsDeepLinkConsumesOnce() {
+        let suiteName = "RouteFinder.NavigationTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { UserDefaults.standard.removeSuite(named: suiteName) }
+
+        #expect(NavigationWorkspaceSettings.consumeSettingsDeepLink(defaults: defaults) == nil)
+        NavigationWorkspaceSettings.saveSettingsDeepLink(.apiKeys, defaults: defaults)
+        #expect(NavigationWorkspaceSettings.consumeSettingsDeepLink(defaults: defaults) == .apiKeys)
+        #expect(NavigationWorkspaceSettings.consumeSettingsDeepLink(defaults: defaults) == nil)
+    }
 }
 
 struct LanguageWorkspaceSettingsTests {

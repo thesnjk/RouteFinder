@@ -30,13 +30,15 @@ public enum FleetTripBuilder: Sendable {
         vehicleId: UUID,
         stops: [FleetTripStop],
         companyBreaks: [CompanyBreakAllocation] = [],
-        vehicleProfile: VehicleProfile? = nil
+        vehicleProfile: VehicleProfile? = nil,
+        jobBrief: FleetJobBrief? = nil
     ) throws -> FleetTrip {
         FleetTrip(
             orgId: orgId,
             vehicleId: vehicleId,
             stops: try normalizedStops(stops),
             vehicleProfile: vehicleProfile,
+            jobBrief: jobBrief,
             companyBreaks: companyBreaks
         )
     }

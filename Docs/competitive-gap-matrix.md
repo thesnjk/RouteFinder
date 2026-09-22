@@ -1,7 +1,11 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-09-15 (Phase 8 competitive parity extras)  
+Last updated: 2026-09-22 (Ultimate HGV U12–U15: walkaround PDF, LEZ/HOS/layby, forecast proxy, ORS LEZ avoid)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then advisory tacho + offline packs. **CarPlay** ready for paid-team signing.
+
+> **Sep 22 Ultimate HGV U12–U15:** Android walkaround PDF/photos (U12); LEZ/HOS/layby advisory (U13); fleet TomTom/OpenWeather/Overpass proxy + off-route clearance (U14/U14b); Android ORS `avoid_polygons` via `LezAvoidPolicy` (U15). See [`ultimate-hgv-platform-spec.md`](ultimate-hgv-platform-spec.md), [`android-c2-gate.md`](android-c2-gate.md).
+
+> **Sep 21 Ultimate HGV U6–U11:** Job brief time windows + late-ETA fuse (U7); TomTom/OpenWeather forecast (U8); Overpass clearance radar + off-route heading probe (U9/U11-B2); Android RegCheck + fuse + walkaround snapshot (U10); Android time windows / forecast / clearance parity (U11). See [`ultimate-hgv-platform-spec.md`](ultimate-hgv-platform-spec.md), [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md).
 
 > **Aug 29 Phase 45–48:** On-device API usage ledger + soft budget guards; unified remote retry policy; `FleetDispatchCoordinator` + `HazardNavigationCoordinator` extracted from `RouteViewModel`; fleet E2E smoke in CI; architecture ADR. See [`unit-economics.md`](unit-economics.md), [`architecture.md`](architecture.md), and [`phase20-verification.md`](phase20-verification.md#phase-4548-reliability-economics-program-2026-08-29).
 
@@ -101,6 +105,25 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 - Paid live fuel-price API / SNAP booking / **TRAVIS parking booking** (Phase 8: **deep links** only)
 - **Hosted fleet web portal / multi-tenant SaaS** (hosted gateway exists; no billing UI)
 - Legal cadastral LEZ polygons / diesel vs petrol nuance (authored rings are simplified envelopes)
+
+### Ultimate HGV platform epics (2026-09-19)
+
+See [`ultimate-hgv-platform-spec.md`](ultimate-hgv-platform-spec.md).
+
+| Epic | Focus | Status |
+|------|-------|--------|
+| **U1** | Spec + `FleetJobBrief` / `JobIntakeHandling` / `RouteRiskAdvisory` Contracts | **Done** |
+| **U2** `EPIC-JOB-INTAKE` | Job intake iOS/Android + dispatch/web fields (weight / ADR / auto-find / auto-rehearse) | **Done** |
+| **U3** `EPIC-PREDICTIVE-RISK` | Fuse kinetic/weather/hazard/roadworks/traffic + HUD primary banner + voice dedup | **Done** (MVP fuse; iOS) |
+| **U4** `EPIC-WALKAROUND-MEDIA` | Defect photo attachments + PDF size guard | **Done** |
+| **U5** | Tie to P0 device / Android C2 / CarPlay verification | **Done** (docs; operator rows remain Blocked where devices offline) |
+| **U6** | Competitive / test-matrix doc sync for U1–U5 artifacts | **Done** (2026-09-21) |
+| **U7** | Driver-facing `timeWindows` in trip brief + late-ETA risk fuse | **Done** (2026-09-21) |
+| **U8** `EPIC-PREDICTIVE-FORECAST` | TomTom flow trend + OpenWeather hourly horizon advisories | **Done** |
+| **U9** `EPIC-CLEARANCE-RADAR` | Corridor Overpass maxheight/weight → `RouteRiskKind.clearance` | **Done** |
+| **U10** | Android RegCheck + predictive fuse banner + walkaround snapshot handoff | **Done** |
+
+> **Wire artifacts:** `FleetJobBrief` on `FleetTrip` (optional), web-dispatch time windows (2026-09-21), Android ADR→ORS `hazmat`, fleet schema [`fleet-api-schema.json`](fleet-api-schema.json).
 
 ## Competitor strengths (Phase 20 refresh — 2026-08-27)
 

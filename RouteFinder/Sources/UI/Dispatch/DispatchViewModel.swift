@@ -157,7 +157,8 @@ public final class DispatchViewModel {
                 vehicleId: vehicleId,
                 stops: stops,
                 companyBreaks: draft.companyBreaks(),
-                vehicleProfile: profile
+                vehicleProfile: profile,
+                jobBrief: draft.jobBrief()
             )
             activeTrip = trip
             FleetWorkspaceSettings.saveFleetVehicleId(vehicleId)
@@ -475,11 +476,25 @@ public final class DispatchViewModel {
             : localKey
 
         var results: [GeocodeSuggestion] = []
-        if let global = try? await geocoder.searchGlobal(query: query, near: near, apiKey: apiKey) {
+        do {
+            let global = try await geocoder.searchGlobal(query: query, near: near, apiKey: apiKey)
             results.append(contentsOf: global)
-        }
-        if let biased = try? await geocoder.searchBiased(query: query, near: near, apiKey: apiKey) {
+            let biased = try await geocoder.searchBiased(query: query, near: near, apiKey: apiKey)
             results.append(contentsOf: biased)
+        } catch let error as OpenRouteServiceGeocoderError {
+            if case .rateLimited = error {
+                searchSuggestions[stopId] = []
+                searchFeedback[stopId] =
+                    "Fleet ORS daily geocode cap reached — ask the operator or wait until tomorrow."
+                return
+            }
+            searchSuggestions[stopId] = []
+            searchFeedback[stopId] = error.localizedDescription
+            return
+        } catch {
+            searchSuggestions[stopId] = []
+            searchFeedback[stopId] = error.localizedDescription
+            return
         }
 
         var seen = Set<String>()

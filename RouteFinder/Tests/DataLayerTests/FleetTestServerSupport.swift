@@ -31,3 +31,47 @@ func waitForFleetServerReady(
     Issue.record("Fleet server at \(baseURL) did not become ready in time. Last error: \(String(describing: lastError))")
     throw lastError ?? HTTPFleetStoreError.serverError(status: 503, body: "timeout waiting for health")
 }
+
+/// Starts an SSE subscription before trip push so the client is attached before the event fires.
+///
+/// Settles briefly after opening the stream so URLSession can connect (replaces ad-hoc 200 ms
+/// sleeps scattered in callers).
+func beginSSESubscription(
+    baseURL: URL,
+    apiKey: String?,
+    vehicleId: UUID,
+    tripPushedOnly: Bool = false,
+    settleNanoseconds: UInt64 = 100_000_000
+) async -> Task<FleetDispatchEvent?, Never> {
+    let stream = FleetSSEClient.events(baseURL: baseURL, apiKey: apiKey, vehicleId: vehicleId)
+    let receiveTask = Task<FleetDispatchEvent?, Never> {
+        for await event in stream {
+            if tripPushedOnly, event.kind != .tripPushed {
+                continue
+            }
+            return event
+        }
+        return nil
+    }
+    if settleNanoseconds > 0 {
+        try? await Task.sleep(nanoseconds: settleNanoseconds)
+    }
+    return receiveTask
+}
+
+/// Awaits the first SSE event from a subscription task, or `nil` if `timeoutNanoseconds` elapses.
+func awaitSSEEvent(
+    _ receiveTask: Task<FleetDispatchEvent?, Never>,
+    timeoutNanoseconds: UInt64 = 5_000_000_000
+) async throws -> FleetDispatchEvent? {
+    try await withThrowingTaskGroup(of: FleetDispatchEvent?.self) { group in
+        group.addTask { await receiveTask.value }
+        group.addTask {
+            try await Task.sleep(nanoseconds: timeoutNanoseconds)
+            return nil
+        }
+        guard let first = try await group.next() else { return nil }
+        group.cancelAll()
+        return first
+    }
+}

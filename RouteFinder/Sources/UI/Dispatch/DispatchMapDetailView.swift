@@ -89,7 +89,12 @@ struct DispatchMapDetailView: View {
     }
 
     private var mapRegion: MapRegion {
-        let coords = previewCoordinates.isEmpty ? polylineCoordinates : previewCoordinates
+        var coords = previewCoordinates.isEmpty ? polylineCoordinates : previewCoordinates
+        if let trip,
+           let latitude = trip.driverLatitude,
+           let longitude = trip.driverLongitude {
+            coords.append(CLLocationCoordinate2D(latitude: latitude, longitude: longitude))
+        }
         guard coords.first != nil else {
             return MapRegion(
                 center: CLLocationCoordinate2D(latitude: MapDefaults.ukCenter.latitude, longitude: MapDefaults.ukCenter.longitude),

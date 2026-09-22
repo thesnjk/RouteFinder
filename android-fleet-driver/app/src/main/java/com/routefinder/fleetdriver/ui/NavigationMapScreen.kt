@@ -20,6 +20,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -72,7 +73,7 @@ fun NavigationMapScreen(
         while (isActive && viewModel.phase == NavigationPhase.NAVIGATING) {
             val fix = currentLocation(fused)
             if (fix != null) {
-                viewModel.ingestLocation(fix.first, fix.second)
+                viewModel.ingestLocation(fix.first, fix.second, fix.third)
             }
             delay(2_000)
         }
@@ -99,6 +100,23 @@ fun NavigationMapScreen(
                 .fillMaxWidth()
                 .padding(12.dp),
         ) {
+            viewModel.primaryRiskAdvisory?.let { risk ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.95f),
+                    ),
+                ) {
+                    Text(
+                        text = risk.message,
+                        modifier = Modifier.padding(12.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -118,7 +136,7 @@ fun NavigationMapScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 if (viewModel.connected) "Connected" else "Offline",
                                 style = MaterialTheme.typography.titleSmall,
@@ -137,6 +155,49 @@ fun NavigationMapScreen(
                         }
                         OutlinedButton(onClick = onReconfigure) { Text("Setup") }
                     }
+
+                    OutlinedTextField(
+                        value = viewModel.regCheckUsernameDraft,
+                        onValueChange = viewModel::updateRegCheckUsername,
+                        label = { Text("RegCheck username") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        supportingText = {
+                            Text("Optional — plate → dims on SSE job intake")
+                        },
+                    )
+                    OutlinedTextField(
+                        value = viewModel.tomTomApiKeyDraft,
+                        onValueChange = viewModel::updateTomTomApiKey,
+                        label = { Text("TomTom key (optional fallback)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        supportingText = {
+                            Text(
+                                if (viewModel.tomTomProxyConfigured) {
+                                    "Fleet TomTom proxy on — driver key not required"
+                                } else {
+                                    "Or start fleet server with --tomtom-key"
+                                },
+                            )
+                        },
+                    )
+                    OutlinedTextField(
+                        value = viewModel.openWeatherApiKeyDraft,
+                        onValueChange = viewModel::updateOpenWeatherApiKey,
+                        label = { Text("OpenWeather key (optional fallback)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        supportingText = {
+                            Text(
+                                if (viewModel.openWeatherProxyConfigured) {
+                                    "Fleet OpenWeather proxy on — driver key not required"
+                                } else {
+                                    "Or start fleet server with --openweather-key"
+                                },
+                            )
+                        },
+                    )
 
                     viewModel.toastMessage?.let {
                         Text(it, color = MaterialTheme.colorScheme.primary)
@@ -235,6 +296,43 @@ fun NavigationMapScreen(
                     viewModel.activeTrip?.let {
                         Text("Fleet trip ${it.status}", style = MaterialTheme.typography.bodySmall)
                     }
+                    viewModel.timeWindowLines.forEach { line ->
+                        Text(line, style = MaterialTheme.typography.bodySmall)
+                    }
+                    viewModel.lezAdvisoryMessage?.let {
+                        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
+                    }
+                    viewModel.laybyAdvisoryMessage?.let {
+                        Text(it, style = MaterialTheme.typography.bodySmall)
+                    }
+                    viewModel.hosAdvisoryMessage?.let {
+                        Text(it, style = MaterialTheme.typography.bodySmall)
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = { viewModel.resetHosBreak() }) { Text("Record break") }
+                    }
+                    OutlinedTextField(
+                        value = viewModel.emissionClassDraft,
+                        onValueChange = viewModel::updateEmissionClass,
+                        label = { Text("Euro class (LEZ)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                    )
+                    viewModel.lastInspectionSummary?.let {
+                        Text(
+                            "Walkaround: ${it.defectCount} defect(s), ${it.photoCount} photo(s)",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    if (viewModel.lastWalkaroundPdfBytes != null) {
+                        Text("Walkaround PDF ready (${viewModel.lastWalkaroundPdfBytes!!.size / 1024} KB)", style = MaterialTheme.typography.bodySmall)
+                    }
+                    OutlinedButton(
+                        onClick = { viewModel.openWalkaround() },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("DVSA walkaround")
+                    }
                     viewModel.errorMessage?.let {
                         Text(it, color = MaterialTheme.colorScheme.error)
                     }
@@ -246,13 +344,22 @@ fun NavigationMapScreen(
                 }
             }
         }
+
+        if (viewModel.showWalkaround) {
+            InspectionWalkaroundDialog(
+                items = viewModel.walkaroundItems,
+                onUpdate = { index, item -> viewModel.updateWalkaroundItem(index, item) },
+                onComplete = { viewModel.completeWalkaround() },
+                onDismiss = { viewModel.dismissWalkaround() },
+            )
+        }
     }
 }
 
 @SuppressLint("MissingPermission")
 private suspend fun currentLocation(
     client: com.google.android.gms.location.FusedLocationProviderClient,
-): Pair<Double, Double>? {
+): Triple<Double, Double, Double?>? {
     val token = CancellationTokenSource()
     val current = try {
         client.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, token.token).await()
@@ -262,5 +369,6 @@ private suspend fun currentLocation(
     val location = current ?: client.lastLocation.await() ?: return null
     val ageMs = (SystemClock.elapsedRealtimeNanos() - location.elapsedRealtimeNanos) / 1_000_000
     if (ageMs > 120_000) return null
-    return location.latitude to location.longitude
+    val bearing = if (location.hasBearing()) location.bearing.toDouble() else null
+    return Triple(location.latitude, location.longitude, bearing)
 }

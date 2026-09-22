@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import {
   GeoJSONSource,
   LngLatBounds,
@@ -8,11 +8,15 @@ import {
 } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { FleetTrip } from './fleet/types'
+import { tripMapFingerprint } from './tripMapFingerprint'
 
 /** MapLibre GL preview of trip stop coordinates (OSM raster tiles). */
 export function TripMapPreview({ trip }: { trip: FleetTrip | null }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
+  const tripRef = useRef(trip)
+  tripRef.current = trip
+  const fingerprint = useMemo(() => tripMapFingerprint(trip), [trip])
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -46,12 +50,13 @@ export function TripMapPreview({ trip }: { trip: FleetTrip | null }) {
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !trip || trip.stops.length === 0) return
+    const current = tripRef.current
+    if (!map || !current || current.stops.length === 0 || fingerprint === 'empty') return
 
     const markers: Marker[] = []
     const bounds = new LngLatBounds()
 
-    for (const stop of trip.stops) {
+    for (const stop of current.stops) {
       bounds.extend([stop.longitude, stop.latitude])
       const el = document.createElement('div')
       el.className = 'map-marker'
@@ -60,23 +65,28 @@ export function TripMapPreview({ trip }: { trip: FleetTrip | null }) {
       markers.push(new Marker({ element: el }).setLngLat([stop.longitude, stop.latitude]).addTo(map))
     }
 
-    if (trip.driverLatitude != null && trip.driverLongitude != null) {
-      bounds.extend([trip.driverLongitude, trip.driverLatitude])
+    if (current.driverLatitude != null && current.driverLongitude != null) {
+      bounds.extend([current.driverLongitude, current.driverLatitude])
       const el = document.createElement('div')
       el.className = 'map-marker map-marker--driver'
       el.title = 'Driver'
       markers.push(
-        new Marker({ element: el }).setLngLat([trip.driverLongitude, trip.driverLatitude]).addTo(map),
+        new Marker({ element: el })
+          .setLngLat([current.driverLongitude, current.driverLatitude])
+          .addTo(map),
       )
     }
 
-    if (trip.stops.length === 1) {
-      map.easeTo({ center: [trip.stops[0].longitude, trip.stops[0].latitude], zoom: 11 })
+    if (current.stops.length === 1) {
+      map.easeTo({
+        center: [current.stops[0].longitude, current.stops[0].latitude],
+        zoom: 11,
+      })
     } else {
       map.fitBounds(bounds, { padding: 48, maxZoom: 12 })
     }
 
-    const coords = trip.stops.map((s) => [s.longitude, s.latitude] as [number, number])
+    const coords = current.stops.map((s) => [s.longitude, s.latitude] as [number, number])
     const sourceId = 'trip-line'
     const existing = map.getSource(sourceId)
     if (existing) {
@@ -105,7 +115,7 @@ export function TripMapPreview({ trip }: { trip: FleetTrip | null }) {
     return () => {
       for (const marker of markers) marker.remove()
     }
-  }, [trip])
+  }, [fingerprint])
 
   if (!trip || trip.stops.length < 2) {
     return (

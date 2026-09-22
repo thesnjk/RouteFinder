@@ -46,6 +46,41 @@ private func startFleetServerWithORS(
     #expect(status.orsConfigured)
     #expect(status.routeDailyCap > 0)
     #expect(status.routesToday == 0)
+    #expect(status.overpassConfigured)
+}
+
+@Test func fleetProxyStatusReportsForecastKeys() async throws {
+    let storageDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("FleetProxyForecast-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: storageDir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: storageDir) }
+
+    let port = 18096
+    let store = DiskFleetStore(storageDirectory: storageDir)
+    let router = FleetRouterBuilder.buildRouter(
+        store: store,
+        apiKey: nil,
+        orsAPIKey: nil,
+        tomTomAPIKey: "tt-test",
+        openWeatherAPIKey: "ow-test",
+        eventHub: FleetEventHub(heartbeatIntervalSeconds: 60)
+    )
+    let app = Application(
+        router: router,
+        configuration: .init(address: .hostname("127.0.0.1", port: port))
+    )
+    let serverTask = Task { try? await app.runService() }
+    defer { serverTask.cancel() }
+
+    let baseURL = URL(string: "http://127.0.0.1:\(port)")!
+    try await waitForFleetServerReady(baseURL: baseURL)
+    let (data, response) = try await URLSession.shared.data(from: baseURL.appendingPathComponent("v1/proxy/status"))
+    let http = try #require(response as? HTTPURLResponse)
+    #expect(http.statusCode == 200)
+    let status = try JSONDecoder().decode(FleetProxyStatusResponse.self, from: data)
+    #expect(status.tomTomConfigured)
+    #expect(status.openWeatherConfigured)
+    #expect(status.overpassConfigured)
 }
 
 @Test func fleetProxyStatusReportsORSNotConfigured() async throws {

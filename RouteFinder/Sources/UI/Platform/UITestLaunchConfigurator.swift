@@ -22,13 +22,26 @@ public enum UITestLaunchConfigurator {
             || arguments.contains("UITEST_OPEN_SETTINGS")
             || arguments.contains("UITEST_SKIP_ROLE_PICKER")
             || arguments.contains("UITEST_RESET_ROLE_PICKER")
+            || arguments.contains("UITEST_DRIVER_NEXT_STEPS")
+            || arguments.contains("UITEST_WALKAROUND_NEAR_COMPLETE")
+            || arguments.contains("UITEST_SEED_HAZARD_BANNER")
+            || arguments.contains("UITEST_SEED_ROADWORKS_BANNER")
+            || arguments.contains("UITEST_SEED_PREDICTIVE_RISK")
+            || arguments.contains("UITEST_OPEN_WALKAROUND")
         guard isUITest else { return }
 
         #if canImport(UIKit)
         UIView.setAnimationsEnabled(false)
         #endif
 
-        if arguments.contains("UITEST_RESET_ROLE_PICKER") {
+        if arguments.contains("UITEST_DRIVER_NEXT_STEPS") {
+            NavigationWorkspaceSettings.saveHasCompletedRoleSelection(true)
+            NavigationWorkspaceSettings.saveLaunchRole(.driver)
+            NavigationWorkspaceSettings.saveHasSeenProductOnboarding(true)
+            NavigationWorkspaceSettings.saveHasAcceptedRoutingLiability(true)
+            NavigationWorkspaceSettings.saveHasCompletedVehicleModeOnboarding(true)
+            NavigationWorkspaceSettings.saveHasCompletedRoleFollowUp(false)
+        } else if arguments.contains("UITEST_RESET_ROLE_PICKER") {
             NavigationWorkspaceSettings.saveHasCompletedRoleSelection(false)
             NavigationWorkspaceSettings.saveHasCompletedRoleFollowUp(false)
             NavigationWorkspaceSettings.saveHasSeenProductOnboarding(true)
@@ -78,6 +91,26 @@ public enum UITestLaunchConfigurator {
         UserDefaults.standard.set(
             arguments.contains("UITEST_OPEN_SETTINGS"),
             forKey: "RouteFinder.uitestOpenSettings"
+        )
+        UserDefaults.standard.set(
+            arguments.contains("UITEST_OPEN_WALKAROUND"),
+            forKey: "RouteFinder.uitestOpenWalkaround"
+        )
+        UserDefaults.standard.set(
+            arguments.contains("UITEST_WALKAROUND_NEAR_COMPLETE"),
+            forKey: "RouteFinder.uitestWalkaroundNearComplete"
+        )
+        UserDefaults.standard.set(
+            arguments.contains("UITEST_SEED_HAZARD_BANNER"),
+            forKey: "RouteFinder.uitestSeedHazardBanner"
+        )
+        UserDefaults.standard.set(
+            arguments.contains("UITEST_SEED_ROADWORKS_BANNER"),
+            forKey: "RouteFinder.uitestSeedRoadworksBanner"
+        )
+        UserDefaults.standard.set(
+            arguments.contains("UITEST_SEED_PREDICTIVE_RISK"),
+            forKey: "RouteFinder.uitestSeedPredictiveRisk"
         )
     }
 }

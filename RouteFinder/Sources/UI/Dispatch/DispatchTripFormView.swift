@@ -13,6 +13,7 @@ struct DispatchTripFormView: View {
                 orgSection
                 vehicleSection
                 stopsSection
+                jobBriefSection
                 breakSection
                 actionsSection
                 if let message = viewModel.statusMessage {
@@ -162,6 +163,45 @@ struct DispatchTripFormView: View {
                     .font(RFFont.caption)
                     .foregroundStyle(.secondary)
             }
+            Toggle(
+                "Time window",
+                isOn: Binding(
+                    get: {
+                        viewModel.draft.stops[index].earliestArrival != nil
+                            || viewModel.draft.stops[index].latestArrival != nil
+                    },
+                    set: { enabled in
+                        if enabled {
+                            if viewModel.draft.stops[index].earliestArrival == nil {
+                                viewModel.draft.stops[index].earliestArrival = Date()
+                            }
+                            if viewModel.draft.stops[index].latestArrival == nil {
+                                viewModel.draft.stops[index].latestArrival = Date().addingTimeInterval(7200)
+                            }
+                        } else {
+                            viewModel.draft.stops[index].earliestArrival = nil
+                            viewModel.draft.stops[index].latestArrival = nil
+                        }
+                    }
+                )
+            )
+            .font(RFFont.caption)
+            if viewModel.draft.stops[index].earliestArrival != nil || viewModel.draft.stops[index].latestArrival != nil {
+                DatePicker(
+                    "Earliest",
+                    selection: Binding(
+                        get: { viewModel.draft.stops[index].earliestArrival ?? Date() },
+                        set: { viewModel.draft.stops[index].earliestArrival = $0 }
+                    )
+                )
+                DatePicker(
+                    "Latest",
+                    selection: Binding(
+                        get: { viewModel.draft.stops[index].latestArrival ?? Date().addingTimeInterval(7200) },
+                        set: { viewModel.draft.stops[index].latestArrival = $0 }
+                    )
+                )
+            }
         }
     }
 
@@ -190,6 +230,23 @@ struct DispatchTripFormView: View {
         }
         .buttonStyle(.bordered)
         .controlSize(.mini)
+    }
+
+    private var jobBriefSection: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.sm) {
+            Text("Job brief")
+                .font(RFFont.sectionTitle)
+            Text("Optional weight and ADR travel with the push so the driver profile and ORS request match the load.")
+                .font(RFFont.caption)
+                .foregroundStyle(.secondary)
+            TextField("Gross weight (kg)", text: $viewModel.draft.grossWeightKgText)
+                .textFieldStyle(GlassTextFieldStyle())
+            TextField("ADR class (e.g. 3)", text: $viewModel.draft.adrClassText)
+                .textFieldStyle(GlassTextFieldStyle())
+            Toggle("Auto find route on driver", isOn: $viewModel.draft.autoFindRoute)
+        }
+        .glassPanel(cornerRadius: 14)
+        .padding(RFSpacing.sm)
     }
 
     private var breakSection: some View {

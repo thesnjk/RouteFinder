@@ -10,6 +10,10 @@ data class HgvVehicleProfile(
     val heightMeters: Double = 4.0,
     val weightTonnes: Double = 40.0,
     val axleLoadTonnes: Double = 11.5,
+    /** When true, ORS `hazmat` restriction is enabled (ADR load). */
+    val hazmat: Boolean = false,
+    /** Optional ORS tunnel restriction code (e.g. `B`, `C`). */
+    val hazmatTunnelRestrictionCode: String? = null,
 )
 
 /** Builds ORS driving-hgv GeoJSON directions request body. */
@@ -24,6 +28,8 @@ object OrsDirectionsRequest {
         avoidTolls: Boolean = false,
         avoidFerries: Boolean = false,
         avoidTunnels: Boolean = false,
+        /** Closed `[lon, lat]` rings for ORS GeoJSON MultiPolygon `avoid_polygons`. */
+        avoidPolygons: List<List<DoubleArray>> = emptyList(),
     ): JSONObject {
         val coordinates = JSONArray().apply {
             put(JSONArray().put(originLon).put(originLat))
@@ -42,6 +48,12 @@ object OrsDirectionsRequest {
             .put("height", vehicle.heightMeters)
             .put("weight", vehicle.weightTonnes)
             .put("axleload", vehicle.axleLoadTonnes)
+        if (vehicle.hazmat) {
+            restrictions.put("hazmat", true)
+            vehicle.hazmatTunnelRestrictionCode?.let {
+                restrictions.put("hazmat_tunnel_restriction_code", it)
+            }
+        }
 
         val options = JSONObject()
             .put(
@@ -51,6 +63,9 @@ object OrsDirectionsRequest {
         if (avoidFeatures.length() > 0) {
             options.put("avoid_features", avoidFeatures)
         }
+        if (avoidPolygons.isNotEmpty()) {
+            options.put("avoid_polygons", avoidPolygonsGeoJson(avoidPolygons))
+        }
 
         return JSONObject()
             .put("coordinates", coordinates)
@@ -58,5 +73,32 @@ object OrsDirectionsRequest {
             .put("instructions", true)
             .put("geometry", true)
             .put("elevation", true)
+    }
+
+    /** GeoJSON MultiPolygon: each ring becomes one Polygon with a single exterior ring. */
+    fun avoidPolygonsGeoJson(rings: List<List<DoubleArray>>): JSONObject {
+        val coordinates = JSONArray()
+        for (ring in rings) {
+            val closed = ensureClosed(ring)
+            val ringArr = JSONArray()
+            for (pos in closed) {
+                ringArr.put(JSONArray().put(pos[0]).put(pos[1]))
+            }
+            coordinates.put(JSONArray().put(ringArr))
+        }
+        return JSONObject()
+            .put("type", "MultiPolygon")
+            .put("coordinates", coordinates)
+    }
+
+    private fun ensureClosed(ring: List<DoubleArray>): List<DoubleArray> {
+        if (ring.isEmpty()) return ring
+        val first = ring.first()
+        val last = ring.last()
+        return if (first[0] == last[0] && first[1] == last[1]) {
+            ring
+        } else {
+            ring + listOf(doubleArrayOf(first[0], first[1]))
+        }
     }
 }

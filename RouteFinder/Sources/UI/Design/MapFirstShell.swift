@@ -45,6 +45,10 @@ struct MapFirstShell: View {
             if UserDefaults.standard.bool(forKey: "RouteFinder.uitestOpenSettings") {
                 UserDefaults.standard.set(false, forKey: "RouteFinder.uitestOpenSettings")
                 presentedModal = .settings
+            } else if UserDefaults.standard.bool(forKey: "RouteFinder.uitestOpenWalkaround") {
+                UserDefaults.standard.set(false, forKey: "RouteFinder.uitestOpenWalkaround")
+                viewModel.startWalkaroundInspection()
+                presentedModal = .walkaround
             }
             #endif
         }
@@ -83,7 +87,7 @@ struct MapFirstShell: View {
             }
             .presentationDetents([.medium, .large])
         case .walkaround:
-            InspectionWalkaroundSheet(viewModel: viewModel)
+            InspectionWalkaroundSheet(viewModel: viewModel, onFinished: { presentedModal = nil })
         case .routeFailure(let failure):
             RouteFailureSheet(presentation: failure) {
                 viewModel.routeFailure = nil

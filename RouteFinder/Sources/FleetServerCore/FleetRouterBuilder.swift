@@ -11,6 +11,8 @@ public enum FleetRouterBuilder {
         store: DiskFleetStore,
         apiKey: String? = nil,
         orsAPIKey: String? = nil,
+        tomTomAPIKey: String? = nil,
+        openWeatherAPIKey: String? = nil,
         eventHub: FleetEventHub = FleetEventHub(),
         proxyMeter: FleetProxyUsageMeter = FleetProxyUsageMeter()
     ) -> Router<BasicRequestContext> {
@@ -25,7 +27,13 @@ public enum FleetRouterBuilder {
             router.add(middleware: FleetAuthMiddleware(apiKey: apiKey))
         }
 
-        FleetORSProxy.registerRoutes(on: router, orsAPIKey: orsAPIKey, meter: proxyMeter)
+        FleetORSProxy.registerRoutes(
+            on: router,
+            orsAPIKey: orsAPIKey,
+            tomTomAPIKey: tomTomAPIKey,
+            openWeatherAPIKey: openWeatherAPIKey,
+            meter: proxyMeter
+        )
 
         router.get("v1/orgs") { _, _ async throws -> Response in
             try jsonResponse(try await store.orgs())

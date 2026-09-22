@@ -90,6 +90,9 @@ class FleetProxyStatusClient(
 ) {
     data class Status(
         val orsConfigured: Boolean,
+        val tomTomConfigured: Boolean,
+        val openWeatherConfigured: Boolean,
+        val overpassConfigured: Boolean,
         val raw: JSONObject,
     )
 
@@ -107,6 +110,9 @@ class FleetProxyStatusClient(
             val json = JSONObject(text)
             return Status(
                 orsConfigured = json.optBoolean("orsConfigured", json.optBoolean("ors_configured", false)),
+                tomTomConfigured = json.optBoolean("tomTomConfigured", false),
+                openWeatherConfigured = json.optBoolean("openWeatherConfigured", false),
+                overpassConfigured = json.optBoolean("overpassConfigured", true),
                 raw = json,
             )
         }

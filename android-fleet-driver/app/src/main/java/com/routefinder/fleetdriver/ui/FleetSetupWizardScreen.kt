@@ -63,6 +63,7 @@ fun FleetSetupWizardScreen(
     var apiKey by remember { mutableStateOf(prefs.apiKey) }
     var vehicleId by remember { mutableStateOf(prefs.vehicleId) }
     var connectionKind by remember { mutableStateOf(prefs.connectionKind) }
+    var regCheckUsername by remember { mutableStateOf(prefs.regCheckUsername) }
     var status by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var connected by remember { mutableStateOf(false) }
@@ -79,6 +80,7 @@ fun FleetSetupWizardScreen(
         prefs.vehicleId = uuid
         prefs.baseUrl = baseUrl
         prefs.apiKey = apiKey
+        prefs.regCheckUsername = regCheckUsername
         step = WizardStep.Done
     }
 
@@ -188,6 +190,16 @@ fun FleetSetupWizardScreen(
                             singleLine = true,
                             visualTransformation = PasswordVisualTransformation(),
                         )
+                        OutlinedTextField(
+                            value = regCheckUsername,
+                            onValueChange = { regCheckUsername = it },
+                            label = { Text("RegCheck username (optional)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            supportingText = {
+                                Text("Used on job intake when the fleet vehicle has a plate but no dims")
+                            },
+                        )
                         Text(
                             if (isHosted) {
                                 "Example: https://fleet.yourdomain.com — never paste the operator ORS key."
@@ -266,6 +278,7 @@ fun FleetSetupWizardScreen(
                                 prefs.baseUrl = baseUrl
                                 prefs.apiKey = apiKey
                                 prefs.connectionKind = connectionKind
+                                prefs.regCheckUsername = regCheckUsername
                                 scope.launch {
                                     error = null
                                     try {

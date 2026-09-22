@@ -35,6 +35,8 @@ public struct HazardNavigationContext {
     public var displayMeasurementSystem: RegionalMeasurementSystem
     /// Whether spoken hazard alerts are enabled.
     public var hazardVoiceAlertsEnabled: Bool
+    /// When set, legacy hazard TTS is skipped for this hazard id (fused ``RouteRiskAdvisory`` owns voice).
+    public var fusedHazardVoiceId: String?
 
     /// Creates hazard navigation context.
     public init(
@@ -45,7 +47,8 @@ public struct HazardNavigationContext {
         hasTomTomAPIKey: Bool,
         vehicleClass: VehicleProfileClass,
         displayMeasurementSystem: RegionalMeasurementSystem,
-        hazardVoiceAlertsEnabled: Bool
+        hazardVoiceAlertsEnabled: Bool,
+        fusedHazardVoiceId: String? = nil
     ) {
         self.routeCoordinates = routeCoordinates
         self.currentRouteArcLengthMeters = currentRouteArcLengthMeters
@@ -55,6 +58,7 @@ public struct HazardNavigationContext {
         self.vehicleClass = vehicleClass
         self.displayMeasurementSystem = displayMeasurementSystem
         self.hazardVoiceAlertsEnabled = hazardVoiceAlertsEnabled
+        self.fusedHazardVoiceId = fusedHazardVoiceId
     }
 }
 
@@ -288,6 +292,12 @@ public final class HazardNavigationCoordinator {
     ) {
         guard context.hazardVoiceAlertsEnabled,
               let announcement = state.activeHazardAheadAnnouncement else { return }
+        // Unified predictive-risk fuse owns TTS when it already covers this hazard/traffic.
+        if let fusedId = context.fusedHazardVoiceId,
+           fusedId == announcement.id || fusedId.hasSuffix("-\(announcement.id)") {
+            lastAnnouncedHazardId = announcement.id
+            return
+        }
         let threshold = NavigationWorkspaceSettings.loadHazardAlertDistanceMeters()
         guard HazardAheadFormatter.shouldAnnounce(
             announcement: announcement,

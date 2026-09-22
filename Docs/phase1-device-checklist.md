@@ -72,7 +72,7 @@ Mark **P49b-2 Fleet Part B** Pass/Fail in phase20.
 
 | # | Steps | Pass? | Notes |
 |---|--------|-------|-------|
-| **C3** | Map menu → Walkaround → complete ≥1 zone with defect note → Save → Share PDF | | |
+| **C3** | Map menu → Walkaround → mark defect → optional **Add defect photo** → Save → Share PDF (photo in PDF if attached) | | |
 | **C4** | Settings → Navigation → Layby voice **on** → HGV route with layby ahead → hear voice once inside 5 km | | |
 | **C5** | Settings → Fuel card provider → pick brand → route with fuel POI ahead → “Accepts your … card” banner | | |
 | **C6** | Report closure on route (hazard sheet) → during nav see hazard-ahead banner + voice | | |

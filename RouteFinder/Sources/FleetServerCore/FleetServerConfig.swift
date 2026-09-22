@@ -10,6 +10,10 @@ public struct FleetServerConfig: Sendable {
     public let apiKey: String?
     /// Optional HeiGIT ORS API key held by the operator for `/v1/proxy/*` routes.
     public let orsAPIKey: String?
+    /// Optional TomTom API key for `/v1/proxy/tomtom/*` forecast traffic.
+    public let tomTomAPIKey: String?
+    /// Optional OpenWeather API key for `/v1/proxy/openweather/*` horizon weather.
+    public let openWeatherAPIKey: String?
     /// Optional PEM certificate path for TLS.
     public let tlsCertificatePath: URL?
     /// Optional PEM private key path for TLS.
@@ -30,6 +34,8 @@ public struct FleetServerConfig: Sendable {
         storageDirectory: URL? = nil,
         apiKey: String? = nil,
         orsAPIKey: String? = nil,
+        tomTomAPIKey: String? = nil,
+        openWeatherAPIKey: String? = nil,
         tlsCertificatePath: URL? = nil,
         tlsPrivateKeyPath: URL? = nil,
         advertiseBonjour: Bool = true,
@@ -39,6 +45,8 @@ public struct FleetServerConfig: Sendable {
         self.storageDirectory = storageDirectory
         self.apiKey = apiKey
         self.orsAPIKey = orsAPIKey
+        self.tomTomAPIKey = tomTomAPIKey
+        self.openWeatherAPIKey = openWeatherAPIKey
         self.tlsCertificatePath = tlsCertificatePath
         self.tlsPrivateKeyPath = tlsPrivateKeyPath
         self.advertiseBonjour = advertiseBonjour
@@ -51,6 +59,8 @@ public struct FleetServerConfig: Sendable {
         var storageDirectory: URL?
         var apiKey: String?
         var orsAPIKey: String?
+        var tomTomAPIKey: String?
+        var openWeatherAPIKey: String?
         var tlsCertificatePath: URL?
         var tlsPrivateKeyPath: URL?
         var advertiseBonjour = true
@@ -78,6 +88,16 @@ public struct FleetServerConfig: Sendable {
                 index += 1
                 if index < arguments.count {
                     orsAPIKey = arguments[index]
+                }
+            case "--tomtom-key":
+                index += 1
+                if index < arguments.count {
+                    tomTomAPIKey = arguments[index]
+                }
+            case "--openweather-key":
+                index += 1
+                if index < arguments.count {
+                    openWeatherAPIKey = arguments[index]
                 }
             case "--route-daily-cap":
                 index += 1
@@ -120,6 +140,20 @@ public struct FleetServerConfig: Sendable {
                 orsAPIKey = trimmed
             }
         }
+        if tomTomAPIKey == nil, let envTomTom = ProcessInfo.processInfo.environment["TOMTOM_API_KEY"]
+            ?? ProcessInfo.processInfo.environment["ROUTEFINDER_TOMTOM_API_KEY"] {
+            let trimmed = envTomTom.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                tomTomAPIKey = trimmed
+            }
+        }
+        if openWeatherAPIKey == nil, let envOW = ProcessInfo.processInfo.environment["OPENWEATHER_API_KEY"]
+            ?? ProcessInfo.processInfo.environment["ROUTEFINDER_OPENWEATHER_API_KEY"] {
+            let trimmed = envOW.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                openWeatherAPIKey = trimmed
+            }
+        }
         if tlsCertificatePath == nil,
            let envCert = ProcessInfo.processInfo.environment["ROUTEFINDER_FLEET_TLS_CERT"] {
             tlsCertificatePath = URL(fileURLWithPath: envCert)
@@ -134,6 +168,8 @@ public struct FleetServerConfig: Sendable {
             storageDirectory: storageDirectory,
             apiKey: apiKey,
             orsAPIKey: orsAPIKey,
+            tomTomAPIKey: tomTomAPIKey,
+            openWeatherAPIKey: openWeatherAPIKey,
             tlsCertificatePath: tlsCertificatePath,
             tlsPrivateKeyPath: tlsPrivateKeyPath,
             advertiseBonjour: advertiseBonjour,

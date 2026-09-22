@@ -31,6 +31,21 @@ object FleetOrsConfig {
         return "$base/v1/proxy/status"
     }
 
+    fun tomTomFlowUrl(fleetServerBase: String, lat: Double, lon: Double): String {
+        val base = fleetServerBase.trimEnd('/')
+        return "$base/v1/proxy/tomtom/flow?point=$lat,$lon"
+    }
+
+    fun openWeatherForecastUrl(fleetServerBase: String, lat: Double, lon: Double): String {
+        val base = fleetServerBase.trimEnd('/')
+        return "$base/v1/proxy/openweather/forecast?lat=$lat&lon=$lon&cnt=8"
+    }
+
+    fun overpassInterpreterUrl(fleetServerBase: String): String {
+        val base = fleetServerBase.trimEnd('/')
+        return "$base/v1/proxy/overpass/interpreter"
+    }
+
     fun hgvDirectionsUrl(fleetServerBase: String): String =
         "${orsBaseUrl(fleetServerBase)}/directions/driving-hgv/geojson"
 }

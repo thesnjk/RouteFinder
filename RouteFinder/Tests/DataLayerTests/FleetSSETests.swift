@@ -40,16 +40,12 @@ private func startFleetServer(
         FleetVehicle(orgId: org.id, label: "SSE Artic", registrationPlate: "SSE1 TST")
     )
 
-    let stream = FleetSSEClient.events(baseURL: baseURL, apiKey: nil, vehicleId: vehicle.id)
-    let receiveTask = Task<FleetDispatchEvent?, Never> {
-        for await event in stream {
-            return event
-        }
-        return nil
-    }
+    let receiveTask = await beginSSESubscription(
+        baseURL: baseURL,
+        apiKey: nil,
+        vehicleId: vehicle.id
+    )
     defer { receiveTask.cancel() }
-
-    try await Task.sleep(nanoseconds: 200_000_000)
 
     let trip = try await client.createAndPushTrip(
         orgId: org.id,
@@ -60,16 +56,7 @@ private func startFleetServer(
         ]
     )
 
-    let event = try await withThrowingTaskGroup(of: FleetDispatchEvent?.self) { group in
-        group.addTask { await receiveTask.value }
-        group.addTask {
-            try await Task.sleep(nanoseconds: 5_000_000_000)
-            return nil
-        }
-        guard let first = try await group.next() else { return nil as FleetDispatchEvent? }
-        group.cancelAll()
-        return first
-    }
+    let event = try await awaitSSEEvent(receiveTask)
 
     #expect(event?.kind == .tripPushed)
     #expect(event?.tripId == trip.id)
@@ -124,15 +111,14 @@ private func startFleetServer(
         FleetVehicle(orgId: org.id, label: "HB Artic", registrationPlate: "HB01 TST")
     )
 
-    let stream = FleetSSEClient.events(baseURL: baseURL, apiKey: nil, vehicleId: vehicle.id)
-    let receiveTask = Task<FleetDispatchEvent?, Never> {
-        for await event in stream {
-            return event
-        }
-        return nil
-    }
+    let receiveTask = await beginSSESubscription(
+        baseURL: baseURL,
+        apiKey: nil,
+        vehicleId: vehicle.id
+    )
     defer { receiveTask.cancel() }
 
+    // Allow at least one heartbeat tick so the stream stays alive before push.
     try await Task.sleep(nanoseconds: 2_500_000_000)
 
     let trip = try await client.createAndPushTrip(
@@ -144,16 +130,7 @@ private func startFleetServer(
         ]
     )
 
-    let event = try await withThrowingTaskGroup(of: FleetDispatchEvent?.self) { group in
-        group.addTask { await receiveTask.value }
-        group.addTask {
-            try await Task.sleep(nanoseconds: 3_000_000_000)
-            return nil
-        }
-        guard let first = try await group.next() else { return nil as FleetDispatchEvent? }
-        group.cancelAll()
-        return first
-    }
+    let event = try await awaitSSEEvent(receiveTask, timeoutNanoseconds: 3_000_000_000)
 
     #expect(event?.kind == .tripPushed)
     #expect(event?.tripId == trip.id)
@@ -177,16 +154,13 @@ private func startFleetServer(
         FleetVehicle(orgId: org.id, label: "E2E Artic", registrationPlate: "E2E1 TST")
     )
 
-    let stream = FleetSSEClient.events(baseURL: baseURL, apiKey: nil, vehicleId: vehicle.id)
-    let receiveTask = Task<FleetDispatchEvent?, Never> {
-        for await event in stream where event.kind == .tripPushed {
-            return event
-        }
-        return nil
-    }
+    let receiveTask = await beginSSESubscription(
+        baseURL: baseURL,
+        apiKey: nil,
+        vehicleId: vehicle.id,
+        tripPushedOnly: true
+    )
     defer { receiveTask.cancel() }
-
-    try await Task.sleep(nanoseconds: 200_000_000)
 
     let trip = try await client.createAndPushTrip(
         orgId: org.id,
@@ -197,16 +171,7 @@ private func startFleetServer(
         ]
     )
 
-    let event = try await withThrowingTaskGroup(of: FleetDispatchEvent?.self) { group in
-        group.addTask { await receiveTask.value }
-        group.addTask {
-            try await Task.sleep(nanoseconds: 5_000_000_000)
-            return nil
-        }
-        guard let first = try await group.next() else { return nil as FleetDispatchEvent? }
-        group.cancelAll()
-        return first
-    }
+    let event = try await awaitSSEEvent(receiveTask)
 
     #expect(event?.kind == .tripPushed)
     #expect(event?.tripId == trip.id)
@@ -224,16 +189,22 @@ private func startFleetServer(
         occupancyPrior: .low,
         isAdvisory: true
     )
+    let recordedAt = Date(timeIntervalSince1970: 1_720_000_000)
     let snapshot = FleetTripSnapshot(
         tripId: trip.id,
         status: .rehearsed,
         orderedStopIds: trip.stops.map(\.id),
         physicsETASeconds: 7_200,
-        predictedLayby: layby
+        predictedLayby: layby,
+        driverLatitude: 52.6309,
+        driverLongitude: 1.2974,
+        driverLocationRecordedAt: recordedAt
     )
     let updated = try await client.applySnapshot(snapshot)
     #expect(updated.status == .rehearsed)
     #expect(updated.predictedLayby?.stop.label == "E2E Layby A1")
+    #expect(updated.driverLatitude == 52.6309)
+    #expect(updated.driverLongitude == 1.2974)
 
     let inspectionSummary = TripBriefInspectionSummary(
         vehicleLabel: "E2E Artic",
@@ -249,7 +220,10 @@ private func startFleetServer(
         physicsETASeconds: 7_200,
         predictedLayby: layby,
         latestInspectionSummary: inspectionSummary,
-        inspectionReportPDFBase64: pdfFixture
+        inspectionReportPDFBase64: pdfFixture,
+        driverLatitude: 52.6309,
+        driverLongitude: 1.2974,
+        driverLocationRecordedAt: recordedAt
     )
     let withInspection = try await client.applySnapshot(inspectionSnapshot)
     #expect(withInspection.latestInspectionSummary?.defectCount == 2)
@@ -262,6 +236,9 @@ private func startFleetServer(
     let active = try await client.activeTrip(forVehicleId: vehicle.id)
     #expect(active?.id == trip.id)
     #expect(active?.status == .active)
+    #expect(active?.driverLatitude == 52.6309)
+    #expect(active?.driverLongitude == 1.2974)
+    #expect(active?.driverLocationRecordedAt == recordedAt)
 
     let briefContext = TripBriefContext.from(fleetTrip: withInspection, vehicleLabel: vehicle.label)
     let briefText = TripBriefFormatter.plainText(from: briefContext)
@@ -269,4 +246,42 @@ private func startFleetServer(
     #expect(briefText.contains("Inspection warning"))
     #expect(briefText.contains("2 defect(s)"))
     #expect(briefText.contains("Felixstowe"))
+}
+
+@Test func fleetCreateAndPushTripRoundTripsJobBrief() async throws {
+    let storageDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("FleetJobBriefRoundTrip-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: storageDir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: storageDir) }
+
+    let port = 18097
+    let serverTask = startFleetServer(port: port, storageDirectory: storageDir, apiKey: nil)
+    defer { serverTask.cancel() }
+
+    let baseURL = URL(string: "http://127.0.0.1:\(port)")!
+    try await waitForFleetServerReady(baseURL: baseURL)
+    let client = HTTPFleetStore(baseURL: baseURL)
+    let org = try await client.createOrg(name: "Job Brief Ltd")
+    let vehicle = try await client.registerVehicle(
+        FleetVehicle(orgId: org.id, label: "Brief Artic", registrationPlate: "BR01 TST")
+    )
+
+    let brief = FleetJobBrief(grossWeightKg: 44_000, adrClass: "3", autoFindRoute: true, autoRehearse: false)
+    let trip = try await client.createAndPushTrip(
+        orgId: org.id,
+        vehicleId: vehicle.id,
+        stops: [
+            FleetTripStop(sequence: 0, label: "Origin", latitude: 51.95, longitude: 1.35, role: .origin),
+            FleetTripStop(sequence: 1, label: "Destination", latitude: 53.48, longitude: -2.24, role: .destination),
+        ],
+        jobBrief: brief
+    )
+
+    #expect(trip.jobBrief?.grossWeightKg == 44_000)
+    #expect(trip.jobBrief?.adrClass == "3")
+
+    let fetched = try await client.trip(id: trip.id)
+    #expect(fetched?.jobBrief?.grossWeightKg == 44_000)
+    #expect(fetched?.jobBrief?.adrClass == "3")
+    #expect(fetched?.jobBrief?.autoFindRoute == true)
 }

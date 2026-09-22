@@ -85,8 +85,22 @@ cd /Users/admin/Developer/RouteFinder/android-fleet-driver
 
 ```bash
 cd /Users/admin/Developer/RouteFinder/android-fleet-driver
+export JAVA_HOME=$(/usr/libexec/java_home -v 22)  # or 17; avoid JDK 25
 ./gradlew :app:testDebugUnitTest :app:assembleDebug
 ```
+
+**Result (2026-09-18):** **Pass** — unit tests + `assembleDebug` (Engineering excellence Phase 4). Manual Norwich corridor rows above remain **Pending local (operator)**. See [`phase4-platform-parity-verification.md`](phase4-platform-parity-verification.md).
+
+### Ultimate HGV — job intake parity (U2 / U5, 2026-09-19)
+
+| Check | Status | Notes |
+|-------|--------|-------|
+| `FleetJobBrief` parse on trip JSON | **Pass** (unit) | `JobIntakeHandlerTest` |
+| Auto find route respects `jobBrief.autoFindRoute` | **Pass** (code) | `NavigationViewModel.applyFleetTrip` + `JobIntakeHandler` |
+| Operator corridor push with weight/ADR | **Pending local** | Same LAN as Mac fleet server; unlock Android device |
+
+- [`ultimate-hgv-platform-spec.md`](ultimate-hgv-platform-spec.md)
+- [`phase4-platform-parity-verification.md`](phase4-platform-parity-verification.md)
 
 ---
 
@@ -95,3 +109,4 @@ cd /Users/admin/Developer/RouteFinder/android-fleet-driver
 - [`android-fleet-driver/README.md`](../android-fleet-driver/README.md)
 - [`android-c2-gate.md`](android-c2-gate.md)
 - [`phase6-android-c1-verification.md`](phase6-android-c1-verification.md)
+- [`phase4-platform-parity-verification.md`](phase4-platform-parity-verification.md)

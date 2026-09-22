@@ -182,3 +182,45 @@ struct LiveKineticAdvisoryBanner: View {
         .accessibilityLabel(text)
     }
 }
+
+/// Unified predictive risk banner (fused kinetic / weather / hazard / roadworks / traffic).
+struct PredictiveRiskPrimaryBanner: View {
+    let advisory: RouteRiskAdvisory
+
+    var body: some View {
+        HStack(spacing: RFSpacing.sm) {
+            Image(systemName: iconName)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(iconColor)
+            Text(advisory.message)
+                .font(RFFont.caption.weight(.semibold))
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, RFSpacing.md)
+        .padding(.vertical, RFSpacing.sm)
+        .controlSheetStyle()
+        .accessibilityLabel(advisory.message)
+        .accessibilityIdentifier("predictiveRiskPrimaryBanner")
+    }
+
+    private var iconName: String {
+        switch advisory.kind {
+        case .kinetic: "flame.fill"
+        case .weather: "cloud.rain.fill"
+        case .traffic: "car.2.fill"
+        case .roadworks: "cone.fill"
+        case .hazard: "exclamationmark.triangle.fill"
+        case .clearance: "arrow.up.and.down"
+        }
+    }
+
+    private var iconColor: Color {
+        switch advisory.severity {
+        case .info: .secondary
+        case .caution: .orange
+        case .severe: RFColor.hazard
+        }
+    }
+}

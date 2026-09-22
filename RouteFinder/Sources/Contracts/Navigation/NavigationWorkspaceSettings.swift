@@ -16,12 +16,20 @@ public enum NavigationWorkspaceSettings {
     private static let fuelCardProviderKey = "RouteFinder.fuelCardProvider"
     private static let hazardVoiceAlertsEnabledKey = "RouteFinder.hazardVoiceAlertsEnabled"
     private static let hazardAlertDistanceMetersKey = "RouteFinder.hazardAlertDistanceMeters"
+    private static let clearanceRadarEnabledKey = "RouteFinder.clearanceRadarEnabled"
     private static let speechVoiceIdentifierKey = "RouteFinder.speechVoiceIdentifier"
     private static let speechRateKey = "RouteFinder.speechRate"
     private static let vehicleModeOnboardingCompletedKey = "RouteFinder.vehicleModeOnboardingCompleted"
     private static let roleSelectionCompletedKey = "RouteFinder.roleSelectionCompleted"
     private static let launchRoleKey = "RouteFinder.launchRole"
     private static let roleFollowUpCompletedKey = "RouteFinder.roleFollowUpCompleted"
+    private static let settingsDeepLinkKey = "RouteFinder.settingsDeepLink"
+
+    /// One-shot Settings hub destination (consumed on Settings open).
+    public enum SettingsDeepLink: String, Sendable {
+        /// Settings → API Keys (solo HeiGIT key path).
+        case apiKeys
+    }
 
     /// Loads the preferred telemetry source mode.
     public static func loadTelemetrySourceMode(defaults: UserDefaults = .standard) -> LocationProviderMode {
@@ -191,6 +199,19 @@ public enum NavigationWorkspaceSettings {
         defaults.set(max(300, meters), forKey: hazardAlertDistanceMetersKey)
     }
 
+    /// Whether corridor clearance Overpass radar is enabled (default on for HGV safety).
+    public static func loadClearanceRadarEnabled(defaults: UserDefaults = .standard) -> Bool {
+        if defaults.object(forKey: clearanceRadarEnabledKey) == nil {
+            return true
+        }
+        return defaults.bool(forKey: clearanceRadarEnabledKey)
+    }
+
+    /// Persists clearance radar preference.
+    public static func saveClearanceRadarEnabled(_ enabled: Bool, defaults: UserDefaults = .standard) {
+        defaults.set(enabled, forKey: clearanceRadarEnabledKey)
+    }
+
     /// Selected AVSpeechSynthesisVoice identifier for navigation prompts.
     public static func loadSpeechVoiceIdentifier(defaults: UserDefaults = .standard) -> String? {
         defaults.string(forKey: speechVoiceIdentifierKey)
@@ -257,5 +278,17 @@ public enum NavigationWorkspaceSettings {
     /// Persists completion of the role-specific follow-up sheet.
     public static func saveHasCompletedRoleFollowUp(_ completed: Bool, defaults: UserDefaults = .standard) {
         defaults.set(completed, forKey: roleFollowUpCompletedKey)
+    }
+
+    /// Queues a Settings hub deep link (e.g. Solo driver → API Keys).
+    public static func saveSettingsDeepLink(_ link: SettingsDeepLink, defaults: UserDefaults = .standard) {
+        defaults.set(link.rawValue, forKey: settingsDeepLinkKey)
+    }
+
+    /// Returns and clears any pending Settings deep link.
+    public static func consumeSettingsDeepLink(defaults: UserDefaults = .standard) -> SettingsDeepLink? {
+        guard let raw = defaults.string(forKey: settingsDeepLinkKey) else { return nil }
+        defaults.removeObject(forKey: settingsDeepLinkKey)
+        return SettingsDeepLink(rawValue: raw)
     }
 }

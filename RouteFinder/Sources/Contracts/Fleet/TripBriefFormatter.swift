@@ -37,6 +37,16 @@ public enum TripBriefFormatter {
             result.append(TripBriefSection(title: "Stops", lines: stopLines))
         }
 
+        if !context.dispatchTimeWindows.isEmpty {
+            let windowLines = context.dispatchTimeWindows.map { window in
+                formatTimeWindowLine(window, stops: context.stops)
+            }
+            result.append(TripBriefSection(
+                title: "Stop time windows (dispatch)",
+                lines: windowLines
+            ))
+        }
+
         if !context.companyBreaks.isEmpty {
             let breakLines = context.companyBreaks.map { allocation in
                 let label = allocation.label ?? "Break"
@@ -172,6 +182,27 @@ public enum TripBriefFormatter {
             title: "Predicted layby (advisory — not legal tacho)",
             lines: lines
         )
+    }
+
+    private static func formatTimeWindowLine(_ window: StopTimeWindow, stops: [TripBriefStop]) -> String {
+        let stopLabel = stops.first(where: { $0.stopId == window.stopId })?.label
+            ?? "Stop \(window.stopId.uuidString.prefix(8))"
+        let earliest = window.earliestArrival.map {
+            $0.formatted(date: .abbreviated, time: .shortened)
+        }
+        let latest = window.latestArrival.map {
+            $0.formatted(date: .abbreviated, time: .shortened)
+        }
+        switch (earliest, latest) {
+        case let (earliest?, latest?):
+            return "\(stopLabel): \(earliest) – \(latest)"
+        case let (earliest?, nil):
+            return "\(stopLabel): after \(earliest)"
+        case let (nil, latest?):
+            return "\(stopLabel): before \(latest)"
+        case (nil, nil):
+            return "\(stopLabel): window unset"
+        }
     }
 
     private static func formatDuration(_ seconds: TimeInterval) -> String {

@@ -147,6 +147,13 @@ public enum RouteFailureMapper {
                 message: ExternalRoutingError.hgvNoRouteMessage,
                 detail: error.serverReason
             )
+        case .serverError(let status, _) where status == 429:
+            return RouteFailurePresentation(
+                kind: .generic,
+                title: "Routing Cap Reached",
+                message: "Fleet ORS daily cap reached. Ask the operator to raise the proxy budget or wait until tomorrow.",
+                detail: error.serverReason
+            )
         default:
             return RouteFailurePresentation(
                 kind: .generic,

@@ -35,11 +35,14 @@ flowchart BT
 |-------------|----------------|------|
 | `FleetDispatchCoordinator` | Poll/SSE dispatch, snapshot publish, Bonjour discovery, fleet store reload | `RouteViewModel` (`FleetDispatchHost`) |
 | `HazardNavigationCoordinator` | TomTom sampling, roadworks corridor, crowd hydrate, hazard overlay/voice | `RouteViewModel` (hazard state + context) |
+| `PredictiveRiskCoordinator` | Fuse kinetic / weather / hazard / roadworks / traffic / schedule / forecast / clearance into `RouteRiskAdvisory` + primary HUD | `RouteViewModel` (`PredictiveRiskProviding`) |
 | `RoutePlanningCoordinator` | SearchResult mapping, LEZ avoid rings, recalculate debounce, lane enrichment, traffic reroute evaluation, route failure presentation | `RouteViewModel` (`RoutePlanningHost`) |
 | `RouteSimulationCoordinator` | Simulation callbacks, kinetic advisories, physics ETA / rehearse, Break Now, layby voice announce | `RouteViewModel` (`RouteSimulationHost`) |
 | `HosAdvisoryCoordinator` | HOS duty transitions, can-I-drive, tacho import/persistence, rest forecast, path metrics | `RouteViewModel` (`HosAdvisoryHost`) |
 
 `RouteViewModel` remains the SwiftUI observation root. Coordinators hold logic; the view model holds `@Observable` state for bindings.
+
+Supporting risk modules (not coordinators): `ForecastRiskSampler` (TomTom + OpenWeather 1–3h horizon), `ClearanceCorridorProbe` (Overpass maxheight/weight along route + off-route heading corridor).
 
 ## Remote reliability
 
@@ -57,10 +60,13 @@ flowchart LR
     RouteViewModel --> RoutePlanningCoordinator
     RouteViewModel --> RouteSimulationCoordinator
     RouteViewModel --> HosAdvisoryCoordinator
+    RouteViewModel --> PredictiveRiskCoordinator
     RouteViewModel --> NavigationCoordinator
     FleetDispatchCoordinator --> HTTPFleetStore
     HazardNavigationCoordinator --> TomTomTrafficFlowClient
     HazardNavigationCoordinator --> RoadworksAlongRouteRepository
+    PredictiveRiskCoordinator --> ForecastRiskSampler
+    PredictiveRiskCoordinator --> ClearanceCorridorProbe
     RoutePlanningCoordinator --> OpenRouteServiceRoutingClient
     RouteViewModel --> RouteController
     RouteController --> APIUsageLedger

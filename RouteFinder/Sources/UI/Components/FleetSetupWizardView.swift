@@ -4,6 +4,7 @@ import SwiftUI
 /// Guided first-run / re-entry flow for pairing a driver device to LAN or hosted fleet.
 struct FleetSetupWizardView: View {
     @Bindable var viewModel: RouteViewModel
+    var onFinished: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
 
     private enum Step: Int, CaseIterable {
@@ -20,6 +21,17 @@ struct FleetSetupWizardView: View {
 
     private var isHosted: Bool { connectionKind == .hosted }
 
+    private func finish() {
+        viewModel.saveFleetServerURLFromSettings()
+        viewModel.saveFleetVehicleIdFromSettings()
+        FleetWorkspaceSettings.saveFleetConnectionKind(connectionKind)
+        if let onFinished {
+            onFinished()
+        } else {
+            dismiss()
+        }
+    }
+
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: RFSpacing.lg) {
@@ -35,7 +47,15 @@ struct FleetSetupWizardView: View {
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
+                    Button("Close") { finish() }
+                }
+            }
+            .accessibilityIdentifier("fleetSetupWizard")
+            .onAppear {
+                // Pair-with-fleet always means remote sync — avoid an extra toggle tap.
+                if !viewModel.useRemoteFleetServer {
+                    viewModel.useRemoteFleetServer = true
+                    viewModel.saveFleetServerURLFromSettings()
                 }
             }
             #if os(iOS)
@@ -196,10 +216,7 @@ struct FleetSetupWizardView: View {
             Spacer()
             if step == .done {
                 Button("Finish") {
-                    viewModel.saveFleetServerURLFromSettings()
-                    viewModel.saveFleetVehicleIdFromSettings()
-                    FleetWorkspaceSettings.saveFleetConnectionKind(connectionKind)
-                    dismiss()
+                    finish()
                 }
                 .modifier(GlassButton())
             } else {

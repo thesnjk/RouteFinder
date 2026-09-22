@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://routefinder.local/fleet-api-schema.json",
+  "title": "RouteFinder Fleet API fragment",
+  "description": "Optional JSON Schema fragment for FleetTrip + FleetJobBrief. All jobBrief fields are optional for backward-compatible clients.",
+  "definitions": {
+    "FleetJobBrief": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "grossWeightKg": { "type": ["number", "null"] },
+        "adrClass": { "type": ["string", "null"] },
+        "timeWindows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "stopId": { "type": "string", "format": "uuid" },
+              "earliestArrival": { "type": ["string", "null"], "format": "date-time" },
+              "latestArrival": { "type": ["string", "null"], "format": "date-time" }
+            },
+            "required": ["stopId"]
+          }
+        },
+        "requestedVehicleProfileId": { "type": ["string", "null"], "format": "uuid" },
+        "autoFindRoute": { "type": "boolean", "default": true },
+        "autoRehearse": { "type": "boolean", "default": false }
+      }
+    },
+    "FleetTripStop": {
+      "type": "object",
+      "required": ["id", "sequence", "label", "latitude", "longitude", "role"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "sequence": { "type": "integer" },
+        "label": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "role": { "enum": ["origin", "via", "destination"] }
+      }
+    },
+    "FleetTrip": {
+      "type": "object",
+      "required": ["id", "orgId", "vehicleId", "status", "stops", "updatedAt"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "orgId": { "type": "string", "format": "uuid" },
+        "vehicleId": { "type": "string", "format": "uuid" },
+        "status": {
+          "enum": ["draft", "dispatched", "accepted", "optimized", "rehearsed", "active", "completed"]
+        },
+        "stops": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/definitions/FleetTripStop" }
+        },
+        "vehicleProfile": { "type": ["object", "null"] },
+        "jobBrief": { "$ref": "#/definitions/FleetJobBrief" },
+        "physicsETASeconds": { "type": ["number", "null"] },
+        "companyBreaks": { "type": "array" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

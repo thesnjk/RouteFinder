@@ -231,7 +231,9 @@ public final class FleetDispatchCoordinator {
         summary: TripBriefInspectionSummary
     ) async {
         guard let host, host.activeDispatchTripId != nil, host.useRemoteFleetServer else { return }
-        let pdfBase64 = InspectionReportPDFRenderer.pdfData(from: record).base64EncodedString()
+        let pdfBase64 = InspectionMediaBudget.cappedPDFBase64(
+            InspectionReportPDFRenderer.pdfData(from: record).base64EncodedString()
+        )
         await publishDispatchSnapshot(
             inspectionSummary: summary,
             inspectionReportPDFBase64: pdfBase64
@@ -242,6 +244,12 @@ public final class FleetDispatchCoordinator {
     public func fetchDispatchTrip() async -> FleetTrip? {
         guard let tripId = host?.activeDispatchTripId else { return nil }
         return try? await fleetStore.trip(id: tripId)
+    }
+
+    /// Looks up a fleet vehicle by id within an org (for RegCheck plate on job intake).
+    public func fleetVehicle(id vehicleId: UUID, orgId: UUID) async -> FleetVehicle? {
+        let vehicles = (try? await fleetStore.vehicles(forOrgId: orgId)) ?? []
+        return vehicles.first { $0.id == vehicleId }
     }
 
     /// Persists the fleet vehicle id from Settings text entry.

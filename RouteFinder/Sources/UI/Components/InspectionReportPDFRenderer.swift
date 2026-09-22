@@ -87,6 +87,23 @@ public enum InspectionReportPDFRenderer {
                     line += " (\(note))"
                 }
                 renderer.draw(text: line, font: bodyFont(), width: contentWidth, x: margin, minimumHeight: 14)
+                if item.status == .defect {
+                    for photoBase64 in item.photoJPEGBase64.prefix(InspectionMediaBudget.maxPhotosPerItem) {
+                        guard let data = Data(base64Encoded: photoBase64),
+                              let image = makeCGImage(from: data) else { continue }
+                        let thumbHeight: CGFloat = 96
+                        let thumbWidth = min(contentWidth, thumbHeight * 1.4)
+                        renderer.ensureSpace(for: thumbHeight + 8)
+                        let drawRect = CGRect(
+                            x: margin,
+                            y: pageHeight - renderer.yTop - thumbHeight,
+                            width: thumbWidth,
+                            height: thumbHeight
+                        )
+                        pdfContext.draw(image, in: drawRect)
+                        renderer.advance(by: thumbHeight + 8)
+                    }
+                }
             }
             renderer.advance(by: sectionSpacing)
         }
@@ -94,6 +111,18 @@ public enum InspectionReportPDFRenderer {
         pdfContext.endPDFPage()
         pdfContext.closePDF()
         return data as Data
+    }
+
+    private static func makeCGImage(from jpegData: Data) -> CGImage? {
+        #if canImport(UIKit)
+        return UIImage(data: jpegData)?.cgImage
+        #elseif canImport(AppKit)
+        guard let image = NSImage(data: jpegData) else { return nil }
+        var rect = CGRect(origin: .zero, size: image.size)
+        return image.cgImage(forProposedRect: &rect, context: nil, hints: nil)
+        #else
+        return nil
+        #endif
     }
 
     private static func statusLabel(_ status: InspectionItemStatus) -> String {

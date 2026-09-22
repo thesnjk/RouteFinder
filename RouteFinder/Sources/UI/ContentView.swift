@@ -145,6 +145,7 @@ private struct MapWorkspaceView: View {
         case product
         case vehicle
         case driverNextSteps
+        case fleetWizard
         case dispatcherGuide
         case officePCGuide
         var id: String { rawValue }
@@ -158,7 +159,6 @@ private struct MapWorkspaceView: View {
     #endif
     @State private var launchCover: LaunchCover?
     @State private var launchCoverDismissed = false
-    @State private var showFleetSetupWizard = false
     var onOpenProfile: () -> Void
     var onOpenSettings: () -> Void
     var onOpenDispatch: () -> Void
@@ -289,9 +289,6 @@ private struct MapWorkspaceView: View {
         .onAppear {
             presentLaunchCoverIfNeeded()
         }
-        .sheet(isPresented: $showFleetSetupWizard) {
-            FleetSetupWizardView(viewModel: viewModel)
-        }
     }
 
     private var shouldShowLaunchCover: Bool {
@@ -331,17 +328,22 @@ private struct MapWorkspaceView: View {
         case .driverNextSteps:
             DriverNextStepsSheet(
                 onPairFleet: {
-                    markRoleFollowUpComplete()
-                    showFleetSetupWizard = true
+                    NavigationWorkspaceSettings.saveHasCompletedRoleFollowUp(true)
+                    launchCover = .fleetWizard
                 },
                 onSolo: {
                     markRoleFollowUpComplete()
+                    NavigationWorkspaceSettings.saveSettingsDeepLink(.apiKeys)
                     onOpenSettings()
                 },
                 onSkip: {
                     markRoleFollowUpComplete()
                 }
             )
+        case .fleetWizard:
+            FleetSetupWizardView(viewModel: viewModel) {
+                markRoleFollowUpComplete()
+            }
         case .dispatcherGuide:
             DispatcherOnboardingSheet(
                 onOpenDispatch: {
@@ -361,6 +363,14 @@ private struct MapWorkspaceView: View {
     private func presentLaunchCoverIfNeeded() {
         #if DEBUG
         UITestLaunchConfigurator.applyIfNeeded()
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("UITEST_DRIVER_NEXT_STEPS")
+            || arguments.contains("UITEST_RESET_ROLE_PICKER")
+            || arguments.contains("UITEST_RESET_ONBOARDING") {
+            launchCoverDismissed = false
+            launchCover = Self.initialLaunchCover()
+            return
+        }
         #endif
         guard launchCover == nil else { return }
         launchCover = Self.initialLaunchCover()

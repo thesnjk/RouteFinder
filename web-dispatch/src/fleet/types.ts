@@ -30,6 +30,21 @@ export interface FleetTripStop {
   role: 'origin' | 'via' | 'destination'
 }
 
+export interface StopTimeWindow {
+  stopId: string
+  earliestArrival?: string | null
+  latestArrival?: string | null
+}
+
+export interface FleetJobBrief {
+  grossWeightKg?: number | null
+  adrClass?: string | null
+  /** Optional per-stop time windows (ISO timestamps). */
+  timeWindows?: StopTimeWindow[]
+  autoFindRoute?: boolean
+  autoRehearse?: boolean
+}
+
 export interface FleetTrip {
   id: string
   orgId: string
@@ -39,6 +54,8 @@ export interface FleetTrip {
   physicsETASeconds?: number | null
   updatedAt: string
   latestInspectionSummary?: unknown
+  /** Optional dispatch job brief (weight / ADR / auto-intake). */
+  jobBrief?: FleetJobBrief | null
   /** Latest driver latitude from snapshot (WGS84). */
   driverLatitude?: number | null
   /** Latest driver longitude from snapshot (WGS84). */

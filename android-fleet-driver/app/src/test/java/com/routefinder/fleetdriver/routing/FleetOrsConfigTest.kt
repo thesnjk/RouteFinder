@@ -36,4 +36,22 @@ class FleetOrsConfigTest {
         assertFalse(FleetOrsConfig.usesFleetProxy(null))
         assertFalse(FleetOrsConfig.usesFleetProxy(""))
     }
+
+    @Test
+    fun httpsHostedBaseUrls() {
+        val base = "https://fleet.example.com"
+        assertEquals(
+            "https://fleet.example.com/v1/proxy/pelias/v1",
+            FleetOrsConfig.peliasBaseUrl(base),
+        )
+        assertEquals(
+            "https://fleet.example.com/v1/proxy/ors/v2",
+            FleetOrsConfig.orsBaseUrl(base),
+        )
+        assertEquals(
+            "https://fleet.example.com/v1/proxy/ors/v2/directions/driving-hgv/geojson",
+            FleetOrsConfig.hgvDirectionsUrl(base),
+        )
+        assertTrue(FleetOrsConfig.usesFleetProxy(base))
+    }
 }

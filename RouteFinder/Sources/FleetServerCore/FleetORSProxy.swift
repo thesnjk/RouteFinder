@@ -13,16 +13,32 @@ public enum FleetORSProxy {
     public static func registerRoutes(
         on router: Router<BasicRequestContext>,
         orsAPIKey: String?,
+        tomTomAPIKey: String? = nil,
+        openWeatherAPIKey: String? = nil,
         meter: FleetProxyUsageMeter,
         session: URLSession = .shared
     ) {
         let trimmed = orsAPIKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let configured = !trimmed.isEmpty
+        let tomTomConfigured = !(tomTomAPIKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "").isEmpty
+        let openWeatherConfigured = !(openWeatherAPIKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "").isEmpty
 
         router.get("v1/proxy/status") { _, _ async throws -> Response in
-            let status = await meter.status(orsConfigured: configured)
+            let status = await meter.status(
+                orsConfigured: configured,
+                tomTomConfigured: tomTomConfigured,
+                openWeatherConfigured: openWeatherConfigured
+            )
             return try jsonResponse(status)
         }
+
+        FleetForecastProxy.registerRoutes(
+            on: router,
+            tomTomAPIKey: tomTomAPIKey,
+            openWeatherAPIKey: openWeatherAPIKey,
+            meter: meter,
+            session: session
+        )
 
         guard configured else { return }
 

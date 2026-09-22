@@ -69,6 +69,7 @@ class FleetApi(
         driverLongitude: Double? = null,
         driverLocationRecordedAt: String? = null,
         physicsETASeconds: Double? = null,
+        latestInspectionSummary: JSONObject? = null,
     ): FleetTrip {
         val media = "application/json; charset=utf-8".toMediaType()
         val payload = trip.toSnapshotJson(
@@ -77,6 +78,7 @@ class FleetApi(
             driverLongitude = driverLongitude,
             driverLocationRecordedAt = driverLocationRecordedAt,
             physicsETASecondsOverride = physicsETASeconds,
+            latestInspectionSummary = latestInspectionSummary,
         )
         val request = Request.Builder()
             .url(url("/v1/trips/${trip.id}/snapshot"))
@@ -87,6 +89,24 @@ class FleetApi(
             val body = response.body?.string().orEmpty()
             if (!response.isSuccessful) error("snapshot ${response.code}: $body")
             return parseTrip(JSONObject(body))
+        }
+    }
+
+    fun vehiclesForOrg(orgId: String): List<FleetVehicle> {
+        val request = Request.Builder()
+            .url(url("/v1/orgs/$orgId/vehicles"))
+            .auth()
+            .get()
+            .build()
+        client.newCall(request).execute().use { response ->
+            val body = response.body?.string().orEmpty()
+            if (!response.isSuccessful) error("vehicles ${response.code}: $body")
+            val arr = org.json.JSONArray(body)
+            return buildList {
+                for (i in 0 until arr.length()) {
+                    add(parseVehicle(arr.getJSONObject(i)))
+                }
+            }
         }
     }
 

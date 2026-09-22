@@ -61,15 +61,37 @@ private struct QRCodeScannerRepresentable: UIViewControllerRepresentable {
     }
 }
 
-private final class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDelegate {
+/// NSObject delegate avoids MainActor-isolated `UIViewController` conforming to AVFoundation metadata APIs.
+private final class QRMetadataDelegate: NSObject, AVCaptureMetadataOutputObjectsDelegate {
+    var onCode: ((String) -> Void)?
+    private var hasEmitted = false
+
+    func metadataOutput(
+        _ output: AVCaptureMetadataOutput,
+        didOutput metadataObjects: [AVMetadataObject],
+        from connection: AVCaptureConnection
+    ) {
+        guard !hasEmitted,
+              let object = metadataObjects.first as? AVMetadataMachineReadableCodeObject,
+              object.type == .qr,
+              let value = object.stringValue else { return }
+        hasEmitted = true
+        onCode?(value)
+    }
+}
+
+private final class ScannerViewController: UIViewController {
     var onCode: ((String) -> Void)?
     private let session = AVCaptureSession()
     private var previewLayer: AVCaptureVideoPreviewLayer?
-    private var hasEmitted = false
+    private let metadataDelegate = QRMetadataDelegate()
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
+        metadataDelegate.onCode = { [weak self] value in
+            self?.onCode?(value)
+        }
         guard let device = AVCaptureDevice.default(for: .video),
               let input = try? AVCaptureDeviceInput(device: device),
               session.canAddInput(input) else {
@@ -79,7 +101,7 @@ private final class ScannerViewController: UIViewController, AVCaptureMetadataOu
         let output = AVCaptureMetadataOutput()
         guard session.canAddOutput(output) else { return }
         session.addOutput(output)
-        output.setMetadataObjectsDelegate(self, queue: DispatchQueue.main)
+        output.setMetadataObjectsDelegate(metadataDelegate, queue: DispatchQueue.main)
         output.metadataObjectTypes = [.qr]
 
         let preview = AVCaptureVideoPreviewLayer(session: session)
@@ -103,19 +125,6 @@ private final class ScannerViewController: UIViewController, AVCaptureMetadataOu
         if session.isRunning {
             session.stopRunning()
         }
-    }
-
-    func metadataOutput(
-        _ output: AVCaptureMetadataOutput,
-        didOutput metadataObjects: [AVMetadataObject],
-        from connection: AVCaptureConnection
-    ) {
-        guard !hasEmitted,
-              let object = metadataObjects.first as? AVMetadataMachineReadableCodeObject,
-              object.type == .qr,
-              let value = object.stringValue else { return }
-        hasEmitted = true
-        onCode?(value)
     }
 }
 #endif

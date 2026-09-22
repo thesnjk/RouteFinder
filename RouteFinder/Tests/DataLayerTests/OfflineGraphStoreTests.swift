@@ -34,6 +34,53 @@ import Testing
     #expect(await store.currentGraph()?.edgeCount ?? 0 > 0)
 }
 
+@Test func offlineGraphStoreEnsureCorridorReportsMonotonicProgress() async throws {
+    let tempDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("OfflineProgress_\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: tempDir) }
+
+    let graph = SyntheticGraphBuilder.makeGrid(rows: 4, cols: 4, spacingMeters: 400)
+    try TileExporter.exportGraph(graph, to: tempDir, resolution: H3Grid.defaultResolution)
+
+    let store = DiskOfflineGraphStore(
+        tilesDirectory: tempDir,
+        tileBaseURL: nil,
+        session: URLSession(configuration: .ephemeral)
+    )
+
+    let expectedCells = H3Grid.cellsCovering(
+        minLat: 52.55,
+        maxLat: 52.70,
+        minLon: 1.20,
+        maxLon: 1.40,
+        resolution: H3Grid.defaultResolution
+    )
+    #expect(!expectedCells.isEmpty)
+
+    final class ProgressBox: @unchecked Sendable {
+        var events: [(completed: Int, total: Int)] = []
+    }
+    let box = ProgressBox()
+
+    try await store.ensureCorridor(
+        minLat: 52.55,
+        maxLat: 52.70,
+        minLon: 1.20,
+        maxLon: 1.40,
+        onProgress: { completed, total in
+            box.events.append((completed, total))
+        }
+    )
+
+    #expect(box.events.count == expectedCells.count)
+    #expect(box.events.first?.total == expectedCells.count)
+    #expect(box.events.allSatisfy { $0.total == expectedCells.count })
+    for index in 1..<box.events.count {
+        #expect(box.events[index].completed >= box.events[index - 1].completed)
+    }
+    #expect(box.events.last?.completed == expectedCells.count)
+}
+
 @Test func offlineGraphStoreMatchDetailedSnapsNearNode() async throws {
     let tempDir = FileManager.default.temporaryDirectory
         .appendingPathComponent("OfflineMatch_\(UUID().uuidString)", isDirectory: true)

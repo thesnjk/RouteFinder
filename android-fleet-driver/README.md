@@ -2,9 +2,18 @@
 
 Kotlin + Jetpack Compose **HGV navigator** using the office fleet ORS proxy (no customer API keys on the phone).
 
-**In scope (C2 MVP):** Driver Terms, fleet wizard (C1), MapLibre Native map, Pelias geocode + ORS `driving-hgv` via `/v1/proxy/*`, metric voice TBT, SSE trip handoff, physics rehearsal (grade-aware ETA).
+**In scope (C2 MVP + U10–U15):** Driver Terms, fleet wizard (C1), MapLibre Native map, Pelias geocode + ORS `driving-hgv` via `/v1/proxy/*`, metric voice TBT, SSE trip handoff, physics rehearsal, RegCheck, time windows, predictive fuse, fleet TomTom/OpenWeather/Overpass proxy, off-route clearance, DVSA walkaround photos + PDF, LEZ advisory + ORS `avoid_polygons`, HOS clock, layby ahead.
 
-**Still deferred:** Android Auto, offline graph/tiles, LEZ avoid, layby/HOS/hazard parity with iOS.
+**Still deferred (product / operator):** Android Auto, offline graph/tiles, production CarPlay signing (Apple).
+
+Fleet server forecast keys (office provides):
+
+```bash
+swift run RouteFinderFleetServer --port 8080 \
+  --ors-key "$ORS_API_KEY" \
+  --tomtom-key "$TOMTOM_API_KEY" \
+  --openweather-key "$OPENWEATHER_API_KEY"
+```
 
 ## Build
 
@@ -13,6 +22,8 @@ cd /Users/admin/Developer/RouteFinder/android-fleet-driver
 ./gradlew :app:testDebugUnitTest
 ./gradlew :app:assembleDebug
 ```
+
+Use **JDK 17–22** for Gradle (CI uses 17). OpenJDK **25** fails the build with an opaque `25.0.2` error — e.g. `export JAVA_HOME=$(/usr/libexec/java_home -v 22)`.
 
 CI: `android-c1` job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs unit tests + assembleDebug.
 

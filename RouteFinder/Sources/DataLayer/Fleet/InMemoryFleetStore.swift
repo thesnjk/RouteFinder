@@ -86,14 +86,16 @@ public actor InMemoryFleetStore: FleetDispatchPort {
         vehicleId: UUID,
         stops: [FleetTripStop],
         companyBreaks: [CompanyBreakAllocation] = [],
-        vehicleProfile: VehicleProfile? = nil
+        vehicleProfile: VehicleProfile? = nil,
+        jobBrief: FleetJobBrief? = nil
     ) async throws -> FleetTrip {
         let trip = try FleetTripBuilder.makeTrip(
             orgId: orgId,
             vehicleId: vehicleId,
             stops: stops,
             companyBreaks: companyBreaks,
-            vehicleProfile: vehicleProfile
+            vehicleProfile: vehicleProfile,
+            jobBrief: jobBrief
         )
         return try await pushTrip(trip)
     }

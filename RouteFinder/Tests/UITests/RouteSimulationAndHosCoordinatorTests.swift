@@ -175,6 +175,7 @@ private final class MockRouteSimulationHost: RouteSimulationHost {
     func refreshHazardAheadAnnouncement() {}
     func sampleTomTomHazardAheadIfNeeded() {}
     func refreshActiveRoadworksAhead() {}
+    func refreshPredictiveRiskAdvisories() async {}
     func refreshActiveLaneGuidance() {}
 #if os(iOS)
     func speakKineticAdvisory(_ advisory: KineticAdvisory) {}

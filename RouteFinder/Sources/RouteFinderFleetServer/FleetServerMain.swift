@@ -37,6 +37,8 @@ struct FleetServerApp {
             store: store,
             apiKey: config.apiKey,
             orsAPIKey: config.orsAPIKey,
+            tomTomAPIKey: config.tomTomAPIKey,
+            openWeatherAPIKey: config.openWeatherAPIKey,
             eventHub: eventHub,
             proxyMeter: proxyMeter
         )
@@ -63,6 +65,13 @@ struct FleetServerApp {
         } else {
             print("ORS proxy disabled — pass --ors-key or ORS_API_KEY so drivers need no HeiGIT keys.")
         }
+        if let tomTom = config.tomTomAPIKey, !tomTom.isEmpty {
+            print("TomTom flow proxy enabled (operator-paid).")
+        }
+        if let openWeather = config.openWeatherAPIKey, !openWeather.isEmpty {
+            print("OpenWeather forecast proxy enabled (operator-paid).")
+        }
+        print("Overpass clearance proxy enabled (no key).")
 
         let bonjourAdvertiser = FleetBonjourAdvertiser()
         if config.advertiseBonjour {

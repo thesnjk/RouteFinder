@@ -6,18 +6,26 @@ public struct DispatchStopDraft: Identifiable, Sendable, Hashable {
     public var label: String
     public var latitude: String
     public var longitude: String
+    /// Optional earliest arrival (planning aid for ``StopTimeWindow``).
+    public var earliestArrival: Date?
+    /// Optional latest arrival (planning aid for ``StopTimeWindow``).
+    public var latestArrival: Date?
 
     /// Creates a stop draft.
     public init(
         id: UUID = UUID(),
         label: String = "",
         latitude: String = "",
-        longitude: String = ""
+        longitude: String = "",
+        earliestArrival: Date? = nil,
+        latestArrival: Date? = nil
     ) {
         self.id = id
         self.label = label
         self.latitude = latitude
         self.longitude = longitude
+        self.earliestArrival = earliestArrival
+        self.latestArrival = latestArrival
     }
 
     /// Converts to a fleet stop when coordinates parse successfully.
@@ -36,6 +44,16 @@ public struct DispatchStopDraft: Identifiable, Sendable, Hashable {
             role: role
         )
     }
+
+    /// Builds an optional stop time window when either bound is set.
+    public func timeWindow() -> StopTimeWindow? {
+        guard earliestArrival != nil || latestArrival != nil else { return nil }
+        return StopTimeWindow(
+            stopId: id,
+            earliestArrival: earliestArrival,
+            latestArrival: latestArrival
+        )
+    }
 }
 
 /// Dispatch trip form state before push.
@@ -45,6 +63,12 @@ public struct DispatchTripDraft: Sendable, Equatable {
     public var breakWindowEnd: Date
     public var breakDurationMinutes: Int
     public var breakLabel: String
+    /// Optional gross weight in kilograms for ``FleetJobBrief``.
+    public var grossWeightKgText: String
+    /// Optional ADR class string for ``FleetJobBrief``.
+    public var adrClassText: String
+    /// When true, driver auto-finds route after push.
+    public var autoFindRoute: Bool
 
     /// Creates an empty trip draft.
     public init(
@@ -55,13 +79,19 @@ public struct DispatchTripDraft: Sendable, Equatable {
         breakWindowStart: Date = Date().addingTimeInterval(3600),
         breakWindowEnd: Date = Date().addingTimeInterval(7200),
         breakDurationMinutes: Int = 45,
-        breakLabel: String = "Afternoon break"
+        breakLabel: String = "Afternoon break",
+        grossWeightKgText: String = "",
+        adrClassText: String = "",
+        autoFindRoute: Bool = true
     ) {
         self.stops = stops
         self.breakWindowStart = breakWindowStart
         self.breakWindowEnd = breakWindowEnd
         self.breakDurationMinutes = breakDurationMinutes
         self.breakLabel = breakLabel
+        self.grossWeightKgText = grossWeightKgText
+        self.adrClassText = adrClassText
+        self.autoFindRoute = autoFindRoute
     }
 
     /// UK demo template: Felixstowe → Midlands → Manchester.
@@ -76,7 +106,10 @@ public struct DispatchTripDraft: Sendable, Equatable {
             breakWindowStart: demoBreak.window.start,
             breakWindowEnd: demoBreak.window.end,
             breakDurationMinutes: Int(demoBreak.durationSeconds / 60),
-            breakLabel: demoBreak.label ?? "Afternoon break"
+            breakLabel: demoBreak.label ?? "Afternoon break",
+            grossWeightKgText: "44000",
+            adrClassText: "",
+            autoFindRoute: true
         )
     }
 
@@ -110,5 +143,20 @@ public struct DispatchTripDraft: Sendable, Equatable {
                 label: breakLabel.isEmpty ? nil : breakLabel
             ),
         ]
+    }
+
+    /// Builds optional job brief from form fields.
+    public func jobBrief() -> FleetJobBrief {
+        let kg = Double(grossWeightKgText.trimmingCharacters(in: .whitespacesAndNewlines))
+        let adr = adrClassText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let hasWeight = kg != nil && (kg ?? 0) > 0
+        let windows = stops.compactMap { $0.timeWindow() }
+        return FleetJobBrief(
+            grossWeightKg: hasWeight ? kg : nil,
+            adrClass: adr.isEmpty ? nil : adr,
+            timeWindows: windows,
+            autoFindRoute: autoFindRoute,
+            autoRehearse: false
+        )
     }
 }

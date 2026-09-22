@@ -8,12 +8,20 @@ public struct TripBriefStop: Sendable, Equatable {
     public let role: String?
     /// Optional map coordinate for PDF stop pin overlays.
     public let coordinate: Coordinate?
+    /// Optional fleet stop id for matching ``StopTimeWindow/stopId``.
+    public let stopId: UUID?
 
     /// Creates a trip brief stop row.
-    public init(label: String, role: String? = nil, coordinate: Coordinate? = nil) {
+    public init(
+        label: String,
+        role: String? = nil,
+        coordinate: Coordinate? = nil,
+        stopId: UUID? = nil
+    ) {
         self.label = label
         self.role = role
         self.coordinate = coordinate
+        self.stopId = stopId
     }
 }
 
@@ -31,6 +39,8 @@ public struct TripBriefContext: Sendable, Equatable {
     public var routeCoordinates: [Coordinate]
     /// Latest completed walkaround with defects, when dispatch should be warned.
     public var latestInspectionSummary: TripBriefInspectionSummary?
+    /// Dispatch-authored stop time windows from ``FleetJobBrief`` (planning aid).
+    public var dispatchTimeWindows: [StopTimeWindow]
 
     /// Creates a trip brief context.
     public init(
@@ -43,7 +53,8 @@ public struct TripBriefContext: Sendable, Equatable {
         vehicleLabel: String? = nil,
         tripStatus: String? = nil,
         routeCoordinates: [Coordinate] = [],
-        latestInspectionSummary: TripBriefInspectionSummary? = nil
+        latestInspectionSummary: TripBriefInspectionSummary? = nil,
+        dispatchTimeWindows: [StopTimeWindow] = []
     ) {
         self.predictiveReport = predictiveReport
         self.hosForecast = hosForecast
@@ -55,6 +66,7 @@ public struct TripBriefContext: Sendable, Equatable {
         self.tripStatus = tripStatus
         self.routeCoordinates = routeCoordinates
         self.latestInspectionSummary = latestInspectionSummary
+        self.dispatchTimeWindows = dispatchTimeWindows
     }
 
     /// Builds brief context from a fleet trip snapshot visible to dispatch.
@@ -78,7 +90,8 @@ public struct TripBriefContext: Sendable, Equatable {
                     TripBriefStop(
                         label: $0.label,
                         role: $0.role.rawValue,
-                        coordinate: Coordinate(latitude: $0.latitude, longitude: $0.longitude)
+                        coordinate: Coordinate(latitude: $0.latitude, longitude: $0.longitude),
+                        stopId: $0.id
                     )
                 },
             companyBreaks: fleetTrip.companyBreaks,
@@ -86,7 +99,8 @@ public struct TripBriefContext: Sendable, Equatable {
             vehicleLabel: vehicleLabel,
             tripStatus: fleetTrip.status.rawValue.capitalized,
             routeCoordinates: routeCoordinates,
-            latestInspectionSummary: fleetTrip.latestInspectionSummary
+            latestInspectionSummary: fleetTrip.latestInspectionSummary,
+            dispatchTimeWindows: fleetTrip.jobBrief?.timeWindows ?? []
         )
     }
 }

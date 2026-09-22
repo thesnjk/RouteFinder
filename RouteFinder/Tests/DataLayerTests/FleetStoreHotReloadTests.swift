@@ -65,3 +65,22 @@ import Testing
     let localStore = FleetStoreFactory.makeStore(defaults: defaults)
     #expect(localStore is DiskFleetStore)
 }
+
+@Test func httpsFleetURLInfersHostedConnectionKind() {
+    let suiteName = "FleetStoreHotReloadTests-hosted-\(UUID().uuidString)"
+    let defaults = UserDefaults(suiteName: suiteName)!
+    defer { UserDefaults.standard.removeSuite(named: suiteName) }
+
+    FleetWorkspaceSettings.saveRemoteFleetConfiguration(
+        useRemote: true,
+        serverURL: URL(string: "https://fleet.example.com")!,
+        defaults: defaults
+    )
+
+    #expect(FleetWorkspaceSettings.useRemoteFleetServer(defaults: defaults))
+    #expect(
+        FleetWorkspaceSettings.loadFleetServerURL(defaults: defaults)?.absoluteString
+            == "https://fleet.example.com"
+    )
+    #expect(FleetWorkspaceSettings.loadFleetConnectionKind(defaults: defaults) == .hosted)
+}

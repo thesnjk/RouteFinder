@@ -85,6 +85,8 @@ public struct FleetTrip: Sendable, Hashable, Codable, Equatable, Identifiable {
     public var status: FleetTripStatus
     public var stops: [FleetTripStop]
     public var vehicleProfile: VehicleProfile?
+    /// Optional dispatch job brief (weight, ADR, time windows, auto-intake flags).
+    public var jobBrief: FleetJobBrief?
     public var physicsETASeconds: TimeInterval?
     public var predictiveReport: PredictiveTelemetryReport?
     /// Company-defined break windows allocated by dispatch (planning aid only).
@@ -110,6 +112,7 @@ public struct FleetTrip: Sendable, Hashable, Codable, Equatable, Identifiable {
         status: FleetTripStatus = .draft,
         stops: [FleetTripStop],
         vehicleProfile: VehicleProfile? = nil,
+        jobBrief: FleetJobBrief? = nil,
         physicsETASeconds: TimeInterval? = nil,
         predictiveReport: PredictiveTelemetryReport? = nil,
         companyBreaks: [CompanyBreakAllocation] = [],
@@ -127,6 +130,7 @@ public struct FleetTrip: Sendable, Hashable, Codable, Equatable, Identifiable {
         self.status = status
         self.stops = stops
         self.vehicleProfile = vehicleProfile
+        self.jobBrief = jobBrief
         self.physicsETASeconds = physicsETASeconds
         self.predictiveReport = predictiveReport
         self.companyBreaks = companyBreaks
@@ -205,7 +209,8 @@ public protocol FleetDispatchPort: Sendable {
         vehicleId: UUID,
         stops: [FleetTripStop],
         companyBreaks: [CompanyBreakAllocation],
-        vehicleProfile: VehicleProfile?
+        vehicleProfile: VehicleProfile?,
+        jobBrief: FleetJobBrief?
     ) async throws -> FleetTrip
 }
 

@@ -76,6 +76,8 @@ public protocol RouteSimulationHost: AnyObject {
     func sampleTomTomHazardAheadIfNeeded()
     /// Refreshes roadworks-ahead banner.
     func refreshActiveRoadworksAhead()
+    /// Fuses kinetic / weather / hazard signals into unified route-risk advisories.
+    func refreshPredictiveRiskAdvisories() async
     /// Refreshes lane-keep popup.
     func refreshActiveLaneGuidance()
 #if os(iOS)
@@ -146,6 +148,9 @@ public final class RouteSimulationCoordinator {
 #if os(iOS)
             host?.speakKineticAdvisory(advisory)
 #endif
+            Task { @MainActor [weak host] in
+                await host?.refreshPredictiveRiskAdvisories()
+            }
         }
     }
 

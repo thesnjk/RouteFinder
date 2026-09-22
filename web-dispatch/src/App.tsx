@@ -41,6 +41,12 @@ export default function App() {
   const [newVehicleLabel, setNewVehicleLabel] = useState('Unit 1')
   const [originStop, setOriginStop] = useState<GeocodedStop | null>(null)
   const [destStop, setDestStop] = useState<GeocodedStop | null>(null)
+  const [grossWeightKg, setGrossWeightKg] = useState('')
+  const [adrClass, setAdrClass] = useState('')
+  const [originEarliest, setOriginEarliest] = useState('')
+  const [originLatest, setOriginLatest] = useState('')
+  const [destEarliest, setDestEarliest] = useState('')
+  const [destLatest, setDestLatest] = useState('')
   const [lastTrip, setLastTrip] = useState<FleetTrip | null>(null)
   const [liveTrip, setLiveTrip] = useState<FleetTrip | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -337,13 +343,106 @@ export default function App() {
           Address search uses the fleet Pelias proxy (requires server <code>--ors-key</code>). Pick a
           suggestion so lat/lon are set before push.
         </p>
+        <label>
+          Gross weight (kg)
+          <input
+            value={grossWeightKg}
+            onChange={(e) => setGrossWeightKg(e.target.value)}
+            placeholder="44000"
+            disabled={busy}
+          />
+        </label>
+        <label>
+          ADR class
+          <input
+            value={adrClass}
+            onChange={(e) => setAdrClass(e.target.value)}
+            placeholder="3"
+            disabled={busy}
+          />
+        </label>
+        <p className="muted">Optional stop time windows (local datetime → ISO on push).</p>
+        <label>
+          Origin earliest
+          <input
+            type="datetime-local"
+            value={originEarliest}
+            onChange={(e) => setOriginEarliest(e.target.value)}
+            disabled={busy}
+          />
+        </label>
+        <label>
+          Origin latest
+          <input
+            type="datetime-local"
+            value={originLatest}
+            onChange={(e) => setOriginLatest(e.target.value)}
+            disabled={busy}
+          />
+        </label>
+        <label>
+          Destination earliest
+          <input
+            type="datetime-local"
+            value={destEarliest}
+            onChange={(e) => setDestEarliest(e.target.value)}
+            disabled={busy}
+          />
+        </label>
+        <label>
+          Destination latest
+          <input
+            type="datetime-local"
+            value={destLatest}
+            onChange={(e) => setDestLatest(e.target.value)}
+            disabled={busy}
+          />
+        </label>
         <button
           disabled={busy || !orgId || !vehicleId || !originStop || !destStop}
           onClick={() =>
             run(async () => {
               persist()
               if (!originStop || !destStop) return
-              const trip = client.buildTripFromStops(orgId, vehicleId, originStop, destStop)
+              const kg = Number.parseFloat(grossWeightKg)
+              const originId = crypto.randomUUID()
+              const destId = crypto.randomUUID()
+              const timeWindows = [
+                ...(originEarliest || originLatest
+                  ? [
+                      {
+                        stopId: originId,
+                        earliestArrival: originEarliest
+                          ? new Date(originEarliest).toISOString()
+                          : null,
+                        latestArrival: originLatest ? new Date(originLatest).toISOString() : null,
+                      },
+                    ]
+                  : []),
+                ...(destEarliest || destLatest
+                  ? [
+                      {
+                        stopId: destId,
+                        earliestArrival: destEarliest ? new Date(destEarliest).toISOString() : null,
+                        latestArrival: destLatest ? new Date(destLatest).toISOString() : null,
+                      },
+                    ]
+                  : []),
+              ]
+              const brief = {
+                grossWeightKg: Number.isFinite(kg) && kg > 0 ? kg : null,
+                adrClass: adrClass.trim() || null,
+                autoFindRoute: true,
+                autoRehearse: false,
+                ...(timeWindows.length > 0 ? { timeWindows } : {}),
+              }
+              const trip = client.buildTripFromStops(
+                orgId,
+                vehicleId,
+                { ...originStop, id: originId },
+                { ...destStop, id: destId },
+                brief,
+              )
               const pushed = await client.pushTrip(trip)
               setLastTrip(pushed)
               setLiveTrip(pushed)

@@ -2,7 +2,7 @@
 
 Pick your role **in the app** after sign-in (Getting started sheet). Each path below is a stranger test — no prior RouteFinder knowledge required.
 
-Last updated: 2026-09-19
+Last updated: 2026-09-25
 
 ---
 
@@ -48,6 +48,10 @@ cd /Users/admin/Developer/RouteFinder/RouteFinder
 swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY"
 ```
 
+Optional forecast fuse for paired drivers (no personal TomTom / OpenWeather keys): pass `--tomtom-key` / `TOMTOM_API_KEY` and `--openweather-key` / `OPENWEATHER_API_KEY` on the same server.
+
+Operator-paid ORS/Pelias is **fair-use daily caps** (default route/geocode budgets on the fleet server). When exceeded, desk and drivers see actionable HTTP 429 copy — not unlimited planet-scale routing. See [`unit-economics.md`](unit-economics.md) / [`pilot-fleet-pack.md`](pilot-fleet-pack.md).
+
 5. Tap **Open Dispatch Console** (or Window → Dispatch Console).
 6. Create an organisation and register a vehicle (or demo bootstrap).
 7. Show the driver the **vehicle QR** (or copy the UUID).
@@ -80,7 +84,7 @@ See [android-c2-gate.md](android-c2-gate.md) and [phase6b-android-nav-verificati
 
 ## What RouteFinder is (and is not)
 
-**Is:** UK HGV-aware routing, physics rehearsal, advisory HOS / layby, LAN or hosted fleet dispatch, walkaround → dispatch handoff, operator-paid ORS proxy for paired drivers.
+**Is:** UK HGV-aware routing, physics rehearsal, advisory HOS / layby, LAN or hosted fleet dispatch, walkaround → dispatch handoff, operator-paid ORS proxy for paired drivers. Proprietary product owned by **Jacob Hackett** — source is not redistributable (see [`LICENSE`](../LICENSE)); pilot terms in [`pilot-fleet-pack.md`](pilot-fleet-pack.md).
 
 **Is not (yet):** Hosted multi-tenant SaaS admin / billing UI, Android Auto, telematics / remote VU replacement. Android C2 MVP nav ships in `android-fleet-driver` (fleet proxy). Production CarPlay requires a paid Apple Developer team — see [`carplay-weatherkit-restore.md`](carplay-weatherkit-restore.md) and [`phase5-carplay-verification.md`](phase5-carplay-verification.md). Remote depots use the minimal hosted gateway ([`hosted-gateway-deployment.md`](hosted-gateway-deployment.md)), not a full SaaS portal.
 

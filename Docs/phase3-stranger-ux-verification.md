@@ -1,7 +1,7 @@
 # Phase 3 — Stranger UX verification (EPIC-STRANGER-UX)
 
 Engineering excellence track. No legal/GTM.  
-Last updated: 2026-09-21
+Last updated: 2026-09-22
 
 **Goal:** Fleet pilot stranger path — role → pair fleet (no driver HeiGIT key) → Find route → Start Navigation — with fewer clicks than a CoPilot Account Manager seat dance.
 
@@ -60,6 +60,8 @@ Then: search or map pin → **Find route** (no personal HeiGIT key) → Rehearse
 | Mac Dispatch | Health pill green when remote fleet URL reachable (`DispatchConsoleView`) |
 | Mac map | Stop pins + driver `SimulatedVehicleState` when snapshot has lat/lon; region includes driver |
 | Web | Test /health pill; geocode stops; `TripMapPreview` driver marker class `map-marker--driver` |
+| Web walkaround | Driver snapshot shows orange **Walkaround defects** card when `latestInspectionSummary.defectCount > 0` (optional PDF download) |
+| Web proxy status | Connection panel shows ORS metering; TomTom / OpenWeather on/off when `/v1/proxy/status` reports forecast keys |
 
 ### Push → toast timing (LAN)
 

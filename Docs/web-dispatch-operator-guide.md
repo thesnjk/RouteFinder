@@ -2,7 +2,7 @@
 
 Browser console for pushing fleet trips without a Mac dispatch window. Talks to **`RouteFinderFleetServer`** on the office LAN.
 
-Last updated: 2026-09-10
+Last updated: 2026-09-23
 
 ---
 
@@ -12,7 +12,7 @@ Last updated: 2026-09-10
 |------|--------|
 | Office Mac (or any host) running the fleet server | Same Wi‑Fi as driver phones |
 | Chrome / Edge / Safari | Open the web console |
-| Driver iPhones | Pair with the vehicle QR from this UI |
+| Driver iPhones (or Android C2) | Pair with the vehicle QR from this UI |
 
 **LAN / VPN only.** Do not expose port 8080 to the public internet. See [TLS + VPN for remote office](#7-tls--vpn-for-remote-office) if staff work off-site.
 
@@ -26,9 +26,12 @@ swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY"
 ```
 
 - `--ors-key` (or env `ORS_API_KEY`) enables **operator-paid routing and Pelias geocode** so drivers and web dispatch do not paste HeiGIT keys.
+- Optional forecast fuse (no driver TomTom / OpenWeather keys): `--tomtom-key` / `TOMTOM_API_KEY` and `--openweather-key` / `OPENWEATHER_API_KEY`.
 - Optional: `--api-key "shared-secret"` — then enter the same key in the web Connection panel and on driver phones.
 
-You should see: starting on `0.0.0.0:8080`, and optionally “ORS proxy enabled”.
+You should see: starting on `0.0.0.0:8080`, “ORS proxy enabled”, and optionally “TomTom flow proxy enabled” / “OpenWeather forecast proxy enabled”.
+
+After **Test /health**, the Connection panel shows ORS metering plus TomTom / OpenWeather on/off from `/v1/proxy/status`.
 
 Find the Mac’s LAN IP (System Settings → Network), e.g. `192.168.1.10`.
 
@@ -59,7 +62,7 @@ For a production-style static build on the LAN, see [Static hosting on LAN](#6-s
 
 ## 3. First-run tour
 
-On first visit, a short tour explains Connect → Org & vehicle → Push trip. You can **Skip** or reopen with **Show tour**.
+On first visit, a short tour explains Connect → Org & vehicle → Push trip → Walkaround defects. You can **Skip** or reopen with **Show tour**.
 
 ---
 
@@ -78,10 +81,14 @@ Address search uses the fleet Pelias proxy (`GET /v1/proxy/pelias/v1/search`). T
 
 1. **Origin** — type a UK place (e.g. `Norwich`) and pick a suggestion. Lat/lon appear under the field.
 2. **Destination** — same for the end stop (e.g. `King's Lynn`).
-3. **Push trip** stays disabled until both stops have coordinates.
-4. Driver toast within ~5 seconds → Find route / Accept.
-5. **Driver snapshot** panel polls the active trip (status, physics ETA, **Last GPS** when the phone publishes).
-6. **MapLibre** preview shows A/B stops and a live **driver** pin when GPS is present.
+3. Optional **job brief** — Gross weight (kg), ADR class, and per-stop time windows (local datetime → ISO on push). Drivers apply weight/ADR on intake; late-ETA fuse uses windows when present.
+4. **Push trip** stays disabled until both stops have coordinates.
+5. Driver toast within ~5 seconds → **zero-tap intake** on C2 (SSE applies stops + auto Find route). No Accept tap on the navigator path; legacy C1 home Accept is demo-only.
+6. **Driver snapshot** panel polls the active trip (status, physics ETA, **Last GPS** when the phone publishes).
+7. When the driver saves a walkaround with defects, an orange **Walkaround defects** card appears (optional **Download PDF** if the phone attached a report). A one-line toast fires when new defects arrive on poll.
+8. **MapLibre** preview shows A/B stops and a live **driver** pin when GPS is present.
+
+Timed demo: [`demo-superiority-script.md`](demo-superiority-script.md).
 
 ---
 
@@ -130,10 +137,11 @@ Security notes: [`fleet-e2e-qa.md`](fleet-e2e-qa.md).
 |---------|-----|
 | Failed to fetch | Wrong base URL; use `/fleet` in Vite, or `http://<mac-ip>:8080` with CORS |
 | Health pill red / Offline | Fleet server not running; port in use — see `lsof -nP -iTCP:8080 -sTCP:LISTEN` |
-| Geocode search errors | Restart server with `--ors-key`; check geocode daily cap in Connection panel |
+| Geocode search errors | Restart server with `--ors-key`; check geocode counts in Connection panel (`/v1/proxy/status`). At daily cap the UI shows *Fleet geocode daily cap reached…* (`fleetProxyUserMessage`) — raise the proxy budget or wait until tomorrow; see [`unit-economics.md`](unit-economics.md) |
 | Trip never arrives | Wrong vehicle UUID; re-scan QR; confirm remote fleet sync on the phone |
 | ORS proxy off | Restart server with `--ors-key` / `ORS_API_KEY` |
 | Drivers asked for HeiGIT key | Enable remote fleet on the phone; ensure ORS proxy is on |
-| No Last GPS / driver pin | Driver must accept trip and grant location; wait ~20–60 s for snapshot publish |
+| No Last GPS / driver pin | Driver must **Start** navigation (or sim) and grant location; wait ~20–60 s for snapshot publish — C2 has no Accept step |
+| Walkaround saved but no defect card | Confirm active trip is selected; phone published `latestInspectionSummary` with `defectCount > 0`; wait one 5 s poll — see [`demo-superiority-script.md`](demo-superiority-script.md) |
 
 Full pairing detail: [`fleet-setup-guide.md`](fleet-setup-guide.md) · Verification script: [`phase4-dispatch-verification.md`](phase4-dispatch-verification.md) · Product overview: [`getting-started.md`](getting-started.md)

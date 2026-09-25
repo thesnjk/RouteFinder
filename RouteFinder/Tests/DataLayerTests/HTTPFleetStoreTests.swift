@@ -92,17 +92,29 @@ import Testing
 }
 
 @Test func fleetStoreFactoryUsesDiskStoreByDefault() {
-    FleetWorkspaceSettings.saveUseRemoteFleetServer(false)
-    FleetWorkspaceSettings.saveFleetServerURL(nil)
-    let store = FleetStoreFactory.makeStore()
+    let suiteName = "HTTPFleetStoreTests-disk-\(UUID().uuidString)"
+    let defaults = UserDefaults(suiteName: suiteName)!
+    defer { UserDefaults.standard.removeSuite(named: suiteName) }
+
+    FleetWorkspaceSettings.saveRemoteFleetConfiguration(
+        useRemote: false,
+        serverURL: nil,
+        defaults: defaults
+    )
+    let store = FleetStoreFactory.makeStore(defaults: defaults)
     #expect(store is DiskFleetStore)
 }
 
 @Test func fleetStoreFactoryUsesHTTPStoreWhenRemoteEnabled() throws {
-    FleetWorkspaceSettings.saveUseRemoteFleetServer(true)
-    FleetWorkspaceSettings.saveFleetServerURL(URL(string: "http://127.0.0.1:8080")!)
-    let store = FleetStoreFactory.makeStore()
+    let suiteName = "HTTPFleetStoreTests-http-\(UUID().uuidString)"
+    let defaults = UserDefaults(suiteName: suiteName)!
+    defer { UserDefaults.standard.removeSuite(named: suiteName) }
+
+    FleetWorkspaceSettings.saveRemoteFleetConfiguration(
+        useRemote: true,
+        serverURL: URL(string: "http://127.0.0.1:8080")!,
+        defaults: defaults
+    )
+    let store = FleetStoreFactory.makeStore(defaults: defaults)
     #expect(store is HTTPFleetStore)
-    FleetWorkspaceSettings.saveUseRemoteFleetServer(false)
-    FleetWorkspaceSettings.saveFleetServerURL(nil)
 }

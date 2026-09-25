@@ -21,6 +21,8 @@ Maps **feature → test command** for demo-critical paths. Prefer targeted `--fi
 | Android job intake / ADR→ORS / time windows | `JobIntakeHandlerTest`, `TimeWindowRiskEvaluatorTest` | `cd android-fleet-driver && ./gradlew :app:testDebugUnitTest --tests '*JobIntake*' --tests '*TimeWindow*'` |
 | Android forecast / clearance fuse | `ForecastAndClearanceRiskTest`, `PredictiveRiskEngineTest` | `./gradlew :app:testDebugUnitTest --tests '*Forecast*' --tests '*PredictiveRisk*'` |
 | Android LEZ ORS avoid polygons (U15) | `ComplianceParityTest` (`lezAvoidPolicy*`, `orsDirectionsRequestEncodesAvoidPolygons*`) | `./gradlew :app:testDebugUnitTest --tests '*ComplianceParity*'` |
+| Android fleet proxy 429 / daily-cap copy | `FleetProxyErrorMapperTest` | `./gradlew :app:testDebugUnitTest --tests '*FleetProxyErrorMapper*'` |
+| Web fleet proxy 429 / geocode-cap copy | `scripts/smoke.mjs` (`fleetProxyUserMessage`) | `cd web-dispatch && npm test` |
 
 ---
 
@@ -133,16 +135,16 @@ See also [`phase7-device-simulator-verification.md`](phase7-device-simulator-ver
 
 | Check | Result |
 |-------|--------|
-| `swift test` | **Pass** (2026-09-19) |
-| `fleet-e2e-smoke.sh` | **Pass** 13/13 (2026-09-19) |
-| Android `./gradlew :app:testDebugUnitTest` | **Pass** (2026-09-19) |
+| `swift test` | **Pass** (2026-09-22) |
+| `fleet-e2e-smoke.sh` | **Pass** 14/14 (2026-09-22) |
+| Android `./gradlew :app:testDebugUnitTest` | **Pass** (2026-09-22) |
 | `hosted-gateway` `npm test` | **Pass** 8 tests (2026-09-19) |
-| `web-dispatch` `npm test` | **Pass** (2026-09-19) |
+| `web-dispatch` `npm test` | **Pass** (2026-09-22) — includes proxy-cap + inspection asserts |
 | Critical path covered (route find, push, snapshot PUT+GPS, telematics HTTP) | **Yes** |
 | No disabled tests without issue + owner | **Pass** (audit) |
 | This matrix doc | **Present** |
 
-**Sign-off:** `eng-p5-tests` — **completed** 2026-09-19
+**Sign-off:** `eng-p5-tests` — **completed** 2026-09-19; smoke filter count refreshed to **14/14** (includes `jobBrief`) 2026-09-22; Android/web proxy-cap rows added 2026-09-22
 
 
 ---

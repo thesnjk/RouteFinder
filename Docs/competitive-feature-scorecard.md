@@ -1,6 +1,6 @@
 # Competitive Feature Scorecard — September 2026
 
-Last updated: 2026-09-22 (Ultimate HGV U12–U15: walkaround PDF, LEZ/HOS/layby, forecast proxy, Android ORS LEZ avoid)
+Last updated: 2026-09-25 (Android desk PDF/ETA handoff; Fleet proxy 429 → 3; Price notes aligned with pilot-fleet-pack)
 
 Scoring: **0** Absent · **1** Weak · **2** Parity · **3** Lead  
 Personas: **OO** = UK owner-operator · **SF** = small fleet (2–20 vehicles)
@@ -37,7 +37,7 @@ RouteFinder scores from code inventory + Phase 20/26/27/30–44 + **Phase 8** + 
 | Crowd hazard / closure ahead | 5% | **2** | 1 | 1 | 0 | 0 | RF Ph33 + Ph36 TomTom live |
 | UK toll awareness | 5% | **1** | 2 | 3 | 2 | 2 | RF named hints (Ph8); TomTom tariffs lead |
 | Telematics / tacho display | 5% | **1** | 1 | 1 | 2 | 1 | RF CSV stub (Ph8); Samsara VU elsewhere |
-| Price ($0 baseline) | 5% | **3** | 1 | 1 | 0 | 1 | RF $0; CoPilot quote-only |
+| Price ($0 baseline) | 5% | **3** | 1 | 1 | 0 | 1 | Pilot £0 / post-pilot API-included desk subscription ([`pilot-fleet-pack.md`](pilot-fleet-pack.md)); not per-seat cloud portal; CoPilot quote-only |
 
 **Weighted OO score (approx.):** RouteFinder **~2.56** · Sygic **~2.00** · TomTom **~2.20** · CoPilot **~1.80**  
 (U15 LEZ ORS avoid lifts RF LEZ row 2→3; not full competitor parity — footnote.)
@@ -56,7 +56,7 @@ RouteFinder scores from code inventory + Phase 20/26/27/30–44 + **Phase 8** + 
 | Constraint routing | 10% | **3** | 3 | 3 | 2 | Parity |
 | Auth/TLS fleet server | 8% | **2** | 3 | 3 | 3 | RF API key + optional TLS |
 | Telematics ingest (read-only) | 4% | **1** | 2 | 2 | 3 | CSV + POST stub (Ph8) |
-| Price | 10% | **3** | 0 | 0 | 0 | RF $0 vs per-seat SaaS |
+| Price | 10% | **3** | 0 | 0 | 0 | Pilot £0 / post-pilot API-included desk subscription ([`pilot-fleet-pack.md`](pilot-fleet-pack.md)); not per-seat cloud portal |
 
 **Weighted SF score (approx.):** RouteFinder **~2.78** · CoPilot AM **~1.55** · PTV **~1.80** · Samsara **~1.70** (nav slice only)
 
@@ -89,7 +89,7 @@ Engineering-only deltas (no GTM / pricing). Evidence: [`phase6-performance-verif
 | Lane Overpass cost discipline | Cap shipped, unmeasured | **3** | Asserted ≤12 Overpass fetches / route find |
 | Offline download progress correctness | UX present | **3** | Progress events == H3 cell count (tested) |
 | Web dispatch map preview stability | Poll churn | **3** | Fingerprint skips timestamp-only updates |
-| Fleet proxy 429 surfacing | Generic HTTP error | **2** | Explicit daily-cap copy on route + geocode |
+| Fleet proxy 429 surfacing | Generic HTTP error | **3** | Explicit daily-cap copy on route + geocode (iOS / Android / web) |
 
 Weighted OO/SF tables above are **unchanged** by Phase 6 (performance / honesty, not new capability rows).
 

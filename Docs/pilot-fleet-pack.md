@@ -8,7 +8,7 @@ Last updated: 2026-09-17
 
 ## 1. One-page pilot agreement (template)
 
-**Parties:** RouteFinder developer (“Provider”) and ________________ (“Operator”).
+**Parties:** Jacob Hackett (“Provider”), owner of the RouteFinder software, and ________________ (“Operator”).
 
 **Term:** 60 days from first successful LAN demo, unless either party ends earlier on 7 days’ notice.
 
@@ -43,7 +43,7 @@ Operator must keep confidential Provider’s non-public product demos, unpublish
 
 **Intellectual property**
 
-All RouteFinder software, branding, and documentation remain Provider’s property. Feedback may be used by Provider in anonymised form. No licence to Provider’s source code is granted by this pilot.
+All RouteFinder software, branding, and documentation remain the exclusive property of **Jacob Hackett** (Provider). Feedback may be used by Provider in anonymised form. No licence to Provider’s source code is granted by this pilot. Operator may not copy, redistribute, or publish the Software.
 
 **Pricing after pilot**
 
@@ -63,7 +63,7 @@ Owner-operator App Store pricing remains deferred until after pilot feedback.
 
 | | Name | Role | Date | Signature |
 |---|---|---|---|---|
-| Provider | | | | |
+| Provider | Jacob Hackett | Owner | | |
 | Operator | | | | |
 
 ---

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://routefinder.local/fleet-api-schema.json",
   "title": "RouteFinder Fleet API fragment",
-  "description": "Optional JSON Schema fragment for FleetTrip + FleetJobBrief. All jobBrief fields are optional for backward-compatible clients.",
+  "description": "Optional JSON Schema fragment for FleetTrip + FleetJobBrief + walkaround handoff. All jobBrief and inspection fields are optional for backward-compatible clients.",
   "definitions": {
     "FleetJobBrief": {
       "type": "object",
@@ -25,6 +25,17 @@
         "requestedVehicleProfileId": { "type": ["string", "null"], "format": "uuid" },
         "autoFindRoute": { "type": "boolean", "default": true },
         "autoRehearse": { "type": "boolean", "default": false }
+      }
+    },
+    "TripBriefInspectionSummary": {
+      "type": "object",
+      "required": ["vehicleLabel", "defectCount", "completedAt"],
+      "additionalProperties": true,
+      "properties": {
+        "vehicleLabel": { "type": "string" },
+        "registrationPlate": { "type": ["string", "null"] },
+        "defectCount": { "type": "integer", "minimum": 0 },
+        "completedAt": { "type": "string", "format": "date-time" }
       }
     },
     "FleetTripStop": {
@@ -58,6 +69,16 @@
         "jobBrief": { "$ref": "#/definitions/FleetJobBrief" },
         "physicsETASeconds": { "type": ["number", "null"] },
         "companyBreaks": { "type": "array" },
+        "latestInspectionSummary": {
+          "oneOf": [
+            { "$ref": "#/definitions/TripBriefInspectionSummary" },
+            { "type": "null" }
+          ]
+        },
+        "inspectionReportPDFBase64": { "type": ["string", "null"] },
+        "driverLatitude": { "type": ["number", "null"] },
+        "driverLongitude": { "type": ["number", "null"] },
+        "driverLocationRecordedAt": { "type": ["string", "null"], "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       }
     }

@@ -1,8 +1,22 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import { FleetApiClient } from './fleet/client'
-import type { FleetOrg, FleetProxyStatus, FleetTrip, FleetVehicle } from './fleet/types'
+import type {
+  FleetOrg,
+  FleetProxyStatus,
+  FleetTrip,
+  FleetVehicle,
+  TripBriefInspectionSummary,
+} from './fleet/types'
 import { GeocodeSearchField, type GeocodedStop } from './GeocodeSearchField'
+import {
+  downloadInspectionPdf,
+  inspectionHasDefects,
+  inspectionSummaryLine,
+  inspectionToastMessage,
+  shouldAnnounceInspection,
+} from './inspectionSummary'
+import { fleetProxyUserMessage } from './fleetProxyError'
 import { TripMapPreview } from './TripMapPreview'
 import { VehicleQR } from './VehicleQR'
 
@@ -49,8 +63,11 @@ export default function App() {
   const [destLatest, setDestLatest] = useState('')
   const [lastTrip, setLastTrip] = useState<FleetTrip | null>(null)
   const [liveTrip, setLiveTrip] = useState<FleetTrip | null>(null)
+  const [inspectionToast, setInspectionToast] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const previousInspectionRef = useRef<TripBriefInspectionSummary | null>(null)
+  const lastAnnouncedInspectionRef = useRef<TripBriefInspectionSummary | null>(null)
   const [showOnboarding, setShowOnboarding] = useState(
     () => localStorage.getItem(ONBOARDING_KEY) !== '1',
   )
@@ -102,15 +119,38 @@ export default function App() {
   useEffect(() => {
     if (!vehicleId) {
       setLiveTrip(null)
+      previousInspectionRef.current = null
+      lastAnnouncedInspectionRef.current = null
+      setInspectionToast(null)
       return
     }
     let cancelled = false
     const tick = async () => {
       try {
         const trip = await client.activeTrip(vehicleId)
-        if (!cancelled) setLiveTrip(trip)
-      } catch {
-        /* ignore poll errors */
+        if (cancelled) return
+        const newSummary = trip?.latestInspectionSummary ?? null
+        if (
+          shouldAnnounceInspection(
+            previousInspectionRef.current,
+            newSummary,
+            lastAnnouncedInspectionRef.current,
+          ) &&
+          newSummary
+        ) {
+          setInspectionToast(inspectionToastMessage(newSummary))
+          lastAnnouncedInspectionRef.current = newSummary
+        }
+        previousInspectionRef.current = newSummary
+        setLiveTrip(trip)
+        setError(null)
+      } catch (err) {
+        // Keep last good snapshot; surface LAN/key failures so desk does not look live.
+        const message =
+          err instanceof Error
+            ? err.message
+            : fleetProxyUserMessage(0, String(err), 'generic')
+        setError(message)
       }
     }
     void tick()
@@ -145,6 +185,10 @@ export default function App() {
     {
       title: '3 · Push trip',
       body: 'Push a demo Norwich → King\'s Lynn trip. The driver toast appears within ~5 seconds. Snapshot panel updates when the phone reports ETA / status.',
+    },
+    {
+      title: '4 · Walkaround defects',
+      body: 'When the driver saves a walkaround with defects, the Driver snapshot panel shows an orange defect card (and optional PDF download) — same LAN handoff as Mac Dispatch, no third-party portal.',
     },
   ]
 
@@ -222,12 +266,25 @@ export default function App() {
           </button>
         </div>
         {proxyStatus ? (
-          <p className="muted">
-            ORS proxy:{' '}
-            {proxyStatus.orsConfigured
-              ? `on · ${proxyStatus.routesToday}/${proxyStatus.routeDailyCap} routes · ${proxyStatus.geocodeToday}/${proxyStatus.geocodeDailyCap} geocodes today`
-              : 'off (start server with --ors-key for address search and driver routing)'}
-          </p>
+          <>
+            <p className="muted">
+              ORS proxy:{' '}
+              {proxyStatus.orsConfigured
+                ? `on · ${proxyStatus.routesToday}/${proxyStatus.routeDailyCap} routes · ${proxyStatus.geocodeToday}/${proxyStatus.geocodeDailyCap} geocodes today`
+                : 'off (start server with --ors-key for address search and driver routing)'}
+            </p>
+            <p className="muted">
+              TomTom flow proxy:{' '}
+              {proxyStatus.tomTomConfigured
+                ? `on${proxyStatus.tomTomToday != null && proxyStatus.tomTomDailyCap != null ? ` · ${proxyStatus.tomTomToday}/${proxyStatus.tomTomDailyCap} today` : ''}`
+                : 'off (optional TOMTOM_API_KEY / --tomtom-key)'}
+              {' · '}
+              OpenWeather forecast:{' '}
+              {proxyStatus.openWeatherConfigured
+                ? `on${proxyStatus.openWeatherToday != null && proxyStatus.openWeatherDailyCap != null ? ` · ${proxyStatus.openWeatherToday}/${proxyStatus.openWeatherDailyCap} today` : ''}`
+                : 'off (optional OPENWEATHER_API_KEY / --openweather-key)'}
+            </p>
+          </>
         ) : null}
       </section>
 
@@ -455,6 +512,18 @@ export default function App() {
 
       <section className="panel">
         <h2>Driver snapshot</h2>
+        {inspectionToast ? (
+          <p className="inspection-toast" role="status">
+            {inspectionToast}
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => setInspectionToast(null)}
+            >
+              Dismiss
+            </button>
+          </p>
+        ) : null}
         {snapshotTrip ? (
           <div className="status">
             <p>
@@ -474,6 +543,33 @@ export default function App() {
             ) : (
               <p className="muted">Last GPS: waiting for driver position</p>
             )}
+            {inspectionHasDefects(snapshotTrip) && snapshotTrip.latestInspectionSummary ? (
+              <div className="inspection-card">
+                <div className="inspection-card__header">
+                  <strong>Walkaround defects</strong>
+                  {snapshotTrip.inspectionReportPDFBase64 ? (
+                    <button
+                      type="button"
+                      className="button-secondary"
+                      onClick={() =>
+                        downloadInspectionPdf(
+                          snapshotTrip.inspectionReportPDFBase64!,
+                          `walkaround-${snapshotTrip.id.slice(0, 8)}.pdf`,
+                        )
+                      }
+                    >
+                      Download PDF
+                    </button>
+                  ) : null}
+                </div>
+                <p className="inspection-card__line">
+                  {inspectionSummaryLine(snapshotTrip.latestInspectionSummary)}
+                </p>
+                <p className="muted">
+                  Driver-reported defects — verify in the operator defect system before dispatch.
+                </p>
+              </div>
+            ) : null}
             <ul>
               {snapshotTrip.stops.map((s) => (
                 <li key={s.id}>

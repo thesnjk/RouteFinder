@@ -65,6 +65,22 @@ data class FleetVehicle(
     val profile: FleetVehicleProfile?,
 )
 
+/** Fleet snapshot media budgets (parity with iOS InspectionMediaBudget). */
+object InspectionMediaBudget {
+    /** Max base64 PDF characters on a fleet trip snapshot. */
+    const val maxPDFBase64Characters = 900_000
+
+    /** Truncates a PDF base64 payload for fleet upload when over budget. */
+    fun cappedPDFBase64(base64: String): String? {
+        if (base64.isEmpty()) return null
+        return if (base64.length <= maxPDFBase64Characters) {
+            base64
+        } else {
+            base64.take(maxPDFBase64Characters)
+        }
+    }
+}
+
 fun FleetTrip.toSnapshotJson(
     statusOverride: String? = null,
     driverLatitude: Double? = null,
@@ -72,6 +88,7 @@ fun FleetTrip.toSnapshotJson(
     driverLocationRecordedAt: String? = null,
     physicsETASecondsOverride: Double? = null,
     latestInspectionSummary: JSONObject? = null,
+    inspectionReportPDFBase64: String? = null,
 ): JSONObject {
     val ordered = JSONArray()
     stops.sortedBy { it.sequence }.forEach { ordered.put(it.id) }
@@ -86,6 +103,8 @@ fun FleetTrip.toSnapshotJson(
     if (driverLongitude != null) json.put("driverLongitude", driverLongitude)
     if (driverLocationRecordedAt != null) json.put("driverLocationRecordedAt", driverLocationRecordedAt)
     if (latestInspectionSummary != null) json.put("latestInspectionSummary", latestInspectionSummary)
+    val cappedPdf = inspectionReportPDFBase64?.let { InspectionMediaBudget.cappedPDFBase64(it) }
+    if (cappedPdf != null) json.put("inspectionReportPDFBase64", cappedPdf)
     return json
 }
 

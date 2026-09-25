@@ -47,7 +47,7 @@ class OrsRoutingClient(
         client.newCall(request).execute().use { response ->
             val text = response.body?.string().orEmpty()
             if (!response.isSuccessful) {
-                error("ORS route ${response.code}: ${text.take(400)}")
+                error(FleetProxyErrorMapper.userMessage(response.code, text, FleetProxyErrorMapper.Kind.ORS_ROUTE))
             }
             return OrsResponseParser.parse(JSONObject(text))
         }

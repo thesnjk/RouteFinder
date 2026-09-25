@@ -2,6 +2,8 @@
 
 Native **HGV / truck navigator** for Apple platforms (iOS 17+ / macOS 14+). RouteFinder plans constraint-aware routes, rehearses them with vehicle physics, and keeps hours-of-service as an **advisory** overlay — the digital tachograph remains the legal record.
 
+**Owner:** Jacob Hackett. This repository and the RouteFinder software are proprietary and confidential — see [`LICENSE`](LICENSE). No public redistribution, cloning, or download rights are granted except under a written agreement with Jacob Hackett.
+
 Built as a Swift 6 Swift Package with SwiftUI, MapLibre (WKWebView), and HeiGIT OpenRouteService for global HGV routing.
 
 ## User guide
@@ -18,7 +20,7 @@ Built as a Swift 6 Swift Package with SwiftUI, MapLibre (WKWebView), and HeiGIT 
 - **Hours of service (advisory)** — EU Regulation 561 / Working Time Directive clock, rest insertion suggestions, driver-card JSON/DDD import, “Can I drive now?”
 - **CarPlay** — turn-by-turn templates with voice coexistence hooks (iOS)
 - **UK living layer** — plate → vehicle profile (RegCheck + DVLA), truck POIs (fuel / parking / weigh / layby), LEZ / CAZ banners **and avoid-on-route** using simplified authored zone rings for non-compliant emission classes (Settings toggle; envelopes are approximate, not legal cadastral), on-device layby occupancy taps with age-weighted priors and last-seen banner copy (Looks full / Has spaces)
-- **Fleet MVP** — native dispatch console + disk-backed org → trip → physics ETA; optional **LAN sync** via `RouteFinderFleetServer`
+- **Fleet MVP** — native Mac/iPad dispatch console + disk-backed org → trip → physics ETA; optional **LAN sync** via `RouteFinderFleetServer`; browser desk for Windows/Linux office PCs in [`web-dispatch/`](web-dispatch/README.md) (not a multi-tenant SaaS portal — see [`Docs/getting-started.md`](Docs/getting-started.md))
 - **Offline routing & maps** — H3 graph tiles + hybrid ORS/offline policy; optional local MapLibre map pack via on-device HTTP
 - **Live traffic reroute** — TomTom flow sampling can trigger an ORS `avoid_polygons` recalculation
 - **Walkaround checks** — local DVSA-style inspection checklist
@@ -109,7 +111,7 @@ swift run RouteFinderFleetServer --port 8080 --api-key "$ROUTEFINDER_FLEET_API_K
 
 For LAN HTTPS with a self-signed certificate, [mkcert](https://github.com/FiloSottile/mkcert) is a convenient option (`mkcert -install && mkcert localhost 192.168.x.x`).
 
-On the driver iPhone (same Wi‑Fi/LAN), open **Settings → Fleet dispatch**, tap **Discover fleet servers on LAN**, pick the dispatch Mac entry (or manually enter `http://<dispatch-mac-ip>:8080` / `https://` when TLS is enabled), add the matching **Fleet API key** if required, and tap **Test fleet connection**. Store mode switches immediately — no app restart required. When remote fleet sync is enabled, the driver app subscribes to dispatch events over **SSE** (`GET /v1/vehicles/{id}/events`) for near-instant trip delivery, with a 30-second fallback poll for resilience. Open the **Dispatch Console** window on macOS to push trips.
+On the driver iPhone (same Wi‑Fi/LAN), open **Settings → Fleet dispatch**, tap **Discover fleet servers on LAN**, pick the dispatch Mac entry (or manually enter `http://<dispatch-mac-ip>:8080` / `https://` when TLS is enabled), add the matching **Fleet API key** if required, and tap **Test fleet connection**. Store mode switches immediately — no app restart required. When remote fleet sync is enabled, the driver app subscribes to dispatch events over **SSE** (`GET /v1/vehicles/{id}/events`) for near-instant trip delivery, with a 30-second fallback poll for resilience. Open the **Dispatch Console** window on macOS to push trips — or use **[`web-dispatch/`](web-dispatch/README.md)** from a Windows/Linux office PC pointed at the same fleet URL ([Office PC stranger path](Docs/getting-started.md)).
 
 **Fleet QA playbook:** See [Docs/fleet-e2e-qa.md](Docs/fleet-e2e-qa.md) for automated smoke (`RouteFinder/Scripts/fleet-e2e-smoke.sh`) and Mac↔iPhone manual checklist. For pilot meetings, use [Docs/pilot-fleet-pack.md](Docs/pilot-fleet-pack.md) and [Docs/pilot-outreach.md](Docs/pilot-outreach.md).
 

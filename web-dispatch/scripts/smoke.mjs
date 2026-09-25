@@ -84,4 +84,148 @@ assert.equal(tripMapFingerprint(baseTrip), tripMapFingerprint(pollTick))
 assert.notEqual(tripMapFingerprint(baseTrip), tripMapFingerprint(movedDriver))
 assert.equal(tripMapFingerprint(null), 'empty')
 
+/** Mirrors web-dispatch/src/inspectionSummary.ts for CI without a TS runner. */
+function inspectionHasDefects(trip) {
+  const summary = trip?.latestInspectionSummary
+  return summary != null && summary.defectCount > 0
+}
+
+function inspectionSummaryLine(summary) {
+  const plateSuffix = summary.registrationPlate ? ` (${summary.registrationPlate})` : ''
+  return `${summary.vehicleLabel}${plateSuffix} — ${summary.defectCount} defect(s) at ${summary.completedAt}`
+}
+
+function inspectionToastMessage(summary) {
+  const plateSuffix = summary.registrationPlate ? ` (${summary.registrationPlate})` : ''
+  return `Walkaround: ${summary.vehicleLabel}${plateSuffix} — ${summary.defectCount} defect(s) reported`
+}
+
+function shouldAnnounceInspection(previousSummary, newSummary, lastAnnounced) {
+  if (!newSummary || newSummary.defectCount <= 0) return false
+  if (
+    lastAnnounced &&
+    lastAnnounced.completedAt === newSummary.completedAt &&
+    lastAnnounced.defectCount === newSummary.defectCount
+  ) {
+    return false
+  }
+  if (!previousSummary) return true
+  if (previousSummary.defectCount < newSummary.defectCount) return true
+  if (previousSummary.completedAt !== newSummary.completedAt) return true
+  return false
+}
+
+const inspectionSummary = {
+  vehicleLabel: 'Unit 1',
+  registrationPlate: 'AB12 CDE',
+  defectCount: 2,
+  completedAt: '2026-09-22T12:00:00Z',
+}
+assert.equal(inspectionHasDefects({ latestInspectionSummary: inspectionSummary }), true)
+assert.equal(inspectionHasDefects({ latestInspectionSummary: { ...inspectionSummary, defectCount: 0 } }), false)
+assert.equal(inspectionHasDefects(null), false)
+assert.ok(inspectionSummaryLine(inspectionSummary).includes('Unit 1 (AB12 CDE) — 2 defect(s)'))
+assert.ok(inspectionToastMessage(inspectionSummary).startsWith('Walkaround: Unit 1'))
+assert.equal(shouldAnnounceInspection(null, inspectionSummary, null), true)
+assert.equal(shouldAnnounceInspection(inspectionSummary, inspectionSummary, inspectionSummary), false)
+assert.equal(
+  shouldAnnounceInspection(
+    inspectionSummary,
+    { ...inspectionSummary, defectCount: 3, completedAt: '2026-09-22T13:00:00Z' },
+    inspectionSummary,
+  ),
+  true,
+)
+
+/** Proxy status parsing tolerates ORS-only and full forecast JSON. */
+function parseProxyStatus(json) {
+  const data = typeof json === 'string' ? JSON.parse(json) : json
+  return {
+    orsConfigured: Boolean(data.orsConfigured),
+    routesToday: Number(data.routesToday ?? 0),
+    routeDailyCap: Number(data.routeDailyCap ?? 0),
+    geocodeToday: Number(data.geocodeToday ?? 0),
+    geocodeDailyCap: Number(data.geocodeDailyCap ?? 0),
+    tomTomConfigured: data.tomTomConfigured,
+    openWeatherConfigured: data.openWeatherConfigured,
+    tomTomToday: data.tomTomToday,
+    tomTomDailyCap: data.tomTomDailyCap,
+    openWeatherToday: data.openWeatherToday,
+    openWeatherDailyCap: data.openWeatherDailyCap,
+  }
+}
+
+const orsOnly = parseProxyStatus(
+  '{"orsConfigured":true,"routesToday":1,"routeDailyCap":2000,"geocodeToday":2,"geocodeDailyCap":2000}',
+)
+assert.equal(orsOnly.orsConfigured, true)
+assert.equal(orsOnly.tomTomConfigured, undefined)
+assert.equal(orsOnly.openWeatherConfigured, undefined)
+
+const fullProxy = parseProxyStatus({
+  orsConfigured: true,
+  routesToday: 1,
+  routeDailyCap: 2000,
+  geocodeToday: 2,
+  geocodeDailyCap: 2000,
+  tomTomConfigured: true,
+  openWeatherConfigured: false,
+  tomTomToday: 3,
+  tomTomDailyCap: 500,
+  openWeatherToday: 0,
+  openWeatherDailyCap: 200,
+})
+assert.equal(fullProxy.tomTomConfigured, true)
+assert.equal(fullProxy.openWeatherConfigured, false)
+assert.equal(fullProxy.tomTomToday, 3)
+
+/** Mirrors web-dispatch/src/fleetProxyError.ts */
+const ORS_ROUTE_CAP_MESSAGE =
+  'Fleet ORS daily cap reached. Ask the operator to raise the proxy budget or wait until tomorrow.'
+const GEOCODE_CAP_MESSAGE =
+  'Fleet geocode daily cap reached. Ask the operator to raise the proxy budget or wait until tomorrow.'
+
+function fleetProxyUserMessage(status, body, kind = 'generic') {
+  const snippet = String(body ?? '')
+    .trim()
+    .replace(/\n/g, ' ')
+    .slice(0, 200)
+  const lower = snippet.toLowerCase()
+  const looksLikeCap =
+    status === 429 || lower.includes('daily cap') || lower.includes('too many requests')
+  if (looksLikeCap) {
+    if (kind === 'geocode' || lower.includes('geocode')) return GEOCODE_CAP_MESSAGE
+    if (kind === 'route' || lower.includes('route') || lower.includes('ors')) {
+      return ORS_ROUTE_CAP_MESSAGE
+    }
+    if (lower.includes('geocode')) return GEOCODE_CAP_MESSAGE
+    return ORS_ROUTE_CAP_MESSAGE
+  }
+  const prefix = kind === 'geocode' ? 'geocode' : kind === 'route' ? 'ORS route' : 'Fleet'
+  if (status === 401 || status === 403) {
+    if (snippet) return `${prefix} ${status}: ${snippet}`
+    return `${prefix} ${status}: Fleet API key rejected. Check the shared key with the operator.`
+  }
+  if (snippet) return `${prefix} ${status}: ${snippet}`
+  return `${prefix} ${status}`
+}
+
+assert.equal(
+  fleetProxyUserMessage(429, 'Fleet ORS geocode daily cap reached.', 'geocode'),
+  GEOCODE_CAP_MESSAGE,
+)
+assert.equal(
+  fleetProxyUserMessage(429, 'Fleet ORS route daily cap reached.', 'route'),
+  ORS_ROUTE_CAP_MESSAGE,
+)
+assert.equal(
+  fleetProxyUserMessage(503, 'Fleet ORS route daily cap reached.', 'generic'),
+  ORS_ROUTE_CAP_MESSAGE,
+)
+assert.equal(
+  fleetProxyUserMessage(500, 'upstream timeout', 'geocode'),
+  'geocode 500: upstream timeout',
+)
+assert.ok(fleetProxyUserMessage(401, '', 'generic').includes('API key'))
+
 console.log('fleet types smoke ok')

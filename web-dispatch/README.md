@@ -27,6 +27,7 @@ Open http://127.0.0.1:5173
 - Or use `https://fleet.yourdomain.com` + org bearer token for remote depots
 - First-run tour → Create org → register vehicle → show **QR** → Push trip
 - Driver snapshot panel + MapLibre corridor preview
+- Walkaround defects card + optional PDF download when the phone publishes an inspection summary
 
 Operator steps: [`../Docs/web-dispatch-operator-guide.md`](../Docs/web-dispatch-operator-guide.md)
 
@@ -44,8 +45,9 @@ Operator steps: [`../Docs/web-dispatch-operator-guide.md`](../Docs/web-dispatch-
 - Org / vehicle / push trip against REST API
 - Onboarding tour + connection health pill
 - Vehicle pairing QR (`routefinder-vehicle:<uuid>`)
-- Active-trip snapshot poll + MapLibre preview
+- Active-trip snapshot poll + MapLibre preview (job brief weight / ADR / time windows on push)
+- Walkaround defect card + PDF in Driver snapshot when `latestInspectionSummary.defectCount > 0`
 - Geocode stop search via fleet Pelias proxy
-- ORS proxy status from `/v1/proxy/status`
+- ORS + optional TomTom / OpenWeather proxy status from `/v1/proxy/status`
 - Hosted HTTPS base URL supported (same client as LAN)
 - **Not yet:** billing UI / self-serve multi-tenant admin

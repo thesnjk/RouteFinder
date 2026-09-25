@@ -72,6 +72,20 @@ flowchart LR
     RouteController --> APIUsageLedger
 ```
 
+### Desk to driver (fleet LAN / hosted)
+
+```mermaid
+flowchart LR
+    WebDispatch --> FleetServer
+    MacDispatch --> FleetServer
+    FleetServer -->|SSE_REST| iOSDriver
+    FleetServer -->|SSE_REST| AndroidDriver
+    FleetServer -->|ORS_Pelias_proxy| iOSDriver
+    FleetServer -->|ORS_Pelias_proxy| AndroidDriver
+    iOSDriver -->|snapshot_GPS_inspection| FleetServer
+    AndroidDriver -->|snapshot_GPS_inspection| FleetServer
+```
+
 Future extractions: further thinning of settings / offline map orchestration only if `RouteViewModel` remains a merge hotspot.
 
 ## ADR: Incremental god-object decomposition

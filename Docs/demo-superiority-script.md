@@ -1,7 +1,7 @@
 # Demo superiority script (≈2 minutes)
 
 Engineering excellence Phase 6. One-take demo for UK small-fleet ICP.  
-Last updated: 2026-09-19
+Last updated: 2026-09-25
 
 **Audience:** Operator or engineer who has never written this code.  
 **Outcome:** Push → Rehearse → map pin → walkaround defect visible on dispatch — without a cloud seat portal.
@@ -18,6 +18,8 @@ export ORS_API_KEY="your-heigit-key"
 cd /Users/admin/Developer/RouteFinder/RouteFinder
 swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY"
 ```
+
+Optional (only when demoing **forecast fuse** on drivers): `--tomtom-key` / `TOMTOM_API_KEY` and `--openweather-key` / `OPENWEATHER_API_KEY`. Not required for the ≤2-minute core path.
 
 3. Confirm `GET http://<mac-ip>:8080/v1/proxy/status` shows `orsConfigured: true`.
 4. Open **Mac Dispatch** or **web-dispatch** pointed at the fleet URL; create org + vehicle; show QR.
@@ -36,7 +38,7 @@ swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY"
 | 1:00 | Driver: **Start** (or keep sim) so GPS snapshot flows | Mac/web **Last GPS** / driver pin updates within ~60 s |
 | 1:20 | Confirm map preview includes driver pin | Web `TripMapPreview` / Mac `DispatchMapDetailView` |
 | 1:35 | Driver: **Walkaround** → note ≥1 defect → save | Inspection on trip brief |
-| 1:50 | Dispatch: defect card / inspection summary visible | No third-party portal |
+| 1:50 | Dispatch: defect card / inspection summary visible | Mac `DispatchStatusPanel` **or** web Driver snapshot orange card (+ PDF download for iOS **and** Android walkaround — capped `inspectionReportPDFBase64`); no third-party portal |
 
 **Stop** when inspection is visible on the desk.
 
@@ -64,6 +66,7 @@ Do **not** claim TomTom HD lanes, toll tariffs, or remote VU download.
 | API key banner | `usesFleetORSProxy` / remote fleet + `--ors-key` |
 | No GPS pin | Snapshot PUT with lat/lon; see Phase 5 E2E GPS asserts |
 | Map flicker every 5 s (web) | Phase 6 fingerprint — rebuild web-dispatch |
+| Cap / HTTP 429 on Find route or desk geocode | Operator-paid proxy daily budget exhausted — raise caps or wait until tomorrow; iOS `RouteFailureMapper` / Android `FleetProxyErrorMapper` / web `fleetProxyUserMessage` show actionable copy; check `/v1/proxy/status` |
 
 ---
 

@@ -12,6 +12,7 @@ import {
   type FleetVehicle,
   type GeocodeSuggestion,
 } from './types'
+import { fleetProxyUserMessage, type FleetProxyErrorKind } from '../fleetProxyError'
 
 interface PeliasFeatureCollection {
   features?: Array<{
@@ -20,10 +21,13 @@ interface PeliasFeatureCollection {
   }>
 }
 
-async function parseJson<T>(response: Response): Promise<T> {
+async function parseJson<T>(
+  response: Response,
+  kind: FleetProxyErrorKind = 'generic',
+): Promise<T> {
   if (!response.ok) {
     const text = await response.text()
-    throw new Error(`${response.status} ${response.statusText}: ${text.slice(0, 200)}`)
+    throw new Error(fleetProxyUserMessage(response.status, text, kind))
   }
   return (await response.json()) as T
 }
@@ -124,7 +128,7 @@ export class FleetApiClient {
     if (trimmed.length < 2) return []
     const url = geocodeSearchUrl(this.connection.baseUrl, trimmed, options)
     const response = await fetch(url, { headers: this.headers() })
-    const collection = await parseJson<PeliasFeatureCollection>(response)
+    const collection = await parseJson<PeliasFeatureCollection>(response, 'geocode')
     const suggestions: GeocodeSuggestion[] = []
     for (const feature of collection.features ?? []) {
       const coords = feature.geometry?.coordinates

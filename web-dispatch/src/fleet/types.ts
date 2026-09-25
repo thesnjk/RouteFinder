@@ -45,6 +45,15 @@ export interface FleetJobBrief {
   autoRehearse?: boolean
 }
 
+/** Compact walkaround summary from driver snapshot (mirrors Swift TripBriefInspectionSummary). */
+export interface TripBriefInspectionSummary {
+  vehicleLabel: string
+  registrationPlate?: string | null
+  defectCount: number
+  /** ISO-8601 timestamp when the walkaround was completed. */
+  completedAt: string
+}
+
 export interface FleetTrip {
   id: string
   orgId: string
@@ -53,7 +62,9 @@ export interface FleetTrip {
   stops: FleetTripStop[]
   physicsETASeconds?: number | null
   updatedAt: string
-  latestInspectionSummary?: unknown
+  latestInspectionSummary?: TripBriefInspectionSummary | null
+  /** Base64-encoded walkaround PDF from driver snapshot (optional). */
+  inspectionReportPDFBase64?: string | null
   /** Optional dispatch job brief (weight / ADR / auto-intake). */
   jobBrief?: FleetJobBrief | null
   /** Latest driver latitude from snapshot (WGS84). */
@@ -69,13 +80,20 @@ export interface FleetServerHealth {
   version: string
 }
 
-/** Operator-paid ORS proxy metering from GET /v1/proxy/status */
+/** Operator-paid proxy metering from GET /v1/proxy/status */
 export interface FleetProxyStatus {
   orsConfigured: boolean
   routesToday: number
   routeDailyCap: number
   geocodeToday: number
   geocodeDailyCap: number
+  /** Optional — present when fleet server reports forecast proxy keys (U14). */
+  tomTomConfigured?: boolean
+  openWeatherConfigured?: boolean
+  tomTomToday?: number
+  tomTomDailyCap?: number
+  openWeatherToday?: number
+  openWeatherDailyCap?: number
 }
 
 export interface FleetConnection {

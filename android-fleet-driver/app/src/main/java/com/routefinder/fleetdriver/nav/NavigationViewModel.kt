@@ -15,6 +15,7 @@ import com.routefinder.fleetdriver.fleet.FleetPreferences
 import com.routefinder.fleetdriver.fleet.FleetSseClient
 import com.routefinder.fleetdriver.fleet.FleetTrip
 import com.routefinder.fleetdriver.fleet.FleetVehicleProfile
+import com.routefinder.fleetdriver.fleet.InspectionMediaBudget
 import com.routefinder.fleetdriver.fleet.JobIntakeHandler
 import com.routefinder.fleetdriver.fleet.RegCheckClient
 import com.routefinder.fleetdriver.fleet.SseConnectionState
@@ -344,6 +345,24 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             statusLabel = "Route loaded"
             refreshComplianceAdvisories(result.coordinates)
             refreshClearanceAndForecastRisk(result.coordinates)
+            val tripForEta = activeTrip
+            if (tripForEta != null) {
+                try {
+                    withContext(Dispatchers.IO) {
+                        FleetApi(prefs.baseUrl, prefs.apiKey).publishSnapshot(
+                            trip = tripForEta,
+                            status = "optimized",
+                            physicsETASeconds = result.durationSeconds,
+                        )
+                    }
+                    activeTrip = tripForEta.copy(
+                        status = "optimized",
+                        physicsETASeconds = result.durationSeconds,
+                    )
+                } catch (_: Exception) {
+                    // Desk ETA is best-effort; never block route UI.
+                }
+            }
         } catch (e: Exception) {
             errorMessage = e.message
         } finally {
@@ -480,20 +499,38 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             return
         }
         val trip = activeTrip
-        val summary = InspectionChecklistFactory.summary(
-            items = walkaroundItems,
-            vehicleLabel = trip?.vehicleId?.take(8) ?: "Vehicle",
-            registrationPlate = null,
-        )
-        lastInspectionSummary = summary
-        lastWalkaroundPdfBytes = InspectionReportPdfRenderer.pdfBytes(summary, walkaroundItems)
         showWalkaround = false
         if (trip == null) {
+            val summary = InspectionChecklistFactory.summary(
+                items = walkaroundItems,
+                vehicleLabel = "Vehicle",
+                registrationPlate = null,
+            )
+            lastInspectionSummary = summary
+            lastWalkaroundPdfBytes = InspectionReportPdfRenderer.pdfBytes(summary, walkaroundItems)
             toastMessage = "Walkaround PDF saved locally (${summary.photoCount} photo(s))"
             return
         }
         viewModelScope.launch {
             try {
+                val vehicle = withContext(Dispatchers.IO) {
+                    runCatching {
+                        FleetApi(prefs.baseUrl, prefs.apiKey).vehiclesForOrg(trip.orgId)
+                            .firstOrNull { it.id == trip.vehicleId }
+                    }.getOrNull()
+                }
+                val summary = InspectionChecklistFactory.summary(
+                    items = walkaroundItems,
+                    vehicleLabel = vehicle?.label?.takeIf { it.isNotBlank() }
+                        ?: trip.vehicleId.take(8),
+                    registrationPlate = vehicle?.registrationPlate,
+                )
+                lastInspectionSummary = summary
+                val pdfBytes = InspectionReportPdfRenderer.pdfBytes(summary, walkaroundItems)
+                lastWalkaroundPdfBytes = pdfBytes
+                val pdfBase64 = InspectionMediaBudget.cappedPDFBase64(
+                    android.util.Base64.encodeToString(pdfBytes, android.util.Base64.NO_WRAP),
+                )
                 val defects = JSONArray()
                 walkaroundItems.filter { it.status.name == "DEFECT" }.forEach { item ->
                     defects.put(
@@ -516,6 +553,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                         trip = trip,
                         status = trip.status,
                         latestInspectionSummary = payload,
+                        inspectionReportPDFBase64 = pdfBase64,
                     )
                 }
                 toastMessage = if (summary.defectCount > 0) {

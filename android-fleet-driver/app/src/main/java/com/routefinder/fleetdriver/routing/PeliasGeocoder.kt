@@ -34,7 +34,7 @@ class PeliasGeocoder(
             .newBuilder()
             .addQueryParameter("text", trimmed)
             .addQueryParameter("size", size.toString())
-            .addQueryParameter("boundary.country", "GB")
+            .addQueryParameter("boundary.country", "GBR")
         if (focusLat != null && focusLon != null) {
             builder.addQueryParameter("focus.point.lat", focusLat.toString())
             builder.addQueryParameter("focus.point.lon", focusLon.toString())
@@ -50,7 +50,13 @@ class PeliasGeocoder(
         client.newCall(request).execute().use { response ->
             val textBody = response.body?.string().orEmpty()
             if (!response.isSuccessful) {
-                error("geocode ${response.code}: ${textBody.take(300)}")
+                error(
+                    FleetProxyErrorMapper.userMessage(
+                        response.code,
+                        textBody,
+                        FleetProxyErrorMapper.Kind.GEOCODE,
+                    ),
+                )
             }
             return parseSuggestions(JSONObject(textBody))
         }

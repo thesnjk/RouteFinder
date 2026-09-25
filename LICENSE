@@ -1,25 +1,28 @@
 PROPRIETARY SOFTWARE LICENSE
 
-Copyright (c) 2026 RouteFinder. All rights reserved.
+Copyright (c) 2026 Jacob Hackett. All rights reserved.
 
 This software and associated documentation files (the "Software") are the
-confidential and proprietary information of RouteFinder and its licensors.
+exclusive property of Jacob Hackett. RouteFinder is a product name of
+Jacob Hackett; no other person or entity holds ownership rights in the
+Software unless Jacob Hackett grants them in a separate signed writing.
 
-You may not use, copy, modify, merge, publish, distribute, sublicense, and/or
-sell copies of the Software, or permit others to do so, except as expressly
-permitted in a separate written agreement with RouteFinder (including a signed
-pilot agreement).
+You may not use, copy, download, clone, modify, merge, publish, distribute,
+sublicense, sell, or create derivative works of the Software, or permit
+others to do so, except as expressly permitted in a separate written
+agreement with Jacob Hackett (including a signed pilot agreement).
 
 Unauthorized copying, reverse engineering (except where mandatory local law
-permits), or disclosure of the Software is strictly prohibited.
+permits), redistribution, or disclosure of the Software is strictly
+prohibited.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM,
-OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL
+JACOB HACKETT OR ANY COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE,
+ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
 
 Third-party components included with the Software remain under their own
 licenses; see the NOTICE file in the repository root.

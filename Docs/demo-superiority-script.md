@@ -70,7 +70,8 @@ Do **not** claim TomTom HD lanes, toll tariffs, or remote VU download.
 |---------|-------|
 | No toast | Fleet URL, vehicle UUID, same LAN; `fleet-e2e-smoke.sh` |
 | API key banner | `usesFleetORSProxy` / remote fleet + `--ors-key` |
-| HTTP 401 on desk push / catalog | Missing or mismatched fleet API key — paste the same `--api-key` into Mac Settings / web Bearer / driver wizard |
+| HTTP 401 on desk push / catalog | Missing or mismatched fleet API key — paste the same `--api-key` into Dispatch **Save fleet API key** (or Mac Settings) / web Bearer / driver wizard |
+| Office PC cannot reach Mac | Copy LAN fleet URL from **Office PC** guide or **Dispatcher** onboarding (not `127.0.0.1`); same Wi‑Fi |
 | No GPS pin | Snapshot PUT with lat/lon; see Phase 5 E2E GPS asserts |
 | Map flicker every 5 s (web) | Phase 6 fingerprint — rebuild web-dispatch |
 | Cap / HTTP 429 on Find route or desk geocode | Operator-paid proxy daily budget exhausted — raise caps or wait until tomorrow; iOS `RouteFailureMapper` / Android `FleetProxyErrorMapper` / web `fleetProxyUserMessage` show actionable copy; check `/v1/proxy/status` |

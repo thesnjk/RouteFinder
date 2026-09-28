@@ -67,9 +67,9 @@ Full pairing steps: [fleet-setup-guide.md](fleet-setup-guide.md)
 ## I'm a dispatcher (Windows / Linux office PC) — stranger test
 
 1. On a Mac or iPad with RouteFinder: sign in → **Pick Office PC**.
-2. Note the URL template `http://<office-mac-ip>:8080` (copy from the sheet).
+2. Tap **Copy fleet URL** on the sheet (uses this Mac’s detected LAN IP, e.g. `http://192.168.x.x:8080`). If detection fails, the sheet keeps the `http://<office-mac-ip>:8080` template.
 3. Someone starts `RouteFinderFleetServer` on the office Mac (port 8080, with `--ors-key` and preferably `--api-key`).
-4. On the office PC: open Chrome → follow [web-dispatch-operator-guide.md](web-dispatch-operator-guide.md).
+4. On the office PC: open Chrome → follow [web-dispatch-operator-guide.md](web-dispatch-operator-guide.md) (paste the copied URL + shared API key as Bearer).
 5. Create org → register vehicle → show drivers the QR → push trip.
 
 ---

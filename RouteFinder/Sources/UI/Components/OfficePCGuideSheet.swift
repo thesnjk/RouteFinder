@@ -11,7 +11,8 @@ import UIKit
 struct OfficePCGuideSheet: View {
     var onContinue: () -> Void
 
-    private let urlTemplate = "http://<office-mac-ip>:8080"
+    private var fleetURL: String { DeskLANAddress.shareableFleetServerURL() }
+    private var didDetectLAN: Bool { DeskLANAddress.primaryIPv4() != nil }
 
     var body: some View {
         NavigationStack {
@@ -29,20 +30,28 @@ struct OfficePCGuideSheet: View {
                     VStack(alignment: .leading, spacing: RFSpacing.sm) {
                         Text("Fleet server URL")
                             .font(RFFont.summary.weight(.semibold))
-                        Text(urlTemplate)
+                        Text(fleetURL)
                             .font(.system(.body, design: .monospaced))
                             .textSelection(.enabled)
                             .padding(RFSpacing.sm)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .glassPanel(cornerRadius: 12)
-                        Text("Replace <office-mac-ip> with the Mac’s LAN address (System Settings → Network).")
+                        Text(
+                            didDetectLAN
+                                ? "Detected this Mac’s LAN address. Paste into web-dispatch on the office PC (same Wi‑Fi)."
+                                : "Could not detect a LAN address — replace <office-mac-ip> with the Mac’s Wi‑Fi IP (System Settings → Network)."
+                        )
                             .font(RFFont.caption)
                             .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
 
                         Button {
-                            copyToPasteboard(urlTemplate)
+                            copyToPasteboard(fleetURL)
                         } label: {
-                            Label("Copy URL template", systemImage: "doc.on.doc")
+                            Label(
+                                didDetectLAN ? "Copy fleet URL" : "Copy URL template",
+                                systemImage: "doc.on.doc"
+                            )
                         }
                         .modifier(GlassButton())
                         .accessibilityIdentifier("officePCCopyURL")

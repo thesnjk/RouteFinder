@@ -20,14 +20,21 @@ public struct DispatchConsoleView: View {
                     trip: viewModel.activeTrip,
                     draft: viewModel.draft,
                     previewCoordinates: viewModel.previewCoordinates,
-                    isPreviewLoading: viewModel.isPreviewLoading
+                    isPreviewLoading: viewModel.isPreviewLoading,
+                    fleetPins: viewModel.fleetPins,
+                    selectedVehicleId: viewModel.selectedVehicleId
                 )
                 .frame(minHeight: 280)
                 DispatchStatusPanel(
                     trip: viewModel.activeTrip,
                     vehicleLabel: viewModel.selectedVehicleLabel,
                     previewCoordinates: viewModel.previewCoordinates,
-                    telematicsImportBatch: viewModel.telematicsImportBatch
+                    telematicsImportBatch: viewModel.telematicsImportBatch,
+                    rosterRows: viewModel.rosterRows,
+                    selectedVehicleId: viewModel.selectedVehicleId,
+                    onSelectVehicle: { vehicleId in
+                        Task { await viewModel.selectRosterVehicle(vehicleId) }
+                    }
                 )
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -67,11 +74,17 @@ public struct DispatchConsoleView: View {
             await viewModel.refreshCatalog()
             await viewModel.reloadTelematicsImport()
             viewModel.startPolling()
+            viewModel.startRosterPolling()
             viewModel.startHealthPolling()
         }
         .onDisappear {
             viewModel.stopPolling()
+            viewModel.stopRosterPolling()
             viewModel.stopHealthPolling()
+        }
+        .onChange(of: viewModel.selectedVehicleId) { _, newId in
+            guard newId != nil else { return }
+            Task { await viewModel.refreshActiveTrip() }
         }
     }
 
@@ -82,6 +95,9 @@ public struct DispatchConsoleView: View {
         let label: String = {
             if isLocal {
                 return "Local disk"
+            }
+            if let detail = viewModel.fleetServerHealthDetail, !detail.isEmpty {
+                return detail
             }
             if viewModel.fleetServerHealthOk == true {
                 if let version = viewModel.fleetServerVersion {

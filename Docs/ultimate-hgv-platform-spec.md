@@ -1,9 +1,9 @@
 # Ultimate HGV platform specification
 
-Last updated: 2026-09-22  
+Last updated: 2026-09-27  
 Scope: Engineering architecture and product capability — no legal/GTM.
 
-RouteFinder is the **UK-first, iPhone-first** all-in-one HGV driver + dispatch hub for **5–15 truck** independents. This document is the gap audit and target architecture for closing remaining “daily ops” gaps without rebuilding the stack.
+RouteFinder is the **UK-first, cab-phone-first** all-in-one HGV driver + dispatch hub for **5–15 truck** independents (scale via hosted multi-depot). This document is the gap audit and target architecture for closing remaining “daily ops” gaps without rebuilding the stack.
 
 ---
 
@@ -11,7 +11,7 @@ RouteFinder is the **UK-first, iPhone-first** all-in-one HGV driver + dispatch h
 
 | Competitor class | RouteFinder today | Close next |
 |------------------|-------------------|------------|
-| Sygic / CoPilot / TomTom GO | **Lead** physics rehearsal, layby+HOS, LEZ avoid, stranger fleet ORS proxy | Lane HD, offline depth, production CarPlay |
+| Sygic / CoPilot / TomTom GO | **Lead** physics rehearsal, layby+HOS, LEZ avoid, stranger fleet ORS proxy | Lane HD, offline depth, hosted multi-depot |
 | Samsara / Webfleet | **Lead** LAN + zero SaaS portal for ICP | Live telematics map (intentional stub) |
 | Waze / Google Maps | **Lead** HGV constraints + CAZ | Crowd scale |
 
@@ -37,7 +37,7 @@ Evidence: [`engineering-benchmark-2026-09.md`](engineering-benchmark-2026-09.md)
 | Kinetic rehearsal / grades / curves | **Shipped** |
 | Live weather + TomTom + roadworks + hazard banners | **Shipped** (separate) |
 | Unified `RouteRiskAdvisory` fuse (kinetic / weather / hazard / roadworks / traffic) | **Shipped** — live kinetic/weather + HUD primary banner (`predictiveRiskPrimaryBanner`) |
-| 1–3h traffic forecast | **Shipped** (U8 iOS; U11 Android) — `ForecastRiskSampler`; ledger-capped |
+| 1–3h traffic forecast | **Shipped** (U8 iOS + U14 fleet proxy on iOS/Android; U11 Android) — `ForecastRiskSampler`; ledger-capped |
 | Corridor + off-route clearance radar | **Shipped** (U9 + U11-B2) — `ClearanceCorridorProbe` on-route + heading corridor when off-spine |
 
 ### C — Compliance

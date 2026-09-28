@@ -187,6 +187,9 @@ public final class RouteViewModel {
     /// Off-route heading clearance advisories (U11-B2).
     private var cachedOffRouteClearanceItems: [RouteRiskAdvisory] = []
     private var lastForecastRiskRefresh: Date?
+    /// Last known fleet TomTom/OpenWeather proxy flags (U14).
+    private var forecastProxyCapabilities = FleetForecastProxyCapabilities()
+    private var lastForecastProxyStatusRefresh: Date?
     private let clearanceCorridorProbe = ClearanceCorridorProbe()
     /// Rolled-up external API usage for Settings.
     public var apiUsageSummary: APIUsageDaySummary?
@@ -2285,6 +2288,14 @@ public final class RouteViewModel {
             hasCompletedCloudRoute = true
             routeFailure = nil
             updateCloudRoutingBanner()
+            // Desk ETA after Find route (parity with Android): seed ORS/web duration until kinetic/rehearse.
+            if activeDispatchTripId != nil {
+                if journeyPhysicsETASeconds == nil, physicsPredictedDurationSeconds == nil,
+                   let totalTime = result?.metrics.totalTime {
+                    physicsPredictedDurationSeconds = totalTime
+                }
+                await publishDispatchSnapshot(status: .optimized)
+            }
         } catch {
             routePlanningCoordinator.presentRouteError(error, preferences: preferences)
         }
@@ -2984,7 +2995,22 @@ public final class RouteViewModel {
         }
         let tomTom = tomTomAPIKey.isEmpty ? nil : tomTomAPIKey
         let openWeather = openWeatherAPIKey.isEmpty ? nil : openWeatherAPIKey
-        guard tomTom != nil || openWeather != nil else {
+        let fleetURL = usesFleetORSProxy
+            ? (URL(string: fleetServerURLText.trimmingCharacters(in: .whitespacesAndNewlines))
+                ?? FleetWorkspaceSettings.loadFleetServerURL())
+            : nil
+        let fleetAPIKey = fleetURL != nil ? (try? FleetServerCredentials.loadAPIKey()) : nil
+        if let fleetURL {
+            await refreshForecastProxyCapabilitiesIfNeeded(fleetURL: fleetURL, apiKey: fleetAPIKey, force: force)
+        } else {
+            forecastProxyCapabilities = FleetForecastProxyCapabilities()
+            lastForecastProxyStatusRefresh = nil
+        }
+        let tomTomProxy = forecastProxyCapabilities.tomTomConfigured
+        let openWeatherProxy = forecastProxyCapabilities.openWeatherConfigured
+        let hasDeviceKeys = tomTom != nil || openWeather != nil
+        let hasProxy = fleetURL != nil && (tomTomProxy || openWeatherProxy)
+        guard hasDeviceKeys || hasProxy else {
             cachedForecastRiskItems = []
             return
         }
@@ -2992,9 +3018,32 @@ public final class RouteViewModel {
             route: route,
             currentArcLengthMeters: currentRouteArcLengthMeters,
             tomTomAPIKey: tomTom,
-            openWeatherAPIKey: openWeather
+            openWeatherAPIKey: openWeather,
+            fleetBaseURL: fleetURL,
+            fleetAPIKey: fleetAPIKey,
+            tomTomProxyConfigured: tomTomProxy,
+            openWeatherProxyConfigured: openWeatherProxy
         )
         lastForecastRiskRefresh = Date()
+    }
+
+    private func refreshForecastProxyCapabilitiesIfNeeded(
+        fleetURL: URL,
+        apiKey: String?,
+        force: Bool
+    ) async {
+        if !force,
+           let last = lastForecastProxyStatusRefresh,
+           Date().timeIntervalSince(last) < ForecastRiskSampler.refreshIntervalSeconds {
+            return
+        }
+        do {
+            let client = HTTPFleetStore(baseURL: fleetURL, apiKey: apiKey)
+            forecastProxyCapabilities = try await client.fetchForecastProxyCapabilities()
+            lastForecastProxyStatusRefresh = Date()
+        } catch {
+            // Keep prior flags; device keys remain as fallback.
+        }
     }
 
     /// Arc length along the active route for HUD distance labels.

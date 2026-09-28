@@ -482,4 +482,36 @@ assert.equal(
   'Offline · health not ok',
 )
 
+/** Mirrors web-dispatch/src/dispatchPushGate.ts */
+function canPushTrip({ hasVehicle, hasResolvedStops, healthOk }) {
+  return hasVehicle && hasResolvedStops && healthOk
+}
+function isPushBlockedByFleetHealth({ hasVehicle, hasResolvedStops, healthOk }) {
+  return hasVehicle && hasResolvedStops && !healthOk
+}
+assert.equal(
+  canPushTrip({ hasVehicle: true, hasResolvedStops: true, healthOk: true }),
+  true,
+)
+assert.equal(
+  canPushTrip({ hasVehicle: true, hasResolvedStops: true, healthOk: false }),
+  false,
+)
+assert.equal(
+  isPushBlockedByFleetHealth({
+    hasVehicle: true,
+    hasResolvedStops: true,
+    healthOk: false,
+  }),
+  true,
+)
+assert.equal(
+  isPushBlockedByFleetHealth({
+    hasVehicle: true,
+    hasResolvedStops: false,
+    healthOk: false,
+  }),
+  false,
+)
+
 console.log('fleet types smoke ok')

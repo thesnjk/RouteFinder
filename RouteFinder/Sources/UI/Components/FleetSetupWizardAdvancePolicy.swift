@@ -13,9 +13,9 @@ public enum FleetSetupWizardAdvancePolicy: Sendable {
 
     /// Whether Next is enabled for the given wizard step and inputs.
     ///
-    /// The **test** step requires a successful connection status containing `"Connected"`
+    /// The **test** step requires a successful connection status that **starts with** `"Connected"`
     /// (auth probe + health). A non-empty URL alone is not enough — that undoes the
-    /// fleet API key gate for stranger LAN pilots.
+    /// fleet API key gate for stranger LAN pilots. **Auth failed** / **Offline** keep Next disabled.
     public static func canAdvance(
         step: Step,
         connectionStatus: String?,
@@ -34,7 +34,9 @@ public enum FleetSetupWizardAdvancePolicy: Sendable {
             if isHosted { return scheme == "https" }
             return scheme == "http" || scheme == "https"
         case .test:
-            return (connectionStatus ?? "").contains("Connected")
+            // Require Connected (not Auth failed / Offline). Use prefix so stale
+            // "Connected health · …" style copy cannot false-green if it reappears.
+            return (connectionStatus ?? "").hasPrefix("Connected")
         case .vehicle:
             return UUID(uuidString: vehicleIdText.trimmingCharacters(in: .whitespacesAndNewlines)) != nil
         }

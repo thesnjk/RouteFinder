@@ -34,6 +34,20 @@ public enum FleetServerHealthLabel: Sendable {
         return "Offline"
     }
 
+    /// Visual accent for desk/wizard connection status strings.
+    public enum StatusAccent: Sendable, Equatable {
+        case success
+        case failure
+        case neutral
+    }
+
+    /// Maps operator-facing status copy to a success / failure / neutral accent.
+    public static func accent(forStatus status: String) -> StatusAccent {
+        if status.hasPrefix("Connected") { return .success }
+        if status.hasPrefix("Auth failed") || status.hasPrefix("Offline") { return .failure }
+        return .neutral
+    }
+
     /// Whether a thrown error should be classified as auth failure (not offline).
     public static func isAuthFailure(_ error: Error) -> Bool {
         if let http = error as? HTTPFleetStoreError {

@@ -18,6 +18,7 @@ import {
 } from './inspectionSummary'
 import { fleetProxyUserMessage } from './fleetProxyError'
 import { fleetHealthLabel } from './fleetHealthLabel'
+import { nearCapWarning, orsSummaryLine } from './fleetProxyStatusLabel'
 import { canPushTrip, isPushBlockedByFleetHealth } from './dispatchPushGate'
 import { TripMapPreview } from './TripMapPreview'
 import { VehicleQR } from './VehicleQR'
@@ -415,12 +416,10 @@ export default function App() {
         </div>
         {proxyStatus ? (
           <>
-            <p className="muted">
-              ORS proxy:{' '}
-              {proxyStatus.orsConfigured
-                ? `on · ${proxyStatus.routesToday}/${proxyStatus.routeDailyCap} routes · ${proxyStatus.geocodeToday}/${proxyStatus.geocodeDailyCap} geocodes today`
-                : 'off (start server with --ors-key for address search and driver routing)'}
-            </p>
+            <p className="muted">{orsSummaryLine(proxyStatus)}</p>
+            {nearCapWarning(proxyStatus) ? (
+              <p className="muted roster-warn">{nearCapWarning(proxyStatus)}</p>
+            ) : null}
             <p className="muted">
               TomTom flow proxy:{' '}
               {proxyStatus.tomTomConfigured

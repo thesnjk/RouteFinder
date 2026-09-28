@@ -19,6 +19,7 @@ import {
 import { fleetProxyUserMessage } from './fleetProxyError'
 import { fleetHealthLabel } from './fleetHealthLabel'
 import { nearCapWarning, orsSummaryLine } from './fleetProxyStatusLabel'
+import { loadNorfolkDemoStops } from './demoCorridor'
 import { canPushTrip, isPushBlockedByFleetHealth } from './dispatchPushGate'
 import { TripMapPreview } from './TripMapPreview'
 import { VehicleQR } from './VehicleQR'
@@ -574,9 +575,22 @@ export default function App() {
           placeholder="Search UK address…"
           disabled={busy}
         />
+        <div className="row">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              const { origin, destination } = loadNorfolkDemoStops()
+              setOriginStop(origin)
+              setDestStop(destination)
+            }}
+          >
+            Load Norwich → King's Lynn
+          </button>
+        </div>
         <p className="muted">
-          Address search uses the fleet Pelias proxy (requires server <code>--ors-key</code>). Pick a
-          suggestion so lat/lon are set before push.
+          Address search uses the fleet Pelias proxy (requires server <code>--ors-key</code>). Or tap{' '}
+          <strong>Load Norwich → King&apos;s Lynn</strong> for the ≤2‑min demo corridor without geocode.
         </p>
         <label>
           Gross weight (kg)

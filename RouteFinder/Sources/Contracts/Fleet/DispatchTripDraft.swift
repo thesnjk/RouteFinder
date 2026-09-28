@@ -94,7 +94,7 @@ public struct DispatchTripDraft: Sendable, Equatable {
         self.autoFindRoute = autoFindRoute
     }
 
-    /// UK demo template: Felixstowe → Midlands → Manchester.
+    /// UK long-haul template: Felixstowe → Midlands → Manchester.
     public static func ukDemoTemplate() -> DispatchTripDraft {
         let demoBreak = CompanyBreakAllocation.demoAfternoonBreak()
         return DispatchTripDraft(
@@ -102,6 +102,24 @@ public struct DispatchTripDraft: Sendable, Equatable {
                 DispatchStopDraft(label: "Felixstowe Port", latitude: "51.9542", longitude: "1.3511"),
                 DispatchStopDraft(label: "Midlands Hub", latitude: "52.4862", longitude: "-1.8904"),
                 DispatchStopDraft(label: "Manchester Depot", latitude: "53.4808", longitude: "-2.2426"),
+            ],
+            breakWindowStart: demoBreak.window.start,
+            breakWindowEnd: demoBreak.window.end,
+            breakDurationMinutes: Int(demoBreak.durationSeconds / 60),
+            breakLabel: demoBreak.label ?? "Afternoon break",
+            grossWeightKgText: "44000",
+            adrClassText: "",
+            autoFindRoute: true
+        )
+    }
+
+    /// Demo-script corridor: Norwich → King's Lynn (matches web `buildDemoTrip` coords).
+    public static func norfolkDemoCorridor() -> DispatchTripDraft {
+        let demoBreak = CompanyBreakAllocation.demoAfternoonBreak()
+        return DispatchTripDraft(
+            stops: [
+                DispatchStopDraft(label: "Norwich", latitude: "52.6309", longitude: "1.2974"),
+                DispatchStopDraft(label: "King's Lynn", latitude: "52.7519", longitude: "0.3955"),
             ],
             breakWindowStart: demoBreak.window.start,
             breakWindowEnd: demoBreak.window.end,

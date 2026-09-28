@@ -1,6 +1,6 @@
 # Competitive Feature Scorecard — September 2026
 
-Last updated: 2026-09-25 (Android desk PDF/ETA handoff; Fleet proxy 429 → 3; Price notes aligned with pilot-fleet-pack)
+Last updated: 2026-09-28 (cab-phone ICP; Mac/web roster+pins; pilot `--api-key` stranger path; Auth/TLS notes; iOS forecast via fleet TomTom/OpenWeather proxy; Auth score stays 2)
 
 Scoring: **0** Absent · **1** Weak · **2** Parity · **3** Lead  
 Personas: **OO** = UK owner-operator · **SF** = small fleet (2–20 vehicles)
@@ -54,7 +54,7 @@ RouteFinder scores from code inventory + Phase 20/26/27/30–44 + **Phase 8** + 
 | LAN / hosted sync | 14% | **3** | 0 | 1 | 0 | RF $0 LAN + Phase 7 hosted |
 | Layby on trip | 10% | **3** | 2 | 1 | 0 | RF prediction + partner links |
 | Constraint routing | 10% | **3** | 3 | 3 | 2 | Parity |
-| Auth/TLS fleet server | 8% | **2** | 3 | 3 | 3 | RF API key + optional TLS |
+| Auth/TLS fleet server | 8% | **2** | 3 | 3 | 3 | RF API key + optional TLS; pilot-default `--api-key` + actionable 401 (not SSO/mTLS) |
 | Telematics ingest (read-only) | 4% | **1** | 2 | 2 | 3 | CSV + POST stub (Ph8) |
 | Price | 10% | **3** | 0 | 0 | 0 | Pilot £0 / post-pilot API-included desk subscription ([`pilot-fleet-pack.md`](pilot-fleet-pack.md)); not per-seat cloud portal |
 
@@ -103,7 +103,7 @@ Weighted OO/SF tables above are **unchanged** by Phase 6 (performance / honesty,
 | `FleetJobBrief` weight / ADR / auto-find on SSE push | **3** | **3** | Android ORS includes ADR→hazmat; time windows on status card (U11) |
 | RegCheck on job intake (plate → dims) | **3** | **2** (U10) | Android RegCheck when username set (wizard + nav field) |
 | DVSA walkaround + defect photos + PDF | **3** | **3** (U12) | Android gallery attach + local PDF + richer snapshot handoff |
-| 1–3h traffic/weather forecast advisories | **2** (U8) | **3** (U11 + U14) | Fleet TomTom/OpenWeather proxy — zero driver forecast keys on Android |
+| 1–3h traffic/weather forecast advisories | **3** (U8 + U14 proxy) | **3** (U11 + U14) | Fleet TomTom/OpenWeather proxy — zero driver forecast keys on iOS + Android |
 | Off-route / corridor clearance radar | **3** (U9 + U11-B2) | **3** (U14b) | Android: on-route Overpass + heading corridor when off-spine |
 | LEZ / CAZ ORS `avoid_polygons` | **3** | **3** (U15) | Android `LezAvoidPolicy` mirrors iOS area + long-haul caps |
 | HOS clock + layby ahead | **3** | **2** (U13 MVP) | Android advisory clock + layby ahead; Apple keeps full coordinator depth |
@@ -116,7 +116,7 @@ Weighted OO/SF tables above are **unchanged** by Phase 6 (performance / honesty,
 
 | Capability | Best-in-class | RouteFinder stance |
 |---|---|---|
-| CarPlay / Android Auto | Sygic / CoPilot | Paid-team CarPlay restore; Android Auto deferred |
+| CarPlay / Android Auto | Sygic / CoPilot | **Deferred by design (cab phone ICP)** — depot-issued handset; paid-team CarPlay restore remains optional code path only |
 | Paid parking booking (TRAVIS/TPC) | CoPilot + TRAVIS | Deep links only (Ph8) — prediction remains the $0 wedge |
 | Remote VU download | Samsara / Geotab | Partner boundary — advisory tacho + CSV stub |
 | Legal LEZ cadastre | Sygic / TomTom | Simplified authored rings + honest disclaimer |

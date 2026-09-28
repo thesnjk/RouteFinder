@@ -53,8 +53,8 @@ struct OfficePCGuideSheet: View {
                     VStack(alignment: .leading, spacing: RFSpacing.sm) {
                         Text("Quick steps")
                             .font(RFFont.summary.weight(.semibold))
-                        bullet("Someone starts RouteFinderFleetServer on the office Mac with --ors-key")
-                        bullet("On the office PC: open the web-dispatch console (Vite /fleet proxy or direct URL)")
+                        bullet("Someone starts RouteFinderFleetServer on the office Mac with --ors-key and --api-key (same secret as web Bearer / driver wizard)")
+                        bullet("On the office PC: open the web-dispatch console (Vite /fleet proxy or direct URL); paste the shared API key as Bearer")
                         bullet("Create organisation → register vehicle → show QR to drivers")
                         bullet("Push a trip — driver phones toast within ~5 seconds")
                         Text("Full detail: Docs/web-dispatch-operator-guide.md")

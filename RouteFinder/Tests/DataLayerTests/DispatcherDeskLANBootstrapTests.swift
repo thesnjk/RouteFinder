@@ -95,4 +95,26 @@ struct DispatcherDeskLANBootstrapTests {
         #expect(saveCount == 0)
         #expect(FleetWorkspaceSettings.useRemoteFleetServer(defaults: defaults))
     }
+
+    @Test func nilAPIKeyEnablesRemoteWithoutSave() throws {
+        let suiteName = "DeskLANBootstrap-nil-key-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { UserDefaults.standard.removeSuite(named: suiteName) }
+
+        var saveCount = 0
+        let outcome = try DispatcherDeskLANBootstrap.apply(
+            apiKey: nil,
+            defaults: defaults,
+            saveAPIKey: { _ in saveCount += 1 }
+        )
+
+        #expect(outcome.appliedDefaultURL)
+        #expect(!outcome.didSaveAPIKey)
+        #expect(saveCount == 0)
+        #expect(FleetWorkspaceSettings.useRemoteFleetServer(defaults: defaults))
+        #expect(
+            FleetWorkspaceSettings.loadFleetServerURL(defaults: defaults)?.absoluteString
+                == "http://127.0.0.1:8080"
+        )
+    }
 }

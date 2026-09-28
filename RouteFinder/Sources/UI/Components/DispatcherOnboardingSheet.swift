@@ -83,7 +83,10 @@ struct DispatcherOnboardingSheet: View {
                     .padding(RFSpacing.md)
                     .glassPanel(cornerRadius: 16)
 
-                    Button("Continue to map", action: onContinue)
+                    Button("Continue to map") {
+                        applyDeskLANBootstrap()
+                        onContinue()
+                    }
                         .buttonStyle(.borderless)
                         .frame(maxWidth: .infinity)
                         .accessibilityIdentifier("dispatcherContinue")
@@ -99,15 +102,19 @@ struct DispatcherOnboardingSheet: View {
     }
 
     private func applyDeskLANBootstrapAndOpen() {
+        applyDeskLANBootstrap()
+        onOpenDispatch()
+    }
+
+    private func applyDeskLANBootstrap() {
         do {
             try DispatcherDeskLANBootstrap.apply(
                 apiKey: sharedAPIKey,
                 saveAPIKey: { try FleetServerCredentials.saveAPIKey($0) }
             )
         } catch {
-            // Still open Dispatch so the operator can finish wiring in Settings if Keychain fails.
+            // Operator can finish wiring in Settings if Keychain fails.
         }
-        onOpenDispatch()
     }
 
     private func copyToPasteboard(_ string: String) {

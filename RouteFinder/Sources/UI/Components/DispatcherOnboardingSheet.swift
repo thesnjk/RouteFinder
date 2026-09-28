@@ -18,6 +18,9 @@ struct DispatcherOnboardingSheet: View {
     private let serverCommand =
         #"swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY" --api-key "your-shared-secret""#
 
+    private var shareableFleetURL: String { DeskLANAddress.shareableFleetServerURL() }
+    private var didDetectLAN: Bool { DeskLANAddress.primaryIPv4() != nil }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -60,6 +63,31 @@ struct DispatcherOnboardingSheet: View {
                         SecureField("Shared fleet API key (your-shared-secret)", text: $sharedAPIKey)
                             .textFieldStyle(.roundedBorder)
                             .accessibilityIdentifier("dispatcherSharedAPIKey")
+
+                        Text("Share with office PC / drivers")
+                            .font(RFFont.caption.weight(.semibold))
+                            .padding(.top, RFSpacing.xs)
+                        Text(shareableFleetURL)
+                            .font(.system(.caption, design: .monospaced))
+                            .textSelection(.enabled)
+                            .padding(RFSpacing.sm)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .glassPanel(cornerRadius: 12)
+                        Text(
+                            didDetectLAN
+                                ? "Paste this URL into web-dispatch or the driver wizard when Bonjour discover is unavailable (same Wi‑Fi)."
+                                : "LAN IP not detected — use System Settings → Network, or Discover on LAN in the driver wizard."
+                        )
+                            .font(RFFont.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button {
+                            copyToPasteboard(shareableFleetURL)
+                        } label: {
+                            Label("Copy LAN fleet URL", systemImage: "network")
+                        }
+                        .modifier(GlassButton())
+                        .accessibilityIdentifier("dispatcherCopyLANURL")
                     }
                     .padding(RFSpacing.md)
                     .glassPanel(cornerRadius: 16)

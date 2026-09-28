@@ -16,17 +16,25 @@ public final class DispatchViewModel {
     public private(set) var vehicles: [FleetVehicle] = []
     public var selectedOrgId: UUID?
     public var selectedVehicleId: UUID?
+    /// Filter query for vehicle picker + roster poll (label / plate).
+    public var vehicleFilterQuery: String = ""
     public var draft = DispatchTripDraft.ukDemoTemplate()
     public private(set) var activeTrip: FleetTrip?
+    /// Fleet roster rows (capped) from last roster poll.
+    public private(set) var rosterRows: [DispatchRosterRow] = []
+    /// Yard GPS pins derived from roster (all cabs with published location).
+    public private(set) var fleetPins: [DispatchRosterPin] = []
     public var statusMessage: String?
     public var toastMessage: String?
     public var isPushing = false
     public var isLoading = false
     public var isPreviewLoading = false
     public private(set) var previewCoordinates: [CLLocationCoordinate2D] = []
-    /// Fleet server health: `true` connected, `false` offline, `nil` not checked / local disk.
+    /// Fleet server health: `true` connected, `false` offline/auth-failed, `nil` not checked / local disk.
     public private(set) var fleetServerHealthOk: Bool?
     public private(set) var fleetServerVersion: String?
+    /// Pill copy: Connected / Auth failed · … / Offline / nil when local or unchecked.
+    public private(set) var fleetServerHealthDetail: String?
     public private(set) var fleetServerModeLabel: String = "Local disk"
     /// Last telematics CSV import (read-only stub) for status panel.
     public private(set) var telematicsImportBatch: TelematicsImportBatch?
@@ -41,6 +49,7 @@ public final class DispatchViewModel {
     private let appleGeocodeSearch = AppleGeocodeSearch()
     #endif
     private var pollTask: Task<Void, Never>?
+    private var rosterPollTask: Task<Void, Never>?
     private var healthPollTask: Task<Void, Never>?
     private var previewTask: Task<Void, Never>?
     private var toastDismissTask: Task<Void, Never>?
@@ -96,9 +105,51 @@ public final class DispatchViewModel {
                 }
             }
             await refreshRoutePreview()
+            await refreshRoster()
         } catch {
             statusMessage = error.localizedDescription
         }
+    }
+
+    /// Vehicles matching `vehicleFilterQuery` (empty query = all).
+    public var filteredVehicles: [FleetVehicle] {
+        DispatchFleetRoster.filterVehicles(vehicles, query: vehicleFilterQuery)
+    }
+
+    /// True when push has a vehicle and at least two stops with resolved coordinates.
+    public var canPushTrip: Bool {
+        guard selectedVehicleId != nil else { return false }
+        let resolved = draft.stops.filter(hasValidCoordinates)
+        return resolved.count >= 2
+    }
+
+    /// Selects a roster vehicle and refreshes its active trip immediately.
+    public func selectRosterVehicle(_ vehicleId: UUID) async {
+        guard vehicles.contains(where: { $0.id == vehicleId }) else { return }
+        selectedVehicleId = vehicleId
+        FleetWorkspaceSettings.saveFleetVehicleId(vehicleId)
+        await refreshActiveTrip()
+    }
+
+    /// Loads active trips for capped filtered vehicles into `rosterRows` / `fleetPins`.
+    public func refreshRoster() async {
+        let capped = Array(filteredVehicles.prefix(DispatchFleetRoster.vehicleCap))
+        guard !capped.isEmpty else {
+            rosterRows = []
+            fleetPins = []
+            return
+        }
+        var tripByVehicleId: [UUID: FleetTrip?] = [:]
+        for vehicle in capped {
+            tripByVehicleId[vehicle.id] = try? await store.activeTrip(forVehicleId: vehicle.id)
+        }
+        let rows = DispatchFleetRoster.buildRows(
+            vehicles: capped,
+            tripByVehicleId: tripByVehicleId,
+            now: Date()
+        )
+        rosterRows = rows
+        fleetPins = DispatchFleetRoster.driverPins(from: rows)
     }
 
     /// Ensures a demo org and vehicle exist for local MVP demos.
@@ -136,6 +187,7 @@ public final class DispatchViewModel {
             orgs = try await store.orgs()
             statusMessage = "Demo fleet ready — select a vehicle and push a trip."
             await refreshRoutePreview()
+            await refreshRoster()
         } catch {
             statusMessage = error.localizedDescription
         }
@@ -165,9 +217,13 @@ public final class DispatchViewModel {
             let vehicleLabel = vehicles.first(where: { $0.id == vehicleId })?.label ?? "vehicle"
             showToast("Dispatched to \(vehicleLabel)")
             startPolling()
+            startRosterPolling()
             await refreshRoutePreview()
+            await refreshRoster()
         } catch {
-            statusMessage = error.localizedDescription
+            let message = error.localizedDescription
+            statusMessage = message
+            showToast(message)
         }
     }
 
@@ -218,6 +274,24 @@ public final class DispatchViewModel {
         pollTask = nil
     }
 
+    /// Starts fleet-wide roster polling (~8s, web parity).
+    public func startRosterPolling() {
+        rosterPollTask?.cancel()
+        rosterPollTask = Task { [weak self] in
+            await self?.refreshRoster()
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 8_000_000_000)
+                await self?.refreshRoster()
+            }
+        }
+    }
+
+    /// Stops fleet roster polling.
+    public func stopRosterPolling() {
+        rosterPollTask?.cancel()
+        rosterPollTask = nil
+    }
+
     /// Starts health polling for remote HTTP fleet stores (every 10s).
     public func startHealthPolling() {
         healthPollTask?.cancel()
@@ -237,12 +311,16 @@ public final class DispatchViewModel {
     }
 
     /// Refreshes fleet server reachability for the health pill.
+    ///
+    /// Green only when `/health` and a protected auth probe both succeed (avoids false-green
+    /// on public health when `--api-key` is required). Distinguishes Auth failed vs Offline.
     public func refreshFleetServerHealth() async {
         guard FleetWorkspaceSettings.useRemoteFleetServer(),
               let url = FleetWorkspaceSettings.loadFleetServerURL() else {
             fleetServerModeLabel = "Local disk"
             fleetServerHealthOk = nil
             fleetServerVersion = nil
+            fleetServerHealthDetail = nil
             return
         }
         fleetServerModeLabel = "Remote"
@@ -250,11 +328,55 @@ public final class DispatchViewModel {
         let client = HTTPFleetStore(baseURL: url, apiKey: apiKey)
         do {
             let health = try await client.checkHealth()
-            fleetServerHealthOk = health.ok
-            fleetServerVersion = health.version
+            guard health.ok else {
+                fleetServerHealthOk = false
+                fleetServerVersion = nil
+                fleetServerHealthDetail = FleetServerHealthLabel.status(
+                    healthOk: false,
+                    authSucceeded: false
+                )
+                return
+            }
+            do {
+                try await client.verifyAuthenticatedAccess()
+                fleetServerHealthOk = true
+                fleetServerVersion = health.version
+                fleetServerHealthDetail = FleetServerHealthLabel.status(
+                    healthOk: true,
+                    authSucceeded: true,
+                    version: health.version
+                )
+            } catch {
+                fleetServerHealthOk = false
+                fleetServerVersion = nil
+                if FleetServerHealthLabel.isAuthFailure(error) {
+                    fleetServerHealthDetail = FleetServerHealthLabel.status(
+                        healthOk: true,
+                        authSucceeded: false,
+                        authErrorMessage: error.localizedDescription
+                    )
+                } else {
+                    fleetServerHealthDetail = FleetServerHealthLabel.status(
+                        healthOk: false,
+                        authSucceeded: false
+                    )
+                }
+            }
         } catch {
             fleetServerHealthOk = false
             fleetServerVersion = nil
+            if FleetServerHealthLabel.isAuthFailure(error) {
+                fleetServerHealthDetail = FleetServerHealthLabel.status(
+                    healthOk: true,
+                    authSucceeded: false,
+                    authErrorMessage: error.localizedDescription
+                )
+            } else {
+                fleetServerHealthDetail = FleetServerHealthLabel.status(
+                    healthOk: false,
+                    authSucceeded: false
+                )
+            }
         }
     }
 
@@ -270,6 +392,8 @@ public final class DispatchViewModel {
         if !vehicles.contains(where: { $0.id == selectedVehicleId }) {
             selectedVehicleId = vehicles.first?.id
         }
+        await refreshActiveTrip()
+        await refreshRoster()
         await refreshRoutePreview()
     }
 

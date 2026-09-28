@@ -2,7 +2,7 @@
 
 Pick your role **in the app** after sign-in (Getting started sheet). Each path below is a stranger test — no prior RouteFinder knowledge required.
 
-Last updated: 2026-09-25
+Last updated: 2026-09-26
 
 ---
 
@@ -44,9 +44,11 @@ More: [user-guide-simulation.md](user-guide-simulation.md) · Fleet pairing: [fl
 4. On the Dispatcher sheet: **Copy server command**, then in Terminal (RouteFinder package directory):
 
 ```bash
-cd /Users/admin/Developer/RouteFinder/RouteFinder
-swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY"
+cd RouteFinder
+swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY" --api-key "your-shared-secret"
 ```
+
+**Recommended for 5–15 truck LAN pilots:** always pass `--api-key` and paste the same secret into Mac Settings (fleet API key), web-dispatch Bearer, and the driver fleet wizard. Never expose port 8080 to the public internet without auth + VPN/TLS.
 
 Optional forecast fuse for paired drivers (no personal TomTom / OpenWeather keys): pass `--tomtom-key` / `TOMTOM_API_KEY` and `--openweather-key` / `OPENWEATHER_API_KEY` on the same server.
 
@@ -56,6 +58,7 @@ Operator-paid ORS/Pelias is **fair-use daily caps** (default route/geocode budge
 6. Create an organisation and register a vehicle (or demo bootstrap).
 7. Show the driver the **vehicle QR** (or copy the UUID).
 8. Push a 2-stop trip. The driver iPhone should toast within ~5 seconds.
+9. Glance **Fleet roster** / yard GPS pins on Mac Dispatch or web-dispatch (status, physics ETA, GPS age — snapshot GPS, not live VU). On Mac, use the roster vehicle filter when pushing the next trip.
 
 Full pairing steps: [fleet-setup-guide.md](fleet-setup-guide.md)
 
@@ -65,7 +68,7 @@ Full pairing steps: [fleet-setup-guide.md](fleet-setup-guide.md)
 
 1. On a Mac or iPad with RouteFinder: sign in → **Pick Office PC**.
 2. Note the URL template `http://<office-mac-ip>:8080` (copy from the sheet).
-3. Someone starts `RouteFinderFleetServer` on the office Mac (port 8080, preferably with `--ors-key`).
+3. Someone starts `RouteFinderFleetServer` on the office Mac (port 8080, with `--ors-key` and preferably `--api-key`).
 4. On the office PC: open Chrome → follow [web-dispatch-operator-guide.md](web-dispatch-operator-guide.md).
 5. Create org → register vehicle → show drivers the QR → push trip.
 
@@ -74,7 +77,7 @@ Full pairing steps: [fleet-setup-guide.md](fleet-setup-guide.md)
 ## I'm an Android fleet driver (C2) — stranger test
 
 1. Build/install `android-fleet-driver` APK (`./gradlew :app:assembleDebug`).
-2. Accept **Driver Terms** → onboarding → **Fleet setup** (Discover / URL → Test /health → Scan QR).
+2. Accept **Driver Terms** → onboarding → **Fleet setup** (Discover / URL → Test connection until Connected → Scan QR).
 3. On the **navigation map**: search origin/destination → **Find route** (fleet ORS proxy) → **Start** (metric voice) or **Rehearse**.
 4. When a trip is pushed: route auto-loads → Start → GPS pin updates Mac/web.
 
@@ -84,11 +87,11 @@ See [android-c2-gate.md](android-c2-gate.md) and [phase6b-android-nav-verificati
 
 ## What RouteFinder is (and is not)
 
-**Is:** UK HGV-aware routing, physics rehearsal, advisory HOS / layby, LAN or hosted fleet dispatch, walkaround → dispatch handoff, operator-paid ORS proxy for paired drivers. Proprietary product owned by **Jacob Hackett** — source is not redistributable (see [`LICENSE`](../LICENSE)); pilot terms in [`pilot-fleet-pack.md`](pilot-fleet-pack.md).
+**Is:** UK HGV-aware routing, physics rehearsal, advisory HOS / layby, LAN or hosted fleet dispatch, walkaround → dispatch handoff, operator-paid ORS proxy for paired drivers. ICP = **company phone in the cab** (iOS-first; Android C2 for mixed fleets); scale path = **hosted gateway multi-depot**, not in-vehicle OS. Proprietary product owned by **Jacob Hackett** — source is not redistributable (see [`LICENSE`](../LICENSE)); pilot terms in [`pilot-fleet-pack.md`](pilot-fleet-pack.md).
 
-**Is not (yet):** Hosted multi-tenant SaaS admin / billing UI, Android Auto, telematics / remote VU replacement. Android C2 MVP nav ships in `android-fleet-driver` (fleet proxy). Production CarPlay requires a paid Apple Developer team — see [`carplay-weatherkit-restore.md`](carplay-weatherkit-restore.md) and [`phase5-carplay-verification.md`](phase5-carplay-verification.md). Remote depots use the minimal hosted gateway ([`hosted-gateway-deployment.md`](hosted-gateway-deployment.md)), not a full SaaS portal.
+**Is not (yet):** Hosted multi-tenant SaaS admin / billing UI, Android Auto, telematics / remote VU replacement. Android C2 MVP nav ships in `android-fleet-driver` (fleet proxy). CarPlay is optional paid-team only and **not required** for pilots — see [`carplay-weatherkit-restore.md`](carplay-weatherkit-restore.md). Remote depots use the minimal hosted gateway ([`hosted-gateway-deployment.md`](hosted-gateway-deployment.md)), not a full SaaS portal.
 
-**Do not promise:** full SaaS portal, Android Auto, remote VU download, 24/7 support. Do not claim CarPlay on personal-team builds.
+**Do not promise:** full SaaS portal, Android Auto, remote VU download, 24/7 support, CarPlay as a product requirement. Do not claim CarPlay on personal-team builds.
 
 ---
 
@@ -112,3 +115,4 @@ See [android-c2-gate.md](android-c2-gate.md) and [phase6b-android-nav-verificati
 | [pilot-fleet-pack.md](pilot-fleet-pack.md) | Pilot terms + API contract |
 | [operator-next-steps.md](operator-next-steps.md) | Your weekly checklist |
 | [unit-economics.md](unit-economics.md) | API metering / fair-use |
+| [ultimate-competitive-excellence-sweep.md](ultimate-competitive-excellence-sweep.md) | Reusable ICP excellence sweep prompt (gates + ship commands) |

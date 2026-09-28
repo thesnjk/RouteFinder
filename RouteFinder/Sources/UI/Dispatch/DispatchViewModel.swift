@@ -116,11 +116,26 @@ public final class DispatchViewModel {
         DispatchFleetRoster.filterVehicles(vehicles, query: vehicleFilterQuery)
     }
 
-    /// True when push has a vehicle and at least two stops with resolved coordinates.
+    /// True when push has a vehicle, ≥2 resolved stops, remote fleet, and Connected health.
     public var canPushTrip: Bool {
-        guard selectedVehicleId != nil else { return false }
-        let resolved = draft.stops.filter(hasValidCoordinates)
-        return resolved.count >= 2
+        let resolved = draft.stops.filter(hasValidCoordinates).count >= 2
+        return DispatchPushGate.canPush(
+            hasVehicle: selectedVehicleId != nil,
+            hasResolvedStops: resolved,
+            isRemoteFleet: fleetServerModeLabel != "Local disk",
+            healthOk: fleetServerHealthOk == true
+        )
+    }
+
+    /// Draft is otherwise ready but Local disk / Offline / Auth failed blocks push.
+    public var isPushBlockedByFleetHealth: Bool {
+        let resolved = draft.stops.filter(hasValidCoordinates).count >= 2
+        return DispatchPushGate.isBlockedByFleetHealth(
+            hasVehicle: selectedVehicleId != nil,
+            hasResolvedStops: resolved,
+            isRemoteFleet: fleetServerModeLabel != "Local disk",
+            healthOk: fleetServerHealthOk == true
+        )
     }
 
     /// Selects a roster vehicle and refreshes its active trip immediately.
@@ -197,6 +212,14 @@ public final class DispatchViewModel {
     public func pushDraftTrip() async {
         guard let orgId = selectedOrgId, let vehicleId = selectedVehicleId else {
             statusMessage = "Select an org and vehicle first."
+            return
+        }
+        guard canPushTrip else {
+            let message = isPushBlockedByFleetHealth
+                ? "Connect to the fleet server — health pill must show Connected before push."
+                : "Select a vehicle and resolve origin and destination first."
+            statusMessage = message
+            showToast(message)
             return
         }
         isPushing = true

@@ -293,6 +293,14 @@ struct DispatchTripFormView: View {
             }
             .modifier(GlassButton())
             .disabled(viewModel.isPushing || !viewModel.canPushTrip)
+
+            if viewModel.isPushBlockedByFleetHealth {
+                Text("Connect to the fleet server — health pill must show Connected (not Local disk / Offline / Auth failed).")
+                    .font(RFFont.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("dispatchPushFleetHealthHint")
+            }
         }
     }
 

@@ -91,7 +91,6 @@ public struct DispatchConsoleView: View {
     @ViewBuilder
     private var fleetHealthPill: some View {
         let isLocal = viewModel.fleetServerModeLabel == "Local disk"
-        let ok = isLocal || viewModel.fleetServerHealthOk == true
         let label: String = {
             if isLocal {
                 return "Local disk"
@@ -110,11 +109,22 @@ public struct DispatchConsoleView: View {
             }
             return "Checking…"
         }()
+        let accent = isLocal
+            ? FleetServerHealthLabel.StatusAccent.neutral
+            : FleetServerHealthLabel.accent(forStatus: label)
         Text(label)
             .font(RFFont.caption.weight(.semibold))
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
-            .foregroundStyle(ok ? Color.green : Color.red)
+            .foregroundStyle(fleetHealthPillColor(accent))
             .controlSheetStyle()
+    }
+
+    private func fleetHealthPillColor(_ accent: FleetServerHealthLabel.StatusAccent) -> Color {
+        switch accent {
+        case .success: return .green
+        case .failure: return .red
+        case .neutral: return .secondary
+        }
     }
 }

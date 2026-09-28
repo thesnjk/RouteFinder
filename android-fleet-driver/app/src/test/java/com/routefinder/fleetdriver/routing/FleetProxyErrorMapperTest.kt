@@ -55,4 +55,15 @@ class FleetProxyErrorMapperTest {
         assertTrue(message.contains("401"))
         assertTrue(message.contains("API key"))
     }
+
+    @Test
+    fun fleetUnauthorizedEmptyBody_isActionable() {
+        val message = FleetProxyErrorMapper.userMessage(
+            statusCode = 401,
+            body = "",
+            kind = FleetProxyErrorMapper.Kind.FLEET,
+        )
+        assertTrue(message.startsWith("Fleet 401:"))
+        assertTrue(message.contains("API key"))
+    }
 }

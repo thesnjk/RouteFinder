@@ -44,7 +44,7 @@ fun DriverOnboardingScreen(
 
             OnboardingCard(
                 title = "Pair with the office server",
-                body = "Discover the Mac on your LAN (or paste http://<mac-ip>:8080), test /health, then scan the vehicle QR from Mac or web dispatch.",
+                body = "Discover the Mac on your LAN (or paste http://<mac-ip>:8080), test connection until Connected, then scan the vehicle QR from Mac or web dispatch.",
             )
             OnboardingCard(
                 title = "Find route & navigate",

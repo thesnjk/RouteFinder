@@ -33,7 +33,7 @@ Register a vehicle on Mac Dispatch or web-dispatch; note QR / UUID.
 1. Cold launch → onboarding → **Get started**
 2. Enable → Next
 3. **Discover on LAN** → pick Mac **or** paste `http://<mac-ip>:8080` (emulator: `http://10.0.2.2:8080`)
-4. **Test /health** → Connected → Next
+4. **Test connection** → Connected (health + auth) → Next
 5. Paste UUID or **Scan QR** → Done (scan should skip straight to Done)
 6. Optional **Check for dispatch** → Finish
 
@@ -41,7 +41,7 @@ Register a vehicle on Mac Dispatch or web-dispatch; note QR / UUID.
 |-------|-------|-------|
 | Onboarding appears once | | |
 | LAN discover or manual URL | | |
-| Health gate blocks Next until Connected | | |
+| Health + auth gate blocks Next until Connected | | |
 | QR / UUID pairs | | |
 
 ---

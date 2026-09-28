@@ -22,3 +22,24 @@ export function tripMapFingerprint(trip: FleetTrip | null): string {
       : '-'
   return `${trip.id}#${stops}#${driver}`
 }
+
+/**
+ * Full fetch fingerprint for corridor + pins redraw.
+ *
+ * Includes ORS client readiness so a straight-line fallback drawn while health
+ * was red re-fetches the HGV corridor after Test /health becomes Connected.
+ */
+export function tripMapFetchFingerprint(parts: {
+  tripFp: string
+  pinsFp: string
+  selectedVehicleId?: string | null
+  orsReady: boolean
+  weightTonnes?: number | null
+}): string {
+  const readiness = parts.orsReady ? 'ors-ready' : 'ors-pending'
+  const weight =
+    parts.weightTonnes != null && Number.isFinite(parts.weightTonnes)
+      ? `w${parts.weightTonnes.toFixed(2)}`
+      : 'w-'
+  return `${parts.tripFp}#${parts.pinsFp}#${parts.selectedVehicleId ?? ''}#${readiness}#${weight}`
+}

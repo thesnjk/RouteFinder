@@ -16,6 +16,7 @@ object FleetProxyErrorMapper {
     enum class Kind {
         ORS_ROUTE,
         GEOCODE,
+        FLEET,
     }
 
     /**
@@ -41,6 +42,7 @@ object FleetProxyErrorMapper {
         val prefix = when (kind) {
             Kind.ORS_ROUTE -> "ORS route"
             Kind.GEOCODE -> "geocode"
+            Kind.FLEET -> "Fleet"
         }
 
         if (statusCode == 401 || statusCode == 403) {

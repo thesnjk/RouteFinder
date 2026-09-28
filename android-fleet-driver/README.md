@@ -6,14 +6,19 @@ Kotlin + Jetpack Compose **HGV navigator** using the office fleet ORS proxy (no 
 
 **Still deferred (product / operator):** Android Auto, offline graph/tiles, production CarPlay signing (Apple).
 
-Fleet server forecast keys (office provides):
+Fleet server (office provides ORS + pilot shared secret):
 
 ```bash
+export ORS_API_KEY="your-heigit-key"
+export FLEET_API_KEY="your-shared-secret"
 swift run RouteFinderFleetServer --port 8080 \
   --ors-key "$ORS_API_KEY" \
+  --api-key "$FLEET_API_KEY" \
   --tomtom-key "$TOMTOM_API_KEY" \
   --openweather-key "$OPENWEATHER_API_KEY"
 ```
+
+Paste the same `$FLEET_API_KEY` into the Android fleet wizard (and Mac Settings / web Bearer). TomTom / OpenWeather keys are optional (forecast fuse only).
 
 ## Build
 
@@ -31,8 +36,10 @@ CI: `android-c1` job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml
 
 1. **Driver Terms** (required checkbox)
 2. **Onboarding** (C2: receive + navigate)
-3. **Fleet setup** — Discover on LAN / paste URL → Test /health → vehicle QR
+3. **Fleet setup** — Discover on LAN / paste URL → Test connection (health + auth) → vehicle QR
 4. **Navigation map** — search → Find route → Start / Rehearse; SSE trips auto-load
+
+**Portfolio LEZ beat:** Walsall → Solihull with Euro 4 — see [`Docs/demo-superiority-script.md`](../Docs/demo-superiority-script.md) **Appendix B** (Birmingham CAZ avoid under ORS caps; London ULEZ area-capped / long-haul omit).
 
 Emulator fleet URL default: `http://10.0.2.2:8080`.
 
@@ -51,5 +58,7 @@ ui/        Terms, wizard, NavigationMapScreen, geocode field
 ## Device QA
 
 [`Docs/phase6b-android-nav-verification.md`](../Docs/phase6b-android-nav-verification.md)
+
+Optional LEZ portfolio walkthrough: [`Docs/demo-superiority-script.md`](../Docs/demo-superiority-script.md) Appendix B.
 
 Gate notes: [`Docs/android-c2-gate.md`](../Docs/android-c2-gate.md)

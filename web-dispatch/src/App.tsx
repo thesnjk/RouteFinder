@@ -18,6 +18,7 @@ import {
 } from './inspectionSummary'
 import { fleetProxyUserMessage } from './fleetProxyError'
 import { fleetHealthLabel } from './fleetHealthLabel'
+import { canPushTrip, isPushBlockedByFleetHealth } from './dispatchPushGate'
 import { TripMapPreview } from './TripMapPreview'
 import { VehicleQR } from './VehicleQR'
 import { filterVehicles } from './vehicleFilter'
@@ -208,6 +209,25 @@ export default function App() {
   const rosterVehicles = useMemo(
     () => filteredVehicles.slice(0, ROSTER_VEHICLE_CAP),
     [filteredVehicles],
+  )
+
+  const pushReady = useMemo(
+    () =>
+      canPushTrip({
+        hasVehicle: Boolean(orgId && vehicleId),
+        hasResolvedStops: Boolean(originStop && destStop),
+        healthOk,
+      }),
+    [orgId, vehicleId, originStop, destStop, healthOk],
+  )
+  const pushBlockedByHealth = useMemo(
+    () =>
+      isPushBlockedByFleetHealth({
+        hasVehicle: Boolean(orgId && vehicleId),
+        hasResolvedStops: Boolean(originStop && destStop),
+        healthOk,
+      }),
+    [orgId, vehicleId, originStop, destStop, healthOk],
   )
 
   useEffect(() => {
@@ -573,11 +593,16 @@ export default function App() {
           />
         </label>
         <button
-          disabled={busy || !orgId || !vehicleId || !originStop || !destStop}
+          disabled={busy || !pushReady}
           onClick={() =>
             run(async () => {
               persist()
               if (!originStop || !destStop) return
+              if (!healthOk) {
+                throw new Error(
+                  'Connect to the fleet server — health pill must show Connected before push.',
+                )
+              }
               const kg = Number.parseFloat(grossWeightKg)
               const originId = crypto.randomUUID()
               const destId = crypto.randomUUID()
@@ -625,6 +650,12 @@ export default function App() {
         >
           Push trip
         </button>
+        {pushBlockedByHealth ? (
+          <p className="muted">
+            Connect to the fleet server — health pill must show Connected (not Auth failed /
+            Offline) before push.
+          </p>
+        ) : null}
       </section>
 
       <section className="panel">

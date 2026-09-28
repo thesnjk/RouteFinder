@@ -565,4 +565,90 @@ assert.equal(
   false,
 )
 
+/** Mirrors web-dispatch/src/fleetProxyStatusLabel.ts for CI without a TS runner. */
+const NEAR_CAP_FRACTION = 0.9
+const NEAR_CAP_WARNING =
+  'Near daily proxy cap — raise --route-daily-cap / --geocode-daily-cap or wait until tomorrow.'
+
+function routesRemaining(status) {
+  return Math.max(0, status.routeDailyCap - status.routesToday)
+}
+
+function geocodesRemaining(status) {
+  return Math.max(0, status.geocodeDailyCap - status.geocodeToday)
+}
+
+function isNearCap(used, cap) {
+  if (cap <= 0) return false
+  return used >= cap * NEAR_CAP_FRACTION
+}
+
+function isNearAnyORSCap(status) {
+  return (
+    status.orsConfigured &&
+    (isNearCap(status.routesToday, status.routeDailyCap) ||
+      isNearCap(status.geocodeToday, status.geocodeDailyCap))
+  )
+}
+
+function orsSummaryLine(status) {
+  if (!status.orsConfigured) {
+    return 'ORS proxy: off (start server with --ors-key for address search and driver routing)'
+  }
+  return (
+    `ORS proxy: on · ${status.routesToday}/${status.routeDailyCap} routes · ${routesRemaining(status)} left` +
+    ` · ${status.geocodeToday}/${status.geocodeDailyCap} geocodes · ${geocodesRemaining(status)} left`
+  )
+}
+
+function nearCapWarning(status) {
+  if (!isNearAnyORSCap(status)) return null
+  return NEAR_CAP_WARNING
+}
+
+const proxyOk = {
+  orsConfigured: true,
+  routesToday: 12,
+  routeDailyCap: 2000,
+  geocodeToday: 40,
+  geocodeDailyCap: 500,
+}
+assert.equal(routesRemaining(proxyOk), 1988)
+assert.equal(geocodesRemaining(proxyOk), 460)
+assert.equal(
+  orsSummaryLine(proxyOk),
+  'ORS proxy: on · 12/2000 routes · 1988 left · 40/500 geocodes · 460 left',
+)
+assert.equal(nearCapWarning(proxyOk), null)
+
+const proxyNear = {
+  orsConfigured: true,
+  routesToday: 900,
+  routeDailyCap: 1000,
+  geocodeToday: 10,
+  geocodeDailyCap: 500,
+}
+assert.equal(isNearAnyORSCap(proxyNear), true)
+assert.equal(nearCapWarning(proxyNear), NEAR_CAP_WARNING)
+
+const proxyOff = {
+  orsConfigured: false,
+  routesToday: 0,
+  routeDailyCap: 100,
+  geocodeToday: 0,
+  geocodeDailyCap: 50,
+}
+assert.ok(orsSummaryLine(proxyOff).includes('off'))
+assert.equal(nearCapWarning(proxyOff), null)
+
+const proxyOver = {
+  orsConfigured: true,
+  routesToday: 2100,
+  routeDailyCap: 2000,
+  geocodeToday: 600,
+  geocodeDailyCap: 500,
+}
+assert.equal(routesRemaining(proxyOver), 0)
+assert.equal(geocodesRemaining(proxyOver), 0)
+
 console.log('fleet types smoke ok')

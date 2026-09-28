@@ -74,7 +74,7 @@ Do **not** claim TomTom HD lanes, toll tariffs, or remote VU download.
 | Office PC cannot reach Mac | Copy LAN fleet URL from **Office PC** guide or **Dispatcher** onboarding (not `127.0.0.1`); same Wi‑Fi |
 | No GPS pin | Snapshot PUT with lat/lon; see Phase 5 E2E GPS asserts |
 | Map flicker every 5 s (web) | Phase 6 fingerprint — rebuild web-dispatch |
-| Cap / HTTP 429 on Find route or desk geocode | Operator-paid proxy daily budget exhausted — raise caps or wait until tomorrow; glance Mac Dispatch **Fleet proxy** remaining (or web Connection / `/v1/proxy/status`); iOS `RouteFailureMapper` / Android `FleetProxyErrorMapper` / web `fleetProxyUserMessage` show actionable copy |
+| Cap / HTTP 429 on Find route or desk geocode | Operator-paid proxy daily budget exhausted — raise caps or wait until tomorrow; glance Mac **Fleet proxy** or web Connection (**N left** / near-cap warning); curl `/v1/proxy/status` optional; iOS `RouteFailureMapper` / Android `FleetProxyErrorMapper` / web `fleetProxyUserMessage` show actionable copy |
 
 ---
 

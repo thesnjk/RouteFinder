@@ -1036,7 +1036,7 @@ struct SettingsSheet: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 
-            SecureField("Fleet API key (optional)", text: $viewModel.fleetServerAPIKeyText)
+            SecureField("Fleet API key (same as `--api-key`; required for pilot servers)", text: $viewModel.fleetServerAPIKeyText)
                 .textFieldStyle(GlassTextFieldStyle())
                 #if os(iOS)
                 .textInputAutocapitalization(.never)
@@ -1065,7 +1065,7 @@ struct SettingsSheet: View {
             if let status = viewModel.fleetServerConnectionStatus {
                 Text(status)
                     .font(.caption2)
-                    .foregroundStyle(status.contains("Connected") ? .green : .secondary)
+                    .foregroundStyle(fleetConnectionStatusColor(status))
             }
 
             TextField("Fleet vehicle UUID", text: $viewModel.fleetVehicleIdText)
@@ -1086,16 +1086,22 @@ struct SettingsSheet: View {
             }
             .buttonStyle(.borderless)
 
-            Button("Accept demo dispatch") {
+            Button("Load offline demo job (no LAN)") {
                 Task {
                     do {
                         try await viewModel.acceptDemoFleetDispatch()
                     } catch {
-                        viewModel.errorMessage = "Demo dispatch failed: \(error.localizedDescription)"
+                        viewModel.errorMessage = error.localizedDescription
                     }
                 }
             }
             .buttonStyle(.borderless)
+            .disabled(viewModel.useRemoteFleetServer && viewModel.fleetVehicleId != nil)
+            if viewModel.useRemoteFleetServer && viewModel.fleetVehicleId != nil {
+                Text("Turn off remote fleet first — offline demo would replace your paired vehicle id.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
 
             #if os(iOS)
             if horizontalSizeClass == .compact {
@@ -1162,6 +1168,14 @@ struct SettingsSheet: View {
         }
         .task {
             await viewModel.reloadTelematicsImport()
+        }
+    }
+
+    private func fleetConnectionStatusColor(_ status: String) -> Color {
+        switch FleetServerHealthLabel.accent(forStatus: status) {
+        case .success: return .green
+        case .failure: return .red
+        case .neutral: return .secondary
         }
     }
 }

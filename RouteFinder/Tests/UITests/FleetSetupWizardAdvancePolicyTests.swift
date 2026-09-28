@@ -26,6 +26,24 @@ struct FleetSetupWizardAdvancePolicyTests {
         #expect(
             !FleetSetupWizardAdvancePolicy.canAdvance(
                 step: .test,
+                connectionStatus: "Auth failed · Fleet API key rejected. Check the shared key with the operator.",
+                urlText: "http://192.168.1.10:8080",
+                isHosted: false,
+                vehicleIdText: ""
+            )
+        )
+        #expect(
+            !FleetSetupWizardAdvancePolicy.canAdvance(
+                step: .test,
+                connectionStatus: "Offline",
+                urlText: "http://192.168.1.10:8080",
+                isHosted: false,
+                vehicleIdText: ""
+            )
+        )
+        #expect(
+            !FleetSetupWizardAdvancePolicy.canAdvance(
+                step: .test,
                 connectionStatus: nil,
                 urlText: "",
                 isHosted: false,
@@ -36,6 +54,15 @@ struct FleetSetupWizardAdvancePolicyTests {
             FleetSetupWizardAdvancePolicy.canAdvance(
                 step: .test,
                 connectionStatus: "Connected to fleet server.",
+                urlText: "http://192.168.1.10:8080",
+                isHosted: false,
+                vehicleIdText: ""
+            )
+        )
+        #expect(
+            FleetSetupWizardAdvancePolicy.canAdvance(
+                step: .test,
+                connectionStatus: "Connected · v1",
                 urlText: "http://192.168.1.10:8080",
                 isHosted: false,
                 vehicleIdText: ""

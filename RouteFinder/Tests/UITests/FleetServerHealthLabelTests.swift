@@ -45,6 +45,7 @@ struct FleetServerHealthLabelTests {
         )
         #expect(authFailed.hasPrefix("Auth failed"))
         #expect(!authFailed.contains("Offline"))
+        #expect(FleetServerHealthLabel.accent(forStatus: authFailed) == .failure)
         #expect(
             !FleetSetupWizardAdvancePolicy.canAdvance(
                 step: .test,
@@ -59,6 +60,7 @@ struct FleetServerHealthLabelTests {
             authSucceeded: true,
             version: "1"
         )
+        #expect(FleetServerHealthLabel.accent(forStatus: connected) == .success)
         #expect(
             FleetSetupWizardAdvancePolicy.canAdvance(
                 step: .test,
@@ -70,6 +72,7 @@ struct FleetServerHealthLabelTests {
         )
         let offline = FleetServerHealthLabel.status(healthOk: false, authSucceeded: false)
         #expect(offline == "Offline")
+        #expect(FleetServerHealthLabel.accent(forStatus: offline) == .failure)
         #expect(
             !FleetSetupWizardAdvancePolicy.canAdvance(
                 step: .test,

@@ -156,7 +156,7 @@ struct FleetSetupWizardView: View {
             if let status = viewModel.fleetServerConnectionStatus {
                 Text(status)
                     .font(RFFont.caption)
-                    .foregroundStyle(status.contains("Connected") ? .green : .secondary)
+                    .foregroundStyle(fleetConnectionStatusColor(status))
             }
             Text(
                 isHosted
@@ -242,6 +242,14 @@ struct FleetSetupWizardView: View {
             isHosted: isHosted,
             vehicleIdText: viewModel.fleetVehicleIdText
         )
+    }
+
+    private func fleetConnectionStatusColor(_ status: String) -> Color {
+        switch FleetServerHealthLabel.accent(forStatus: status) {
+        case .success: return .green
+        case .failure: return .red
+        case .neutral: return .secondary
+        }
     }
 
     private func move(_ delta: Int) {

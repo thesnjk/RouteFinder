@@ -10,6 +10,7 @@ struct DispatchTripFormView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: RFSpacing.lg) {
                 headerSection
+                proxyStatusSection
                 orgSection
                 vehicleSection
                 stopsSection
@@ -45,6 +46,33 @@ struct DispatchTripFormView: View {
         }
         .glassPanel(cornerRadius: 14)
         .padding(RFSpacing.sm)
+    }
+
+    @ViewBuilder
+    private var proxyStatusSection: some View {
+        if viewModel.fleetServerHealthOk == true,
+           let status = viewModel.fleetProxyStatus {
+            VStack(alignment: .leading, spacing: RFSpacing.xs) {
+                Text("Fleet proxy")
+                    .font(RFFont.sectionTitle)
+                ForEach(Array(status.summaryLines.enumerated()), id: \.offset) { _, line in
+                    Text(line)
+                        .font(RFFont.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if let warning = status.nearCapWarning {
+                    Text(warning)
+                        .font(RFFont.caption.weight(.semibold))
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .glassPanel(cornerRadius: 14)
+            .padding(RFSpacing.sm)
+            .accessibilityIdentifier("dispatchProxyStatusPanel")
+        }
     }
 
     private var orgSection: some View {

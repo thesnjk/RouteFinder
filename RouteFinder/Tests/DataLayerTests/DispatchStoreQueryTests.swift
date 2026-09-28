@@ -129,6 +129,20 @@ import Testing
     #expect(coords.first?.latitude == 51.9542)
 }
 
+@Test func norfolkDemoCorridorMatchesWebBuildDemoTripCoords() throws {
+    let draft = DispatchTripDraft.norfolkDemoCorridor()
+    #expect(draft.stops.count == 2)
+    #expect(draft.stops[0].label == "Norwich")
+    #expect(draft.stops[0].latitude == "52.6309")
+    #expect(draft.stops[0].longitude == "1.2974")
+    #expect(draft.stops[1].label == "King's Lynn")
+    #expect(draft.stops[1].latitude == "52.7519")
+    #expect(draft.stops[1].longitude == "0.3955")
+    let fleetStops = try draft.fleetStops()
+    #expect(fleetStops[0].role == .origin)
+    #expect(fleetStops[1].role == .destination)
+}
+
 @Test func dispatchRoutePreviewBuilderRequiresParseableCoordinates() {
     var draft = DispatchTripDraft()
     draft.stops = [

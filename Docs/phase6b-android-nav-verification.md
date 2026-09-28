@@ -2,7 +2,7 @@
 
 Device QA for fleet-proxy HGV routing, MapLibre map, metric voice TBT, trip handoff, and physics rehearsal. **No driver HeiGIT key.**
 
-Last updated: 2026-09-11
+Last updated: 2026-09-28
 
 ---
 
@@ -12,11 +12,12 @@ Same Wi‑Fi for Mac + Android. Terminal:
 
 ```bash
 export ORS_API_KEY="your-heigit-key"
-cd /Users/admin/Developer/RouteFinder/RouteFinder
-swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY"
+export FLEET_API_KEY="your-shared-secret"
+cd RouteFinder
+swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY" --api-key "$FLEET_API_KEY"
 ```
 
-Confirm `GET http://<mac-ip>:8080/v1/proxy/status` shows `orsConfigured: true`.
+Paste the same `$FLEET_API_KEY` into the Android fleet wizard (and Mac/web desk). Confirm `GET http://<mac-ip>:8080/v1/proxy/status` shows `orsConfigured: true`.
 
 ```bash
 cd /Users/admin/Developer/RouteFinder/android-fleet-driver
@@ -30,7 +31,9 @@ cd /Users/admin/Developer/RouteFinder/android-fleet-driver
 
 1. Accept **Driver Terms** (checkbox required)
 2. Onboarding → Get started
-3. Fleet wizard: Discover / paste URL → Test /health → Scan QR / UUID → Finish
+3. Fleet wizard: Discover / paste URL → Test connection (health + auth) → Scan QR / UUID → Finish
+
+Nav map / home / wizard **Connected** badges require health **+** auth probe (not public `/health` alone when `--api-key` is set). Wrong key → badge title **Auth failed** (not Offline / not Connected).
 
 | Check | Pass? |
 |-------|-------|
@@ -52,6 +55,8 @@ cd /Users/admin/Developer/RouteFinder/android-fleet-driver
 | HGV route via fleet proxy (no Settings API key) | **Exit gate** |
 | Polyline visible | |
 | Metric voice | |
+
+**LEZ corridor story** (Walsall → Solihull / Birmingham CAZ avoid): timed portfolio beat in [`demo-superiority-script.md`](demo-superiority-script.md) **Appendix B** — not on the web desk map. London ULEZ remains area-capped; hauls &gt;140 km omit all `avoid_polygons`.
 
 ---
 

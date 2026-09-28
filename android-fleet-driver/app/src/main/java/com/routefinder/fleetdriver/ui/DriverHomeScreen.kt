@@ -39,6 +39,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.routefinder.fleetdriver.fleet.FleetApi
+import com.routefinder.fleetdriver.fleet.FleetConnectionGate
 import com.routefinder.fleetdriver.fleet.FleetPreferences
 import com.routefinder.fleetdriver.fleet.FleetSseClient
 import com.routefinder.fleetdriver.fleet.FleetTrip
@@ -80,18 +81,41 @@ fun DriverHomeScreen(
 
     suspend fun refreshHealth() {
         try {
-            val health = withContext(Dispatchers.IO) {
-                FleetApi(prefs.baseUrl, prefs.apiKey).health()
+            val api = FleetApi(prefs.baseUrl, prefs.apiKey)
+            val health = withContext(Dispatchers.IO) { api.health() }
+            val healthOk = health.optBoolean("ok")
+            if (!healthOk) {
+                connected = false
+                serverVersion = health.optString("version").takeIf { it.isNotBlank() }
+                lastHealthAt = Instant.now()
+                lastHealthLabel = "just now"
+                status = FleetConnectionGate.statusLabel(healthOk = false, authSucceeded = false)
+                error = null
+                return
             }
-            connected = health.optBoolean("ok")
-            serverVersion = health.optString("version").takeIf { it.isNotBlank() }
-            lastHealthAt = Instant.now()
-            lastHealthLabel = "just now"
-            status = if (connected) "Connected" else "Server reachable but ok=false"
-            error = null
+            try {
+                withContext(Dispatchers.IO) { api.verifyAuthenticatedAccess() }
+                connected = true
+                serverVersion = health.optString("version").takeIf { it.isNotBlank() }
+                lastHealthAt = Instant.now()
+                lastHealthLabel = "just now"
+                status = FleetConnectionGate.statusLabel(healthOk = true, authSucceeded = true)
+                error = null
+            } catch (e: Exception) {
+                connected = false
+                serverVersion = health.optString("version").takeIf { it.isNotBlank() }
+                lastHealthAt = Instant.now()
+                lastHealthLabel = "just now"
+                status = FleetConnectionGate.statusLabel(
+                    healthOk = true,
+                    authSucceeded = false,
+                    authErrorMessage = e.message,
+                )
+                error = e.message
+            }
         } catch (e: Exception) {
             connected = false
-            status = "Offline"
+            status = FleetConnectionGate.statusLabel(healthOk = false, authSucceeded = false)
             lastHealthAt = Instant.now()
             lastHealthLabel = "just now"
             error = e.message
@@ -248,7 +272,7 @@ fun DriverHomeScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Text(if (connected) "Connected" else "Offline")
+                    Text(FleetConnectionGate.badgeTitle(status))
                     Text(prefs.baseUrl, style = MaterialTheme.typography.bodySmall)
                     Text("Vehicle ${prefs.vehicleId}", style = MaterialTheme.typography.bodySmall)
                     serverVersion?.let {
@@ -258,7 +282,6 @@ fun DriverHomeScreen(
                         Text("Last health: $it", style = MaterialTheme.typography.bodySmall)
                     }
                     Text(sseStateLabel, style = MaterialTheme.typography.bodySmall)
-                    Text(status, style = MaterialTheme.typography.bodySmall)
                     lastGpsLabel?.let {
                         Text("Last GPS: $it", style = MaterialTheme.typography.bodySmall)
                     }

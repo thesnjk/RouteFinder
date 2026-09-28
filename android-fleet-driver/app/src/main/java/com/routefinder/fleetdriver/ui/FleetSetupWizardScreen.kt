@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import com.routefinder.fleetdriver.fleet.DiscoveredFleetServer
 import com.routefinder.fleetdriver.fleet.FleetApi
 import com.routefinder.fleetdriver.fleet.FleetBonjourDiscovery
+import com.routefinder.fleetdriver.fleet.FleetConnectionGate
 import com.routefinder.fleetdriver.fleet.FleetPreferences
 import com.routefinder.fleetdriver.fleet.VehicleQRParser
 import kotlinx.coroutines.Dispatchers
@@ -268,8 +269,16 @@ fun FleetSetupWizardScreen(
 
                 WizardStep.Test -> {
                     WizardCard(title = "Confirm connection") {
-                        Text(if (connected) "Connected" else "Not connected yet")
-                        status?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                        Text(
+                            FleetConnectionGate.badgeTitle(
+                                status
+                                    ?: if (connected) {
+                                        "Connected"
+                                    } else {
+                                        "Not connected yet"
+                                    },
+                            ),
+                        )
                         error?.let {
                             Text(it, color = MaterialTheme.colorScheme.error)
                         }
@@ -282,24 +291,52 @@ fun FleetSetupWizardScreen(
                                 scope.launch {
                                     error = null
                                     try {
-                                        val health = withContext(Dispatchers.IO) {
-                                            FleetApi(baseUrl, apiKey).health()
+                                        val api = FleetApi(baseUrl, apiKey)
+                                        val health = withContext(Dispatchers.IO) { api.health() }
+                                        if (!health.optBoolean("ok")) {
+                                            connected = false
+                                            status = FleetConnectionGate.statusLabel(
+                                                healthOk = false,
+                                                authSucceeded = false,
+                                            )
+                                            return@launch
                                         }
-                                        connected = health.optBoolean("ok")
-                                        status = "Health ok=${health.optBoolean("ok")} version=${health.optString("version")}"
+                                        try {
+                                            withContext(Dispatchers.IO) {
+                                                api.verifyAuthenticatedAccess()
+                                            }
+                                            connected = true
+                                            status = FleetConnectionGate.statusLabel(
+                                                healthOk = true,
+                                                authSucceeded = true,
+                                            )
+                                        } catch (e: Exception) {
+                                            connected = false
+                                            status = FleetConnectionGate.statusLabel(
+                                                healthOk = true,
+                                                authSucceeded = false,
+                                                authErrorMessage = e.message,
+                                            )
+                                            error = e.message ?: "Connection failed"
+                                        }
                                     } catch (e: Exception) {
                                         connected = false
+                                        status = FleetConnectionGate.statusLabel(
+                                            healthOk = false,
+                                            authSucceeded = false,
+                                            authErrorMessage = e.message,
+                                        )
                                         error = e.message ?: "Connection failed"
                                     }
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
-                        ) { Text("Test /health") }
+                        ) { Text("Test connection") }
                         Text(
                             if (isHosted) {
-                                "Hosted gateway must respond on /health. Use your org bearer token only."
+                                "Tap Test connection until Connected. Hosted gateway must pass health + auth — use your org bearer token only."
                             } else {
-                                "Same Wi‑Fi as the dispatch Mac. Routing API keys stay on the server when ORS proxy is enabled."
+                                "Tap Test connection until Connected. Same Wi‑Fi as the dispatch Mac; API key must match `--api-key` when set. Wrong key shows Auth failed, not Offline."
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -409,7 +446,7 @@ fun FleetSetupWizardScreen(
                             }
                             WizardStep.Test -> {
                                 if (!connected) {
-                                    error = "Test /health until Connected before continuing."
+                                    error = "Test connection until Connected before continuing."
                                 } else {
                                     step = WizardStep.Vehicle
                                 }
@@ -457,7 +494,7 @@ private fun subtitleFor(step: WizardStep, isHosted: Boolean): String = when (ste
         } else {
             "Use LAN discovery or paste the Mac’s LAN URL."
         }
-    WizardStep.Test -> "Make sure /health responds before pairing a vehicle."
+    WizardStep.Test -> "Tap Test connection until Connected before pairing a vehicle."
     WizardStep.Vehicle -> "Each truck has one UUID from the dispatch console."
     WizardStep.Done -> "Setup complete for this device."
 }

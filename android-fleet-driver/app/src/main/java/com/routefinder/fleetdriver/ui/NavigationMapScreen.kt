@@ -38,6 +38,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.routefinder.fleetdriver.fleet.FleetPreferences
+import com.routefinder.fleetdriver.fleet.FleetConnectionGate
 import com.routefinder.fleetdriver.map.MapLibreMapView
 import com.routefinder.fleetdriver.nav.NavigationPhase
 import com.routefinder.fleetdriver.nav.NavigationViewModel
@@ -138,11 +139,17 @@ fun NavigationMapScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                if (viewModel.connected) "Connected" else "Offline",
+                                FleetConnectionGate.badgeTitle(
+                                    if (viewModel.connected) {
+                                        "Connected"
+                                    } else {
+                                        viewModel.statusLabel
+                                    },
+                                ),
                                 style = MaterialTheme.typography.titleSmall,
                             )
                             Text(
-                                "${viewModel.sseLabel} · ${viewModel.statusLabel}",
+                                viewModel.sseLabel,
                                 style = MaterialTheme.typography.bodySmall,
                             )
                             if (!viewModel.orsConfigured) {

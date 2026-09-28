@@ -3,12 +3,14 @@ import CoreLocation
 import MapLibreUI
 import SwiftUI
 
-/// Lightweight map showing dispatched stop pins and route preview polyline.
+/// Lightweight map showing dispatched stop pins, yard GPS pins, and route preview polyline.
 struct DispatchMapDetailView: View {
     let trip: FleetTrip?
     let draft: DispatchTripDraft
     let previewCoordinates: [CLLocationCoordinate2D]
     let isPreviewLoading: Bool
+    var fleetPins: [DispatchRosterPin] = []
+    var selectedVehicleId: UUID?
 
     @StateObject private var mapBridge = MapViewControllerBridge()
 
@@ -33,8 +35,22 @@ struct DispatchMapDetailView: View {
                     .background(.ultraThinMaterial, in: Capsule())
                     .padding(RFSpacing.md)
             }
+
+            if showsEmptyCaption {
+                Text("No trip preview — set stops or wait for cab GPS")
+                    .font(RFFont.caption.weight(.semibold))
+                    .padding(.horizontal, RFSpacing.md)
+                    .padding(.vertical, RFSpacing.sm)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                    .padding(RFSpacing.md)
+            }
         }
         .padding(RFSpacing.md)
+    }
+
+    private var showsEmptyCaption: Bool {
+        displayStops.isEmpty && fleetPins.isEmpty && previewCoordinates.isEmpty
     }
 
     private var displayStops: [(label: String, lat: Double, lon: Double, role: FleetTripStop.Role)] {
@@ -59,7 +75,7 @@ struct DispatchMapDetailView: View {
     }
 
     private var mapPins: [RoutePin] {
-        displayStops.enumerated().map { index, stop in
+        var pins = displayStops.enumerated().map { index, stop in
             let kind: RoutePin.PinKind = switch stop.role {
             case .origin: .start
             case .destination: .end
@@ -72,6 +88,17 @@ struct DispatchMapDetailView: View {
                 title: stop.label
             )
         }
+        for pin in fleetPins where pin.vehicleId != selectedVehicleId {
+            pins.append(
+                RoutePin(
+                    id: "fleet-\(pin.vehicleId.uuidString)",
+                    coordinate: CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude),
+                    kind: .waypoint,
+                    title: pin.label
+                )
+            )
+        }
+        return pins
     }
 
     private var driverVehicleState: SimulatedVehicleState? {
@@ -95,11 +122,15 @@ struct DispatchMapDetailView: View {
            let longitude = trip.driverLongitude {
             coords.append(CLLocationCoordinate2D(latitude: latitude, longitude: longitude))
         }
+        for pin in fleetPins {
+            coords.append(CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude))
+        }
         guard coords.first != nil else {
+            // Norfolk depot (demo corridor) — regional UK zoom, not empty Europe.
             return MapRegion(
-                center: CLLocationCoordinate2D(latitude: MapDefaults.ukCenter.latitude, longitude: MapDefaults.ukCenter.longitude),
-                latitudeDelta: 6,
-                longitudeDelta: 6
+                center: CLLocationCoordinate2D(latitude: 52.6309, longitude: 1.2974),
+                latitudeDelta: 1.8,
+                longitudeDelta: 1.8
             )
         }
         let lats = coords.map(\.latitude)

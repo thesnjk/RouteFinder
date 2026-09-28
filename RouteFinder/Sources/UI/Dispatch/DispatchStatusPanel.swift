@@ -3,23 +3,32 @@ import CoreLocation
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Dispatch detail: trip status, physics ETA, telemetry, predicted layby.
+/// Dispatch detail: fleet roster, trip status, physics ETA, telemetry, predicted layby.
 struct DispatchStatusPanel: View {
     let trip: FleetTrip?
     let vehicleLabel: String?
     let previewCoordinates: [CLLocationCoordinate2D]
     var telematicsImportBatch: TelematicsImportBatch? = nil
+    var rosterRows: [DispatchRosterRow] = []
+    var selectedVehicleId: UUID?
+    var onSelectVehicle: ((UUID) -> Void)?
 
     init(
         trip: FleetTrip?,
         vehicleLabel: String? = nil,
         previewCoordinates: [CLLocationCoordinate2D] = [],
-        telematicsImportBatch: TelematicsImportBatch? = nil
+        telematicsImportBatch: TelematicsImportBatch? = nil,
+        rosterRows: [DispatchRosterRow] = [],
+        selectedVehicleId: UUID? = nil,
+        onSelectVehicle: ((UUID) -> Void)? = nil
     ) {
         self.trip = trip
         self.vehicleLabel = vehicleLabel
         self.previewCoordinates = previewCoordinates
         self.telematicsImportBatch = telematicsImportBatch
+        self.rosterRows = rosterRows
+        self.selectedVehicleId = selectedVehicleId
+        self.onSelectVehicle = onSelectVehicle
     }
 
     private func tripBriefContext(for trip: FleetTrip) -> TripBriefContext {
@@ -39,6 +48,7 @@ struct DispatchStatusPanel: View {
                 if let batch = telematicsImportBatch {
                     telematicsImportCard(batch)
                 }
+                fleetRosterSection
                 if let trip {
                     statusHeader(trip)
                     stopList(trip)
@@ -47,6 +57,8 @@ struct DispatchStatusPanel: View {
                     }
                     if trip.driverLatitude != nil, trip.driverLongitude != nil {
                         lastPositionRow(trip)
+                    } else {
+                        waitingForGpsRow
                     }
                     if let report = trip.predictiveReport {
                         PredictiveTelemetryReportView(
@@ -69,6 +81,73 @@ struct DispatchStatusPanel: View {
             }
             .padding(RFSpacing.lg)
         }
+    }
+
+    private var waitingForGpsRow: some View {
+        Text("Waiting for cab GPS…")
+            .font(RFFont.caption)
+            .foregroundStyle(.secondary)
+            .controlSheetStyle()
+    }
+
+    @ViewBuilder
+    private var fleetRosterSection: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.sm) {
+            Text("Fleet roster")
+                .font(RFFont.sectionTitle)
+            if rosterRows.isEmpty {
+                Text("No vehicles — bootstrap demo fleet or register cabs.")
+                    .font(RFFont.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("Polling \(rosterRows.count) vehicle\(rosterRows.count == 1 ? "" : "s") (active-trip snapshots, not live VU)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                ForEach(rosterRows) { row in
+                    Button {
+                        onSelectVehicle?(row.vehicleId)
+                    } label: {
+                        HStack(alignment: .firstTextBaseline, spacing: RFSpacing.sm) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(row.label)
+                                    .font(RFFont.caption.weight(.semibold))
+                                if let plate = row.plate, !plate.isEmpty {
+                                    Text(plate)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            Spacer(minLength: 4)
+                            Text(DispatchFleetRoster.statusLabel(for: row))
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                            Text(DispatchFleetRoster.formatPhysicsEta(seconds: row.trip?.physicsETASeconds))
+                                .font(.caption2.monospacedDigit())
+                                .frame(minWidth: 44, alignment: .trailing)
+                            Text(DispatchFleetRoster.formatGpsAge(row.gpsAgeSeconds))
+                                .font(.caption2.monospacedDigit())
+                                .frame(minWidth: 28, alignment: .trailing)
+                            if row.hasDefects {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.caption2)
+                                    .foregroundStyle(.orange)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 8)
+                        .background(
+                            row.vehicleId == selectedVehicleId
+                                ? Color.accentColor.opacity(0.12)
+                                : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .glassPanel(cornerRadius: 14)
+        .padding(RFSpacing.sm)
     }
 
     private func statusHeader(_ trip: FleetTrip) -> some View {

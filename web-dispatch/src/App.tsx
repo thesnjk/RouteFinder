@@ -17,8 +17,18 @@ import {
   shouldAnnounceInspection,
 } from './inspectionSummary'
 import { fleetProxyUserMessage } from './fleetProxyError'
+import { fleetHealthLabel } from './fleetHealthLabel'
 import { TripMapPreview } from './TripMapPreview'
 import { VehicleQR } from './VehicleQR'
+import { filterVehicles } from './vehicleFilter'
+import {
+  ROSTER_VEHICLE_CAP,
+  buildRosterRows,
+  formatGpsAge,
+  formatPhysicsEta,
+  rosterDriverPins,
+  type FleetVehicleStatus,
+} from './fleetRoster'
 
 const STORAGE_KEY = 'routefinder.webDispatch.connection'
 const ONBOARDING_KEY = 'routefinder.webDispatch.onboardingDone'
@@ -51,6 +61,7 @@ export default function App() {
   const [vehicles, setVehicles] = useState<FleetVehicle[]>([])
   const [orgId, setOrgId] = useState('')
   const [vehicleId, setVehicleId] = useState('')
+  const [vehicleFilterQuery, setVehicleFilterQuery] = useState('')
   const [newOrgName, setNewOrgName] = useState('Pilot fleet')
   const [newVehicleLabel, setNewVehicleLabel] = useState('Unit 1')
   const [originStop, setOriginStop] = useState<GeocodedStop | null>(null)
@@ -63,6 +74,8 @@ export default function App() {
   const [destLatest, setDestLatest] = useState('')
   const [lastTrip, setLastTrip] = useState<FleetTrip | null>(null)
   const [liveTrip, setLiveTrip] = useState<FleetTrip | null>(null)
+  const [rosterRows, setRosterRows] = useState<FleetVehicleStatus[]>([])
+  const [rosterError, setRosterError] = useState<string | null>(null)
   const [inspectionToast, setInspectionToast] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -101,17 +114,43 @@ export default function App() {
     persist()
     try {
       const h = await client.health()
-      setHealthOk(Boolean(h.ok))
-      setHealth(h.ok ? `Connected · version ${h.version}` : 'Offline · health not ok')
+      if (!h.ok) {
+        setHealthOk(false)
+        setHealth(fleetHealthLabel({ healthOk: false, authSucceeded: false }))
+        setProxyStatus(null)
+        return
+      }
+      try {
+        setProxyStatus(await client.proxyStatus())
+        setHealthOk(true)
+        setHealth(
+          fleetHealthLabel({
+            healthOk: true,
+            authSucceeded: true,
+            version: h.version,
+          }),
+        )
+      } catch (err) {
+        setProxyStatus(null)
+        setHealthOk(false)
+        const message = err instanceof Error ? err.message : String(err)
+        setHealth(
+          fleetHealthLabel({
+            healthOk: true,
+            authSucceeded: false,
+            errorMessage: message,
+          }),
+        )
+      }
     } catch (err) {
       setHealthOk(false)
-      setHealth(`Offline · ${err instanceof Error ? err.message : String(err)}`)
-      setProxyStatus(null)
-      return
-    }
-    try {
-      setProxyStatus(await client.proxyStatus())
-    } catch {
+      setHealth(
+        fleetHealthLabel({
+          healthOk: false,
+          authSucceeded: false,
+          errorMessage: err instanceof Error ? err.message : String(err),
+        }),
+      )
       setProxyStatus(null)
     }
   }, [client, persist])
@@ -162,6 +201,65 @@ export default function App() {
   }, [client, vehicleId])
 
   const selectedVehicle = vehicles.find((v) => v.id === vehicleId)
+  const filteredVehicles = useMemo(
+    () => filterVehicles(vehicles, vehicleFilterQuery),
+    [vehicles, vehicleFilterQuery],
+  )
+  const rosterVehicles = useMemo(
+    () => filteredVehicles.slice(0, ROSTER_VEHICLE_CAP),
+    [filteredVehicles],
+  )
+
+  useEffect(() => {
+    if (!healthOk || rosterVehicles.length === 0) {
+      setRosterRows([])
+      setRosterError(null)
+      return
+    }
+    let cancelled = false
+    const tick = async () => {
+      const results = await Promise.all(
+        rosterVehicles.map(async (v) => {
+          try {
+            const trip = await client.activeTrip(v.id)
+            return { id: v.id, trip, ok: true as const }
+          } catch (err) {
+            return {
+              id: v.id,
+              trip: null as FleetTrip | null,
+              ok: false as const,
+              message: err instanceof Error ? err.message : String(err),
+            }
+          }
+        }),
+      )
+      if (cancelled) return
+      const tripByVehicleId: Record<string, FleetTrip | null> = {}
+      let failCount = 0
+      let lastFailMessage = ''
+      for (const r of results) {
+        tripByVehicleId[r.id] = r.trip
+        if (!r.ok) {
+          failCount += 1
+          lastFailMessage = r.message
+        }
+      }
+      setRosterRows(buildRosterRows(rosterVehicles, tripByVehicleId, Date.now()))
+      if (failCount === results.length && results.length > 0) {
+        setRosterError(lastFailMessage || 'Fleet roster poll failed')
+        setError(lastFailMessage || 'Fleet roster poll failed')
+      } else {
+        setRosterError(failCount > 0 ? `${failCount} vehicle(s) failed to refresh` : null)
+      }
+    }
+    void tick()
+    const id = window.setInterval(() => void tick(), 8000)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [client, healthOk, rosterVehicles])
+
   const snapshotTrip = liveTrip ?? lastTrip
 
   const finishOnboarding = () => {
@@ -363,14 +461,33 @@ export default function App() {
           </button>
         </div>
         <label>
+          Filter vehicles
+          <input
+            type="search"
+            value={vehicleFilterQuery}
+            onChange={(e) => setVehicleFilterQuery(e.target.value)}
+            placeholder="Label or plate…"
+            disabled={busy || vehicles.length === 0}
+            autoComplete="off"
+          />
+        </label>
+        <label>
           Vehicle
           <select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}>
             <option value="">Select…</option>
-            {vehicles.map((v) => (
+            {filteredVehicles.map((v) => (
               <option key={v.id} value={v.id}>
-                {v.label} ({v.id.slice(0, 8)})
+                {v.label}
+                {v.registrationPlate ? ` · ${v.registrationPlate}` : ''} ({v.id.slice(0, 8)})
               </option>
             ))}
+            {vehicleId &&
+            selectedVehicle &&
+            !filteredVehicles.some((v) => v.id === vehicleId) ? (
+              <option value={vehicleId}>
+                {selectedVehicle.label} (filtered out — clear filter to browse)
+              </option>
+            ) : null}
           </select>
         </label>
         {vehicleId && selectedVehicle ? (
@@ -511,6 +628,63 @@ export default function App() {
       </section>
 
       <section className="panel">
+        <h2>Fleet roster</h2>
+        {rosterVehicles.length === 0 ? (
+          <p className="muted">Register vehicles to see live status across the fleet.</p>
+        ) : (
+          <>
+            <p className="muted">
+              Polling {rosterRows.length || rosterVehicles.length} vehicle
+              {(rosterRows.length || rosterVehicles.length) === 1 ? '' : 's'}
+              {filteredVehicles.length > ROSTER_VEHICLE_CAP
+                ? ` (capped at ${ROSTER_VEHICLE_CAP})`
+                : ''}
+              . Click a row to select.
+            </p>
+            {rosterError ? <p className="muted roster-warn">{rosterError}</p> : null}
+            <div className="roster-wrap">
+              <table className="roster">
+                <thead>
+                  <tr>
+                    <th>Vehicle</th>
+                    <th>Status</th>
+                    <th>ETA</th>
+                    <th>GPS</th>
+                    <th>Defects</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(rosterRows.length > 0
+                    ? rosterRows
+                    : buildRosterRows(rosterVehicles, {}, Date.now())
+                  ).map((row) => (
+                    <tr
+                      key={row.vehicleId}
+                      className={
+                        row.vehicleId === vehicleId ? 'roster__row roster__row--active' : 'roster__row'
+                      }
+                      onClick={() => setVehicleId(row.vehicleId)}
+                    >
+                      <td>
+                        {row.label}
+                        {row.plate ? (
+                          <span className="muted"> · {row.plate}</span>
+                        ) : null}
+                      </td>
+                      <td>{row.trip?.status ?? 'idle'}</td>
+                      <td>{formatPhysicsEta(row.trip?.physicsETASeconds)}</td>
+                      <td>{formatGpsAge(row.gpsAgeSeconds)}</td>
+                      <td>{row.hasDefects ? 'Yes' : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </section>
+
+      <section className="panel">
         <h2>Driver snapshot</h2>
         {inspectionToast ? (
           <p className="inspection-toast" role="status">
@@ -581,7 +755,18 @@ export default function App() {
         ) : (
           <p className="muted">No active trip yet. Push a trip, then wait for the driver phone.</p>
         )}
-        <TripMapPreview trip={snapshotTrip} />
+        <TripMapPreview
+          trip={snapshotTrip}
+          client={healthOk ? client : null}
+          vehicleProfile={
+            snapshotTrip?.jobBrief?.grossWeightKg != null
+              ? { weightTonnes: snapshotTrip.jobBrief.grossWeightKg / 1000 }
+              : null
+          }
+          onRoutePreviewError={(msg) => setError(msg)}
+          fleetPins={rosterDriverPins(rosterRows)}
+          selectedVehicleId={vehicleId || null}
+        />
       </section>
 
       {error ? <p className="error">{error}</p> : null}

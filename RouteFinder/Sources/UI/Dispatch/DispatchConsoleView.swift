@@ -69,6 +69,14 @@ public struct DispatchConsoleView: View {
                 }
             }
             ToolbarItem(placement: .automatic) {
+                Button {
+                    viewModel.copyShareableLANFleetURL()
+                } label: {
+                    Label("Copy LAN URL", systemImage: "network")
+                }
+                .accessibilityIdentifier("dispatchCopyLANURL")
+            }
+            ToolbarItem(placement: .automatic) {
                 fleetHealthPill
             }
         }

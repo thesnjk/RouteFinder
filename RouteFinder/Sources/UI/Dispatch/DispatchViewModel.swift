@@ -4,8 +4,12 @@ import DataLayer
 import Foundation
 import RouteController
 
-#if os(macOS) || os(iOS)
+#if os(macOS)
+import AppKit
 import MapKit
+#elseif os(iOS)
+import MapKit
+import UIKit
 #endif
 
 /// View model for the native fleet dispatch console (local disk store).
@@ -473,6 +477,26 @@ public final class DispatchViewModel {
             statusMessage = message
             showToast(message)
         }
+    }
+
+    /// Copies the shareable LAN fleet URL for Office PC / driver paste (not `127.0.0.1`).
+    public func copyShareableLANFleetURL() {
+        let url = DeskLANAddress.shareableFleetServerURL()
+        copyToPasteboard(url)
+        if DeskLANAddress.primaryIPv4() != nil {
+            showToast("Copied LAN fleet URL")
+        } else {
+            showToast("Copied URL template")
+        }
+    }
+
+    private func copyToPasteboard(_ string: String) {
+        #if os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(string, forType: .string)
+        #elseif os(iOS)
+        UIPasteboard.general.string = string
+        #endif
     }
 
     private func prefillFleetAPIKeyDraftIfNeeded(loadedKey: String?) {

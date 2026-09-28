@@ -651,4 +651,18 @@ const proxyOver = {
 assert.equal(routesRemaining(proxyOver), 0)
 assert.equal(geocodesRemaining(proxyOver), 0)
 
+/** Mirrors web-dispatch/src/demoCorridor.ts — must match Mac norfolkDemoCorridor(). */
+const NORWICH = { label: 'Norwich', latitude: 52.6309, longitude: 1.2974 }
+const KINGS_LYNN = { label: "King's Lynn", latitude: 52.7519, longitude: 0.3955 }
+function loadNorfolkDemoStops() {
+  return { origin: { ...NORWICH }, destination: { ...KINGS_LYNN } }
+}
+const norfolk = loadNorfolkDemoStops()
+assert.equal(norfolk.origin.latitude, 52.6309)
+assert.equal(norfolk.origin.longitude, 1.2974)
+assert.equal(norfolk.destination.latitude, 52.7519)
+assert.equal(norfolk.destination.longitude, 0.3955)
+assert.equal(norfolk.origin.label, 'Norwich')
+assert.equal(norfolk.destination.label, "King's Lynn")
+
 console.log('fleet types smoke ok')

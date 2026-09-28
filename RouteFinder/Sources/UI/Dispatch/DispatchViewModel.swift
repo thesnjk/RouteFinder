@@ -24,7 +24,7 @@ public final class DispatchViewModel {
     public var vehicleFilterQuery: String = ""
     /// All / Hide offline / Defects only — applied after text filter using roster GPS/defects.
     public var vehiclePickerMode: DispatchRosterPickerMode = .all
-    public var draft = DispatchTripDraft.ukDemoTemplate()
+    public var draft = DispatchTripDraft.norfolkDemoCorridor()
     public private(set) var activeTrip: FleetTrip?
     /// Fleet roster rows (capped) from last roster poll (text-filtered; mode applied in `displayedRosterRows`).
     public private(set) var rosterRows: [DispatchRosterRow] = []

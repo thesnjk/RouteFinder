@@ -19,6 +19,7 @@ import {
   type HgvPreviewProfile,
   type LngLat,
 } from '../orsRoutePreview'
+import { KINGS_LYNN, NORWICH } from '../demoCorridor'
 
 export { parseOrsGeoJsonCoordinates, buildOrsHgvDirectionsBody }
 export type { HgvPreviewProfile, LngLat }
@@ -211,8 +212,8 @@ export class FleetApiClient {
     return this.buildTripFromStops(
       orgId,
       vehicleId,
-      { label: originLabel, latitude: 52.6309, longitude: 1.2974 },
-      { label: destLabel, latitude: 52.7519, longitude: 0.3955 },
+      { label: originLabel, latitude: NORWICH.latitude, longitude: NORWICH.longitude },
+      { label: destLabel, latitude: KINGS_LYNN.latitude, longitude: KINGS_LYNN.longitude },
     )
   }
 }

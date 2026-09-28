@@ -154,15 +154,21 @@ struct DispatchTripFormView: View {
                 stopRow(index: index)
             }
             HStack(spacing: RFSpacing.sm) {
-                presetButton("Felixstowe", label: "Felixstowe Port", lat: "51.9542", lon: "1.3511", index: 0)
-                presetButton("Midlands", label: "Midlands Hub", lat: "52.4862", lon: "-1.8904", index: 1)
-                presetButton("Manchester", label: "Manchester Depot", lat: "53.4808", lon: "-2.2426", index: 2)
+                presetButton("Norwich", label: "Norwich", lat: "52.6309", lon: "1.2974", index: 0)
+                presetButton("King's Lynn", label: "King's Lynn", lat: "52.7519", lon: "0.3955", index: 1)
             }
-            Button("Load UK demo template") {
+            Button("Load Norwich → King's Lynn") {
+                viewModel.draft = DispatchTripDraft.norfolkDemoCorridor()
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            .accessibilityIdentifier("dispatchLoadNorfolkCorridor")
+            Button("Load UK long-haul template") {
                 viewModel.draft = DispatchTripDraft.ukDemoTemplate()
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
+            .accessibilityIdentifier("dispatchLoadLongHaulTemplate")
         }
         .glassPanel(cornerRadius: 14)
         .padding(RFSpacing.sm)

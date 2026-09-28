@@ -36,4 +36,48 @@ struct FleetServerHealthLabelTests {
         #expect(FleetServerHealthLabel.isAuthFailure(error))
         #expect(!FleetServerHealthLabel.isAuthFailure(HTTPFleetStoreError.invalidResponse))
     }
+
+    @Test func wizardAuthFailedStatusBlocksAdvanceAndIsNotOffline() {
+        let authFailed = FleetServerHealthLabel.status(
+            healthOk: true,
+            authSucceeded: false,
+            authErrorMessage: "Fleet API key rejected. Check the shared key with the operator."
+        )
+        #expect(authFailed.hasPrefix("Auth failed"))
+        #expect(!authFailed.contains("Offline"))
+        #expect(
+            !FleetSetupWizardAdvancePolicy.canAdvance(
+                step: .test,
+                connectionStatus: authFailed,
+                urlText: "http://127.0.0.1:8080",
+                isHosted: false,
+                vehicleIdText: ""
+            )
+        )
+        let connected = FleetServerHealthLabel.status(
+            healthOk: true,
+            authSucceeded: true,
+            version: "1"
+        )
+        #expect(
+            FleetSetupWizardAdvancePolicy.canAdvance(
+                step: .test,
+                connectionStatus: connected,
+                urlText: "http://127.0.0.1:8080",
+                isHosted: false,
+                vehicleIdText: ""
+            )
+        )
+        let offline = FleetServerHealthLabel.status(healthOk: false, authSucceeded: false)
+        #expect(offline == "Offline")
+        #expect(
+            !FleetSetupWizardAdvancePolicy.canAdvance(
+                step: .test,
+                connectionStatus: offline,
+                urlText: "http://127.0.0.1:8080",
+                isHosted: false,
+                vehicleIdText: ""
+            )
+        )
+    }
 }

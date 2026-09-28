@@ -2,7 +2,7 @@
 
 Simulator-first gate after code ship on `main`. CI UI tests are the official P0 Pass — physical iPhone is optional once before the first pilot email.
 
-Last updated: 2026-09-17
+Last updated: 2026-09-27
 
 ---
 
@@ -35,13 +35,14 @@ That is **P0 Pass**. No code action required from you for Block 1.
 
 Mac + iPhone on same Wi‑Fi. Full steps: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B.
 
-1. Mac: `cd RouteFinder && swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY"`
-2. Mac: Dispatch Console → org + vehicle → show **QR** / copy vehicle UUID
-3. iPhone: Settings → Fleet & Dispatch → **Fleet setup wizard** (or Discover → Test → Scan QR / paste UUID)
-4. Enable **HGV mode** before routing
-5. Mac: Push trip → iPhone toast ~5 s → Find route → Rehearse
-6. iPhone: Walkaround ≥1 defect → Save
-7. Mac: Defect card + PDF + optional snapshot pin on dispatch console
+1. Mac: `cd RouteFinder && swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY" --api-key "$FLEET_API_KEY"`
+2. Paste the same `$FLEET_API_KEY` into Mac Settings (fleet API key), web Bearer (if used), and the driver fleet wizard
+3. Mac: Dispatch Console → org + vehicle → show **QR** / copy vehicle UUID
+4. iPhone: Settings → Fleet & Dispatch → **Fleet setup wizard** (or Discover → Test → Scan QR / paste UUID)
+5. Enable **HGV mode** before routing
+6. Mac: Push trip → iPhone toast ~5 s → Find route → Rehearse
+7. iPhone: Walkaround ≥1 defect → Save
+8. Mac: Defect card + PDF + optional snapshot pin on dispatch console
 
 ---
 
@@ -74,12 +75,15 @@ Verification checklist: [`phase9-legal-gtm-verification.md`](phase9-legal-gtm-ve
 ## Demo stack (local)
 
 ```bash
-# Terminal A — fleet server (operator-paid ORS when key set)
-cd /Users/admin/Developer/RouteFinder/RouteFinder
-swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY"
+# Terminal A — fleet server (operator-paid ORS + pilot shared secret)
+export ORS_API_KEY="your-heigit-key"
+export FLEET_API_KEY="your-shared-secret"
+cd RouteFinder
+swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY" --api-key "$FLEET_API_KEY"
+# Paste the same $FLEET_API_KEY into Mac Settings / web Bearer / driver wizard
 
 # Terminal B — web dispatch
-cd /Users/admin/Developer/RouteFinder/web-dispatch
+cd web-dispatch
 npm run dev
 # open http://127.0.0.1:5173
 ```

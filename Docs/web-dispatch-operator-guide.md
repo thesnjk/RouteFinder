@@ -143,7 +143,7 @@ Security notes: [`fleet-e2e-qa.md`](fleet-e2e-qa.md).
 |---------|-----|
 | Failed to fetch | Wrong base URL; use `/fleet` in Vite, or `http://<mac-ip>:8080` with CORS |
 | Health pill red / **Auth failed** | Fleet API key mismatch — same key as server `--api-key` |
-| Health pill red / Offline | Fleet server not running; port in use — see `lsof -nP -iTCP:8080 -sTCP:LISTEN` |
+| Health pill red / Offline | Fleet server not running, LAN down, or non-auth proxy probe failure — see `lsof -nP -iTCP:8080 -sTCP:LISTEN` (never shows “Connected health · …”) |
 | Geocode search errors | Restart server with `--ors-key`; check geocode counts in Connection panel (`/v1/proxy/status`). At daily cap the UI shows *Fleet geocode daily cap reached…* (`fleetProxyUserMessage`) — raise the proxy budget or wait until tomorrow; see [`unit-economics.md`](unit-economics.md) |
 | Map stays straight-line / corridor error banner | Preview uses `POST …/directions/driving-hgv/geojson`. At daily route cap the desk shows the same ORS daily-cap copy (`onRoutePreviewError`); map keeps straight-line fallback — check `/v1/proxy/status` route counts |
 | Trip never arrives | Wrong vehicle UUID; re-scan QR; confirm remote fleet sync on the phone |

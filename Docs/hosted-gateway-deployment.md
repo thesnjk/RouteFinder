@@ -31,6 +31,7 @@ git clone <your-repo> RouteFinder
 cd RouteFinder/hosted-gateway
 cp config/orgs.example.json config/orgs.json
 # Edit bearerToken to long random secrets; keep org ids stable once devices are paired
+# Multi-depot: add one JSON object per depot (see Multi-depot recipe below)
 npm ci
 ```
 
@@ -40,6 +41,30 @@ Generate tokens (example):
 openssl rand -hex 32
 ```
 
+### Multi-depot recipe (config only — no SaaS portal)
+
+Two depots on one VPS = two orgs in `config/orgs.json`, each with its own bearer token and fair-use caps. Desk and cab phones for Depot A use token A; Depot B uses token B.
+
+```json
+[
+  {
+    "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "name": "Depot A — Norwich",
+    "bearerToken": "replace-with-depot-a-secret",
+    "routeDailyCap": 2000,
+    "geocodeDailyCap": 2000
+  },
+  {
+    "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "name": "Depot B — King's Lynn",
+    "bearerToken": "replace-with-depot-b-secret",
+    "routeDailyCap": 2000,
+    "geocodeDailyCap": 2000
+  }
+]
+```
+
+`config/orgs.example.json` in the package is a single-org starter; copy and extend as above for multi-depot.
 Environment (systemd or shell):
 
 ```bash
@@ -70,6 +95,19 @@ fleet.yourdomain.com {
 Point DNS A/AAAA at the VPS. Clients use `https://fleet.yourdomain.com` (no path prefix).
 
 nginx equivalent: `proxy_pass http://127.0.0.1:8787;` with Let’s Encrypt certs.
+
+## Fair-use / HTTP 429
+
+Each org in `config/orgs.json` has **route** and **geocode** daily caps (`routeDailyCap` / `geocodeDailyCap`, typically 2000). When a cap is hit, proxy calls return **HTTP 429**. Desk and drivers already show actionable copy (`fleetProxyUserMessage` / Android `FleetProxyErrorMapper` / iOS `RouteFailureMapper`) — not a silent failure.
+
+Check usage:
+
+```bash
+curl -s -H "Authorization: Bearer YOUR_ORG_TOKEN" \
+  https://fleet.yourdomain.com/v1/proxy/status
+```
+
+Raise caps in `orgs.json` (or LAN `--route-daily-cap` / `--geocode-daily-cap`) and restart, or wait until the UTC day rolls. Budget guidance: [`unit-economics.md`](unit-economics.md).
 
 ## Smoke test
 

@@ -18,9 +18,9 @@ Built as a Swift 6 Swift Package with SwiftUI, MapLibre (WKWebView), and HeiGIT 
 - **Constraint routing** — length / width / height / weight / axle / hazmat / ADR tunnel codes via OpenRouteService
 - **Physics rehearsal** — pre-trip kinetic risk (grade, brake fade, slip) with a shareable trip brief (plain text or PDF with route map when geometry is available)
 - **Hours of service (advisory)** — EU Regulation 561 / Working Time Directive clock, rest insertion suggestions, driver-card JSON/DDD import, “Can I drive now?”
-- **CarPlay** — turn-by-turn templates with voice coexistence hooks (iOS)
+- **Cab phone driver app** — iOS gold standard + Android C2; depot-issued handset in the cab (CarPlay / Android Auto not required for pilots or growth)
 - **UK living layer** — plate → vehicle profile (RegCheck + DVLA), truck POIs (fuel / parking / weigh / layby), LEZ / CAZ banners **and avoid-on-route** using simplified authored zone rings for non-compliant emission classes (Settings toggle; envelopes are approximate, not legal cadastral), on-device layby occupancy taps with age-weighted priors and last-seen banner copy (Looks full / Has spaces)
-- **Fleet MVP** — native Mac/iPad dispatch console + disk-backed org → trip → physics ETA; optional **LAN sync** via `RouteFinderFleetServer`; browser desk for Windows/Linux office PCs in [`web-dispatch/`](web-dispatch/README.md) (not a multi-tenant SaaS portal — see [`Docs/getting-started.md`](Docs/getting-started.md))
+- **Fleet MVP** — native Mac/iPad dispatch console + disk-backed org → trip → physics ETA; optional **LAN sync** via `RouteFinderFleetServer`; browser desk for Windows/Linux office PCs in [`web-dispatch/`](web-dispatch/README.md); Mac and web show a **fleet roster** and **yard GPS pins** (active-trip snapshots, not live VU) — not a multi-tenant SaaS portal — see [`Docs/getting-started.md`](Docs/getting-started.md)
 - **Offline routing & maps** — H3 graph tiles + hybrid ORS/offline policy; optional local MapLibre map pack via on-device HTTP
 - **Live traffic reroute** — TomTom flow sampling can trigger an ORS `avoid_polygons` recalculation
 - **Walkaround checks** — local DVSA-style inspection checklist

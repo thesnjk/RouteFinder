@@ -82,9 +82,14 @@ flowchart LR
     FleetServer -->|SSE_REST| AndroidDriver
     FleetServer -->|ORS_Pelias_proxy| iOSDriver
     FleetServer -->|ORS_Pelias_proxy| AndroidDriver
+    FleetServer -->|ORS_Pelias_proxy| WebDispatch
     iOSDriver -->|snapshot_GPS_inspection| FleetServer
     AndroidDriver -->|snapshot_GPS_inspection| FleetServer
 ```
+
+Web dispatch and Mac Dispatch both poll each vehicle’s `active-trip` (cap 20) for a **Fleet roster** (status / physics ETA / GPS age / defects) and draw **yard GPS pins** on the desk map — snapshot GPS from cab phones, not live VU. Mac Dispatch also filters the trip form vehicle picker to roster rows (hide offline / show defects-only) so desk throughput stays usable at 5–15 trucks.
+
+Web dispatch uses the same operator-paid ORS/Pelias proxy for UK geocode and HGV corridor map preview (straight-line fallback if the preview call fails).
 
 Future extractions: further thinning of settings / offline map orchestration only if `RouteViewModel` remains a merge hotspot.
 

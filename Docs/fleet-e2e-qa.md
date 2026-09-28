@@ -44,26 +44,26 @@ Exit code `0` = all targeted tests passed.
 
 - Dispatch Mac and driver iPhone on the **same Wi‑Fi or LAN**
 - RouteFinder built for macOS and iOS (Xcode or `swift run`)
-- Optional: HeiGIT ORS API key in Settings for live HGV route find
-- Optional: `--api-key` on the fleet server when testing shared-secret auth
+- Operator HeiGIT ORS key on the **server** (`--ors-key`) for live HGV route find without a driver HeiGIT key
+- **Recommended for pilots:** `--api-key` on the fleet server; paste the same secret into Settings **Fleet API key** / web Bearer / wizard
 
 ### Step-by-step
 
 | Step | Dispatch Mac | Driver iPhone |
 |---|---|---|
-| 1 | Start fleet server: `cd RouteFinder && swift run RouteFinderFleetServer --port 8080` | — |
-| 2 | Open RouteFinderMac → **Dispatch Console** → create org + register vehicle; note the **vehicle UUID** | — |
+| 1 | Start fleet server: `cd RouteFinder && swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY" --api-key "$FLEET_API_KEY"` | — |
+| 2 | Open RouteFinderMac → **Dispatch Console** → create org + register vehicle; note the **vehicle UUID**. Paste `$FLEET_API_KEY` into Settings if prompted. | — |
 | 3 | — | **Settings → Fleet dispatch → Discover fleet servers on LAN** |
-| 4 | — | Select the Mac entry (or enter `http://<dispatch-mac-ip>:8080` manually). Tap **Test fleet connection**. Paste **Fleet vehicle UUID** → **Save vehicle id**. Enable remote fleet server if prompted. |
+| 4 | — | Select the Mac entry (or enter `http://<dispatch-mac-ip>:8080` manually). Tap **Test fleet connection**. Enter the same **Fleet API key** as `--api-key`. Paste **Fleet vehicle UUID** → **Save vehicle id**. Enable remote fleet server if prompted. |
 | 5 | Push a 2–3 stop trip from Dispatch Console | Trip toast/banner within **~5 s** via SSE (`GET /v1/vehicles/{id}/events`); fallback poll every 30 s if SSE drops |
-| 6 | — | Accept dispatch → **Find route** → **Rehearse Route** |
+| 6 | — | Toast **New dispatch received — loading route…** → stops apply → auto **Find route** (zero-tap intake). Then **Rehearse Route** if desired. Do **not** tap Settings **Load offline demo job** while paired — that seeds a local job and breaks the vehicle UUID. |
 | 7 | — | Open trip brief share menu → verify plain text **and** PDF include stops, physics ETA, layby/HOS blocks where applicable |
 | 8 | Dispatch console shows updated trip status / physics ETA snapshot from driver publish | — |
 | 9 | Dispatch console shows **Walkaround defects** card with defect count; tap **PDF** share when driver saved inspection with defects (remote fleet enabled) | Complete zoned walkaround with ≥1 defect → **Save** on driver device |
 
 **After run:** mark P49b-2 + Fleet Part B rows in [`phase20-verification.md`](phase20-verification.md) Pass/Fail. Part A automated smoke last verified **Pass** local 2026-08-29 (9/9).
 
-Last updated: 2026-08-29 (Phase 41 dispatch inspection visibility)
+Last updated: 2026-09-27 (pilot `--api-key` Part B path)
 
 ### API surface (for curl debugging)
 
@@ -95,14 +95,14 @@ Bonjour service type: `_routefinder-fleet._tcp`.
 
 ## Part C — Single-device fallback (no server)
 
-When two devices or LAN are unavailable:
+When two devices or LAN are unavailable (**remote fleet must be off**):
 
 1. Open RouteFinder on one device (Mac or iPhone).
-2. **Settings → Fleet dispatch → Accept demo dispatch**
+2. **Settings → Fleet dispatch → Load offline demo job (no LAN)**
 3. **Find route** → **Rehearse Route**
 4. Share trip brief (text + PDF)
 
-This seeds a local three-stop UK job via `DiskFleetStore.seedDemoThreeStopJob()` and validates dispatch UX without network sync.
+This seeds a local three-stop UK job via `DiskFleetStore.seedDemoThreeStopJob()` and validates dispatch UX without network sync. If remote fleet is paired, the control refuses so it cannot overwrite the live vehicle UUID.
 
 ---
 

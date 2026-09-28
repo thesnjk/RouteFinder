@@ -70,19 +70,25 @@ public actor HTTPFleetStore: FleetDispatchPort {
     /// Probes a protected route so pairing cannot report Connected on public `/health` alone
     /// when the server requires `--api-key`.
     public func verifyAuthenticatedAccess() async throws {
+        _ = try await fetchProxyStatus()
+    }
+
+    /// Reads full desk metering from `/v1/proxy/status` (ORS + forecast caps).
+    public func fetchProxyStatus() async throws -> FleetProxyDeskStatus {
         let (data, response) = try await rawRequest(path: "v1/proxy/status", method: "GET")
         guard (200 ... 299).contains(response.statusCode) else {
             throw mapError(status: response.statusCode, data: data)
         }
+        return try decode(FleetProxyDeskStatus.self, from: data)
     }
 
     /// Reads forecast proxy capability flags from `/v1/proxy/status` (TomTom / OpenWeather).
     public func fetchForecastProxyCapabilities() async throws -> FleetForecastProxyCapabilities {
-        let (data, response) = try await rawRequest(path: "v1/proxy/status", method: "GET")
-        guard (200 ... 299).contains(response.statusCode) else {
-            throw mapError(status: response.statusCode, data: data)
-        }
-        return try decode(FleetForecastProxyCapabilities.self, from: data)
+        let status = try await fetchProxyStatus()
+        return FleetForecastProxyCapabilities(
+            tomTomConfigured: status.tomTomConfigured,
+            openWeatherConfigured: status.openWeatherConfigured
+        )
     }
 
     public func createOrg(name: String) async throws -> FleetOrg {

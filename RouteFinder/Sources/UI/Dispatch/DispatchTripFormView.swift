@@ -78,6 +78,13 @@ struct DispatchTripFormView: View {
             } else {
                 TextField("Filter vehicles…", text: $viewModel.vehicleFilterQuery)
                     .textFieldStyle(GlassTextFieldStyle())
+                Picker("Roster mode", selection: $viewModel.vehiclePickerMode) {
+                    Text("All").tag(DispatchRosterPickerMode.all)
+                    Text("Hide offline").tag(DispatchRosterPickerMode.hideOffline)
+                    Text("Defects only").tag(DispatchRosterPickerMode.defectsOnly)
+                }
+                .pickerStyle(.segmented)
+                .accessibilityIdentifier("dispatchVehiclePickerMode")
                 if viewModel.filteredVehicles.isEmpty {
                     Text("No vehicles match filter")
                         .font(RFFont.caption)

@@ -6,7 +6,8 @@ Browser console for office PCs (Windows / Linux / Mac) that talks to **`RouteFin
 
 ```bash
 # Terminal A — LAN fleet server (operator-paid ORS when keyed)
-cd /Users/admin/Developer/RouteFinder/RouteFinder
+# From the repo root, enter the Swift package directory:
+cd RouteFinder
 swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY"
 ```
 
@@ -15,7 +16,7 @@ Or point Connection at a deployed hosted gateway (`https://fleet.yourdomain.com`
 ## Run
 
 ```bash
-cd /Users/admin/Developer/RouteFinder/web-dispatch
+cd web-dispatch
 npm install
 npm run dev
 ```

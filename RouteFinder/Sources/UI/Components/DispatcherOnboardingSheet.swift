@@ -13,7 +13,7 @@ struct DispatcherOnboardingSheet: View {
     var onContinue: () -> Void
 
     private let serverCommand =
-        #"swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY""#
+        #"swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY" --api-key "your-shared-secret""#
 
     var body: some View {
         NavigationStack {
@@ -48,6 +48,11 @@ struct DispatcherOnboardingSheet: View {
                         }
                         .modifier(GlassButton())
                         .accessibilityIdentifier("dispatcherCopyServerCommand")
+
+                        Text("Pilot: keep `--api-key` and paste the same secret into Mac Settings, web dispatch Bearer, and the driver fleet wizard.")
+                            .font(RFFont.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(RFSpacing.md)
                     .glassPanel(cornerRadius: 16)

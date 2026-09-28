@@ -2,7 +2,7 @@
 
 Materials for a **60-day free pilot** with small UK independents (5–15 trucks). RouteFinder already ships native Mac/iPad dispatch + LAN HTTP/SSE + web dispatch — this pack documents what you bring to a meeting, not a new SaaS portal.
 
-Last updated: 2026-09-17
+Last updated: 2026-09-26
 
 ---
 
@@ -57,6 +57,8 @@ No obligation to buy. If Operator continues, parties use the **API-included desk
 | Extra trucks | >10 on same desk | **£3–£5/truck/mo** (negotiable) | Same proxy caps — abuse = 429 |
 | Owner-operator App Store | Single driver | **Deferred** post-pilot | Separate SKU later |
 
+The **£0 pilot band is ≤3 phones** for feedback scope; the product ICP remains **5–15 trucks** on the same desk/roster once they continue on a paid tier.
+
 Owner-operator App Store pricing remains deferred until after pilot feedback.
 
 **Signatures**
@@ -93,7 +95,7 @@ Ops guide: [README — Fleet LAN server](../README.md#fleet-lan-server-multi-dev
 | `PUT` | `/v1/trips/{tripId}/snapshot` | `FleetTripSnapshot` — physics ETA, layby, optional inspection PDF, **periodic GPS** (lat/lon + timestamp) for dispatch map pin |
 | `POST` | `/v1/telematics/ingest` | Read-only partner ping stub (`vehicleId`, lat/lon, `recordedAt`) — capped store; **not** legal VU |
 
-Optional auth: `Authorization: Bearer <api-key>` when server started with `--api-key`.
+Optional auth: `Authorization: Bearer <api-key>` when server started with `--api-key`. **Recommended for 5–15 truck LAN pilots** — paste the same secret into Mac Settings / web Bearer / driver wizard.
 
 Bonjour: `_routefinder-fleet._tcp`.
 
@@ -155,18 +157,18 @@ Snapshot GPS + read-only telematics CSV/ingest are enough for desk pin / partner
 
 | Step | Dispatch Mac | Driver iPhone |
 |---|---|---|
-| 1 | `cd RouteFinder && swift run RouteFinderFleetServer --port 8080` | — |
+| 1 | `cd RouteFinder && swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY" --api-key "$FLEET_API_KEY"` | Paste the same `$FLEET_API_KEY` into Settings **Fleet API key** / wizard |
 | 2 | RouteFinderMac → Dispatch Console → org + vehicle; copy **vehicle UUID** | — |
 | 3 | — | Settings → Fleet & Dispatch → Discover → Test connection |
-| 4 | — | Paste vehicle UUID → Save; enable remote fleet |
+| 4 | — | Paste vehicle UUID → Save; enable remote fleet; enter fleet API key if server uses `--api-key` |
 | 5 | Push 2–3 stop trip | Toast via SSE within ~5 s |
-| 6 | — | Accept → Find route → Rehearse Route |
+| 6 | — | Toast → route auto-loads (zero-tap). Then Rehearse Route if desired. Do **not** use offline demo job while paired. |
 | 7 | — | Share trip brief; optional walkaround with a defect |
 | 8 | Confirm snapshot / inspection card on console | — |
 
 Full steps and troubleshooting: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B.
 
-**Single-device fallback:** Settings → Fleet → Accept demo dispatch (no LAN).
+**Single-device fallback (no LAN):** Settings → Fleet → **Load offline demo job (no LAN)**. Refuses when remote fleet is paired.
 
 ---
 

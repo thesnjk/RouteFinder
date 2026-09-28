@@ -205,6 +205,42 @@ import Testing
     #expect(rings.isEmpty)
 }
 
+@Test func lezAvoidPolicyOmitsPolygonsOnGlasgowToNorwich() {
+    let glasgow = Coordinate(latitude: 55.8642, longitude: -4.2518)
+    let norwich = Coordinate(latitude: 52.6309, longitude: 1.2974)
+    let rings = LEZAvoidPolicy.polygons(
+        emissionClass: .euro4,
+        avoidEnabled: true,
+        destination: norwich,
+        origin: glasgow
+    )
+    #expect(rings.isEmpty)
+}
+
+@Test func lezAvoidPolicyWalsallToSolihullIncludesBirminghamCAZ() {
+    let walsall = Coordinate(latitude: 52.586, longitude: -1.982)
+    let solihull = Coordinate(latitude: 52.412, longitude: -1.778)
+    let rings = LEZAvoidPolicy.polygons(
+        emissionClass: .euro4,
+        avoidEnabled: true,
+        destination: solihull,
+        origin: walsall
+    )
+    #expect(!rings.isEmpty)
+    let birmingham = UKLowEmissionZoneCatalog.zones.first { $0.id == "birmingham-caz" }!
+    #expect(rings.contains { ring in
+        guard ring.count >= 4 else { return false }
+        let pts = Array(ring.dropLast())
+        let meanLon = pts.map { $0[0] }.reduce(0, +) / Double(pts.count)
+        let meanLat = pts.map { $0[1] }.reduce(0, +) / Double(pts.count)
+        return abs(meanLat - birmingham.center.latitude) < 0.05
+            && abs(meanLon - birmingham.center.longitude) < 0.05
+    })
+    #expect(rings.allSatisfy {
+        LEZAvoidPolicy.approximateRingAreaSquareMeters($0) <= LEZAvoidPolicy.avoidPolygonAreaCapSquareMeters
+    })
+}
+
 @Test func lezAvoidPolicyKeepsPolygonsOnShortUKHop() {
     let norwich = Coordinate(latitude: 52.63, longitude: 1.30)
     let nearby = Coordinate(latitude: 52.65, longitude: 1.28)

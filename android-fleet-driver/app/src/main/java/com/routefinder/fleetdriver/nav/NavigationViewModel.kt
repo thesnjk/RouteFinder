@@ -11,6 +11,7 @@ import com.routefinder.fleetdriver.compliance.LaybyAdvisoryEngine
 import com.routefinder.fleetdriver.compliance.LezAvoidPolicy
 import com.routefinder.fleetdriver.compliance.UkLezCatalog
 import com.routefinder.fleetdriver.fleet.FleetApi
+import com.routefinder.fleetdriver.fleet.FleetConnectionGate
 import com.routefinder.fleetdriver.fleet.FleetPreferences
 import com.routefinder.fleetdriver.fleet.FleetSseClient
 import com.routefinder.fleetdriver.fleet.FleetTrip
@@ -28,7 +29,6 @@ import com.routefinder.fleetdriver.inspection.InspectionReportPdfRenderer
 import com.routefinder.fleetdriver.inspection.InspectionSummary
 import com.routefinder.fleetdriver.physics.RouteRehearsalEngine
 import com.routefinder.fleetdriver.routing.FleetOrsConfig
-import com.routefinder.fleetdriver.routing.FleetProxyStatusClient
 import com.routefinder.fleetdriver.routing.GeocodeSuggestion
 import com.routefinder.fleetdriver.routing.HgvVehicleProfile
 import com.routefinder.fleetdriver.routing.LatLon
@@ -232,26 +232,51 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
 
     suspend fun refreshHealth() {
         try {
-            val health = withContext(Dispatchers.IO) {
-                FleetApi(prefs.baseUrl, prefs.apiKey).health()
-            }
-            connected = health.optBoolean("ok")
-            try {
-                val proxy = withContext(Dispatchers.IO) {
-                    FleetProxyStatusClient(prefs.baseUrl, prefs.apiKey).fetch()
-                }
-                orsConfigured = proxy.orsConfigured
-                tomTomProxyConfigured = proxy.tomTomConfigured
-                openWeatherProxyConfigured = proxy.openWeatherConfigured
-            } catch (_: Exception) {
-                orsConfigured = FleetOrsConfig.usesFleetProxy(prefs.baseUrl)
+            val api = FleetApi(prefs.baseUrl, prefs.apiKey)
+            val health = withContext(Dispatchers.IO) { api.health() }
+            val healthOk = health.optBoolean("ok")
+            if (!healthOk) {
+                connected = false
+                statusLabel = FleetConnectionGate.statusLabel(healthOk = false, authSucceeded = false)
+                orsConfigured = false
                 tomTomProxyConfigured = false
                 openWeatherProxyConfigured = false
+                return
             }
-            statusLabel = if (connected) "Connected" else "Offline"
+            try {
+                val proxyJson = withContext(Dispatchers.IO) { api.verifyAuthenticatedAccess() }
+                connected = true
+                statusLabel = FleetConnectionGate.statusLabel(healthOk = true, authSucceeded = true)
+                orsConfigured = proxyJson.optBoolean(
+                    "orsConfigured",
+                    proxyJson.optBoolean("ors_configured", false),
+                )
+                tomTomProxyConfigured = proxyJson.optBoolean(
+                    "tomTomConfigured",
+                    proxyJson.optBoolean("tomtomConfigured", false),
+                )
+                openWeatherProxyConfigured = proxyJson.optBoolean(
+                    "openWeatherConfigured",
+                    proxyJson.optBoolean("openWeatherConfigured", false),
+                )
+            } catch (e: Exception) {
+                connected = false
+                statusLabel = FleetConnectionGate.statusLabel(
+                    healthOk = true,
+                    authSucceeded = false,
+                    authErrorMessage = e.message,
+                )
+                orsConfigured = false
+                tomTomProxyConfigured = false
+                openWeatherProxyConfigured = false
+                errorMessage = e.message
+            }
         } catch (e: Exception) {
             connected = false
-            statusLabel = "Offline"
+            statusLabel = FleetConnectionGate.statusLabel(healthOk = false, authSucceeded = false)
+            orsConfigured = false
+            tomTomProxyConfigured = false
+            openWeatherProxyConfigured = false
             errorMessage = e.message
         }
     }

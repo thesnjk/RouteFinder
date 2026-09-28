@@ -69,6 +69,36 @@ class ComplianceParityTest {
     }
 
     @Test
+    fun lezAvoidPolicyOmitsPolygonsOnGlasgowToNorwich() {
+        val rings = LezAvoidPolicy.polygons(
+            emissionClass = UkLezCatalog.EmissionClass.EURO4,
+            avoidEnabled = true,
+            origin = LatLon(55.8642, -4.2518),
+            destination = LatLon(52.6309, 1.2974),
+        )
+        assertTrue(rings.isEmpty())
+    }
+
+    @Test
+    fun lezAvoidPolicyWalsallToSolihullIncludesBirminghamCaz() {
+        val birmingham = UkLezCatalog.zones.first { it.id == "birmingham-caz" }
+        val rings = LezAvoidPolicy.polygons(
+            emissionClass = UkLezCatalog.EmissionClass.EURO4,
+            avoidEnabled = true,
+            origin = LatLon(52.586, -1.982),
+            destination = LatLon(52.412, -1.778),
+        )
+        assertTrue(rings.isNotEmpty())
+        assertTrue(rings.any { approxEqualsCenter(it, birmingham.center) })
+        for (ring in rings) {
+            assertTrue(
+                LezAvoidPolicy.approximateRingAreaSquareMeters(ring) <=
+                    LezAvoidPolicy.AVOID_POLYGON_AREA_CAP_SQUARE_METERS,
+            )
+        }
+    }
+
+    @Test
     fun lezAvoidPolicyOmitsZoneContainingDestination() {
         val bath = UkLezCatalog.zones.first { it.id == "bath-caz" }
         val rings = LezAvoidPolicy.polygons(

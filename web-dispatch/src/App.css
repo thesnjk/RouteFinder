@@ -198,6 +198,22 @@ code {
   font-size: 0;
 }
 
+.map-marker--fleet {
+  background: #64748b;
+  width: 20px;
+  height: 20px;
+  font-size: 10px;
+  opacity: 0.9;
+}
+
+.map-marker--selected {
+  background: #c2410c;
+  width: 18px;
+  height: 18px;
+  font-size: 0;
+  box-shadow: 0 0 0 2px rgba(194, 65, 12, 0.35);
+}
+
 .geocode-field {
   position: relative;
   margin: 0.5rem 0;
@@ -280,4 +296,44 @@ code {
   background: #ffedd5;
   color: #9a3412;
   font-size: 0.9rem;
+}
+
+.roster-wrap {
+  overflow-x: auto;
+  margin-top: 0.5rem;
+}
+
+.roster {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.roster th,
+.roster td {
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.roster th {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.roster__row {
+  cursor: pointer;
+}
+
+.roster__row:hover {
+  background: #f1f5f9;
+}
+
+.roster__row--active {
+  background: #ccfbf1;
+}
+
+.roster-warn {
+  color: #b45309;
 }

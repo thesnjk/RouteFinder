@@ -64,6 +64,17 @@ private func startFleetServer(
     }
 }
 
+@Test func httpFleetStoreError401DescriptionIsActionable() {
+    let empty = HTTPFleetStoreError.serverError(status: 401, body: "")
+    #expect(empty.errorDescription == "Fleet API key rejected. Check the shared key with the operator.")
+
+    let unauthorized = HTTPFleetStoreError.serverError(status: 401, body: #"{"error":"Unauthorized"}"#)
+    #expect(unauthorized.errorDescription == "Fleet API key rejected. Check the shared key with the operator.")
+
+    let forbidden = HTTPFleetStoreError.serverError(status: 403, body: "")
+    #expect(forbidden.errorDescription == "Fleet API key rejected. Check the shared key with the operator.")
+}
+
 @Test func fleetProtectedRoutesAcceptBearerAPIKey() async throws {
     let storageDir = FileManager.default.temporaryDirectory
         .appendingPathComponent("FleetAuthTests-auth-\(UUID().uuidString)", isDirectory: true)
@@ -112,6 +123,76 @@ private func startFleetServer(
         }
         #expect(status == 401)
     }
+}
+
+@Test func verifyAuthenticatedAccessRejectsMissingAPIKey() async throws {
+    let storageDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("FleetAuthTests-verify-missing-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: storageDir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: storageDir) }
+
+    let port = 18085
+    let serverTask = startFleetServer(port: port, storageDirectory: storageDir, apiKey: "secret-key")
+    defer { serverTask.cancel() }
+    let baseURL = URL(string: "http://127.0.0.1:\(port)")!
+    try await waitForFleetServerReady(baseURL: baseURL)
+
+    let healthClient = HTTPFleetStore(baseURL: baseURL)
+    #expect(try await healthClient.checkHealth().ok)
+
+    do {
+        try await healthClient.verifyAuthenticatedAccess()
+        Issue.record("Expected unauthorized error for missing API key on auth probe.")
+    } catch let error as HTTPFleetStoreError {
+        guard case .serverError(let status, _) = error else {
+            Issue.record("Unexpected error type: \(error)")
+            return
+        }
+        #expect(status == 401)
+        #expect(error.errorDescription?.contains("Fleet API key rejected") == true)
+    }
+}
+
+@Test func verifyAuthenticatedAccessRejectsWrongAPIKey() async throws {
+    let storageDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("FleetAuthTests-verify-wrong-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: storageDir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: storageDir) }
+
+    let port = 18086
+    let serverTask = startFleetServer(port: port, storageDirectory: storageDir, apiKey: "expected-key")
+    defer { serverTask.cancel() }
+    let baseURL = URL(string: "http://127.0.0.1:\(port)")!
+    try await waitForFleetServerReady(baseURL: baseURL)
+
+    let client = HTTPFleetStore(baseURL: baseURL, apiKey: "wrong-key")
+    do {
+        try await client.verifyAuthenticatedAccess()
+        Issue.record("Expected unauthorized error for wrong API key on auth probe.")
+    } catch let error as HTTPFleetStoreError {
+        guard case .serverError(let status, _) = error else {
+            Issue.record("Unexpected error type: \(error)")
+            return
+        }
+        #expect(status == 401)
+    }
+}
+
+@Test func verifyAuthenticatedAccessAcceptsBearerAPIKey() async throws {
+    let storageDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("FleetAuthTests-verify-ok-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: storageDir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: storageDir) }
+
+    let port = 18087
+    let apiKey = "fleet-verify-secret"
+    let serverTask = startFleetServer(port: port, storageDirectory: storageDir, apiKey: apiKey)
+    defer { serverTask.cancel() }
+    let baseURL = URL(string: "http://127.0.0.1:\(port)")!
+    try await waitForFleetServerReady(baseURL: baseURL)
+
+    let client = HTTPFleetStore(baseURL: baseURL, apiKey: apiKey)
+    try await client.verifyAuthenticatedAccess()
 }
 
 @Test func fleetStoreFactoryPassesKeychainAPIKey() throws {

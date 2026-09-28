@@ -42,6 +42,38 @@ struct FleetDispatchCoordinatorTests {
         await coordinator.pollAndApplyFleetDispatch()
         #expect(host.appliedTrips.count == 1)
     }
+
+    @Test func acceptDemoFleetDispatchRefusesWhenRemotePaired() async {
+        let host = MockFleetHost()
+        let pairedId = UUID()
+        host.useRemoteFleetServer = true
+        host.fleetVehicleId = pairedId
+        host.fleetVehicleIdText = pairedId.uuidString
+        let coordinator = FleetDispatchCoordinator(host: host, fleetStore: InMemoryFleetStore())
+
+        var threw = false
+        do {
+            try await coordinator.acceptDemoFleetDispatch()
+        } catch {
+            threw = true
+            #expect(error.localizedDescription.contains("paired"))
+        }
+        #expect(threw)
+        #expect(host.fleetVehicleId == pairedId)
+        #expect(host.appliedTrips.isEmpty)
+    }
+
+    @Test func acceptDemoFleetDispatchSeedsWhenRemoteOff() async throws {
+        let host = MockFleetHost()
+        host.useRemoteFleetServer = false
+        host.fleetVehicleId = nil
+        let coordinator = FleetDispatchCoordinator(host: host, fleetStore: InMemoryFleetStore())
+
+        try await coordinator.acceptDemoFleetDispatch()
+
+        #expect(host.fleetVehicleId != nil)
+        #expect(host.appliedTrips.count == 1)
+    }
 }
 
 @MainActor

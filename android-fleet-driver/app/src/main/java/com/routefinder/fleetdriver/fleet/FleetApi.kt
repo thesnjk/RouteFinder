@@ -1,5 +1,7 @@
 package com.routefinder.fleetdriver.fleet
 
+import com.routefinder.fleetdriver.routing.FleetOrsConfig
+import com.routefinder.fleetdriver.routing.FleetProxyErrorMapper
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -36,6 +38,31 @@ class FleetApi(
             val body = response.body?.string().orEmpty()
             if (!response.isSuccessful) error("health ${response.code}: $body")
             return JSONObject(body)
+        }
+    }
+
+    /**
+     * Probes a protected route so pairing cannot report Connected on public `/health` alone
+     * when the server requires `--api-key` (parity with iOS `verifyAuthenticatedAccess`).
+     */
+    fun verifyAuthenticatedAccess(): JSONObject {
+        val request = Request.Builder()
+            .url(FleetOrsConfig.proxyStatusUrl(baseUrl))
+            .auth()
+            .get()
+            .build()
+        client.newCall(request).execute().use { response ->
+            val body = response.body?.string().orEmpty()
+            if (!response.isSuccessful) {
+                error(
+                    FleetProxyErrorMapper.userMessage(
+                        response.code,
+                        body,
+                        FleetProxyErrorMapper.Kind.FLEET,
+                    ),
+                )
+            }
+            return if (body.isBlank()) JSONObject() else JSONObject(body)
         }
     }
 

@@ -38,6 +38,8 @@ public final class DispatchViewModel {
     /// Pill copy: Connected / Auth failed · … / Offline / nil when local or unchecked.
     public private(set) var fleetServerHealthDetail: String?
     public private(set) var fleetServerModeLabel: String = "Local disk"
+    /// Desk metering from `/v1/proxy/status` when remote Connected; nil otherwise.
+    public private(set) var fleetProxyStatus: FleetProxyDeskStatus?
     /// Draft shared fleet API key for inline desk paste (Auth failed recovery).
     public var fleetAPIKeyDraft: String = ""
     /// True while persisting the desk fleet API key and re-probing health.
@@ -388,6 +390,7 @@ public final class DispatchViewModel {
             fleetServerHealthOk = nil
             fleetServerVersion = nil
             fleetServerHealthDetail = nil
+            fleetProxyStatus = nil
             return
         }
         fleetServerModeLabel = "Remote"
@@ -403,10 +406,11 @@ public final class DispatchViewModel {
                     healthOk: false,
                     authSucceeded: false
                 )
+                fleetProxyStatus = nil
                 return
             }
             do {
-                try await client.verifyAuthenticatedAccess()
+                let status = try await client.fetchProxyStatus()
                 fleetServerHealthOk = true
                 fleetServerVersion = health.version
                 fleetServerHealthDetail = FleetServerHealthLabel.status(
@@ -414,9 +418,11 @@ public final class DispatchViewModel {
                     authSucceeded: true,
                     version: health.version
                 )
+                fleetProxyStatus = status
             } catch {
                 fleetServerHealthOk = false
                 fleetServerVersion = nil
+                fleetProxyStatus = nil
                 if FleetServerHealthLabel.isAuthFailure(error) {
                     fleetServerHealthDetail = FleetServerHealthLabel.status(
                         healthOk: true,
@@ -433,6 +439,7 @@ public final class DispatchViewModel {
         } catch {
             fleetServerHealthOk = false
             fleetServerVersion = nil
+            fleetProxyStatus = nil
             if FleetServerHealthLabel.isAuthFailure(error) {
                 fleetServerHealthDetail = FleetServerHealthLabel.status(
                     healthOk: true,

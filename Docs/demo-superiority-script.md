@@ -22,7 +22,7 @@ cd RouteFinder
 swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY" --api-key "$FLEET_API_KEY"
 ```
 
-Paste the **same** `$FLEET_API_KEY` into Mac Settings (fleet API key), web-dispatch Bearer token, and the driver fleet wizard. Recommended for every 5–15 truck LAN pilot.
+Paste the **same** `$FLEET_API_KEY` into Dispatch **Save fleet API key** (or Mac Settings), web-dispatch Bearer token, and the driver fleet wizard. Recommended for every 5–15 truck LAN pilots.
 
 Optional (only when demoing **forecast fuse** on drivers): `--tomtom-key` / `TOMTOM_API_KEY` and `--openweather-key` / `OPENWEATHER_API_KEY`. iOS and Android both consume these via the fleet proxy — drivers need no personal TomTom/OpenWeather keys. Not required for the ≤2-minute core path. Clearance radar Overpass also goes through the same fleet proxy when the cab is paired (meters 5–15 phones through one Mac).
 
@@ -71,7 +71,7 @@ Do **not** claim TomTom HD lanes, toll tariffs, or remote VU download.
 | No toast | Fleet URL, vehicle UUID, same LAN; `fleet-e2e-smoke.sh` |
 | API key banner | `usesFleetORSProxy` / remote fleet + `--ors-key` |
 | HTTP 401 on desk push / catalog | Missing or mismatched fleet API key — paste the same `--api-key` into Dispatch **Save fleet API key** (or Mac Settings) / web Bearer / driver wizard |
-| Office PC cannot reach Mac | Copy LAN fleet URL from **Office PC** guide or **Dispatcher** onboarding (not `127.0.0.1`); same Wi‑Fi |
+| Office PC cannot reach Mac | Copy LAN fleet URL from **Dispatch** toolbar (or Office PC guide / Dispatcher onboarding); not `127.0.0.1`; same Wi‑Fi |
 | No GPS pin | Snapshot PUT with lat/lon; see Phase 5 E2E GPS asserts |
 | Map flicker every 5 s (web) | Phase 6 fingerprint — rebuild web-dispatch |
 | Cap / HTTP 429 on Find route or desk geocode | Operator-paid proxy daily budget exhausted — raise caps or wait until tomorrow; glance Mac **Fleet proxy** or web Connection (**N left** / near-cap warning); curl `/v1/proxy/status` optional; iOS `RouteFailureMapper` / Android `FleetProxyErrorMapper` / web `fleetProxyUserMessage` show actionable copy |

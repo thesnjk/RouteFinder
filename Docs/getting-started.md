@@ -48,7 +48,7 @@ cd RouteFinder
 swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY" --api-key "your-shared-secret"
 ```
 
-**Recommended for 5–15 truck LAN pilots:** always pass `--api-key` and paste the same secret into Mac Settings (fleet API key), web-dispatch Bearer, and the driver fleet wizard. Never expose port 8080 to the public internet without auth + VPN/TLS.
+**Recommended for 5–15 truck LAN pilots:** always pass `--api-key` and paste the same secret into Dispatch **Save fleet API key** (Mac Settings still works), web-dispatch Bearer, and the driver fleet wizard. Never expose port 8080 to the public internet without auth + VPN/TLS.
 
 Optional forecast fuse for paired drivers (no personal TomTom / OpenWeather keys): pass `--tomtom-key` / `TOMTOM_API_KEY` and `--openweather-key` / `OPENWEATHER_API_KEY` on the same server.
 

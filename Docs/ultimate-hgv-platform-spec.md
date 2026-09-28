@@ -38,7 +38,7 @@ Evidence: [`engineering-benchmark-2026-09.md`](engineering-benchmark-2026-09.md)
 | Live weather + TomTom + roadworks + hazard banners | **Shipped** (separate) |
 | Unified `RouteRiskAdvisory` fuse (kinetic / weather / hazard / roadworks / traffic) | **Shipped** — live kinetic/weather + HUD primary banner (`predictiveRiskPrimaryBanner`) |
 | 1–3h traffic forecast | **Shipped** (U8 iOS + U14 fleet proxy on iOS/Android; U11 Android) — `ForecastRiskSampler`; ledger-capped |
-| Corridor + off-route clearance radar | **Shipped** (U9 + U11-B2) — `ClearanceCorridorProbe` on-route + heading corridor when off-spine |
+| Corridor + off-route clearance radar | **Shipped** (U9 + U11-B2; U14 fleet Overpass proxy on iOS + Android) — `ClearanceCorridorProbe` on-route + heading corridor when off-spine |
 
 ### C — Compliance
 

@@ -2933,10 +2933,13 @@ public final class RouteViewModel {
     public func refreshClearanceAndForecastRisk(route: [Coordinate]) async {
         if clearanceRadarEnabled, isHGVMode, route.count >= 2 {
             let profile = resolvedVehicleProfile()
+            let fleet = fleetClearanceProxyCredentials()
             cachedClearanceRiskItems = await clearanceCorridorProbe.advisoriesAlongRoute(
                 route: route,
                 profile: profile,
-                currentArcLengthMeters: currentRouteArcLengthMeters
+                currentArcLengthMeters: currentRouteArcLengthMeters,
+                fleetBaseURL: fleet.url,
+                fleetAPIKey: fleet.apiKey
             )
         } else {
             cachedClearanceRiskItems = []
@@ -2975,16 +2978,28 @@ public final class RouteViewModel {
         }
         guard let bearing = update.bearingDegrees else { return }
         let profile = resolvedVehicleProfile()
+        let fleet = fleetClearanceProxyCredentials()
         let items = await clearanceCorridorProbe.advisoriesAlongHeading(
             from: point,
             bearingDegrees: bearing,
-            profile: profile
+            profile: profile,
+            fleetBaseURL: fleet.url,
+            fleetAPIKey: fleet.apiKey
         )
         // Empty result may be throttle — keep prior off-route advisories.
         if !items.isEmpty || cachedOffRouteClearanceItems.isEmpty {
             cachedOffRouteClearanceItems = items
             await refreshPredictiveRiskAdvisories()
         }
+    }
+
+    /// Fleet URL + API key for clearance Overpass proxy when remote fleet is enabled.
+    private func fleetClearanceProxyCredentials() -> (url: URL?, apiKey: String?) {
+        guard usesFleetORSProxy else { return (nil, nil) }
+        let url = URL(string: fleetServerURLText.trimmingCharacters(in: .whitespacesAndNewlines))
+            ?? FleetWorkspaceSettings.loadFleetServerURL()
+        let apiKey = url != nil ? (try? FleetServerCredentials.loadAPIKey()) : nil
+        return (url, apiKey)
     }
 
     private func refreshForecastRiskIfNeeded(force: Bool = false) async {

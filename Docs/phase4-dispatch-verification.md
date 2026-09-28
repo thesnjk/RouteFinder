@@ -25,7 +25,7 @@ Confirm ORS proxy is enabled in the server log.
 1. `cd /Users/admin/Developer/RouteFinder/web-dispatch && npm run dev -- --host`
 2. Office PC or Mac browser → `http://<mac-ip>:5173`
 3. Set base URL to `http://<mac-ip>:8080` (or `/fleet` on the same Mac)
-4. **Test connection** → green **Connected** (health + auth). Wrong `--api-key` → red **Auth failed** (not Offline).
+4. **Test connection** → green **Connected** (health + auth). Wrong `--api-key` → red **Auth failed** (not Offline) on Mac Dispatch pill **and** fleet setup wizard status.
 5. Origin: type `Norwich` → pick suggestion → coords resolve
 6. Destination: type `King's Lynn` → pick suggestion
 7. Create org / register vehicle if needed; show QR to the driver

@@ -26,13 +26,7 @@ struct DispatchTripFormView: View {
             .padding(RFSpacing.lg)
         }
         .navigationTitle("Dispatch")
-        .task {
-            await viewModel.refreshCatalog()
-            viewModel.startPolling()
-        }
-        .onDisappear {
-            viewModel.stopPolling()
-        }
+        // Catalog + polling owned by DispatchConsoleView — avoid duplicate .task lifecycle here.
         .onChange(of: viewModel.selectedOrgId) { _, _ in
             Task { await viewModel.orgSelectionChanged() }
         }
@@ -82,9 +76,17 @@ struct DispatchTripFormView: View {
                     .font(RFFont.caption)
                     .foregroundStyle(.secondary)
             } else {
-                Picker("Vehicle", selection: $viewModel.selectedVehicleId) {
-                    ForEach(viewModel.vehicles, id: \.id) { vehicle in
-                        Text(vehicleLabel(vehicle)).tag(Optional(vehicle.id))
+                TextField("Filter vehicles…", text: $viewModel.vehicleFilterQuery)
+                    .textFieldStyle(GlassTextFieldStyle())
+                if viewModel.filteredVehicles.isEmpty {
+                    Text("No vehicles match filter")
+                        .font(RFFont.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Picker("Vehicle", selection: $viewModel.selectedVehicleId) {
+                        ForEach(viewModel.filteredVehicles, id: \.id) { vehicle in
+                            Text(vehicleLabel(vehicle)).tag(Optional(vehicle.id))
+                        }
                     }
                 }
                 if let vehicleId = viewModel.selectedVehicleId {
@@ -95,6 +97,9 @@ struct DispatchTripFormView: View {
         }
         .glassPanel(cornerRadius: 14)
         .padding(RFSpacing.sm)
+        .onChange(of: viewModel.vehicleFilterQuery) { _, _ in
+            Task { await viewModel.refreshRoster() }
+        }
     }
 
     private var stopsSection: some View {
@@ -287,7 +292,7 @@ struct DispatchTripFormView: View {
                 }
             }
             .modifier(GlassButton())
-            .disabled(viewModel.isPushing || viewModel.selectedVehicleId == nil)
+            .disabled(viewModel.isPushing || !viewModel.canPushTrip)
         }
     }
 

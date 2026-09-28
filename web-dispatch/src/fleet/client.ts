@@ -13,6 +13,15 @@ import {
   type GeocodeSuggestion,
 } from './types'
 import { fleetProxyUserMessage, type FleetProxyErrorKind } from '../fleetProxyError'
+import {
+  buildOrsHgvDirectionsBody,
+  parseOrsGeoJsonCoordinates,
+  type HgvPreviewProfile,
+  type LngLat,
+} from '../orsRoutePreview'
+
+export { parseOrsGeoJsonCoordinates, buildOrsHgvDirectionsBody }
+export type { HgvPreviewProfile, LngLat }
 
 interface PeliasFeatureCollection {
   features?: Array<{
@@ -139,6 +148,27 @@ export class FleetApiClient {
       suggestions.push({ label, latitude: lat, longitude: lon })
     }
     return suggestions
+  }
+
+  /**
+   * HGV corridor via fleet ORS proxy (`POST …/directions/driving-hgv/geojson`).
+   * Returns empty array on parse failure; throws on HTTP errors (incl. 429 cap copy).
+   */
+  async routePreviewHGV(
+    stops: Array<{ longitude: number; latitude: number }>,
+    profile?: HgvPreviewProfile | null,
+  ): Promise<LngLat[]> {
+    if (stops.length < 2) return []
+    const response = await fetch(
+      this.url('/v1/proxy/ors/v2/directions/driving-hgv/geojson'),
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(buildOrsHgvDirectionsBody(stops, profile)),
+      },
+    )
+    const payload = await parseJson<unknown>(response, 'route')
+    return parseOrsGeoJsonCoordinates(payload)
   }
 
   /** Build a two-stop trip from geocoded stop coordinates. */

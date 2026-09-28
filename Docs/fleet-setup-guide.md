@@ -46,10 +46,12 @@ Daily fair-use caps (defaults 2,000 routes / 2,000 geocodes): `--route-daily-cap
 
 ## 2. Register a vehicle (Mac dispatch)
 
-1. Open **RouteFinderMac** → **Dispatch** console.
+1. Open **RouteFinderMac**. First-run **Dispatcher** onboarding: **Copy server command** (includes `--api-key`), paste the same secret into the shared-key field, then **Open Dispatch Console** — that wires remote fleet to `http://127.0.0.1:8080` when no URL is saved yet (does not overwrite an existing LAN/hosted URL). Or open **Dispatch** from the menu after Settings → Use remote fleet server.
 2. Create an organisation (or bootstrap demo fleet).
 3. Register / select a vehicle.
 4. Show the driver the **QR code** under the vehicle picker (or tap **Copy UUID**).
+
+Confirm the health pill shows **Connected** (not **Local disk**) before pushing — desk push must hit the same `RouteFinderFleetServer` drivers pair to.
 
 The **Fleet roster** panel polls each vehicle’s active trip (cap 20) for status / physics ETA / GPS age and draws yard pins on the map — snapshot GPS from cab phones, not live VU. Filter the Mac (or web) vehicle picker / roster by **label or plate** when the fleet grows toward 15 trucks.
 

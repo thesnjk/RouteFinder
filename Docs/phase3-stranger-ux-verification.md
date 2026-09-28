@@ -1,7 +1,7 @@
 # Phase 3 — Stranger UX verification (EPIC-STRANGER-UX)
 
 Engineering excellence track. No legal/GTM.  
-Last updated: 2026-09-22
+Last updated: 2026-09-27
 
 **Goal:** Fleet pilot stranger path — role → pair fleet (no driver HeiGIT key) → Find route → Start Navigation — with fewer clicks than a CoPilot Account Manager seat dance.
 
@@ -22,11 +22,15 @@ Last updated: 2026-09-22
 
 ## Stranger script — fleet proxy (target &lt;5 min, ≤8 taps to Find route)
 
-**Setup (operator, not counted in driver taps):** Mac fleet server with ORS key:
+**Setup (operator, not counted in driver taps):** Mac fleet server with ORS key + pilot shared secret:
 
 ```bash
-cd RouteFinder && swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY"
+export ORS_API_KEY="your-heigit-key"
+export FLEET_API_KEY="your-shared-secret"
+cd RouteFinder && swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY" --api-key "$FLEET_API_KEY"
 ```
+
+Paste the same `$FLEET_API_KEY` into Mac Settings / web Bearer / driver wizard.
 
 Dispatch: create org + vehicle, show QR.
 
@@ -40,7 +44,7 @@ Dispatch: create org + vehicle, show QR.
 | 4 | **Pair with fleet** | Opens wizard; remote sync **pre-enabled** |
 | 5 | **Next** (connection kind LAN) | |
 | 6 | Discover or paste URL → **Next** | |
-| 7 | **Test connection** → **Next** | /health Connected |
+| 7 | **Test connection** → **Next** | Health + auth probe **Connected** (not public `/health` alone when `--api-key` is set). Wrong key → **Auth failed** (not Offline); Next stays disabled until Connected |
 | 8 | Scan QR / paste UUID → Save → **Finish** | Paired |
 
 Then: search or map pin → **Find route** (no personal HeiGIT key) → Rehearse → **Start Navigation**.

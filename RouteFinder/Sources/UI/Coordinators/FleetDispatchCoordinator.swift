@@ -277,6 +277,10 @@ public final class FleetDispatchCoordinator {
     }
 
     /// Tests connectivity to the configured fleet HTTP server.
+    ///
+    /// Requires public `/health` **and** a protected auth probe (`/v1/proxy/status`) so
+    /// pilot servers started with `--api-key` cannot report Connected with a missing key.
+    /// Distinguishes **Auth failed** (key mismatch) from **Offline** (server/LAN down).
     public func testFleetServerConnection() async {
         saveFleetServerURLFromSettings()
         guard let host else { return }
@@ -289,11 +293,47 @@ public final class FleetDispatchCoordinator {
         let client = HTTPFleetStore(baseURL: url, apiKey: apiKey)
         do {
             let health = try await client.checkHealth()
-            host.fleetServerConnectionStatus = health.ok
-                ? "Connected to fleet server."
-                : "Server responded but health check failed."
+            guard health.ok else {
+                host.fleetServerConnectionStatus = FleetServerHealthLabel.status(
+                    healthOk: false,
+                    authSucceeded: false
+                )
+                return
+            }
+            do {
+                try await client.verifyAuthenticatedAccess()
+                host.fleetServerConnectionStatus = FleetServerHealthLabel.status(
+                    healthOk: true,
+                    authSucceeded: true,
+                    version: health.version
+                )
+            } catch {
+                if FleetServerHealthLabel.isAuthFailure(error) {
+                    host.fleetServerConnectionStatus = FleetServerHealthLabel.status(
+                        healthOk: true,
+                        authSucceeded: false,
+                        authErrorMessage: error.localizedDescription
+                    )
+                } else {
+                    host.fleetServerConnectionStatus = FleetServerHealthLabel.status(
+                        healthOk: false,
+                        authSucceeded: false
+                    )
+                }
+            }
         } catch {
-            host.fleetServerConnectionStatus = error.localizedDescription
+            if FleetServerHealthLabel.isAuthFailure(error) {
+                host.fleetServerConnectionStatus = FleetServerHealthLabel.status(
+                    healthOk: true,
+                    authSucceeded: false,
+                    authErrorMessage: error.localizedDescription
+                )
+            } else {
+                host.fleetServerConnectionStatus = FleetServerHealthLabel.status(
+                    healthOk: false,
+                    authSucceeded: false
+                )
+            }
         }
     }
 
@@ -325,8 +365,16 @@ public final class FleetDispatchCoordinator {
     }
 
     /// Seeds a demo 3-stop UK job and applies it to the driver device.
+    ///
+    /// Refuses when remote fleet is enabled and a vehicle id is already saved,
+    /// so the offline demo path cannot overwrite a live LAN/hosted pairing.
     public func acceptDemoFleetDispatch() async throws {
         guard let host else { return }
+        if host.useRemoteFleetServer, host.fleetVehicleId != nil {
+            throw FleetStoreError.invalidTrip(
+                "Offline demo job is disabled while paired to a remote fleet. Turn off remote fleet server first, or wait for a live dispatch toast."
+            )
+        }
         do {
             let seeded = try await DiskFleetStore().seedDemoThreeStopJob()
             host.fleetVehicleId = seeded.vehicle.id

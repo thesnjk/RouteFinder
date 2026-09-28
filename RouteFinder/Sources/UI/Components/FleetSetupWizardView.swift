@@ -7,13 +7,7 @@ struct FleetSetupWizardView: View {
     var onFinished: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
 
-    private enum Step: Int, CaseIterable {
-        case enableRemote
-        case discover
-        case test
-        case vehicle
-        case done
-    }
+    private typealias Step = FleetSetupWizardAdvancePolicy.Step
 
     @State private var step: Step = .enableRemote
     @State private var showScanner = false
@@ -121,7 +115,7 @@ struct FleetSetupWizardView: View {
                 .keyboardType(.URL)
                 #endif
             SecureField(
-                isHosted ? "Org bearer token" : "Fleet API key (optional)",
+                isHosted ? "Org bearer token" : "Fleet API key (same as `--api-key`)",
                 text: $viewModel.fleetServerAPIKeyText
             )
                 .textFieldStyle(GlassTextFieldStyle())
@@ -166,8 +160,8 @@ struct FleetSetupWizardView: View {
             }
             Text(
                 isHosted
-                    ? "Hosted gateway must respond on /health. Routing keys stay on the server — use your org bearer token only."
-                    : "Same Wi‑Fi as the dispatch Mac. Routing API keys stay on the server when ORS proxy is enabled."
+                    ? "Tap Test connection until Connected. Hosted gateway must pass health + auth — routing keys stay on the server."
+                    : "Tap Test connection until Connected before continuing. Same Wi‑Fi as the dispatch Mac; API key must match `--api-key` when set. Wrong key shows Auth failed, not Offline."
             )
             .font(RFFont.caption)
             .foregroundStyle(.secondary)
@@ -196,8 +190,8 @@ struct FleetSetupWizardView: View {
                 .foregroundStyle(.green)
             Text(
                 isHosted
-                    ? "When dispatch pushes a trip, you'll get a toast within a few seconds — even on cellular. Find route → Rehearse → Start as usual. Cloud routing uses the hosted gateway key — no HeiGIT key needed on this device."
-                    : "When dispatch pushes a trip, you'll get a toast within a few seconds. Find route → Rehearse → Start as usual. Cloud routing uses the fleet server key when configured — no HeiGIT key needed on this device."
+                    ? "When dispatch pushes a trip, you'll get a toast within a few seconds — even on cellular. Stops and route load automatically (zero-tap). Then Rehearse → Start when ready. Cloud routing uses the hosted gateway key — no HeiGIT key needed on this device."
+                    : "When dispatch pushes a trip, you'll get a toast within a few seconds. Stops and route load automatically (zero-tap). Then Rehearse → Start when ready. Cloud routing uses the fleet server key when configured — no HeiGIT key needed on this device."
             )
             .font(RFFont.body)
             Button("Check for dispatch now") {
@@ -241,24 +235,13 @@ struct FleetSetupWizardView: View {
     }
 
     private var canAdvance: Bool {
-        switch step {
-        case .enableRemote:
-            return true
-        case .discover:
-            let text = viewModel.fleetServerURLText.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !text.isEmpty, let url = URL(string: text), let scheme = url.scheme?.lowercased() else {
-                return false
-            }
-            if isHosted { return scheme == "https" }
-            return scheme == "http" || scheme == "https"
-        case .test:
-            return (viewModel.fleetServerConnectionStatus ?? "").contains("Connected")
-                || !viewModel.fleetServerURLText.isEmpty
-        case .vehicle:
-            return UUID(uuidString: viewModel.fleetVehicleIdText.trimmingCharacters(in: .whitespacesAndNewlines)) != nil
-        case .done:
-            return true
-        }
+        FleetSetupWizardAdvancePolicy.canAdvance(
+            step: step,
+            connectionStatus: viewModel.fleetServerConnectionStatus,
+            urlText: viewModel.fleetServerURLText,
+            isHosted: isHosted,
+            vehicleIdText: viewModel.fleetVehicleIdText
+        )
     }
 
     private func move(_ delta: Int) {
@@ -287,7 +270,7 @@ struct FleetSetupWizardView: View {
             return isHosted
                 ? "Paste the HTTPS base URL (e.g. https://fleet.yourdomain.com) and org bearer token."
                 : "Use Bonjour discovery or paste the Mac’s LAN URL (e.g. http://192.168.1.10:8080)."
-        case .test: return "Make sure /health responds before pairing a vehicle."
+        case .test: return "Tap Test connection until Connected before pairing a vehicle."
         case .vehicle: return "Each truck has one UUID from the dispatch console."
         case .done: return "Setup complete for this device."
         }

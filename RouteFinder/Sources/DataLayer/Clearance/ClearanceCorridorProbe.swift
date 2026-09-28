@@ -15,6 +15,8 @@ public actor ClearanceCorridorProbe {
     public static let defaultHeadingAheadMeters: Double = 3_000
     /// Minimum interval between off-route Overpass probes during navigation.
     public static let offRouteRefreshIntervalSeconds: TimeInterval = 90
+    /// Public Overpass interpreter (fallback when not fleet-paired).
+    public static let publicOverpassInterpreterURL = URL(string: "https://overpass-api.de/api/interpreter")!
 
     private let session: URLSession
     private var memoryCache: [String: [ClearanceRestrictionHit]] = [:]
@@ -24,6 +26,24 @@ public actor ClearanceCorridorProbe {
     /// Creates a clearance corridor probe.
     public init(session: URLSession = .shared) {
         self.session = session
+    }
+
+    /// Whether queries should prefer the fleet Overpass proxy (Android U14 parity).
+    public static func prefersFleetOverpass(fleetBaseURL: URL?) -> Bool {
+        fleetBaseURL != nil
+    }
+
+    /// Fleet Overpass interpreter: `{base}/v1/proxy/overpass/interpreter`.
+    public static func overpassInterpreterURL(fleetBaseURL: URL) -> URL {
+        fleetBaseURL.appendingPathComponent("v1/proxy/overpass/interpreter")
+    }
+
+    /// Resolves Overpass POST endpoint — fleet proxy when paired, else public Overpass.
+    public static func overpassEndpoint(fleetBaseURL: URL?) -> URL {
+        if let fleetBaseURL {
+            return overpassInterpreterURL(fleetBaseURL: fleetBaseURL)
+        }
+        return publicOverpassInterpreterURL
     }
 
     /// A tagged restriction near the route that may conflict with the vehicle profile.
@@ -64,13 +84,17 @@ public actor ClearanceCorridorProbe {
         profile: VehicleProfile,
         currentArcLengthMeters: Double,
         aheadMeters: Double = ClearanceCorridorProbe.defaultAheadMeters,
-        corridorHalfWidthMeters: Double = ClearanceCorridorProbe.defaultCorridorHalfWidthMeters
+        corridorHalfWidthMeters: Double = ClearanceCorridorProbe.defaultCorridorHalfWidthMeters,
+        fleetBaseURL: URL? = nil,
+        fleetAPIKey: String? = nil
     ) async -> [RouteRiskAdvisory] {
         let hits = (try? await queryAlongRoute(
             route: route,
             aheadMeters: aheadMeters,
             fromArcLengthMeters: currentArcLengthMeters,
-            corridorHalfWidthMeters: corridorHalfWidthMeters
+            corridorHalfWidthMeters: corridorHalfWidthMeters,
+            fleetBaseURL: fleetBaseURL,
+            fleetAPIKey: fleetAPIKey
         )) ?? []
         return Self.advisories(from: hits, profile: profile, currentArcLengthMeters: currentArcLengthMeters)
     }
@@ -112,7 +136,9 @@ public actor ClearanceCorridorProbe {
         aheadMeters: Double = ClearanceCorridorProbe.defaultHeadingAheadMeters,
         corridorHalfWidthMeters: Double = ClearanceCorridorProbe.defaultCorridorHalfWidthMeters,
         force: Bool = false,
-        now: Date = Date()
+        now: Date = Date(),
+        fleetBaseURL: URL? = nil,
+        fleetAPIKey: String? = nil
     ) async -> [RouteRiskAdvisory] {
         if !force, let last = lastOffRouteRefresh,
            now.timeIntervalSince(last) < Self.offRouteRefreshIntervalSeconds {
@@ -123,7 +149,8 @@ public actor ClearanceCorridorProbe {
             bearingDegrees: bearingDegrees,
             lengthMeters: aheadMeters
         )
-        let cacheKey = "heading|\(String(format: "%.4f,%.4f", origin.latitude, origin.longitude))|\(Int(bearingDegrees))|\(Int(aheadMeters))"
+        let fleetTag = fleetBaseURL?.absoluteString ?? "public"
+        let cacheKey = "heading|\(fleetTag)|\(String(format: "%.4f,%.4f", origin.latitude, origin.longitude))|\(Int(bearingDegrees))|\(Int(aheadMeters))"
         let hits: [ClearanceRestrictionHit]
         if let cached = memoryCache[cacheKey], lastOffRouteCacheKey == cacheKey {
             hits = cached
@@ -132,7 +159,9 @@ public actor ClearanceCorridorProbe {
                 route: corridor,
                 aheadMeters: aheadMeters,
                 fromArcLengthMeters: 0,
-                corridorHalfWidthMeters: corridorHalfWidthMeters
+                corridorHalfWidthMeters: corridorHalfWidthMeters,
+                fleetBaseURL: fleetBaseURL,
+                fleetAPIKey: fleetAPIKey
             )) ?? []
             memoryCache[cacheKey] = hits
             lastOffRouteCacheKey = cacheKey
@@ -224,10 +253,12 @@ public actor ClearanceCorridorProbe {
         route: [Coordinate],
         aheadMeters: Double,
         fromArcLengthMeters: Double,
-        corridorHalfWidthMeters: Double
+        corridorHalfWidthMeters: Double,
+        fleetBaseURL: URL? = nil,
+        fleetAPIKey: String? = nil
     ) async throws -> [ClearanceRestrictionHit] {
         guard route.count >= 2 else { return [] }
-        let cacheKey = routeCacheKey(route)
+        let cacheKey = "\(routeCacheKey(route))|\(fleetBaseURL?.absoluteString ?? "public")"
         let projected: [ClearanceRestrictionHit]
         if let memory = memoryCache[cacheKey] {
             projected = memory
@@ -236,7 +267,11 @@ public actor ClearanceCorridorProbe {
                 return []
             }
             let bbox = corridorBoundingBox(for: route, paddingDegrees: 0.025)
-            let raw = try await fetchRestrictions(in: bbox)
+            let raw = try await fetchRestrictions(
+                in: bbox,
+                fleetBaseURL: fleetBaseURL,
+                fleetAPIKey: fleetAPIKey
+            )
             projected = projectAndFilter(
                 hits: raw,
                 route: route,
@@ -311,7 +346,11 @@ public actor ClearanceCorridorProbe {
         return Double(cleaned)
     }
 
-    private func fetchRestrictions(in bbox: String) async throws -> [ClearanceRestrictionHit] {
+    private func fetchRestrictions(
+        in bbox: String,
+        fleetBaseURL: URL? = nil,
+        fleetAPIKey: String? = nil
+    ) async throws -> [ClearanceRestrictionHit] {
         let query = """
         [out:json][timeout:25];
         (
@@ -324,12 +363,16 @@ public actor ClearanceCorridorProbe {
         );
         out center tags;
         """
-        guard let url = URL(string: "https://overpass-api.de/api/interpreter") else {
-            return []
-        }
+        let url = Self.overpassEndpoint(fleetBaseURL: fleetBaseURL)
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        if Self.prefersFleetOverpass(fleetBaseURL: fleetBaseURL) {
+            let trimmed = fleetAPIKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !trimmed.isEmpty {
+                request.setValue("Bearer \(trimmed)", forHTTPHeaderField: "Authorization")
+            }
+        }
         var components = URLComponents()
         components.queryItems = [URLQueryItem(name: "data", value: query)]
         request.httpBody = components.percentEncodedQuery?.data(using: .utf8)

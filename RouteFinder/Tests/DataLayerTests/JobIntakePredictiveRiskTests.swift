@@ -202,6 +202,18 @@ struct JobIntakePredictiveRiskTests {
         #expect(off.crossTrackMeters > ClearanceCorridorProbe.offRouteCrossTrackThresholdMeters)
     }
 
+    @Test func clearanceOverpassPrefersFleetProxyWhenPaired() {
+        let fleet = URL(string: "http://192.168.1.10:8080")!
+        #expect(ClearanceCorridorProbe.prefersFleetOverpass(fleetBaseURL: fleet))
+        #expect(!ClearanceCorridorProbe.prefersFleetOverpass(fleetBaseURL: nil))
+        let endpoint = ClearanceCorridorProbe.overpassEndpoint(fleetBaseURL: fleet)
+        #expect(endpoint.absoluteString.contains("/v1/proxy/overpass/interpreter"))
+        #expect(
+            ClearanceCorridorProbe.overpassEndpoint(fleetBaseURL: nil)
+                == ClearanceCorridorProbe.publicOverpassInterpreterURL
+        )
+    }
+
     @Test func predictiveRiskEnginePrefersSevereForecast() {
         let forecast = RouteRiskAdvisory(
             id: "f1",

@@ -24,7 +24,7 @@ swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY" --api-key 
 
 Paste the **same** `$FLEET_API_KEY` into Mac Settings (fleet API key), web-dispatch Bearer token, and the driver fleet wizard. Recommended for every 5–15 truck LAN pilot.
 
-Optional (only when demoing **forecast fuse** on drivers): `--tomtom-key` / `TOMTOM_API_KEY` and `--openweather-key` / `OPENWEATHER_API_KEY`. iOS and Android both consume these via the fleet proxy — drivers need no personal TomTom/OpenWeather keys. Not required for the ≤2-minute core path.
+Optional (only when demoing **forecast fuse** on drivers): `--tomtom-key` / `TOMTOM_API_KEY` and `--openweather-key` / `OPENWEATHER_API_KEY`. iOS and Android both consume these via the fleet proxy — drivers need no personal TomTom/OpenWeather keys. Not required for the ≤2-minute core path. Clearance radar Overpass also goes through the same fleet proxy when the cab is paired (meters 5–15 phones through one Mac).
 
 3. Confirm `GET http://<mac-ip>:8080/v1/proxy/status` shows `orsConfigured: true`.
 4. Open **Mac Dispatch** or **web-dispatch** pointed at the fleet URL; create org + vehicle; show QR.

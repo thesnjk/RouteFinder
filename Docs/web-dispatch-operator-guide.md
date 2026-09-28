@@ -70,10 +70,9 @@ On first visit, a short tour explains Connect → Org & vehicle → Push trip �
 
 ## 4. Create org, vehicle, and QR
 
-1. **Create org** (e.g. “Pilot fleet”).
-2. **Register vehicle** (e.g. “Unit 1”).
-3. Show the on-screen **QR** to the driver (or **Copy UUID**).
-4. Driver: iOS **Settings → Fleet & Dispatch → Open fleet setup wizard** → Discover / Test → **Scan QR** → Finish.
+1. Prefer **Bootstrap demo fleet** (Mac parity: creates **Demo Haulage Ltd** / **Artic 1** / AB12 CDE if missing and selects them). Or **Create org** (e.g. “Pilot fleet”) then **Register vehicle**.
+2. Show the on-screen **QR** to the driver (or **Copy UUID**).
+3. Driver: iOS **Settings → Fleet & Dispatch → Open fleet setup wizard** → Discover / Test → **Scan QR** → Finish.
 
 ---
 

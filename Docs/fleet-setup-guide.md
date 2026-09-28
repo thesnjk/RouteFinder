@@ -51,7 +51,7 @@ Daily fair-use caps (defaults 2,000 routes / 2,000 geocodes): `--route-daily-cap
 3. Register / select a vehicle.
 4. Show the driver the **QR code** under the vehicle picker (or tap **Copy UUID**).
 
-Confirm the health pill shows **Connected** (not **Local disk**) before pushing — desk push must hit the same `RouteFinderFleetServer` drivers pair to.
+Confirm the health pill shows **Connected** (not **Local disk**) before pushing — desk push must hit the same `RouteFinderFleetServer` drivers pair to. If the pill shows **Auth failed**, paste the shared `--api-key` secret into **Save fleet API key** on the Dispatch form (same secret as web Bearer / driver wizard) — Settings is not required.
 
 The **Fleet roster** panel polls each vehicle’s active trip (cap 20) for status / physics ETA / GPS age and draws yard pins on the map — snapshot GPS from cab phones, not live VU. Filter the Mac (or web) vehicle picker / roster by **label or plate** when the fleet grows toward 15 trucks.
 
@@ -105,7 +105,7 @@ Android C2 navigates with the **office fleet ORS proxy** (no driver HeiGIT key).
 | Failed to fetch in browser | CORS or wrong base URL | Use Vite `/fleet` proxy in dev, or direct `http://<mac-ip>:8080` with fleet CORS enabled |
 | Trip never arrives | Wrong vehicle UUID or remote sync off | Re-scan QR; confirm **Use remote fleet server** |
 | Orange “add API key” on phone | Fleet proxy off or remote sync off | Restart server with `--ors-key`; finish wizard |
-| HTTP 401 on desk push / catalog | Missing or mismatched `--api-key` | Paste the same secret into Mac Settings / web Bearer / driver wizard |
+| HTTP 401 on desk push / catalog | Missing or mismatched `--api-key` | Paste the same secret into Dispatch **Save fleet API key** (or Mac Settings) / web Bearer / driver wizard |
 | HTTP 429 / “Routing Cap Reached” / geocode cap | Operator ORS proxy daily budget exhausted | Check `GET /v1/proxy/status`; raise `--route-daily-cap` / `--geocode-daily-cap` or wait until tomorrow — see [unit-economics.md](unit-economics.md) |
 | Address search returns nothing | Server missing `--ors-key` or geocode cap hit | Check `GET /v1/proxy/status` on the Mac; raise `--geocode-daily-cap` if needed |
 | Discover finds nothing | Different Wi‑Fi / Bonjour blocked | Paste `http://<mac-ip>:8080` manually |

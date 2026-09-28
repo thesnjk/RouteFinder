@@ -301,6 +301,32 @@ struct DispatchTripFormView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("dispatchPushFleetHealthHint")
             }
+
+            if viewModel.needsFleetAPIKeyPaste {
+                VStack(alignment: .leading, spacing: RFSpacing.xs) {
+                    Text("Paste the same secret as server `--api-key` (web Bearer / driver wizard).")
+                        .font(RFFont.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    SecureField("Fleet API key", text: $viewModel.fleetAPIKeyDraft)
+                        .textFieldStyle(.roundedBorder)
+                        .accessibilityIdentifier("dispatchFleetAPIKey")
+                    Button {
+                        Task { await viewModel.saveFleetAPIKeyAndReprobe() }
+                    } label: {
+                        if viewModel.isSavingFleetAPIKey {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Text("Save fleet API key")
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(viewModel.isSavingFleetAPIKey)
+                    .accessibilityIdentifier("dispatchSaveFleetAPIKey")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
     }
 

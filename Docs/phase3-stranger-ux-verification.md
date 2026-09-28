@@ -61,9 +61,9 @@ Then: search or map pin → **Find route** (no personal HeiGIT key) → Rehearse
 
 | Surface | Check |
 |---------|-------|
-| Mac Dispatch | Health pill green when remote fleet URL reachable (`DispatchConsoleView`) |
+| Mac Dispatch | Health pill green only when **Connected** (health + auth probe). Wrong key → **Auth failed**; server/LAN down → **Offline** (`DispatchConsoleView` / `FleetServerHealthLabel`) |
 | Mac map | Stop pins + driver `SimulatedVehicleState` when snapshot has lat/lon; region includes driver |
-| Web | Test /health pill; geocode stops; `TripMapPreview` driver marker class `map-marker--driver` |
+| Web | Test /health pill: **Connected** / **Auth failed** / **Offline** (never “Connected health · …”); geocode stops; `TripMapPreview` driver marker class `map-marker--driver` |
 | Web walkaround | Driver snapshot shows orange **Walkaround defects** card when `latestInspectionSummary.defectCount > 0` (optional PDF download) |
 | Web proxy status | Connection panel shows ORS metering; TomTom / OpenWeather on/off when `/v1/proxy/status` reports forecast keys |
 

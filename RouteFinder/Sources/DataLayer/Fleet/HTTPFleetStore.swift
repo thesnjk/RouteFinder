@@ -16,6 +16,15 @@ public enum HTTPFleetStoreError: Error, Sendable, LocalizedError {
             return "Fleet server returned an unexpected response."
         case .serverError(let status, let body):
             let preview = body.trimmingCharacters(in: .whitespacesAndNewlines)
+            if status == 401 || status == 403 {
+                let base = "Fleet API key rejected. Check the shared key with the operator."
+                if preview.isEmpty { return base }
+                let lower = preview.lowercased()
+                if lower.contains("unauthorized") || lower.contains("forbidden") {
+                    return base
+                }
+                return "\(base) (\(preview.prefix(120)))"
+            }
             if preview.isEmpty {
                 return "Fleet server error (HTTP \(status))."
             }
@@ -56,6 +65,24 @@ public actor HTTPFleetStore: FleetDispatchPort {
     /// Pings the fleet server health endpoint.
     public func checkHealth() async throws -> FleetServerHealthResponse {
         try await get(path: "health")
+    }
+
+    /// Probes a protected route so pairing cannot report Connected on public `/health` alone
+    /// when the server requires `--api-key`.
+    public func verifyAuthenticatedAccess() async throws {
+        let (data, response) = try await rawRequest(path: "v1/proxy/status", method: "GET")
+        guard (200 ... 299).contains(response.statusCode) else {
+            throw mapError(status: response.statusCode, data: data)
+        }
+    }
+
+    /// Reads forecast proxy capability flags from `/v1/proxy/status` (TomTom / OpenWeather).
+    public func fetchForecastProxyCapabilities() async throws -> FleetForecastProxyCapabilities {
+        let (data, response) = try await rawRequest(path: "v1/proxy/status", method: "GET")
+        guard (200 ... 299).contains(response.statusCode) else {
+            throw mapError(status: response.statusCode, data: data)
+        }
+        return try decode(FleetForecastProxyCapabilities.self, from: data)
     }
 
     public func createOrg(name: String) async throws -> FleetOrg {

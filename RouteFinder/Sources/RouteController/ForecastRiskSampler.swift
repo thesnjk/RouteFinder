@@ -16,6 +16,57 @@ public enum ForecastRiskSampler: Sendable {
         return now.timeIntervalSince(lastRefresh) >= refreshIntervalSeconds
     }
 
+    /// Whether TomTom sampling should prefer the fleet proxy (parity with Android U14).
+    public static func prefersFleetTomTom(
+        fleetBaseURL: URL?,
+        tomTomProxyConfigured: Bool
+    ) -> Bool {
+        fleetBaseURL != nil && tomTomProxyConfigured
+    }
+
+    /// Whether OpenWeather sampling should prefer the fleet proxy.
+    public static func prefersFleetOpenWeather(
+        fleetBaseURL: URL?,
+        openWeatherProxyConfigured: Bool
+    ) -> Bool {
+        fleetBaseURL != nil && openWeatherProxyConfigured
+    }
+
+    /// Fleet TomTom flow URL: `{base}/v1/proxy/tomtom/flow?point=lat,lon`.
+    public static func tomTomFlowProxyURL(
+        fleetBaseURL: URL,
+        latitude: Double,
+        longitude: Double
+    ) -> URL? {
+        var components = URLComponents(
+            url: fleetBaseURL.appendingPathComponent("v1/proxy/tomtom/flow"),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [
+            URLQueryItem(name: "point", value: "\(latitude),\(longitude)"),
+        ]
+        return components?.url
+    }
+
+    /// Fleet OpenWeather forecast URL: `{base}/v1/proxy/openweather/forecast?lat=&lon=&cnt=8`.
+    public static func openWeatherForecastProxyURL(
+        fleetBaseURL: URL,
+        latitude: Double,
+        longitude: Double,
+        count: Int = 8
+    ) -> URL? {
+        var components = URLComponents(
+            url: fleetBaseURL.appendingPathComponent("v1/proxy/openweather/forecast"),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [
+            URLQueryItem(name: "lat", value: String(latitude)),
+            URLQueryItem(name: "lon", value: String(longitude)),
+            URLQueryItem(name: "cnt", value: String(count)),
+        ]
+        return components?.url
+    }
+
     /// Builds advisories from TomTom flow at horizon sample points (no network — pure mapping).
     public static func trafficAdvisory(
         flow: TomTomFlowSegmentData,
@@ -126,6 +177,50 @@ public enum ForecastRiskSampler: Sendable {
         return items
     }
 
+    /// Polls TomTom via fleet `/v1/proxy/tomtom/flow` (operator-paid key).
+    public static func sampleTomTomHorizonViaFleet(
+        route: [Coordinate],
+        currentArcLengthMeters: Double,
+        fleetBaseURL: URL,
+        fleetAPIKey: String?,
+        session: URLSession = .shared,
+        offsetsMeters: [Double] = horizonOffsetsMeters
+    ) async -> [RouteRiskAdvisory] {
+        guard await APIUsageLedger.shared.allowsNonCriticalRequest(provider: .tomTomFlow) else {
+            return []
+        }
+        let points = LiveTrafficHazardSampler.samplePointsAhead(
+            route: route,
+            currentArcLengthMeters: currentArcLengthMeters,
+            offsetsMeters: offsetsMeters
+        )
+        var items: [RouteRiskAdvisory] = []
+        for point in points {
+            guard let url = tomTomFlowProxyURL(
+                fleetBaseURL: fleetBaseURL,
+                latitude: point.coordinate.latitude,
+                longitude: point.coordinate.longitude
+            ) else { continue }
+            do {
+                let data = try await fleetGET(url: url, apiKey: fleetAPIKey, session: session)
+                let flow = try TomTomTrafficFlowClient.parseFlowSegment(from: data)
+                if let advisory = trafficAdvisory(
+                    flow: flow,
+                    arcLengthMeters: point.arcLengthMeters,
+                    currentArcLengthMeters: currentArcLengthMeters
+                ) {
+                    items.append(advisory)
+                }
+            } catch {
+                continue
+            }
+        }
+        if !points.isEmpty {
+            await APIUsageLedger.shared.record(provider: .tomTomFlow)
+        }
+        return items
+    }
+
     /// Fetches OpenWeather 3-hour forecast slots and maps the nearest corridor sample.
     public static func sampleOpenWeatherHorizon(
         route: [Coordinate],
@@ -162,51 +257,171 @@ public enum ForecastRiskSampler: Sendable {
                 return []
             }
             await APIUsageLedger.shared.record(provider: .openWeather)
-            let decoded = try JSONDecoder().decode(OpenWeatherForecastResponse.self, from: data)
-            var items: [RouteRiskAdvisory] = []
-            for (index, entry) in decoded.list.prefix(3).enumerated() {
-                let offsetIndex = min(index, offsetsMeters.count - 1)
-                let arc = currentArcLengthMeters + offsetsMeters[offsetIndex]
-                if let advisory = weatherAdvisory(
-                    conditionMain: entry.weather.first?.main ?? "",
-                    windGustMps: entry.wind?.gust,
-                    visibilityMeters: entry.visibility.map(Double.init),
-                    arcLengthMeters: arc,
-                    currentArcLengthMeters: currentArcLengthMeters
-                ) {
-                    items.append(advisory)
-                }
-            }
-            return items
+            return decodeOpenWeatherAdvisories(
+                data: data,
+                currentArcLengthMeters: currentArcLengthMeters,
+                offsetsMeters: offsetsMeters
+            )
         } catch {
             return []
         }
     }
 
-    /// Convenience: merges TomTom + OpenWeather horizon samples.
+    /// Fetches OpenWeather forecast via fleet `/v1/proxy/openweather/forecast`.
+    public static func sampleOpenWeatherHorizonViaFleet(
+        route: [Coordinate],
+        currentArcLengthMeters: Double,
+        fleetBaseURL: URL,
+        fleetAPIKey: String?,
+        session: URLSession = .shared,
+        offsetsMeters: [Double] = horizonOffsetsMeters
+    ) async -> [RouteRiskAdvisory] {
+        guard await APIUsageLedger.shared.allowsNonCriticalRequest(provider: .openWeather) else {
+            return []
+        }
+        let points = LiveTrafficHazardSampler.samplePointsAhead(
+            route: route,
+            currentArcLengthMeters: currentArcLengthMeters,
+            offsetsMeters: offsetsMeters
+        )
+        guard let sample = points.first,
+              let url = openWeatherForecastProxyURL(
+                fleetBaseURL: fleetBaseURL,
+                latitude: sample.coordinate.latitude,
+                longitude: sample.coordinate.longitude
+              ) else {
+            return []
+        }
+        do {
+            let data = try await fleetGET(url: url, apiKey: fleetAPIKey, session: session)
+            await APIUsageLedger.shared.record(provider: .openWeather)
+            return decodeOpenWeatherAdvisories(
+                data: data,
+                currentArcLengthMeters: currentArcLengthMeters,
+                offsetsMeters: offsetsMeters
+            )
+        } catch {
+            return []
+        }
+    }
+
+    /// Convenience: merges TomTom + OpenWeather horizon samples (device keys only).
     public static func sampleHorizon(
         route: [Coordinate],
         currentArcLengthMeters: Double,
         tomTomAPIKey: String?,
         openWeatherAPIKey: String?
     ) async -> [RouteRiskAdvisory] {
+        await sampleHorizon(
+            route: route,
+            currentArcLengthMeters: currentArcLengthMeters,
+            tomTomAPIKey: tomTomAPIKey,
+            openWeatherAPIKey: openWeatherAPIKey,
+            fleetBaseURL: nil,
+            fleetAPIKey: nil,
+            tomTomProxyConfigured: false,
+            openWeatherProxyConfigured: false
+        )
+    }
+
+    /// Merges TomTom + OpenWeather horizon samples, preferring fleet proxy when configured (Android U14 parity).
+    public static func sampleHorizon(
+        route: [Coordinate],
+        currentArcLengthMeters: Double,
+        tomTomAPIKey: String?,
+        openWeatherAPIKey: String?,
+        fleetBaseURL: URL?,
+        fleetAPIKey: String?,
+        tomTomProxyConfigured: Bool,
+        openWeatherProxyConfigured: Bool
+    ) async -> [RouteRiskAdvisory] {
         var items: [RouteRiskAdvisory] = []
-        if let key = tomTomAPIKey?.trimmingCharacters(in: .whitespacesAndNewlines), !key.isEmpty,
-           let client = try? TomTomTrafficFlowClient(apiKey: key) {
+        let useTomTomProxy = prefersFleetTomTom(
+            fleetBaseURL: fleetBaseURL,
+            tomTomProxyConfigured: tomTomProxyConfigured
+        )
+        let useOpenWeatherProxy = prefersFleetOpenWeather(
+            fleetBaseURL: fleetBaseURL,
+            openWeatherProxyConfigured: openWeatherProxyConfigured
+        )
+        let tomTom = tomTomAPIKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
+        if useTomTomProxy, let fleet = fleetBaseURL {
+            items.append(contentsOf: await sampleTomTomHorizonViaFleet(
+                route: route,
+                currentArcLengthMeters: currentArcLengthMeters,
+                fleetBaseURL: fleet,
+                fleetAPIKey: fleetAPIKey
+            ))
+        } else if !tomTom.isEmpty, let client = try? TomTomTrafficFlowClient(apiKey: tomTom) {
             items.append(contentsOf: await sampleTomTomHorizon(
                 route: route,
                 currentArcLengthMeters: currentArcLengthMeters,
                 trafficClient: client
             ))
         }
-        if let ow = openWeatherAPIKey {
+
+        let openWeather = openWeatherAPIKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if useOpenWeatherProxy, let fleet = fleetBaseURL {
+            items.append(contentsOf: await sampleOpenWeatherHorizonViaFleet(
+                route: route,
+                currentArcLengthMeters: currentArcLengthMeters,
+                fleetBaseURL: fleet,
+                fleetAPIKey: fleetAPIKey
+            ))
+        } else if !openWeather.isEmpty {
             items.append(contentsOf: await sampleOpenWeatherHorizon(
                 route: route,
                 currentArcLengthMeters: currentArcLengthMeters,
-                apiKey: ow
+                apiKey: openWeather
             ))
         }
         return items
+    }
+
+    private static func decodeOpenWeatherAdvisories(
+        data: Data,
+        currentArcLengthMeters: Double,
+        offsetsMeters: [Double]
+    ) -> [RouteRiskAdvisory] {
+        guard let decoded = try? JSONDecoder().decode(OpenWeatherForecastResponse.self, from: data) else {
+            return []
+        }
+        var items: [RouteRiskAdvisory] = []
+        for (index, entry) in decoded.list.prefix(3).enumerated() {
+            let offsetIndex = min(index, offsetsMeters.count - 1)
+            let arc = currentArcLengthMeters + offsetsMeters[offsetIndex]
+            if let advisory = weatherAdvisory(
+                conditionMain: entry.weather.first?.main ?? "",
+                windGustMps: entry.wind?.gust,
+                visibilityMeters: entry.visibility.map(Double.init),
+                arcLengthMeters: arc,
+                currentArcLengthMeters: currentArcLengthMeters
+            ) {
+                items.append(advisory)
+            }
+        }
+        return items
+    }
+
+    private static func fleetGET(
+        url: URL,
+        apiKey: String?,
+        session: URLSession
+    ) async throws -> Data {
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.applyAppIdentity()
+        let trimmed = apiKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !trimmed.isEmpty {
+            request.setValue("Bearer \(trimmed)", forHTTPHeaderField: "Authorization")
+        }
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+        return data
     }
 }
 

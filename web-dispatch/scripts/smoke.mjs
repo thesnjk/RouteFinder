@@ -665,4 +665,40 @@ assert.equal(norfolk.destination.longitude, 0.3955)
 assert.equal(norfolk.origin.label, 'Norwich')
 assert.equal(norfolk.destination.label, "King's Lynn")
 
+/** Mirrors web-dispatch/src/bootstrapDemoFleet.ts pick helpers (Mac parity names). */
+const DEMO_ORG_NAME = 'Demo Haulage Ltd'
+const DEMO_VEHICLE_LABEL = 'Artic 1'
+const DEMO_VEHICLE_PLATE = 'AB12 CDE'
+
+function pickDemoOrg(orgs) {
+  return orgs.find((o) => o.name === DEMO_ORG_NAME)
+}
+
+function pickDemoVehicle(vehicles) {
+  return vehicles.find(
+    (v) =>
+      v.label === DEMO_VEHICLE_LABEL ||
+      (v.registrationPlate != null && v.registrationPlate === DEMO_VEHICLE_PLATE),
+  )
+}
+
+assert.equal(pickDemoOrg([{ id: '1', name: 'Other' }]), undefined)
+assert.equal(pickDemoOrg([{ id: '1', name: 'Other' }, { id: '2', name: DEMO_ORG_NAME }])?.id, '2')
+assert.equal(
+  pickDemoVehicle([{ id: 'v1', orgId: '2', label: 'Unit 1', registrationPlate: null }]),
+  undefined,
+)
+assert.equal(
+  pickDemoVehicle([
+    { id: 'v1', orgId: '2', label: 'Unit 1', registrationPlate: null },
+    { id: 'v2', orgId: '2', label: DEMO_VEHICLE_LABEL, registrationPlate: DEMO_VEHICLE_PLATE },
+  ])?.id,
+  'v2',
+)
+assert.equal(
+  pickDemoVehicle([{ id: 'v3', orgId: '2', label: 'Spare', registrationPlate: DEMO_VEHICLE_PLATE }])
+    ?.id,
+  'v3',
+)
+
 console.log('fleet types smoke ok')

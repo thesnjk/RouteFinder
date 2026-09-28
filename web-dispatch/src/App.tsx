@@ -20,6 +20,7 @@ import { fleetProxyUserMessage } from './fleetProxyError'
 import { fleetHealthLabel } from './fleetHealthLabel'
 import { nearCapWarning, orsSummaryLine } from './fleetProxyStatusLabel'
 import { loadNorfolkDemoStops } from './demoCorridor'
+import { bootstrapDemoFleet } from './bootstrapDemoFleet'
 import { canPushTrip, isPushBlockedByFleetHealth } from './dispatchPushGate'
 import { TripMapPreview } from './TripMapPreview'
 import { VehicleQR } from './VehicleQR'
@@ -438,6 +439,28 @@ export default function App() {
 
       <section className="panel">
         <h2>Org & vehicle</h2>
+        <div className="row">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              run(async () => {
+                persist()
+                const { org, vehicle } = await bootstrapDemoFleet(client)
+                setOrgs(await client.listOrgs())
+                setOrgId(org.id)
+                setVehicles(await client.listVehicles(org.id))
+                setVehicleId(vehicle.id)
+              })
+            }
+          >
+            Bootstrap demo fleet
+          </button>
+        </div>
+        <p className="muted">
+          One-tap Mac parity: creates <strong>Demo Haulage Ltd</strong> / <strong>Artic 1</strong> (AB12
+          CDE) if missing, then selects them for QR / push.
+        </p>
         <div className="row">
           <input value={newOrgName} onChange={(e) => setNewOrgName(e.target.value)} />
           <button

@@ -1,4 +1,5 @@
 import Contracts
+import DataLayer
 import SwiftUI
 
 #if os(macOS)
@@ -11,6 +12,8 @@ import UIKit
 struct DispatcherOnboardingSheet: View {
     var onOpenDispatch: () -> Void
     var onContinue: () -> Void
+
+    @State private var sharedAPIKey: String = ""
 
     private let serverCommand =
         #"swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY" --api-key "your-shared-secret""#
@@ -49,10 +52,14 @@ struct DispatcherOnboardingSheet: View {
                         .modifier(GlassButton())
                         .accessibilityIdentifier("dispatcherCopyServerCommand")
 
-                        Text("Pilot: keep `--api-key` and paste the same secret into Mac Settings, web dispatch Bearer, and the driver fleet wizard.")
+                        Text("Pilot: keep `--api-key` and paste the same secret below (and into web Bearer / driver wizard).")
                             .font(RFFont.caption)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
+
+                        SecureField("Shared fleet API key (your-shared-secret)", text: $sharedAPIKey)
+                            .textFieldStyle(.roundedBorder)
+                            .accessibilityIdentifier("dispatcherSharedAPIKey")
                     }
                     .padding(RFSpacing.md)
                     .glassPanel(cornerRadius: 16)
@@ -60,13 +67,13 @@ struct DispatcherOnboardingSheet: View {
                     VStack(alignment: .leading, spacing: RFSpacing.sm) {
                         Text("2. Open Dispatch console")
                             .font(RFFont.summary.weight(.semibold))
-                        Text("Create an organisation, register a vehicle, show the QR to the driver, then push a trip.")
+                        Text("Wires this Mac to the local fleet server (http://127.0.0.1:8080) if no URL is saved yet, then opens Dispatch so push reaches paired drivers.")
                             .font(RFFont.caption)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
 
                         Button {
-                            onOpenDispatch()
+                            applyDeskLANBootstrapAndOpen()
                         } label: {
                             Label("Open Dispatch Console", systemImage: "rectangle.split.2x1")
                         }
@@ -89,6 +96,18 @@ struct DispatcherOnboardingSheet: View {
             #endif
         }
         .interactiveDismissDisabled()
+    }
+
+    private func applyDeskLANBootstrapAndOpen() {
+        do {
+            try DispatcherDeskLANBootstrap.apply(
+                apiKey: sharedAPIKey,
+                saveAPIKey: { try FleetServerCredentials.saveAPIKey($0) }
+            )
+        } catch {
+            // Still open Dispatch so the operator can finish wiring in Settings if Keychain fails.
+        }
+        onOpenDispatch()
     }
 
     private func copyToPasteboard(_ string: String) {

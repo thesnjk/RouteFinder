@@ -36,6 +36,10 @@ public final class DispatchViewModel {
     /// Pill copy: Connected / Auth failed · … / Offline / nil when local or unchecked.
     public private(set) var fleetServerHealthDetail: String?
     public private(set) var fleetServerModeLabel: String = "Local disk"
+    /// Draft shared fleet API key for inline desk paste (Auth failed recovery).
+    public var fleetAPIKeyDraft: String = ""
+    /// True while persisting the desk fleet API key and re-probing health.
+    public private(set) var isSavingFleetAPIKey = false
     /// Last telematics CSV import (read-only stub) for status panel.
     public private(set) var telematicsImportBatch: TelematicsImportBatch?
 
@@ -135,6 +139,14 @@ public final class DispatchViewModel {
             hasResolvedStops: resolved,
             isRemoteFleet: fleetServerModeLabel != "Local disk",
             healthOk: fleetServerHealthOk == true
+        )
+    }
+
+    /// Show inline fleet API key paste when remote and not Connected.
+    public var needsFleetAPIKeyPaste: Bool {
+        DispatchFleetKeyPasteGate.needsPaste(
+            isRemoteFleet: fleetServerModeLabel != "Local disk",
+            healthOk: fleetServerHealthOk
         )
     }
 
@@ -348,6 +360,7 @@ public final class DispatchViewModel {
         }
         fleetServerModeLabel = "Remote"
         let apiKey = try? FleetServerCredentials.loadAPIKey()
+        prefillFleetAPIKeyDraftIfNeeded(loadedKey: apiKey)
         let client = HTTPFleetStore(baseURL: url, apiKey: apiKey)
         do {
             let health = try await client.checkHealth()
@@ -403,6 +416,34 @@ public final class DispatchViewModel {
         }
     }
 
+    /// Persists the inline desk fleet API key and re-probes Connected health.
+    public func saveFleetAPIKeyAndReprobe() async {
+        isSavingFleetAPIKey = true
+        defer { isSavingFleetAPIKey = false }
+        do {
+            try FleetServerCredentials.saveAPIKey(fleetAPIKeyDraft)
+            // Keychain save posts `.fleetStoreConfigurationDidChange` → reloadFleetStore.
+            await refreshFleetServerHealth()
+            if fleetServerHealthOk == true {
+                showToast("Fleet API key saved — Connected")
+            } else if let detail = fleetServerHealthDetail {
+                showToast(detail)
+            }
+        } catch {
+            let message = error.localizedDescription
+            statusMessage = message
+            showToast(message)
+        }
+    }
+
+    private func prefillFleetAPIKeyDraftIfNeeded(loadedKey: String?) {
+        guard fleetAPIKeyDraft.isEmpty,
+              let loadedKey,
+              !loadedKey.isEmpty else {
+            return
+        }
+        fleetAPIKeyDraft = loadedKey
+    }
 
     /// Updates vehicle list when org selection changes.
     public func orgSelectionChanged() async {

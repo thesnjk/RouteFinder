@@ -18,9 +18,11 @@ public final class DispatchViewModel {
     public var selectedVehicleId: UUID?
     /// Filter query for vehicle picker + roster poll (label / plate).
     public var vehicleFilterQuery: String = ""
+    /// All / Hide offline / Defects only — applied after text filter using roster GPS/defects.
+    public var vehiclePickerMode: DispatchRosterPickerMode = .all
     public var draft = DispatchTripDraft.ukDemoTemplate()
     public private(set) var activeTrip: FleetTrip?
-    /// Fleet roster rows (capped) from last roster poll.
+    /// Fleet roster rows (capped) from last roster poll (text-filtered; mode applied in `displayedRosterRows`).
     public private(set) var rosterRows: [DispatchRosterRow] = []
     /// Yard GPS pins derived from roster (all cabs with published location).
     public private(set) var fleetPins: [DispatchRosterPin] = []
@@ -115,9 +117,39 @@ public final class DispatchViewModel {
         }
     }
 
-    /// Vehicles matching `vehicleFilterQuery` (empty query = all).
-    public var filteredVehicles: [FleetVehicle] {
+    /// Vehicles matching `vehicleFilterQuery` only (used for roster poll scope).
+    public var textFilteredVehicles: [FleetVehicle] {
         DispatchFleetRoster.filterVehicles(vehicles, query: vehicleFilterQuery)
+    }
+
+    /// Vehicles for the trip-form picker (text filter + roster mode).
+    public var filteredVehicles: [FleetVehicle] {
+        let textFiltered = textFilteredVehicles
+        let statusByID = Dictionary(
+            uniqueKeysWithValues: rosterRows.map {
+                ($0.vehicleId, (gpsAgeSeconds: $0.gpsAgeSeconds, hasDefects: $0.hasDefects))
+            }
+        )
+        let allowed = Set(
+            DispatchRosterPickerFilter.filterOrderedIDs(
+                textFiltered.map(\.id),
+                mode: vehiclePickerMode,
+                statusByID: statusByID
+            )
+        )
+        return textFiltered.filter { allowed.contains($0.id) }
+    }
+
+    /// Roster panel rows after applying the same picker mode.
+    public var displayedRosterRows: [DispatchRosterRow] {
+        rosterRows.filter { row in
+            DispatchRosterPickerFilter.includes(
+                mode: vehiclePickerMode,
+                gpsAgeSeconds: row.gpsAgeSeconds,
+                hasDefects: row.hasDefects,
+                hasRosterData: true
+            )
+        }
     }
 
     /// True when push has a vehicle, ≥2 resolved stops, remote fleet, and Connected health.
@@ -158,9 +190,9 @@ public final class DispatchViewModel {
         await refreshActiveTrip()
     }
 
-    /// Loads active trips for capped filtered vehicles into `rosterRows` / `fleetPins`.
+    /// Loads active trips for capped text-filtered vehicles into `rosterRows` / `fleetPins`.
     public func refreshRoster() async {
-        let capped = Array(filteredVehicles.prefix(DispatchFleetRoster.vehicleCap))
+        let capped = Array(textFilteredVehicles.prefix(DispatchFleetRoster.vehicleCap))
         guard !capped.isEmpty else {
             rosterRows = []
             fleetPins = []

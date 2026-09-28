@@ -23,6 +23,11 @@ import { TripMapPreview } from './TripMapPreview'
 import { VehicleQR } from './VehicleQR'
 import { filterVehicles } from './vehicleFilter'
 import {
+  filterRosterRows,
+  filterVehicleIdsByRosterMode,
+  type RosterPickerMode,
+} from './rosterPickerFilter'
+import {
   ROSTER_VEHICLE_CAP,
   buildRosterRows,
   formatGpsAge,
@@ -63,6 +68,7 @@ export default function App() {
   const [orgId, setOrgId] = useState('')
   const [vehicleId, setVehicleId] = useState('')
   const [vehicleFilterQuery, setVehicleFilterQuery] = useState('')
+  const [vehiclePickerMode, setVehiclePickerMode] = useState<RosterPickerMode>('all')
   const [newOrgName, setNewOrgName] = useState('Pilot fleet')
   const [newVehicleLabel, setNewVehicleLabel] = useState('Unit 1')
   const [originStop, setOriginStop] = useState<GeocodedStop | null>(null)
@@ -202,13 +208,37 @@ export default function App() {
   }, [client, vehicleId])
 
   const selectedVehicle = vehicles.find((v) => v.id === vehicleId)
-  const filteredVehicles = useMemo(
+  const textFilteredVehicles = useMemo(
     () => filterVehicles(vehicles, vehicleFilterQuery),
     [vehicles, vehicleFilterQuery],
   )
   const rosterVehicles = useMemo(
-    () => filteredVehicles.slice(0, ROSTER_VEHICLE_CAP),
-    [filteredVehicles],
+    () => textFilteredVehicles.slice(0, ROSTER_VEHICLE_CAP),
+    [textFilteredVehicles],
+  )
+  const statusById = useMemo(() => {
+    const map: Record<string, { gpsAgeSeconds: number | null; hasDefects: boolean }> = {}
+    for (const row of rosterRows) {
+      map[row.vehicleId] = {
+        gpsAgeSeconds: row.gpsAgeSeconds,
+        hasDefects: row.hasDefects,
+      }
+    }
+    return map
+  }, [rosterRows])
+  const filteredVehicles = useMemo(() => {
+    const allowed = new Set(
+      filterVehicleIdsByRosterMode(
+        textFilteredVehicles.map((v) => v.id),
+        vehiclePickerMode,
+        statusById,
+      ),
+    )
+    return textFilteredVehicles.filter((v) => allowed.has(v.id))
+  }, [textFilteredVehicles, vehiclePickerMode, statusById])
+  const displayedRosterRows = useMemo(
+    () => filterRosterRows(rosterRows, vehiclePickerMode),
+    [rosterRows, vehiclePickerMode],
   )
 
   const pushReady = useMemo(
@@ -492,6 +522,18 @@ export default function App() {
           />
         </label>
         <label>
+          Roster mode
+          <select
+            value={vehiclePickerMode}
+            onChange={(e) => setVehiclePickerMode(e.target.value as RosterPickerMode)}
+            disabled={busy || vehicles.length === 0}
+          >
+            <option value="all">All</option>
+            <option value="hideOffline">Hide offline</option>
+            <option value="defectsOnly">Defects only</option>
+          </select>
+        </label>
+        <label>
           Vehicle
           <select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}>
             <option value="">Select…</option>
@@ -665,10 +707,13 @@ export default function App() {
         ) : (
           <>
             <p className="muted">
-              Polling {rosterRows.length || rosterVehicles.length} vehicle
-              {(rosterRows.length || rosterVehicles.length) === 1 ? '' : 's'}
-              {filteredVehicles.length > ROSTER_VEHICLE_CAP
+              Polling {rosterVehicles.length} vehicle
+              {rosterVehicles.length === 1 ? '' : 's'}
+              {textFilteredVehicles.length > ROSTER_VEHICLE_CAP
                 ? ` (capped at ${ROSTER_VEHICLE_CAP})`
+                : ''}
+              {vehiclePickerMode !== 'all'
+                ? ` · showing ${displayedRosterRows.length} after mode filter`
                 : ''}
               . Click a row to select.
             </p>
@@ -685,9 +730,12 @@ export default function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(rosterRows.length > 0
-                    ? rosterRows
-                    : buildRosterRows(rosterVehicles, {}, Date.now())
+                  {(displayedRosterRows.length > 0
+                    ? displayedRosterRows
+                    : filterRosterRows(
+                        buildRosterRows(rosterVehicles, {}, Date.now()),
+                        vehiclePickerMode,
+                      )
                   ).map((row) => (
                     <tr
                       key={row.vehicleId}

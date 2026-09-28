@@ -514,4 +514,55 @@ assert.equal(
   false,
 )
 
+/** Mirrors web-dispatch/src/rosterPickerFilter.ts */
+function rosterPickerIncludes({ mode, gpsAgeSeconds, hasDefects, hasRosterData }) {
+  switch (mode) {
+    case 'all':
+      return true
+    case 'hideOffline':
+      if (!hasRosterData) return true
+      return gpsAgeSeconds != null
+    case 'defectsOnly':
+      return hasRosterData && hasDefects
+    default:
+      return true
+  }
+}
+assert.equal(
+  rosterPickerIncludes({
+    mode: 'hideOffline',
+    gpsAgeSeconds: null,
+    hasDefects: false,
+    hasRosterData: false,
+  }),
+  true,
+)
+assert.equal(
+  rosterPickerIncludes({
+    mode: 'hideOffline',
+    gpsAgeSeconds: null,
+    hasDefects: false,
+    hasRosterData: true,
+  }),
+  false,
+)
+assert.equal(
+  rosterPickerIncludes({
+    mode: 'defectsOnly',
+    gpsAgeSeconds: 1,
+    hasDefects: true,
+    hasRosterData: true,
+  }),
+  true,
+)
+assert.equal(
+  rosterPickerIncludes({
+    mode: 'defectsOnly',
+    gpsAgeSeconds: 1,
+    hasDefects: false,
+    hasRosterData: true,
+  }),
+  false,
+)
+
 console.log('fleet types smoke ok')

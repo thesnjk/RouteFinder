@@ -32,7 +32,7 @@ public struct DispatchConsoleView: View {
                     vehicleLabel: viewModel.selectedVehicleLabel,
                     previewCoordinates: viewModel.previewCoordinates,
                     telematicsImportBatch: viewModel.telematicsImportBatch,
-                    rosterRows: viewModel.rosterRows,
+                    rosterRows: viewModel.displayedRosterRows,
                     selectedVehicleId: viewModel.selectedVehicleId,
                     onSelectVehicle: { vehicleId in
                         Task { await viewModel.selectRosterVehicle(vehicleId) }

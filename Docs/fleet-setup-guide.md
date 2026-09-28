@@ -53,7 +53,7 @@ Daily fair-use caps (defaults 2,000 routes / 2,000 geocodes): `--route-daily-cap
 
 Confirm the health pill shows **Connected** (not **Local disk**) before pushing — desk push must hit the same `RouteFinderFleetServer` drivers pair to. If the pill shows **Auth failed**, paste the shared `--api-key` secret into **Save fleet API key** on the Dispatch form (same secret as web Bearer / driver wizard) — Settings is not required.
 
-The **Fleet roster** panel polls each vehicle’s active trip (cap 20) for status / physics ETA / GPS age and draws yard pins on the map — snapshot GPS from cab phones, not live VU. Filter the Mac (or web) vehicle picker / roster by **label or plate** when the fleet grows toward 15 trucks.
+The **Fleet roster** panel polls each vehicle’s active trip (cap 20) for status / physics ETA / GPS age and draws yard pins on the map — snapshot GPS from cab phones, not live VU. Filter the Mac (or web) vehicle picker / roster by **label or plate**, then **All / Hide offline / Defects only** when the fleet grows toward 15 trucks.
 
 The QR payload is `routefinder-vehicle:<UUID>` (raw UUID also works when pasting).
 

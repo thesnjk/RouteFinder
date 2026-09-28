@@ -1,3 +1,5 @@
+import Contracts
+import DataLayer
 import SwiftUI
 
 /// Native fleet dispatch console: trip form + map/status split view.
@@ -71,6 +73,15 @@ public struct DispatchConsoleView: View {
             }
         }
         .task {
+            // Window → Dispatch / iPad entry: wire LAN remote when URL unset so Push Gate can reach Connected.
+            do {
+                try DispatcherDeskLANBootstrap.apply(
+                    apiKey: nil,
+                    saveAPIKey: { try FleetServerCredentials.saveAPIKey($0) }
+                )
+            } catch {
+                // Continue into the console; operator can finish wiring in Settings.
+            }
             await viewModel.refreshCatalog()
             await viewModel.reloadTelematicsImport()
             viewModel.startPolling()

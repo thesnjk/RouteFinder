@@ -64,7 +64,7 @@ struct OfficePCGuideSheet: View {
                             .font(RFFont.summary.weight(.semibold))
                         bullet("Someone starts RouteFinderFleetServer on the office Mac with --ors-key and --api-key (same secret as web Bearer / driver wizard)")
                         bullet("On the office PC: open the web-dispatch console (Vite /fleet proxy or direct URL); paste the shared API key as Bearer")
-                        bullet("Create organisation → register vehicle → show QR to drivers")
+                        bullet("Bootstrap demo fleet (Demo Haulage Ltd / Artic 1) — or create organisation → register vehicle — then show QR to drivers")
                         bullet("Push a trip — driver phones toast within ~5 seconds")
                         Text("Full detail: Docs/web-dispatch-operator-guide.md")
                             .font(RFFont.caption)

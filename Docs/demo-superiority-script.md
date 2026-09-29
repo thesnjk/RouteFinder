@@ -36,7 +36,7 @@ Optional (only when demoing **forecast fuse** on drivers): `--tomtom-key` / `TOM
 
 | Clock | Action | Pass look |
 |------:|--------|-----------|
-| 0:00 | Dispatch: **Load Norwich → King's Lynn** → **Push trip** (geocode optional) | Trip leaves draft |
+| 0:00 | Dispatch: **Push trip** (web opens with Norwich→King's Lynn pre-filled; Mac same default — Load optional reset) | Trip leaves draft |
 | 0:15 | Driver: toast **Trip received** (SSE) | Toast **&lt;10 s** after push |
 | 0:25 | Driver: route auto-loads or **Find route** | Polyline + ETA; no API-key nag |
 | 0:40 | Driver: **Rehearse** | Physics ETA appears (may differ from ORS) |

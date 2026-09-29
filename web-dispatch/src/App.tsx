@@ -74,8 +74,12 @@ export default function App() {
   const [vehiclePickerMode, setVehiclePickerMode] = useState<RosterPickerMode>('all')
   const [newOrgName, setNewOrgName] = useState('Pilot fleet')
   const [newVehicleLabel, setNewVehicleLabel] = useState('Unit 1')
-  const [originStop, setOriginStop] = useState<GeocodedStop | null>(null)
-  const [destStop, setDestStop] = useState<GeocodedStop | null>(null)
+  const [originStop, setOriginStop] = useState<GeocodedStop | null>(
+    () => loadNorfolkDemoStops().origin,
+  )
+  const [destStop, setDestStop] = useState<GeocodedStop | null>(
+    () => loadNorfolkDemoStops().destination,
+  )
   const [grossWeightKg, setGrossWeightKg] = useState('')
   const [adrClass, setAdrClass] = useState('')
   const [originEarliest, setOriginEarliest] = useState('')
@@ -268,6 +272,7 @@ export default function App() {
       }),
     [orgId, vehicleId, originStop, destStop, healthOk],
   )
+  const pushBlockedByMissingStops = Boolean(orgId && vehicleId && healthOk && !(originStop && destStop))
 
   useEffect(() => {
     if (!healthOk || rosterVehicles.length === 0) {
@@ -618,8 +623,9 @@ export default function App() {
           </button>
         </div>
         <p className="muted">
-          Address search uses the fleet Pelias proxy (requires server <code>--ors-key</code>). Or tap{' '}
-          <strong>Load Norwich → King&apos;s Lynn</strong> for the ≤2‑min demo corridor without geocode.
+          Norwich → King&apos;s Lynn is pre-filled (Mac desk parity). Use address search (fleet Pelias
+          / <code>--ors-key</code>) to change stops, or tap <strong>Load Norwich → King&apos;s Lynn</strong>{' '}
+          to reset the demo corridor.
         </p>
         <label>
           Gross weight (kg)
@@ -738,6 +744,12 @@ export default function App() {
           <p className="muted">
             Connect to the fleet server — health pill must show Connected (not Auth failed /
             Offline) before push.
+          </p>
+        ) : null}
+        {pushBlockedByMissingStops ? (
+          <p className="muted">
+            Set origin and destination (or tap <strong>Load Norwich → King&apos;s Lynn</strong>) before
+            push.
           </p>
         ) : null}
       </section>

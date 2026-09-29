@@ -671,6 +671,15 @@ assert.equal(norfolk.destination.latitude, 52.7519)
 assert.equal(norfolk.destination.longitude, 0.3955)
 assert.equal(norfolk.origin.label, 'Norwich')
 assert.equal(norfolk.destination.label, "King's Lynn")
+// Pre-seed stranger path: both stops non-null ⇒ Push gate can pass with vehicle + health.
+assert.equal(
+  canPushTrip({
+    hasVehicle: true,
+    hasResolvedStops: Boolean(norfolk.origin && norfolk.destination),
+    healthOk: true,
+  }),
+  true,
+)
 
 /** Mirrors web-dispatch/src/bootstrapDemoFleet.ts pick helpers (Mac parity names). */
 const DEMO_ORG_NAME = 'Demo Haulage Ltd'

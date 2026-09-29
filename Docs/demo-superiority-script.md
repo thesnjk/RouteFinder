@@ -27,7 +27,7 @@ Paste the **same** `$FLEET_API_KEY` into Dispatch **Save fleet API key** (or Mac
 Optional (only when demoing **forecast fuse** on drivers): `--tomtom-key` / `TOMTOM_API_KEY` and `--openweather-key` / `OPENWEATHER_API_KEY`. iOS and Android both consume these via the fleet proxy — drivers need no personal TomTom/OpenWeather keys. Not required for the ≤2-minute core path. Clearance radar Overpass also goes through the same fleet proxy when the cab is paired (meters 5–15 phones through one Mac).
 
 3. Confirm Mac Dispatch **Fleet proxy** panel (or web Connection) shows ORS on — or `GET http://<mac-ip>:8080/v1/proxy/status` with `orsConfigured: true`.
-4. Open **Mac Dispatch** or **web-dispatch** pointed at the fleet URL; create org + vehicle; show QR.
+4. Open **Mac Dispatch** or **web-dispatch** pointed at the fleet URL; **Bootstrap demo fleet** (or create org + vehicle); show QR.
 5. Driver app: Pair with fleet (no personal HeiGIT key) — see [`getting-started.md`](getting-started.md) / [`phase3-stranger-ux-verification.md`](phase3-stranger-ux-verification.md).
 
 ---

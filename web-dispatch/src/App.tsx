@@ -337,7 +337,7 @@ export default function App() {
     },
     {
       title: '2 · Org & vehicle',
-      body: 'Create an organisation, register a vehicle, then show the QR to the driver (or copy the UUID into the iOS Fleet setup wizard).',
+      body: 'Prefer Bootstrap demo fleet (Demo Haulage Ltd / Artic 1). Or create an organisation and register a vehicle, then show the QR to the driver (or copy the UUID into the iOS Fleet setup wizard).',
     },
     {
       title: '3 · Push trip',

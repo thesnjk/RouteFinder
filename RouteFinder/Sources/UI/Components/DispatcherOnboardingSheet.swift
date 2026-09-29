@@ -28,7 +28,7 @@ struct DispatcherOnboardingSheet: View {
                     VStack(alignment: .leading, spacing: RFSpacing.sm) {
                         Text("Dispatcher setup")
                             .font(RFFont.sectionTitle)
-                        Text("Start the fleet server on this Mac (same Wi‑Fi as drivers), then open the Dispatch console to register vehicles and push trips.")
+                        Text("Start the fleet server on this Mac (same Wi‑Fi as drivers), then open the Dispatch console — Bootstrap demo fleet (or register vehicles) and push trips.")
                             .font(RFFont.body)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)

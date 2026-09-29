@@ -19,7 +19,9 @@ struct SettingsSheet: View {
     @EnvironmentObject private var weatherViewModel: WeatherViewModel
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
+    #if os(iOS)
     @State private var showInspectionSheet = false
+    #endif
     @State private var showDispatchConsole = false
     @State private var showProductOnboarding = false
     @State private var showFleetSetupWizard = false
@@ -67,9 +69,11 @@ struct SettingsSheet: View {
                     settingsPath.append(SettingsHubRoute.apiKeys)
                 }
             }
+            #if os(iOS)
             .sheet(isPresented: $showInspectionSheet) {
                 InspectionWalkaroundSheet(viewModel: viewModel)
             }
+            #endif
             .sheet(isPresented: $showDispatchConsole) {
                 DispatchConsoleView()
             }
@@ -104,7 +108,11 @@ struct SettingsSheet: View {
                     vehicleSection
                     if viewModel.isHGVMode {
                         TachoAdvisorySettingsSection(viewModel: viewModel)
+                        #if os(iOS)
                         inspectionSection
+                        #else
+                        walkaroundMacHintSection
+                        #endif
                     }
                     avoidanceSection
                 }
@@ -262,6 +270,7 @@ struct SettingsSheet: View {
         }
     }
 
+    #if os(iOS)
     private var inspectionSection: some View {
         VStack(alignment: .leading, spacing: RFSpacing.sm) {
             Text("Walkaround inspection")
@@ -281,6 +290,22 @@ struct SettingsSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassPanel(cornerRadius: 14)
     }
+    #else
+    /// Mac is desk-only for walkaround: checklist runs on the cab phone; defects land in Dispatch.
+    private var walkaroundMacHintSection: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.sm) {
+            Text("Walkaround inspection")
+                .font(RFFont.sectionTitle)
+            Text("Complete the DVSA-style walkaround on the cab iPhone (or iPad driver). Defects appear on Mac Dispatch after the driver saves — this Mac is not the inspection surface.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(RFSpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glassPanel(cornerRadius: 14)
+    }
+    #endif
 
     private var avoidanceSection: some View {
         VStack(alignment: .leading, spacing: RFSpacing.sm) {

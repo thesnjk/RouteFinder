@@ -45,25 +45,25 @@ Exit code `0` = all targeted tests passed.
 - Dispatch Mac and driver iPhone on the **same Wi‑Fi or LAN**
 - RouteFinder built for macOS and iOS (Xcode or `swift run`)
 - Operator HeiGIT ORS key on the **server** (`--ors-key`) for live HGV route find without a driver HeiGIT key
-- **Recommended for pilots:** `--api-key` on the fleet server; paste the same secret into Settings **Fleet API key** / web Bearer / wizard
+- **Recommended for pilots:** `--api-key` on the fleet server; paste the same secret into Dispatch **Save fleet API key** / web Bearer / wizard
 
 ### Step-by-step
 
 | Step | Dispatch Mac | Driver iPhone |
 |---|---|---|
 | 1 | Start fleet server: `cd RouteFinder && swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY" --api-key "$FLEET_API_KEY"` | — |
-| 2 | Open RouteFinderMac → **Dispatch Console** → create org + register vehicle; note the **vehicle UUID**. Paste `$FLEET_API_KEY` into Settings if prompted. | — |
-| 3 | — | **Settings → Fleet dispatch → Discover fleet servers on LAN** |
-| 4 | — | Select the Mac entry (or enter `http://<dispatch-mac-ip>:8080` manually). Tap **Test fleet connection**. Enter the same **Fleet API key** as `--api-key`. Paste **Fleet vehicle UUID** → **Save vehicle id**. Enable remote fleet server if prompted. |
-| 5 | Push a 2–3 stop trip from Dispatch Console | Trip toast/banner within **~5 s** via SSE (`GET /v1/vehicles/{id}/events`); fallback poll every 30 s if SSE drops |
+| 2 | Open RouteFinderMac → **Dispatch Console** → health **Connected** → **Bootstrap demo fleet** (or create org + vehicle). **Copy LAN URL** if Discover will fail. QR under selected vehicle. Paste `$FLEET_API_KEY` via **Save fleet API key** if Auth failed. | — |
+| 3 | — | **Settings → Fleet & Dispatch → Open fleet setup wizard** (or Driver setup → Pair with fleet) |
+| 4 | — | Discover on LAN **or** paste LAN URL from Mac toolbar. Tap **Test connection**. Enter the same **Fleet API key** as `--api-key`. **Scan QR** (or paste vehicle UUID) → Save → Finish. |
+| 5 | **Push trip** (Norwich → King's Lynn is the default draft; Load optional reset) | Trip toast/banner within **~5 s** via SSE (`GET /v1/vehicles/{id}/events`); fallback poll every 30 s if SSE drops |
 | 6 | — | Toast **New dispatch received — loading route…** → stops apply → auto **Find route** (zero-tap intake). Then **Rehearse Route** if desired. Do **not** tap Settings **Load offline demo job** while paired — that seeds a local job and breaks the vehicle UUID. |
 | 7 | — | Open trip brief share menu → verify plain text **and** PDF include stops, physics ETA, layby/HOS blocks where applicable |
-| 8 | Dispatch console shows updated trip status / physics ETA snapshot from driver publish | — |
-| 9 | Dispatch console shows **Walkaround defects** card with defect count; tap **PDF** share when driver saved inspection with defects (remote fleet enabled) | Complete zoned walkaround with ≥1 defect → **Save** on driver device |
+| 8 | Dispatch console shows updated trip status / physics ETA / Last GPS snapshot from driver publish | — |
+| 9 | Dispatch console shows **Walkaround defects** card with defect count; tap **PDF** share when driver saved inspection with defects (remote fleet enabled) | Complete zoned walkaround with ≥1 defect → **Save** on **driver iPhone** (not Mac Settings) |
 
-**After run:** mark P49b-2 + Fleet Part B rows in [`phase20-verification.md`](phase20-verification.md) Pass/Fail. Part A automated smoke last verified **Pass** local 2026-08-29 (9/9).
+**After run:** mark P49b-2 + Fleet Part B rows in [`phase20-verification.md`](phase20-verification.md) Pass/Fail. Part A automated smoke last verified **Pass** local 2026-09-29 (`fleet-e2e-smoke.sh` **14/14**).
 
-Last updated: 2026-09-27 (pilot `--api-key` Part B path)
+Last updated: 2026-09-29 (Bootstrap / Copy LAN / Norfolk pre-fill Part B path)
 
 ### API surface (for curl debugging)
 

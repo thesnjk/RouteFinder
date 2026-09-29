@@ -497,6 +497,13 @@ assert.equal(
   canPushTrip({ hasVehicle: true, hasResolvedStops: true, healthOk: false }),
   false,
 )
+// App.tsx auto-calls refreshHealth on mount/client change so strangers are not stuck on
+// "Not checked" — Push still requires healthOk (Mac startHealthPolling parity).
+assert.equal(
+  canPushTrip({ hasVehicle: true, hasResolvedStops: true, healthOk: false }),
+  false,
+  'auto-probe must succeed before Push; gate still requires healthOk',
+)
 assert.equal(
   isPushBlockedByFleetHealth({
     hasVehicle: true,

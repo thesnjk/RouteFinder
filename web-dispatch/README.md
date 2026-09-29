@@ -26,7 +26,7 @@ Open http://127.0.0.1:5173
 - Connection base URL defaults to **`/fleet`** (Vite CORS proxy → `:8080`)
 - Or use `http://<mac-ip>:8080` directly (fleet CORS enabled)
 - Or use `https://fleet.yourdomain.com` + org bearer token for remote depots
-- First-run tour → Create org → register vehicle → show **QR** → Push trip
+- First-run tour → **Bootstrap demo fleet** (or Create org → register vehicle) → show **QR** → Push trip
 - Driver snapshot panel + MapLibre corridor preview
 - Walkaround defects card + optional PDF download when the phone publishes an inspection summary
 

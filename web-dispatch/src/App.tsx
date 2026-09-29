@@ -165,6 +165,12 @@ export default function App() {
     }
   }, [client, persist])
 
+  // Mac parity: probe on mount and whenever fleet URL / API key rebuilds the client —
+  // strangers must not stay on "Not checked" until they find Test /health.
+  useEffect(() => {
+    void refreshHealth()
+  }, [refreshHealth])
+
   useEffect(() => {
     if (!vehicleId) {
       setLiveTrip(null)
@@ -327,7 +333,7 @@ export default function App() {
     },
     {
       title: '1 · Connect',
-      body: 'Use /fleet in local dev (Vite proxy) or http://<mac-ip>:8080 on the office network. Tap Test /health until it says Connected.',
+      body: 'Use /fleet in local dev (Vite proxy) or http://<mac-ip>:8080 on the office network. Health auto-checks on load; re-tap Test /health after changing URL or Bearer.',
     },
     {
       title: '2 · Org & vehicle',

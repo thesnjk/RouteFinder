@@ -33,7 +33,7 @@ swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY" --api-key 
 
 You should see: starting on `0.0.0.0:8080`, “ORS proxy enabled”, and optionally “TomTom flow proxy enabled” / “OpenWeather forecast proxy enabled”.
 
-After **Test /health**, the Connection panel shows ORS metering plus TomTom / OpenWeather on/off from `/v1/proxy/status`.
+Health auto-checks on load (and when URL/Bearer change). The Connection panel shows ORS metering plus TomTom / OpenWeather on/off from `/v1/proxy/status`. Re-tap **Test /health** after editing the server URL or API key.
 
 Find the Mac’s LAN IP (System Settings → Network), e.g. `192.168.1.10`.
 
@@ -56,7 +56,7 @@ Open <http://127.0.0.1:5173> — default base URL is `/fleet` (Vite proxies to `
 1. On the Mac: `npm run dev -- --host`
 2. From the Windows / office PC open `http://<mac-ip>:5173`
 3. Set **Server base URL** to `http://<mac-ip>:8080` (CORS is enabled on the fleet server)
-4. Tap **Test /health** until the green **Connected** pill appears (Mac Dispatch: wrong key shows **Auth failed**, not Offline)
+4. Health auto-checks on load — wait for the green **Connected** pill (or re-tap **Test /health** after changing URL/Bearer). Wrong key shows **Auth failed**, not Offline (same as Mac Dispatch).
 
 For a production-style static build on the LAN, see [Static hosting on LAN](#6-static-hosting-on-lan).
 

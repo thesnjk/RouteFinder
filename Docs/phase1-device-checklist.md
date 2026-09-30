@@ -15,9 +15,9 @@ Last updated: 2026-09-29
 
 ---
 
-## A — Fleet server + dispatch (8 min)
+## A — Fleet server + web-dispatch desk (8 min)
 
-**Terminal A (Mac):**
+**Terminal A (Mac) — fleet server:**
 
 ```bash
 cd /Users/admin/Developer/RouteFinder/RouteFinder
@@ -26,22 +26,19 @@ swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY" --api-key 
 
 Expect: `starting on 0.0.0.0:8080`, `ORS proxy enabled`.
 
-**Mac app:** Open `RouteFinderApp.xcodeproj` → **RouteFinderMac** → Run → **Dispatch** window.
-
-1. [ ] Health pill **Connected** (auto on open; paste API key via **Save fleet API key** if Auth failed)
-2. [ ] **Bootstrap demo fleet** (Demo Haulage Ltd / Artic 1) — or create org + vehicle
-3. [ ] Vehicle picker shows **QR code** under selected vehicle
-4. [ ] Toolbar **Copy LAN URL** (or Office PC sheet) — share `http://<lan-ip>:8080` with the phone / web if Discover fails
-
-**Optional web dispatch (same Wi‑Fi):**
+**Terminal B — web-dispatch (primary desk):**
 
 ```bash
 cd /Users/admin/Developer/RouteFinder/web-dispatch && npm run dev
 ```
 
-5. [ ] Open http://127.0.0.1:5173 → health auto-checks → green Connected (re-tap **Test /health** after URL/Bearer change)
-6. [ ] **Bootstrap demo fleet** → QR visible → Copy UUID works
-7. [ ] Norwich → King's Lynn pre-filled; **Push trip** when vehicle selected
+1. [ ] Open http://127.0.0.1:5173 → health auto-checks → green **Connected** (paste Bearer = `$FLEET_API_KEY`; re-tap **Test /health** after URL/Bearer change)
+2. [ ] **Bootstrap demo fleet** (Demo Haulage Ltd / Artic 1) — or create org + vehicle
+3. [ ] Vehicle **QR** visible → Copy UUID works
+4. [ ] Norwich → King's Lynn pre-filled; **Push trip** when vehicle selected
+5. [ ] Optional: Mac **RouteFinderMac** for map simulation only (⇧⌘D opens web-dispatch). Legacy native Dispatch is Settings → Advanced only.
+
+**Copy LAN for phone:** from web Connection / Mac Settings Copy LAN — share `http://<lan-ip>:8080` if Discover fails.
 
 ---
 
@@ -59,15 +56,15 @@ cd /Users/admin/Developer/RouteFinder/web-dispatch && npm run dev
 
 ## C — Trip push + route (8 min)
 
-**Mac Dispatch (or web):** Push (Norwich → King's Lynn is the default corridor — Load optional reset).
+**web-dispatch:** Push (Norwich → King's Lynn is the default corridor — Load optional reset).
 
 1. [ ] iPhone toast within ~5 s
 2. [ ] Route auto-loads or **Find route** succeeds without driver ORS key (fleet proxy)
 3. [ ] **Rehearse Route** completes; trip brief updates
 4. [ ] **Start** navigation → voice gives metric distances (e.g. “400 metres”)
-5. [ ] Mac/web roster / Last GPS / yard pin updates after Start (or sim)
+5. [ ] web-dispatch roster / Last GPS updates after Start (or sim)
 
-Mark **P49b-2 Fleet Part B** Pass/Fail in phase20 after **iPhone** walkaround → Mac desk defect card (section D **C3** + Part B step 9 in [`fleet-e2e-qa.md`](fleet-e2e-qa.md)). Do not run Walkaround from Mac Settings — cab checklist is phone-only.
+Mark **P49b-2 Fleet Part B** Pass/Fail in phase20 after **iPhone** walkaround → **web-dispatch** defect card (section D **C3** + Part B step 9 in [`fleet-e2e-qa.md`](fleet-e2e-qa.md)). Do not run Walkaround from Mac Settings — cab checklist is phone-only.
 
 ---
 

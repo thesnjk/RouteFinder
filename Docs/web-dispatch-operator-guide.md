@@ -2,7 +2,7 @@
 
 Browser console for pushing fleet trips without a Mac dispatch window. Talks to **`RouteFinderFleetServer`** on the office LAN.
 
-Last updated: 2026-09-27
+Last updated: 2026-09-30
 
 ---
 
@@ -15,6 +15,11 @@ Last updated: 2026-09-27
 | Driver iPhones (or Android C2) | Pair with the vehicle QR from this UI |
 
 **LAN / VPN only.** Do not expose port 8080 to the public internet without TLS **and** `--api-key`. See [TLS + VPN for remote office](#7-tls--vpn-for-remote-office) if staff work off-site.
+
+**Demo API keys** such as `pilot-demo-secret` are for **local pilot demos only** — invent a strong unique secret for any real operator LAN and rotate if it leaks.
+
+**Preferred local desk URL:** open Vite at `http://127.0.0.1:5173` and set server base URL to **`/fleet`** (built-in proxy to `127.0.0.1:8080`). That keeps the browser same-origin and avoids ad-hoc CORS to random LAN IPs. Use `http://<mac-lan-ip>:8080` only when the desk browser is on another machine on the office LAN.
+
 
 ---
 
@@ -49,7 +54,7 @@ npm install
 npm run dev
 ```
 
-Open <http://127.0.0.1:5173> — default base URL is `/fleet` (Vite proxies to `:8080`).
+Open <http://127.0.0.1:5173> — default base URL is `/fleet` (Vite proxies to `:8080`). The Bearer / API key is kept in **sessionStorage** only (cleared when the browser tab closes); do not paste production secrets into shared demo machines.
 
 **Office PC on the LAN (dev server):**
 

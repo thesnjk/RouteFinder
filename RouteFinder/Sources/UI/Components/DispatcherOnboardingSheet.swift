@@ -8,7 +8,7 @@ import AppKit
 import UIKit
 #endif
 
-/// First-run guidance for Mac / iPad dispatchers: fleet server command + open Dispatch.
+/// First-run guidance for Mac dispatchers: fleet server + web-dispatch desk (map app is for simulation).
 struct DispatcherOnboardingSheet: View {
     var onOpenDispatch: () -> Void
     var onContinue: () -> Void
@@ -28,7 +28,7 @@ struct DispatcherOnboardingSheet: View {
                     VStack(alignment: .leading, spacing: RFSpacing.sm) {
                         Text("Dispatcher setup")
                             .font(RFFont.sectionTitle)
-                        Text("Start the fleet server on this Mac (same Wi‑Fi as drivers), then open the Dispatch console — Bootstrap demo fleet (or register vehicles) and push trips.")
+                        Text("Desk UI is the browser console (web-dispatch). This Mac app is for map simulation and route rehearsal. Start the fleet server, then open web-dispatch to Bootstrap and push trips.")
                             .font(RFFont.body)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -55,7 +55,7 @@ struct DispatcherOnboardingSheet: View {
                         .modifier(GlassButton())
                         .accessibilityIdentifier("dispatcherCopyServerCommand")
 
-                        Text("Pilot: keep `--api-key` and paste the same secret below (and into web Bearer / driver wizard).")
+                        Text("Pilot: keep `--api-key` and paste the same secret into web-dispatch Bearer and the driver wizard.")
                             .font(RFFont.caption)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -93,13 +93,31 @@ struct DispatcherOnboardingSheet: View {
                     .glassPanel(cornerRadius: 16)
 
                     VStack(alignment: .leading, spacing: RFSpacing.sm) {
-                        Text("2. Open Dispatch console")
+                        Text("2. Open web-dispatch (desk)")
                             .font(RFFont.summary.weight(.semibold))
-                        Text("Wires this Mac to the local fleet server (http://127.0.0.1:8080) if no URL is saved yet, then opens Dispatch so push reaches paired drivers.")
+                        Text("In a second Terminal from the repo root: \(WebDispatchDesk.npmDevCommand) — then open \(WebDispatchDesk.localDevURLString), paste the API key as Bearer, Bootstrap, and push.")
                             .font(RFFont.caption)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
 
+                        Button {
+                            copyToPasteboard(WebDispatchDesk.npmDevCommand)
+                        } label: {
+                            Label("Copy web-dispatch command", systemImage: "doc.on.doc")
+                        }
+                        .modifier(GlassButton())
+                        .accessibilityIdentifier("dispatcherCopyWebDispatchCommand")
+
+                        #if os(macOS)
+                        Button {
+                            applyDeskLANBootstrap()
+                            WebDispatchDesk.openLocalDevInBrowser()
+                        } label: {
+                            Label("Open web dispatch", systemImage: "safari")
+                        }
+                        .modifier(GlassButton())
+                        .accessibilityIdentifier("dispatcherOpenWebDispatch")
+                        #else
                         Button {
                             applyDeskLANBootstrapAndOpen()
                         } label: {
@@ -107,11 +125,12 @@ struct DispatcherOnboardingSheet: View {
                         }
                         .modifier(GlassButton())
                         .accessibilityIdentifier("dispatcherOpenDispatch")
+                        #endif
                     }
                     .padding(RFSpacing.md)
                     .glassPanel(cornerRadius: 16)
 
-                    Button("Continue to map") {
+                    Button("Continue to map (simulation)") {
                         applyDeskLANBootstrap()
                         onContinue()
                     }

@@ -188,6 +188,27 @@ public final class DispatchViewModel {
         )
     }
 
+    /// True when the editable draft stops do not match the selected vehicle’s active trip.
+    public var draftDiffersFromActiveTrip: Bool {
+        guard let trip = activeTrip else { return false }
+        let draftCoords: [(Double, Double)] = draft.stops.compactMap { stop in
+            guard let lat = Double(stop.latitude.trimmingCharacters(in: .whitespacesAndNewlines)),
+                  let lon = Double(stop.longitude.trimmingCharacters(in: .whitespacesAndNewlines))
+            else { return nil }
+            return (lat, lon)
+        }
+        guard draftCoords.count >= 2 else { return false }
+        let active = trip.stops.sorted { $0.sequence < $1.sequence }
+        guard draftCoords.count == active.count else { return true }
+        for (draftPoint, stop) in zip(draftCoords, active) {
+            if abs(draftPoint.0 - stop.latitude) > 0.0002
+                || abs(draftPoint.1 - stop.longitude) > 0.0002 {
+                return true
+            }
+        }
+        return false
+    }
+
     /// Selects a roster vehicle and refreshes its active trip immediately.
     public func selectRosterVehicle(_ vehicleId: UUID) async {
         guard vehicles.contains(where: { $0.id == vehicleId }) else { return }

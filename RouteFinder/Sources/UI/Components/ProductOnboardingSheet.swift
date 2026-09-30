@@ -5,6 +5,9 @@ import SwiftUI
 struct ProductOnboardingSheet: View {
     /// When true, the driver must accept the liability disclaimer before dismissing.
     var requireLiabilityAcceptance: Bool = false
+    /// Called after flags are saved when shown as a launch overlay (Environment `dismiss` is a no-op there).
+    /// Settings sheet presentation omits this and relies on `dismiss()` instead.
+    var onFinished: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var liabilityAccepted = false
@@ -276,6 +279,10 @@ struct ProductOnboardingSheet: View {
             NavigationWorkspaceSettings.saveHasAcceptedRoutingLiability(true)
         }
         NavigationWorkspaceSettings.saveHasSeenProductOnboarding(true)
-        dismiss()
+        if let onFinished {
+            onFinished()
+        } else {
+            dismiss()
+        }
     }
 }

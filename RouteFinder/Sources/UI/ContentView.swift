@@ -313,9 +313,9 @@ private struct MapWorkspaceView: View {
             }
         case .product:
             ProductOnboardingSheet(
-                requireLiabilityAcceptance: !NavigationWorkspaceSettings.loadHasAcceptedRoutingLiability()
+                requireLiabilityAcceptance: !NavigationWorkspaceSettings.loadHasAcceptedRoutingLiability(),
+                onFinished: { markProductOnboardingSeen() }
             )
-            .onDisappear(perform: markProductOnboardingSeen)
         case .vehicle:
             #if os(iOS)
             VehicleModeOnboardingSheet { passengerCar in

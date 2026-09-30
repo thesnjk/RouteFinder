@@ -37,12 +37,15 @@ struct DispatchTripFormView: View {
     }
 
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: RFSpacing.xs) {
-            Text("Fleet dispatch")
-                .font(RFFont.sectionTitle)
+        DisclosureGroup {
             Text("Company break windows are planning aids only — the digital tachograph remains the legal record.")
                 .font(RFFont.caption)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, RFSpacing.xs)
+        } label: {
+            Text("Fleet dispatch")
+                .font(RFFont.sectionTitle)
         }
         .glassPanel(cornerRadius: 14)
         .padding(RFSpacing.sm)
@@ -52,23 +55,27 @@ struct DispatchTripFormView: View {
     private var proxyStatusSection: some View {
         if viewModel.fleetServerHealthOk == true,
            let status = viewModel.fleetProxyStatus {
-            VStack(alignment: .leading, spacing: RFSpacing.xs) {
+            DisclosureGroup {
+                VStack(alignment: .leading, spacing: RFSpacing.xs) {
+                    ForEach(Array(status.summaryLines.enumerated()), id: \.offset) { _, line in
+                        Text(line)
+                            .font(RFFont.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if let warning = status.nearCapWarning {
+                        Text(warning)
+                            .font(RFFont.caption.weight(.semibold))
+                            .foregroundStyle(.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, RFSpacing.xs)
+            } label: {
                 Text("Fleet proxy")
                     .font(RFFont.sectionTitle)
-                ForEach(Array(status.summaryLines.enumerated()), id: \.offset) { _, line in
-                    Text(line)
-                        .font(RFFont.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if let warning = status.nearCapWarning {
-                    Text(warning)
-                        .font(RFFont.caption.weight(.semibold))
-                        .foregroundStyle(.orange)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
             .glassPanel(cornerRadius: 14)
             .padding(RFSpacing.sm)
             .accessibilityIdentifier("dispatchProxyStatusPanel")
@@ -140,7 +147,7 @@ struct DispatchTripFormView: View {
     private var stopsSection: some View {
         VStack(alignment: .leading, spacing: RFSpacing.sm) {
             HStack {
-                Text("Stops")
+                Text("Draft stops")
                     .font(RFFont.sectionTitle)
                 Spacer()
                 if viewModel.draft.stops.count < 5 {
@@ -150,6 +157,9 @@ struct DispatchTripFormView: View {
                     .controlSize(.small)
                 }
             }
+            Text("Edit here, then Push to update the driver’s active trip.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
             ForEach(Array(viewModel.draft.stops.enumerated()), id: \.element.id) { index, _ in
                 stopRow(index: index)
             }

@@ -44,20 +44,42 @@ const ONBOARDING_KEY = 'routefinder.webDispatch.onboardingDone'
 /** Dev default: Vite proxy avoids CORS. Direct :8080 works once fleet CORS is enabled. */
 const DEFAULT_BASE_URL = '/fleet'
 
+/**
+ * Persists base URL in localStorage; API key only in sessionStorage (cleared when the tab closes).
+ * Migrates legacy localStorage apiKey once, then strips it from localStorage.
+ */
 function loadConnection(): { baseUrl: string; apiKey: string } {
+  let baseUrl = DEFAULT_BASE_URL
+  let apiKey = ''
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
-      const parsed = JSON.parse(raw) as { baseUrl: string; apiKey: string }
+      const parsed = JSON.parse(raw) as { baseUrl?: string; apiKey?: string }
       if (parsed.baseUrl === 'http://127.0.0.1:8080' || parsed.baseUrl === 'http://localhost:8080') {
-        return { baseUrl: DEFAULT_BASE_URL, apiKey: parsed.apiKey ?? '' }
+        baseUrl = DEFAULT_BASE_URL
+      } else if (parsed.baseUrl) {
+        baseUrl = parsed.baseUrl
       }
-      return parsed
+      if (parsed.apiKey) {
+        apiKey = parsed.apiKey
+        // One-time migration: move secret out of long-lived localStorage.
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ baseUrl }))
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ apiKey }))
+      }
     }
   } catch {
     /* ignore */
   }
-  return { baseUrl: DEFAULT_BASE_URL, apiKey: '' }
+  try {
+    const sessionRaw = sessionStorage.getItem(STORAGE_KEY)
+    if (sessionRaw) {
+      const sessionParsed = JSON.parse(sessionRaw) as { apiKey?: string }
+      if (sessionParsed.apiKey) apiKey = sessionParsed.apiKey
+    }
+  } catch {
+    /* ignore */
+  }
+  return { baseUrl, apiKey }
 }
 
 export default function App() {
@@ -106,7 +128,8 @@ export default function App() {
   )
 
   const persist = useCallback(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ baseUrl, apiKey }))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ baseUrl }))
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ apiKey }))
   }, [baseUrl, apiKey])
 
   const run = useCallback(

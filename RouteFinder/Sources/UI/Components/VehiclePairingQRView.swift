@@ -49,9 +49,12 @@ public enum VehiclePairingQRCode {
 }
 
 /// SwiftUI view showing a vehicle pairing QR code plus copyable UUID.
+///
+/// QR is collapsed by default so the dispatch sidebar stays usable after pairing.
 public struct VehiclePairingQRView: View {
     public let vehicleId: UUID
     public let vehicleLabel: String
+    @State private var showQR = false
     @State private var copied = false
 
     public init(vehicleId: UUID, vehicleLabel: String) {
@@ -63,19 +66,8 @@ public struct VehiclePairingQRView: View {
         VStack(alignment: .leading, spacing: RFSpacing.sm) {
             Text("Driver pairing")
                 .font(RFFont.sectionTitle)
-            Text("Show this QR to the driver, or copy the UUID into Settings → Fleet setup wizard.")
-                .font(RFFont.caption)
-                .foregroundStyle(.secondary)
             Text(vehicleLabel)
                 .font(RFFont.caption.weight(.semibold))
-
-            if let qr = VehiclePairingQRCode.image(for: vehicleId, dimension: 180) {
-                qr
-                    .interpolation(.none)
-                    .resizable()
-                    .frame(width: 180, height: 180)
-                    .accessibilityLabel("Vehicle pairing QR code")
-            }
 
             Text(vehicleId.uuidString)
                 .font(.system(.caption2, design: .monospaced))
@@ -92,8 +84,25 @@ public struct VehiclePairingQRView: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
+
+            DisclosureGroup(isExpanded: $showQR) {
+                Text("Show this QR to the driver, or paste the UUID into the fleet setup wizard.")
+                    .font(RFFont.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, RFSpacing.xs)
+                if let qr = VehiclePairingQRCode.image(for: vehicleId, dimension: 160) {
+                    qr
+                        .interpolation(.none)
+                        .resizable()
+                        .frame(width: 160, height: 160)
+                        .accessibilityLabel("Vehicle pairing QR code")
+                }
+            } label: {
+                Text("Show driver QR")
+                    .font(RFFont.caption.weight(.semibold))
+            }
+            .accessibilityIdentifier("dispatchShowDriverQR")
         }
-        .glassPanel(cornerRadius: 14)
-        .padding(RFSpacing.sm)
     }
 }

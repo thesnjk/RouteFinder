@@ -32,3 +32,6 @@ android-fleet-driver/**/build/
 android-fleet-driver/local.properties
 android-fleet-driver/.idea/
 
+
+# Cursor / local agent state (never ship)
+.cursor/

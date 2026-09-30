@@ -13,7 +13,7 @@ After authentication, RouteFinder shows **Getting started** with three cards:
 | Role | Who | What happens next |
 |------|-----|-------------------|
 | **Driver** | iPhone / in-cab | Driver Terms → Car or HGV → Pair with fleet / Solo |
-| **Dispatcher (Mac)** | Office Mac | Driver Terms → fleet server one-liner + **Open Dispatch Console** |
+| **Dispatcher (Mac)** | Office Mac | Fleet server + **web-dispatch** desk; Mac app = map simulation |
 | **Office PC** | Windows/Linux desk | LAN URL template + web-dispatch quick steps |
 
 Re-open anytime: **Settings → Getting started**.
@@ -38,7 +38,7 @@ More: [user-guide-simulation.md](user-guide-simulation.md) · Fleet pairing: [fl
 
 ## I'm a dispatcher (Mac) — stranger test
 
-1. Open `RouteFinderApp.xcodeproj` → scheme **RouteFinderMac** → Run → sign in.
+1. Open `RouteFinderApp.xcodeproj` → scheme **RouteFinderMac** → Run → sign in (map app = simulation only).
 2. **Pick Dispatcher (Mac)** on Getting started.
 3. Accept Driver Terms if prompted.
 4. On the Dispatcher sheet: **Copy server command**, then in Terminal (RouteFinder package directory):
@@ -48,19 +48,19 @@ cd RouteFinder
 swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY" --api-key "your-shared-secret"
 ```
 
-**Recommended for 5–15 truck LAN pilots:** always pass `--api-key` and paste the same secret into Dispatch **Save fleet API key** (Mac Settings still works), web-dispatch Bearer, and the driver fleet wizard. Never expose port 8080 to the public internet without auth + VPN/TLS.
+**Recommended for 5–15 truck LAN pilots:** always pass `--api-key` and paste the same secret into **web-dispatch Bearer**, Mac Settings fleet API key (optional), and the driver fleet wizard. Never expose port 8080 to the public internet without auth + VPN/TLS.
 
 Optional forecast fuse for paired drivers (no personal TomTom / OpenWeather keys): pass `--tomtom-key` / `TOMTOM_API_KEY` and `--openweather-key` / `OPENWEATHER_API_KEY` on the same server.
 
 Operator-paid ORS/Pelias is **fair-use daily caps** (default route/geocode budgets on the fleet server). When exceeded, desk and drivers see actionable HTTP 429 copy — not unlimited planet-scale routing. See [`unit-economics.md`](unit-economics.md) / [`pilot-fleet-pack.md`](pilot-fleet-pack.md).
 
-5. Tap **Open Dispatch Console** (or Window → Dispatch Console).
-6. Create an organisation and register a vehicle (or demo bootstrap).
+5. Second Terminal (repo root): `cd web-dispatch && npm run dev` — or tap **Open web dispatch** / **⇧⌘D** (opens http://127.0.0.1:5173).
+6. In the browser: paste Bearer API key → **Connected** → **Bootstrap demo fleet** (or create org + vehicle).
 7. Show the driver the **vehicle QR** (or copy the UUID).
-8. Push a 2-stop trip. The driver iPhone should toast within ~5 seconds.
-9. Glance **Fleet roster** / yard GPS pins on Mac Dispatch or web-dispatch (status, physics ETA, GPS age — snapshot GPS, not live VU). On Mac, use the roster vehicle filter when pushing the next trip.
+8. **Push** a 2-stop trip (Norwich → King's Lynn). The driver iPhone should toast within ~5 seconds.
+9. Glance **Fleet roster** / GPS on **web-dispatch** (status, physics ETA, GPS age — snapshot GPS, not live VU). Use the Mac map app only for local route find / rehearse if you want.
 
-Full pairing steps: [fleet-setup-guide.md](fleet-setup-guide.md)
+Full pairing steps: [fleet-setup-guide.md](fleet-setup-guide.md) · Web desk: [web-dispatch-operator-guide.md](web-dispatch-operator-guide.md)
 
 ---
 
@@ -115,4 +115,4 @@ See [android-c2-gate.md](android-c2-gate.md) and [phase6b-android-nav-verificati
 | [pilot-fleet-pack.md](pilot-fleet-pack.md) | Pilot terms + API contract |
 | [operator-next-steps.md](operator-next-steps.md) | Your weekly checklist |
 | [unit-economics.md](unit-economics.md) | API metering / fair-use |
-| [ultimate-competitive-excellence-sweep.md](ultimate-competitive-excellence-sweep.md) | Reusable ICP excellence sweep prompt (gates + ship commands) |
+| [engineering-test-matrix.md](engineering-test-matrix.md) | CI / local test gates |

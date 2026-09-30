@@ -15,6 +15,9 @@ struct SettingsSheet: View {
     @Bindable var viewModel: RouteViewModel
     var onDismiss: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
     #if os(iOS)
     @EnvironmentObject private var weatherViewModel: WeatherViewModel
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -148,7 +151,6 @@ struct SettingsSheet: View {
             NavigationLink {
                 settingsDetailPage(title: "Fleet & Dispatch") {
                     fleetSection
-                    telematicsSection
                 }
             } label: {
                 Label("Fleet & Dispatch", systemImage: "antenna.radiowaves.left.and.right")
@@ -992,15 +994,24 @@ struct SettingsSheet: View {
     }
 
     private var fleetSection: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.lg) {
+            fleetConnectionGroup
+            fleetVehicleGroup
+            fleetDeskActionsGroup
+            fleetAdvancedGroup
+        }
+    }
+
+    private var fleetConnectionGroup: some View {
         VStack(alignment: .leading, spacing: RFSpacing.sm) {
-            Text("Fleet dispatch")
+            Text("Connection")
                 .font(RFFont.sectionTitle)
 
-            Button("Open fleet setup wizard") {
-                showFleetSetupWizard = true
+            if let status = viewModel.fleetServerConnectionStatus {
+                Text(status)
+                    .font(RFFont.caption.weight(.semibold))
+                    .foregroundStyle(fleetConnectionStatusColor(status))
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
 
             Toggle("Use remote fleet server", isOn: $viewModel.useRemoteFleetServer)
                 .onChange(of: viewModel.useRemoteFleetServer) { _, _ in
@@ -1015,14 +1026,42 @@ struct SettingsSheet: View {
                 #endif
                 .onSubmit { viewModel.saveFleetServerURLFromSettings() }
 
-            Text("LAN: http://192.168.x.x:8080 · Hosted: https://fleet.yourdomain.com with org bearer token (never the operator ORS key).")
+            Text("LAN: http://192.168.x.x:8080 · Hosted: https://… with org bearer (never the operator ORS key).")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+
+            SecureField("Fleet API key (same as `--api-key`)", text: $viewModel.fleetServerAPIKeyText)
+                .textFieldStyle(GlassTextFieldStyle())
+                #if os(iOS)
+                .textInputAutocapitalization(.never)
+                #endif
+                .onSubmit { viewModel.saveFleetServerURLFromSettings() }
+
+            HStack(spacing: RFSpacing.sm) {
+                Button("Save URL") {
+                    viewModel.saveFleetServerURLFromSettings()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
+                Button("Save API key") {
+                    viewModel.saveFleetServerURLFromSettings()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
+                Button("Test connection") {
+                    Task { await viewModel.testFleetServerConnection() }
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+            }
 
             Button("Discover fleet servers on LAN") {
                 Task { await viewModel.discoverFleetServersOnLAN() }
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(.bordered)
+            .controlSize(.small)
             .disabled(viewModel.isDiscoveringFleetServers)
 
             if viewModel.isDiscoveringFleetServers {
@@ -1056,144 +1095,188 @@ struct SettingsSheet: View {
                 }
                 .buttonStyle(.borderless)
             }
+        }
+        .glassPanel(cornerRadius: 14)
+        .padding(RFSpacing.sm)
+    }
 
-            Text("Discovery requires the same Wi‑Fi or LAN. The dispatch Mac must run RouteFinderFleetServer with Bonjour enabled (default).")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-
-            SecureField("Fleet API key (same as `--api-key`; required for pilot servers)", text: $viewModel.fleetServerAPIKeyText)
-                .textFieldStyle(GlassTextFieldStyle())
-                #if os(iOS)
-                .textInputAutocapitalization(.never)
-                #endif
-                .onSubmit { viewModel.saveFleetServerURLFromSettings() }
-
-            Text("LAN only — shared-secret auth when the server is started with --api-key. Use https:// when TLS is enabled. Changes apply immediately without restarting the app. Do not expose to the public internet.")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-
-            Button("Save fleet server URL") {
-                viewModel.saveFleetServerURLFromSettings()
-            }
-            .buttonStyle(.borderless)
-
-            Button("Save fleet API key") {
-                viewModel.saveFleetServerURLFromSettings()
-            }
-            .buttonStyle(.borderless)
-
-            Button("Test fleet connection") {
-                Task { await viewModel.testFleetServerConnection() }
-            }
-            .buttonStyle(.borderless)
-
-            if let status = viewModel.fleetServerConnectionStatus {
-                Text(status)
-                    .font(.caption2)
-                    .foregroundStyle(fleetConnectionStatusColor(status))
-            }
+    private var fleetVehicleGroup: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.sm) {
+            Text("Vehicle")
+                .font(RFFont.sectionTitle)
 
             TextField("Fleet vehicle UUID", text: $viewModel.fleetVehicleIdText)
                 .textFieldStyle(GlassTextFieldStyle())
                 .onSubmit { viewModel.saveFleetVehicleIdFromSettings() }
 
-            Text("Vehicle id must match the dispatch console QR / picker. Prefer the fleet setup wizard to scan QR.")
+            Text("Must match the Dispatch QR / picker. Prefer the fleet setup wizard to scan.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 
-            Button("Save vehicle id") {
-                viewModel.saveFleetVehicleIdFromSettings()
-            }
-            .buttonStyle(.borderless)
+            HStack(spacing: RFSpacing.sm) {
+                Button("Save vehicle id") {
+                    viewModel.saveFleetVehicleIdFromSettings()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
 
-            Button("Check for dispatch") {
-                Task { await viewModel.pollAndApplyFleetDispatch() }
+                Button("Open fleet setup wizard") {
+                    showFleetSetupWizard = true
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
             }
-            .buttonStyle(.borderless)
+        }
+        .glassPanel(cornerRadius: 14)
+        .padding(RFSpacing.sm)
+    }
 
-            Button("Load offline demo job (no LAN)") {
-                Task {
-                    do {
-                        try await viewModel.acceptDemoFleetDispatch()
-                    } catch {
-                        viewModel.errorMessage = error.localizedDescription
-                    }
+    private var fleetDeskActionsGroup: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.sm) {
+            Text("Desk actions")
+                .font(RFFont.sectionTitle)
+
+            #if os(macOS)
+            Text("Push trips from the browser console. This Mac app is for map simulation.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button("Open web dispatch") {
+                WebDispatchDesk.openLocalDevInBrowser()
+                if let onDismiss {
+                    onDismiss()
+                } else {
+                    dismiss()
                 }
             }
-            .buttonStyle(.borderless)
-            .disabled(viewModel.useRemoteFleetServer && viewModel.fleetVehicleId != nil)
-            if viewModel.useRemoteFleetServer && viewModel.fleetVehicleId != nil {
-                Text("Turn off remote fleet first — offline demo would replace your paired vehicle id.")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-
+            .buttonStyle(.borderedProminent)
+            .controlSize(.regular)
+            .accessibilityIdentifier("settingsOpenWebDispatchMac")
+            #endif
             #if os(iOS)
             if horizontalSizeClass == .compact {
                 Button("Open dispatch console") {
                     showDispatchConsole = true
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.regular)
             }
             #endif
+
+            Button("Check for dispatch") {
+                Task { await viewModel.pollAndApplyFleetDispatch() }
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
         }
+        .glassPanel(cornerRadius: 14)
+        .padding(RFSpacing.sm)
     }
 
-    private var telematicsSection: some View {
-        VStack(alignment: .leading, spacing: RFSpacing.sm) {
-            Text("Telematics (read-only)")
-                .font(RFFont.sectionTitle)
-
-            Text("Import a Geotab/Samsara-style CSV of last-known positions for dispatch display. Not legal VU. Not live tracking.")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-
-            Button("Import CSV…") {
-                showTelematicsImporter = true
-            }
-            .buttonStyle(.borderless)
-
-            Button("Reload last import") {
-                Task { await viewModel.reloadTelematicsImport() }
-            }
-            .buttonStyle(.borderless)
-
-            if let batch = viewModel.telematicsImportBatch {
-                Text("Last import: \(batch.pings.count) vehicle(s) at \(batch.importedAt.formatted())")
+    private var fleetAdvancedGroup: some View {
+        DisclosureGroup {
+            VStack(alignment: .leading, spacing: RFSpacing.sm) {
+                #if os(macOS)
+                Text("Legacy native Dispatch window (prefer web-dispatch).")
                     .font(.caption2)
-                ForEach(batch.pings.prefix(5)) { ping in
-                    Text("\(ping.vehicleLabel) · \(String(format: "%.4f", ping.latitude)), \(String(format: "%.4f", ping.longitude))")
+                    .foregroundStyle(.secondary)
+                Button("Open legacy Dispatch window") {
+                    openWindow(id: "dispatch")
+                    if let onDismiss {
+                        onDismiss()
+                    } else {
+                        dismiss()
+                    }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .accessibilityIdentifier("settingsOpenDispatchMacLegacy")
+                #endif
+
+                Button("Load offline demo job (no LAN)") {
+                    Task {
+                        do {
+                            try await viewModel.acceptDemoFleetDispatch()
+                        } catch {
+                            viewModel.errorMessage = error.localizedDescription
+                        }
+                    }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(viewModel.useRemoteFleetServer && viewModel.fleetVehicleId != nil)
+
+                if viewModel.useRemoteFleetServer && viewModel.fleetVehicleId != nil {
+                    Text("Turn off remote fleet first — offline demo would replace your paired vehicle id.")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
-                Button("Clear import") {
-                    Task { await viewModel.clearTelematicsImport() }
-                }
-                .buttonStyle(.borderless)
-            }
 
-            if let error = viewModel.telematicsImportError {
-                Text(error)
+                Text("Telematics (read-only)")
+                    .font(RFFont.caption.weight(.semibold))
+                    .padding(.top, RFSpacing.xs)
+
+                Text("Import a Geotab/Samsara-style CSV of last-known positions for dispatch display. Not legal VU.")
                     .font(.caption2)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(.secondary)
+
+                Button("Import CSV…") {
+                    showTelematicsImporter = true
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
+                Button("Reload last import") {
+                    Task { await viewModel.reloadTelematicsImport() }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
+                if let batch = viewModel.telematicsImportBatch {
+                    Text("Last import: \(batch.pings.count) vehicle(s) at \(batch.importedAt.formatted())")
+                        .font(.caption2)
+                    ForEach(batch.pings.prefix(5)) { ping in
+                        Text("\(ping.vehicleLabel) · \(String(format: "%.4f", ping.latitude)), \(String(format: "%.4f", ping.longitude))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    Button("Clear import") {
+                        Task { await viewModel.clearTelematicsImport() }
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+
+                if let error = viewModel.telematicsImportError {
+                    Text(error)
+                        .font(.caption2)
+                        .foregroundStyle(.red)
+                }
             }
-        }
-        .fileImporter(
-            isPresented: $showTelematicsImporter,
-            allowedContentTypes: [.commaSeparatedText, .plainText],
-            allowsMultipleSelection: false
-        ) { result in
-            switch result {
-            case .success(let urls):
-                guard let url = urls.first else { return }
-                Task { await viewModel.importTelematicsCSV(from: url) }
-            case .failure(let error):
-                viewModel.telematicsImportError = error.localizedDescription
+            .padding(.top, RFSpacing.xs)
+            .fileImporter(
+                isPresented: $showTelematicsImporter,
+                allowedContentTypes: [.commaSeparatedText, .plainText],
+                allowsMultipleSelection: false
+            ) { result in
+                switch result {
+                case .success(let urls):
+                    guard let url = urls.first else { return }
+                    Task { await viewModel.importTelematicsCSV(from: url) }
+                case .failure(let error):
+                    viewModel.telematicsImportError = error.localizedDescription
+                }
             }
+            .task {
+                await viewModel.reloadTelematicsImport()
+            }
+        } label: {
+            Text("Advanced / telematics")
+                .font(RFFont.sectionTitle)
         }
-        .task {
-            await viewModel.reloadTelematicsImport()
-        }
+        .glassPanel(cornerRadius: 14)
+        .padding(RFSpacing.sm)
     }
 
     private func fleetConnectionStatusColor(_ status: String) -> Color {

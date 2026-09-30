@@ -34,6 +34,7 @@ public struct DispatchConsoleView: View {
                     telematicsImportBatch: viewModel.telematicsImportBatch,
                     rosterRows: viewModel.displayedRosterRows,
                     selectedVehicleId: viewModel.selectedVehicleId,
+                    draftDiffersFromActiveTrip: viewModel.draftDiffersFromActiveTrip,
                     onSelectVehicle: { vehicleId in
                         Task { await viewModel.selectRosterVehicle(vehicleId) }
                     }

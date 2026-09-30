@@ -11,6 +11,8 @@ struct DispatchStatusPanel: View {
     var telematicsImportBatch: TelematicsImportBatch? = nil
     var rosterRows: [DispatchRosterRow] = []
     var selectedVehicleId: UUID?
+    /// When true, sidebar draft stops do not match this active trip.
+    var draftDiffersFromActiveTrip: Bool = false
     var onSelectVehicle: ((UUID) -> Void)?
 
     init(
@@ -20,6 +22,7 @@ struct DispatchStatusPanel: View {
         telematicsImportBatch: TelematicsImportBatch? = nil,
         rosterRows: [DispatchRosterRow] = [],
         selectedVehicleId: UUID? = nil,
+        draftDiffersFromActiveTrip: Bool = false,
         onSelectVehicle: ((UUID) -> Void)? = nil
     ) {
         self.trip = trip
@@ -28,6 +31,7 @@ struct DispatchStatusPanel: View {
         self.telematicsImportBatch = telematicsImportBatch
         self.rosterRows = rosterRows
         self.selectedVehicleId = selectedVehicleId
+        self.draftDiffersFromActiveTrip = draftDiffersFromActiveTrip
         self.onSelectVehicle = onSelectVehicle
     }
 
@@ -50,6 +54,9 @@ struct DispatchStatusPanel: View {
                 }
                 fleetRosterSection
                 if let trip {
+                    if draftDiffersFromActiveTrip {
+                        draftDiffersBanner
+                    }
                     statusHeader(trip)
                     stopList(trip)
                     if let seconds = trip.physicsETASeconds {
@@ -81,6 +88,17 @@ struct DispatchStatusPanel: View {
             }
             .padding(RFSpacing.lg)
         }
+    }
+
+    private var draftDiffersBanner: some View {
+        Text("Draft differs from dispatched trip — Push to update driver")
+            .font(RFFont.caption.weight(.semibold))
+            .foregroundStyle(.orange)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, RFSpacing.md)
+            .padding(.vertical, RFSpacing.sm)
+            .controlSheetStyle()
+            .accessibilityIdentifier("dispatchDraftDiffersBanner")
     }
 
     private var waitingForGpsRow: some View {
@@ -152,7 +170,7 @@ struct DispatchStatusPanel: View {
 
     private func statusHeader(_ trip: FleetTrip) -> some View {
         HStack {
-            Text("Status")
+            Text("Active trip")
                 .font(RFFont.sectionTitle)
             Spacer()
             if showsTripBriefShare(for: trip) {
@@ -173,7 +191,7 @@ struct DispatchStatusPanel: View {
 
     private func stopList(_ trip: FleetTrip) -> some View {
         VStack(alignment: .leading, spacing: RFSpacing.sm) {
-            Text("Stops")
+            Text("Active trip stops")
                 .font(RFFont.sectionTitle)
             ForEach(trip.stops.sorted { $0.sequence < $1.sequence }) { stop in
                 HStack {

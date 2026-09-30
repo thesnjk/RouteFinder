@@ -278,6 +278,8 @@ public final class RouteViewModel {
     private var activeDispatchTimeWindows: [StopTimeWindow] = []
     /// Ordered stops from the active dispatch (for time-window labels).
     private var activeDispatchStops: [FleetTripStop] = []
+    /// When true, ORS may originate at cab GPS if the driver is far from the first stop.
+    private var activeDispatchDeadheadEnabled = false
     /// Shared fleet vehicle id for polling dispatched jobs (demo / MVP).
     public var fleetVehicleId: UUID?
     /// Text binding for Settings fleet vehicle UUID entry.
@@ -1639,7 +1641,11 @@ public final class RouteViewModel {
 
         await publishDispatchSnapshot(status: .accepted)
         let shouldFind = policy.shouldAutoFindRoute(brief: brief)
+        activeDispatchDeadheadEnabled = shouldFind
         if shouldFind, canFindRoute {
+            #if os(iOS)
+            await startLocationServicesIfNeeded()
+            #endif
             await findRoute()
             if policy.shouldAutoRehearse(brief: brief), result != nil {
                 rehearseRoute()
@@ -2375,27 +2381,7 @@ public final class RouteViewModel {
     }
 
     private func calculateHybridRoute(preferences: RoutingPreferences) async throws {
-        guard let start = originWaypoint.resolved, let end = destinationWaypoint.resolved else {
-            throw RoutingError.invalidInput("Enter a start and destination")
-        }
-
-        let waypointCoords = viaWaypoints
-            .filter { !$0.rawText.trimmingCharacters(in: .whitespaces).isEmpty }
-            .compactMap { waypoint -> RoutingCoordinate? in
-                waypoint.waypoint?.routingCoordinate
-            }
-
-        let request = ExternalRouteRequest(
-            origin: start.waypoint.routingCoordinate,
-            destination: end.waypoint.routingCoordinate,
-            waypoints: waypointCoords,
-            vehicle: preferences.vehicle,
-            preferences: preferences,
-            avoidPolygons: lezAvoidPolygons(
-                origin: start.waypoint.routingCoordinate,
-                destination: end.waypoint.routingCoordinate
-            )
-        )
+        let request = try makeExternalRouteRequest(preferences: preferences)
 
         let offlineAvailable = await offlineGraphStore.hasOfflineTilesAvailable()
         let policy = HybridRoutingPolicy(
@@ -2498,33 +2484,61 @@ public final class RouteViewModel {
     }
 
     private func calculateExternalRoute(preferences: RoutingPreferences) async throws {
-        guard let start = originWaypoint.resolved, let end = destinationWaypoint.resolved else {
-            throw RoutingError.invalidInput("Enter a start and destination")
-        }
-
-        let waypointCoords = viaWaypoints
-            .filter { !$0.rawText.trimmingCharacters(in: .whitespaces).isEmpty }
-            .compactMap { waypoint -> RoutingCoordinate? in
-                waypoint.waypoint?.routingCoordinate
-            }
-
-        let request = ExternalRouteRequest(
-            origin: start.waypoint.routingCoordinate,
-            destination: end.waypoint.routingCoordinate,
-            waypoints: waypointCoords,
-            vehicle: preferences.vehicle,
-            preferences: preferences,
-            avoidPolygons: lezAvoidPolygons(
-                origin: start.waypoint.routingCoordinate,
-                destination: end.waypoint.routingCoordinate
-            )
-        )
+        let request = try makeExternalRouteRequest(preferences: preferences)
         lastExternalRouteRequest = request
 
         let externalPlanner = try makeExternalPlanner()
         let (_, response) = try await externalPlanner.calculateExternalRoute(request: request)
         try await applyExternalRouteResponse(response, preferences: preferences)
         scheduleTrafficRerouteEvaluation(request: request, original: response)
+    }
+
+    /// Builds an ORS/offline request, optionally deadheading from cab GPS to the first job stop.
+    private func makeExternalRouteRequest(preferences: RoutingPreferences) throws -> ExternalRouteRequest {
+        guard originWaypoint.resolved != nil, destinationWaypoint.resolved != nil else {
+            throw RoutingError.invalidInput("Enter a start and destination")
+        }
+
+        let jobOrigin = originWaypoint.resolved!.waypoint.routingCoordinate
+        let jobDestination = destinationWaypoint.resolved!.waypoint.routingCoordinate
+        let jobVias = viaWaypoints
+            .filter { !$0.rawText.trimmingCharacters(in: .whitespaces).isEmpty }
+            .compactMap { waypoint -> RoutingCoordinate? in
+                waypoint.waypoint?.routingCoordinate
+            }
+
+        let cabCoordinate: RoutingCoordinate? = {
+            #if os(iOS)
+            if let position = navigationCoordinator.session.latestPosition {
+                return RoutingCoordinate(
+                    latitude: position.coordinate.latitude,
+                    longitude: position.coordinate.longitude
+                )
+            }
+            #endif
+            return nil
+        }()
+
+        let deadheadEnabled = activeDispatchTripId != nil && activeDispatchDeadheadEnabled
+        let legs = DeadheadRouteOrigin.resolve(
+            jobOrigin: jobOrigin,
+            jobVias: jobVias,
+            jobDestination: jobDestination,
+            cabCoordinate: cabCoordinate,
+            deadheadEnabled: deadheadEnabled
+        )
+
+        return ExternalRouteRequest(
+            origin: legs.origin,
+            destination: legs.destination,
+            waypoints: legs.waypoints,
+            vehicle: preferences.vehicle,
+            preferences: preferences,
+            avoidPolygons: lezAvoidPolygons(
+                origin: legs.origin,
+                destination: legs.destination
+            )
+        )
     }
 
     /// ORS avoid rings for non-compliant UK LEZ / CAZ zones (nil when empty / disabled).

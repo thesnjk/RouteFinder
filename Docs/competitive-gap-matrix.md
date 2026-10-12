@@ -1,7 +1,11 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-09-22 (Ultimate HGV U12–U15: walkaround PDF, LEZ/HOS/layby, forecast proxy, ORS LEZ avoid)  
-Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then advisory tacho + offline packs. **CarPlay** ready for paid-team signing.
+Last updated: 2026-10-12 (Driver-first reopen — hard deferrals → sequenced epics; Oct Firecrawl scrape retained)  
+Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then driver-benefit gaps previously deferred (CarPlay/AA, parking book, VU, tolls, LEZ cadastre).
+
+> **Oct 12 Ultimate competitive excellence sweep:** Full quarterly re-scrape (Firecrawl + Apify). CoPilot **11.4** captured; **no RF scorecard integer changes**. Engineering gates: fleet/web/hosted/Android (JDK 22) Pass; Swift UITests speed-limit regression = WIP debt.
+
+> **Oct 12b Driver-first reopen:** Sweep scope rule now: nothing out of scope if it benefits the driver. Former “Defer / intentional non-parity” items re-ranked as sequenced epics (voice → parking → CarPlay/AA → combo length → lane/toll → VU → LEZ cadastre → hosted desk). Hygiene H1–H3 first. See [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md#driver-first-reopen--2026-10-12b).
 
 > **Sep 22 Ultimate HGV U12–U15:** Android walkaround PDF/photos (U12); LEZ/HOS/layby advisory (U13); fleet TomTom/OpenWeather/Overpass proxy + off-route clearance (U14/U14b); Android ORS `avoid_polygons` via `LezAvoidPolicy` (U15). See [`ultimate-hgv-platform-spec.md`](ultimate-hgv-platform-spec.md), [`android-c2-gate.md`](android-c2-gate.md).
 
@@ -94,17 +98,19 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **58** | Device-feedback fixes (post-P0)                             | **Blocked** — agent implements after operator marks P0 Pass/Fail |
 | **P8** | Competitive parity extras (toll hints, telematics stub, parking links, offline UX, lane depth) | **Done** (2026-09) — see [`phase8-parity-verification.md`](phase8-parity-verification.md) |
 
-### Remaining gaps (explicitly not claiming parity)
+### Remaining gaps (not claiming parity yet — sequenced under driver-first)
 
-- **CarPlay / Android Auto** (deferred — personal-team entitlements; CarPlay code restored for paid teams)
+- **CarPlay / Android Auto** — `EPIC-CARPLAY-PROD` / `EPIC-ANDROID-AUTO` (code path exists; entitlements + AA surface sequenced)
+- **Parking availability + booking** — `EPIC-PARKING-AVAIL` / `EPIC-PARKING-BOOK` (today: occupancy taps + deep links)
+- **Combo length / trailer count** — `EPIC-COMBO-LENGTH`
+- **Lane HD / street callouts** — `EPIC-LANE-DEPTH`
+- Full **toll tariff** depth — `EPIC-TOLL-DEPTH` (Phase 8: named UK advisories only)
+- **Remote VU download** — `EPIC-VU-PARTNER` (Phase 8: CSV / webhook stub)
+- Legal **cadastral LEZ** — `EPIC-LEZ-CADASTRE` (authored rings are simplified envelopes)
+- **Hosted multi-depot desk** — `EPIC-HOSTED-DESK` (gateway exists; no billing UI)
+- **In-process planet PBF** parser (pipeline uses osmium + `PBFPreprocessor` / tile scripts — not a driver-facing gap)
 
-- Full multi-country **toll tariff tables** (Phase 8 ships **named UK toll advisories** only — not live prices)
-- **Remote VU download** (partner SDK — VDO / Stoneridge / Samsara); Phase 8 has **read-only CSV / webhook stub** only
-- **Android Auto**
-- **In-process planet PBF** parser (pipeline uses osmium + `PBFPreprocessor` / tile scripts instead)
-- Paid live fuel-price API / SNAP booking / **TRAVIS parking booking** (Phase 8: **deep links** only)
-- **Hosted fleet web portal / multi-tenant SaaS** (hosted gateway exists; no billing UI)
-- Legal cadastral LEZ polygons / diesel vs petrol nuance (authored rings are simplified envelopes)
+Epic order + first slices: Phase 31+ and [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md#driver-first-reopen--2026-10-12b).
 
 ### Ultimate HGV platform epics (2026-09-19)
 
@@ -184,7 +190,7 @@ See [`ultimate-hgv-platform-spec.md`](ultimate-hgv-platform-spec.md).
 | Predictive parking | TRAVIS 750+ EU booking (Jul 2026) + US/CA live feedback | OSM layby + occupancy taps + **Break Now** (no booking fee) |
 | Fleet portal | Account Manager (per-seat SaaS) | Native macOS/iPad dispatch + LAN HTTP at **$0** |
 | Physics rehearsal | Absent | Pre-trip kinetic sim + physics ETA |
-| Android Auto | Shipped in CoPilot 11 | Deferred |
+| Android Auto | Shipped in CoPilot 11 | Sequenced — `EPIC-ANDROID-AUTO` |
 | Cost at 1k drivers | Quote-only fleet seats | ORS free tier + optional TomTom/OpenWeather; ranker on-device |
 
 **Do not chase:** CoPilot parking booking fees, ELD vendor lock-in, Android Auto, hosted multi-tenant SaaS — unless an urgent UK wedge appears.
@@ -205,10 +211,34 @@ See [`ultimate-hgv-platform-spec.md`](ultimate-hgv-platform-spec.md).
 
 ## Phase 30+ backlog (ranked)
 
-1. **Full quarterly competitive re-scrape** — target **2026-11**; re-scrape Sygic / CoPilot / TomTom public pages; update research doc and scorecard if competitor deltas appear.
+1. **Full quarterly competitive re-scrape** — **Done (Oct 2026 early)** — Firecrawl + Apify; CoPilot 11.4 captured; scorecard integers unchanged. Next maintenance window **2026-11**. Runbook: [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md).
 2. **CarPlay + WeatherKit entitlement restore** — same as Phase 28+ #1; blocked until paid team.
 3. **Road closures (B4), roadworks GPS (B5), settings sub-menus (B6), DVLA scrape (B7)** — **B4/B5/B6 done** (Ph33–35); B7 DVLA scrape still deferred.
-4. **Defer:** toll tariff tables, remote VU download, Android Auto, hosted fleet SaaS, paid SNAP/fuel APIs, legal cadastral LEZ polygons, TRAVIS booking integration.
+4. **Former deferrals** — reopened under driver-first policy; see Phase 31+ sequenced epics (not “won’t chase”).
+
+## Phase 31+ backlog (ranked) — driver-first reopen
+
+**Hygiene (immediate):**
+
+1. **`EPIC-SIM-SPEEDLIMIT`** — restore `spineSpeedLimitAcceleratesToMotorwayLimit` (Oct 12 sweep debt).
+2. **`EPIC-ANDROID-JDK-CI`** — pin JDK 17–22; clear red `android-c1` on `main`.
+3. **`EPIC-P0-DEVICE`** — C4 / C9 / Fleet Part B physical (operator).
+
+**Feature sequence (was “defer / intentional non-parity”):**
+
+4. **`EPIC-VOICE-ASSIST`** — hands-free Break Now / layby / mute / stop Q&A (CoPilot 11.4 Driver Assistant class).
+5. **`EPIC-PARKING-AVAIL`** — color availability on ahead POIs + Break Now candidates.
+6. **`EPIC-PARKING-BOOK`** — TRAVIS/SNAP book deep-link from ranked layby (then native if API).
+7. **`EPIC-CARPLAY-PROD`** — paid-team entitlements + head-unit QA ([`carplay-weatherkit-restore.md`](carplay-weatherkit-restore.md)).
+8. **`EPIC-ANDROID-AUTO`** — Android Auto nav for fleet driver.
+9. **`EPIC-COMBO-LENGTH`** — overall length + trailer count → ORS constraints (UK).
+10. **`EPIC-LANE-DEPTH`** — street-name callouts + richer OSM lanes.
+11. **`EPIC-TOLL-DEPTH`** — UK toll £ hints beyond named advisories.
+12. **`EPIC-VU-PARTNER`** — read-only VU / partner webhook into Can-I-drive.
+13. **`EPIC-LEZ-CADASTRE`** — cadastral-grade UK LEZ rings.
+14. **`EPIC-HOSTED-DESK`** — hosted multi-depot desk billing/token UX.
+
+Full table + first slices: [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md#driver-first-reopen--2026-10-12b).
 
 ## 90-day bar checklist
 
@@ -238,7 +268,7 @@ See [`ultimate-hgv-platform-spec.md`](ultimate-hgv-platform-spec.md).
 | Predictive layby v2 | LaybyIntel | Done |
 | Advisory tacho + Can-I-drive | AdvisoryTacho | Done (Phase 5) |
 | Offline map packs | OfflineMaps | Done (Phase 4) |
-| Competitive intel refresh | CompetitiveIntel | **Done** — Phase 25/26 research docs + scorecard; **Ph29 positioning refresh** |
+| Competitive intel refresh | CompetitiveIntel | **Done** — Phase 25/26 research docs + scorecard; **Ph29 positioning**; **Oct 2026 full Firecrawl sweep** ([`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md)) |
 | LEZ avoid-on-route | UKLivingLayer | **Done** (Phase 21) |
 | LEZ simplified geometry | UKLivingLayer | **Done** (Phase 23) |
 

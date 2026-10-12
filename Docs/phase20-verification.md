@@ -254,6 +254,46 @@ Scope: light positioning refresh — no code, entitlements, or Firecrawl re-scra
 
 
 
+### Ultimate competitive excellence sweep (2026-10-12)
+
+Scope: Full quarterly competitor re-scrape (early vs Ph30+ 2026-11) + code-grounded scorecard audit + engineering gates. No entitlements / GTM.
+
+
+| Check | Result |
+| --- | --- |
+| Runbook `[ultimate-competitive-excellence-sweep.md](ultimate-competitive-excellence-sweep.md)` | **Done** — phases + Oct 12 execution report |
+| Firecrawl / Apify scrape pack → `.firecrawl/` | **Done** — 14 URL pack; CoPilot **11.4** delta captured |
+| Scorecard / research / gap-matrix sync | **Done** — integers unchanged; Ph30+ #1 marked Done early |
+| `swift test` | **Partial** — UITests `spineSpeedLimitAcceleratesToMotorwayLimit` fail (sim WIP debt) |
+| Fleet E2E smoke | **Pass** — 14/14 |
+| web-dispatch / hosted-gateway | **Pass** |
+| Android C1 (`testDebugUnitTest` + `assembleDebug`) | **Pass** on JDK 22; **Fail** on OpenJDK 25.0.2 |
+| CI `main` (`36718254358`) | macos/ios/web/hosted **success**; **android-c1 failure** |
+| Device C4 / C9 / Fleet Part B | **Blocked — operator** (unchanged) |
+| Build recommendations (Oct 12) | P0 device · sim speed-limit fix · Android JDK/CI hygiene |
+| Explicit deferrals (Oct 12) | **Superseded** — see driver-first reopen 2026-10-12b |
+
+
+
+
+### Driver-first reopen (2026-10-12b)
+
+Scope: Re-open Oct 12 “Defer / intentional non-parity” under sweep policy — nothing out of scope if it benefits the driver. Docs only (no re-scrape; no feature code).
+
+
+| Check | Result |
+| --- | --- |
+| Sweep Phase 5 formula → driver_impact (feasibility not veto) | **Done** |
+| Ranked backlog H1–H3 + epics 1–11 | **Done** — `[ultimate-competitive-excellence-sweep.md](ultimate-competitive-excellence-sweep.md#driver-first-reopen--2026-10-12b)` |
+| Scorecard “intentional non-parity” → sequenced gaps | **Done** |
+| Gap matrix Phase 31+ + remaining gaps | **Done** |
+| Research appendix policy note | **Done** |
+| Hygiene retained ahead of feature chase | **H1** sim speed-limit · **H2** Android JDK/CI · **H3** device P0 |
+| Agent delivery protocol + operator playbook in sweep doc | **Done** — commit/push end-blocks + C4/C9/Part B screenshot steps |
+
+
+
+
 ### iOS map load hardening (2026-08-28)
 
 Scope: fix white-screen launch on iPhone when MapLibre WKWebView fails silently (CDN race, broken local map pack, WebContent process kill).

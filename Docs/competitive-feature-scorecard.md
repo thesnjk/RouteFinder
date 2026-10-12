@@ -1,11 +1,11 @@
 # Competitive Feature Scorecard — September 2026
 
-Last updated: 2026-09-28 (cab-phone ICP; Mac/web roster+pins; pilot `--api-key` stranger path; Auth/TLS notes; iOS forecast via fleet TomTom/OpenWeather proxy; Auth score stays 2)
+Last updated: 2026-10-12 (Oct sweep + **driver-first reopen** — hard deferrals → sequenced gaps; no integer score changes yet; physics Lead + sim WIP footnote)
 
 Scoring: **0** Absent · **1** Weak · **2** Parity · **3** Lead  
 Personas: **OO** = UK owner-operator · **SF** = small fleet (2–20 vehicles)
 
-RouteFinder scores from code inventory + Phase 20/26/27/30–44 + **Phase 8** + **Phase 6** + Ultimate HGV U12–U15 engineering verification. Competitor scores from public sources only (`.firecrawl/`).
+RouteFinder scores from code inventory + Phase 20/26/27/30–44 + **Phase 8** + **Phase 6** + Ultimate HGV U12–U15 engineering verification + Oct 2026 sweep. Competitor scores from public sources only (`.firecrawl/`).
 
 ---
 
@@ -29,8 +29,8 @@ RouteFinder scores from code inventory + Phase 20/26/27/30–44 + **Phase 8** + 
 |---|---:|---:|---:|---:|---:|---:|---|
 | Constraint routing (L/W/H/hazmat) | 18% | **3** | 2 | 3 | 3 | 3 | RF ORS + offline hybrid |
 | Offline UK maps | 12% | **2** | 3 | 3 | 2 | 3 | RF corridor packs + download UX (Ph8) |
-| Physics rehearsal | 14% | **3** | 0 | 0 | 0 | 0 | RF wedge |
-| Layby / break intel | 12% | **3** | 1 | 2 | 2 | 2 | RF fused ranker + Break Now + TRAVIS/SNAP links (Ph8) |
+| Physics rehearsal | 14% | **3**‡ | 0 | 0 | 0 | 0 | RF wedge; Oct 12: `spineSpeedLimitAcceleratesToMotorwayLimit` UITest fail under sim WIP — fix before claiming CI-green Lead |
+| Layby / break intel | 12% | **3** | 1 | 2 | 2 | 2 | RF fused ranker + Break Now + TRAVIS/SNAP links (Ph8); CoPilot 11.4 parking icons — still **2** (booking ≠ RF $0) |
 | LEZ compliance | 8% | **3** | 3 | 3 | 2 | 2 | RF 11 zones + ORS avoid (iOS rings; Android U15) |
 | Lane guidance | 8% | **2** | 3 | 3 | 2 | 2 | RF OSM + nav refresh (Ph8) |
 | Plate → profile (UK) | 8% | **3** | 0 | 0 | 0 | 0 | RF RegCheck + DVLA |
@@ -112,14 +112,32 @@ Weighted OO/SF tables above are **unchanged** by Phase 6 (performance / honesty,
 
 ---
 
-## Intentional non-parity (sales honesty)
+## Oct 2026 sweep note
 
-| Capability | Best-in-class | RouteFinder stance |
-|---|---|---|
-| CarPlay / Android Auto | Sygic / CoPilot | **Deferred by design (cab phone ICP)** — depot-issued handset; paid-team CarPlay restore remains optional code path only |
-| Paid parking booking (TRAVIS/TPC) | CoPilot + TRAVIS | Deep links only (Ph8) — prediction remains the $0 wedge |
-| Remote VU download | Samsara / Geotab | Partner boundary — advisory tacho + CSV stub |
-| Legal LEZ cadastre | Sygic / TomTom | Simplified authored rings + honest disclaimer |
-| Hosted multi-tenant SaaS | CoPilot Account Manager | Hosted gateway + tokens; no billing UI |
-| Toll tariff tables | PTV / TomTom | Named UK advisories only (Ph8) |
-| Per-seat API burn visibility | Enterprise fleet SaaS | On-device ledger + soft budgets (Ph45) |
+Full re-scrape: [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md).  
+**CoPilot 11.4** (Aug 2026): Driver Assistant, street callouts, parking availability icons, AA polish, NA bumper-to-bumper length, US ELD HOS sync.  
+**Scrape decision:** no OO/SF integer changes (~2.56 OO / ~2.78 SF).  
+**Driver-first reopen (2026-10-12b):** previously “won’t chase” rows become **sequenced gaps** — see backlog in the sweep doc.
+
+‡ Physics Lead is product-true; restore failing sim speed-limit UITest for CI honesty (`EPIC-SIM-SPEEDLIMIT`).
+
+---
+
+## Sequenced gaps (driver-first — was “intentional non-parity”)
+
+Policy: ship anything that benefits the driver; sequence by impact, not permanent deferral. Full epic table: [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md#driver-first-reopen--2026-10-12b).
+
+| Capability | Best-in-class | RouteFinder today | Sequenced epic |
+|---|---|---|---|
+| Hands-free driver assistant | CoPilot 11.4 | Domain voice (lane / layby / hazard) | `EPIC-VOICE-ASSIST` |
+| Parking availability UX | CoPilot 11.4 icons | Occupancy taps + Break Now | `EPIC-PARKING-AVAIL` |
+| Parking booking | CoPilot + TRAVIS | Deep links only (Ph8) | `EPIC-PARKING-BOOK` |
+| CarPlay production | Sygic / CoPilot | Code ready; entitlements inactive | `EPIC-CARPLAY-PROD` |
+| Android Auto | CoPilot 11.4 | Not shipped | `EPIC-ANDROID-AUTO` |
+| Combo / bumper length + trailer count | CoPilot 11.4 (NA maps) | Single length on profile | `EPIC-COMBO-LENGTH` |
+| Lane HD / street callouts | TomTom / Sygic / CoPilot 11.4 | OSM + voice phrase | `EPIC-LANE-DEPTH` |
+| Toll tariff depth | PTV / TomTom | Named UK advisories (Ph8) | `EPIC-TOLL-DEPTH` |
+| Remote VU download | Samsara / Geotab | Advisory tacho + CSV stub | `EPIC-VU-PARTNER` |
+| Legal LEZ cadastre | Sygic / TomTom | Simplified authored rings | `EPIC-LEZ-CADASTRE` |
+| Hosted multi-depot desk | CoPilot Account Manager | Hosted gateway; no billing UI | `EPIC-HOSTED-DESK` |
+| Per-seat API burn visibility | Enterprise fleet SaaS | On-device ledger + soft budgets (Ph45) | Keep ledger; expand when hosted seats ship |

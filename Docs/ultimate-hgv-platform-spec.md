@@ -1,6 +1,6 @@
 # Ultimate HGV platform specification
 
-Last updated: 2026-09-27  
+Last updated: 2026-10-12 (driver-first reopen)  
 Scope: Engineering architecture and product capability — no legal/GTM.
 
 RouteFinder is the **UK-first, cab-phone-first** all-in-one HGV driver + dispatch hub for **5–15 truck** independents (scale via hosted multi-depot). This document is the gap audit and target architecture for closing remaining “daily ops” gaps without rebuilding the stack.
@@ -15,7 +15,7 @@ RouteFinder is the **UK-first, cab-phone-first** all-in-one HGV driver + dispatc
 | Samsara / Webfleet | **Lead** LAN + zero SaaS portal for ICP | Live telematics map (intentional stub) |
 | Waze / Google Maps | **Lead** HGV constraints + CAZ | Crowd scale |
 
-Evidence: [`engineering-benchmark-2026-09.md`](engineering-benchmark-2026-09.md), [`competitive-gap-matrix.md`](competitive-gap-matrix.md).
+Evidence: [`engineering-benchmark-2026-09.md`](engineering-benchmark-2026-09.md), [`competitive-gap-matrix.md`](competitive-gap-matrix.md), [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md) (Oct 2026 re-scrape).
 
 ---
 
@@ -73,7 +73,7 @@ SSE / REST continue to carry full `FleetTrip`; older clients ignore unknown keys
 1. **SSE stays** — no WebSocket until cellular loss is proven in pilots (poll fallback exists).
 2. **Contracts first** — `FleetJobBrief`, `JobIntakeHandling`, `RouteRiskAdvisory` / `PredictiveRiskEngine`.
 3. **Fuse before forecast** — U3 MVP merges existing signals; no ML.
-4. **Intentional non-parity** — telematics VU, planet PBF, Android Auto, toll tariffs (see gap matrix).
+4. **Driver-first sequenced gaps** — VU, Android Auto, CarPlay, parking book, tolls, LEZ cadastre are **build backlog**, not permanent non-parity (see [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md#driver-first-reopen--2026-10-12b)); planet PBF remains pipeline-only.
 
 ```mermaid
 flowchart LR

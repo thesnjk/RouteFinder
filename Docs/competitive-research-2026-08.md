@@ -4,9 +4,11 @@ Date: 2026-08-28
 Scope: UK/EU HGV navigation for **owner-operators** and **small fleets (2–20 vehicles)**  
 Methodology: Public product pages, App Store listings, Trimble release notes, TRAVIS press (Jul 2026), Sygic help articles. Archived summaries in `.firecrawl/` (not committed).
 
-**Explicitly out of scope for this push:** CarPlay entitlements, WeatherKit, Android Auto, hosted multi-tenant SaaS, remote VU download, paid fuel/SNAP APIs, legal cadastral LEZ polygons.
+**Historical (Aug 2026 push) out of scope:** CarPlay entitlements, WeatherKit, Android Auto, hosted multi-tenant SaaS, remote VU download, paid fuel/SNAP APIs, legal cadastral LEZ polygons. **Superseded 2026-10-12b** by driver-first reopen — those items are sequenced epics, not permanent deferrals.
 
 **Phase 29 refresh (2026-08-28):** Positioning update only — no new competitor scrape. Narrative updated to reflect Ph26–27 shipped capabilities.
+
+**Oct 2026 full sweep (2026-10-12):** Early quarterly re-scrape via Firecrawl + Apify. See appendix below and [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md).
 
 ---
 
@@ -27,7 +29,7 @@ RouteFinder holds a defensible wedge on **physics rehearsal**, **$0 fleet LAN di
 
 **Remaining $0 gaps (honest, not chasing unless UK wedge):** LEZ depth (2 vs Sygic/TomTom 3), lane guidance depth (2 vs 3), CarPlay/Android Auto (deferred — paid team).
 
-**Intentional deferrals (document, do not chase):** TRAVIS/TPC paid parking booking, CarPlay/Android Auto, remote VU, toll tables, legal LEZ cadastre, hosted fleet portal.
+**Sequenced gaps (driver-first — chase in order, not “never”):** TRAVIS/TPC parking booking, CarPlay/Android Auto, remote VU, toll tables, legal LEZ cadastre, hosted fleet portal — see Oct 12b backlog.
 
 ---
 
@@ -102,4 +104,40 @@ Sources dated 2026-08-27/28 unless noted. Firecrawl CLI unavailable in-session; 
 - [Samsara UK tachograph](https://www.samsara.com/uk/products/telematics/tachograph)
 - [Geotab digital tachograph](https://www.geotab.com/uk/fleet-management-solutions/smart-digital-tachograph/)
 
-See also: [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md), [`competitor-pricing-2026.md`](competitor-pricing-2026.md), [`buyer-personas-uk-hgv.md`](buyer-personas-uk-hgv.md).
+See also: [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md), [`competitor-pricing-2026.md`](competitor-pricing-2026.md), [`buyer-personas-uk-hgv.md`](buyer-personas-uk-hgv.md), [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md).
+
+---
+
+## Appendix — Oct 2026 competitive sweep
+
+**Date:** 2026-10-12  
+**Method:** Firecrawl CLI (primary) + Apify web-fetch fallback; archives in `.firecrawl/` (not committed).  
+**Full report:** [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md#execution-report--2026-10-12).
+
+### Executive refresh (post-U15 + CoPilot 11.4)
+
+RouteFinder wedge **unchanged and still defensible** for UK OO / SF ICP:
+
+1. Physics rehearsal + kinetic risk (no peer ships this).
+2. $0 LAN/hosted fleet dispatch + SSE + trip brief PDF (vs CoPilot Account Manager seats).
+3. UK plate→profile + honest LEZ + fused layby / Break Now without booking fees.
+4. Predictive risk fuse (kinetic / weather / hazard / roadworks / traffic / clearance / forecast).
+
+**Material competitor delta:** Trimble **CoPilot 11.4** (Aug 2026) — Driver Assistant AI voice, street-name callouts, color-coded parking availability icons, EU speed-limit display polish, Android Auto defaults, NA bumper-to-bumper length, US ELD HOS sync.
+
+**Driver-first reopen (2026-10-12b):** Sweep scope no longer hard-defers driver-benefit gaps. CoPilot 11.4 / TRAVIS / CarPlay-AA / VU / toll / LEZ cadastre items are **sequenced epics** (hygiene first). See [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md#driver-first-reopen--2026-10-12b).
+
+**No RF scorecard integer changes yet.** Next maintenance scrape window: **2026-11**.
+
+### Key deltas (Oct vs Aug)
+
+| Competitor | New / clarified | RouteFinder response |
+|---|---|---|
+| **CoPilot 11.4** | Driver Assistant; parking availability icons; AA enhancements; NA length fields | Sequence `EPIC-VOICE-ASSIST`, `EPIC-PARKING-AVAIL`, `EPIC-ANDROID-AUTO`, `EPIC-COMBO-LENGTH` |
+| **TRAVIS × Trimble** | Unchanged 750+ EU booking redirect | Sequence `EPIC-PARKING-BOOK` (deep links → book flow) |
+| **Sygic / TomTom / Garmin / PTV / HERE** | No ICP-changing public deltas | Sequence CarPlay, lane depth, toll depth |
+| **Samsara / Geotab** | Remote VU boundary unchanged | Sequence `EPIC-VU-PARTNER` |
+
+### Policy note (post-scrape)
+
+Historical “Explicitly out of scope” at the top of this doc applied to the **Aug 2026 push**. Driver-first reopen supersedes permanent deferrals for driver-facing capabilities; engineering hygiene (sim speed-limit, Android JDK/CI, device P0) still lands before feature chase.

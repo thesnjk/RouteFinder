@@ -151,6 +151,10 @@ public actor SimulationPhysicsActor {
   private static let environmentPollInterval = 4
   private static let curveLookaheadBufferMeters = 15.0
   private static let launchSpeedThresholdMps = 0.5
+  /// Max cab–trailer articulation angle (degrees) before jackknife clamp.
+  private static let maxArticulationDegrees = 75.0
+  private static let defaultHGVLengthMeters = 16.5
+  private static let defaultCarLengthMeters = 4.5
 
   private let trafficSignalController = TrafficSignalController()
   private let trafficDataService: TrafficDataService
@@ -166,7 +170,12 @@ public actor SimulationPhysicsActor {
 
   private var arcLengthPosition: Double = 0
   private var speedMps: Double = 0
+  /// Tractor / cab heading (degrees clockwise from north).
   private var headingDegrees: Double = 0
+  /// Trailer heading (degrees); equals cab heading for passenger cars.
+  private var trailerHeadingDegrees: Double = 0
+  /// Integrated Ackermann rear-axle / kingpin position (display pose authority).
+  private var rearAxleCoordinate: CLLocationCoordinate2D = CLLocationCoordinate2D(latitude: 0, longitude: 0)
   private var simulationElapsedSeconds: TimeInterval = 0
   private var isRunning = false
   private var revision: UInt64 = 0
@@ -216,6 +225,15 @@ public actor SimulationPhysicsActor {
     arcLengthPosition = 0
     speedMps = 0
     headingDegrees = initialHeading(from: config.densifiedRoute)
+    trailerHeadingDegrees = headingDegrees
+    if let first = config.densifiedRoute.first {
+      rearAxleCoordinate = CLLocationCoordinate2D(
+        latitude: first.latitude,
+        longitude: first.longitude
+      )
+    } else {
+      rearAxleCoordinate = CLLocationCoordinate2D(latitude: 0, longitude: 0)
+    }
     simulationElapsedSeconds = 0
     isRunning = false
     revision = 0
@@ -298,8 +316,13 @@ public actor SimulationPhysicsActor {
     }
     environmentPollCounter &+= 1
 
-    updateSteering(deltaTime: deltaSimulationTime, config: config)
+    // Longitudinal speed first, then nonholonomic pose (uses updated speed).
     await advancePhysics(deltaTime: deltaSimulationTime, config: config)
+    updateSteering(deltaTime: deltaSimulationTime, config: config)
+    if arcLengthPosition >= config.totalRouteLength {
+      arcLengthPosition = config.totalRouteLength
+      speedMps = 0
+    }
     publishPoseSnapshot()
     revision &+= 1
     publishMailboxSnapshot()
@@ -544,7 +567,8 @@ public actor SimulationPhysicsActor {
       deltaTime: deltaTime,
       requiredDecelerationMps2: requiredDecel
     )
-    speedMps = integration.newSpeedMps
+    // Forward-only longitudinal speed.
+    speedMps = max(0, integration.newSpeedMps)
 
     if previousSpeed - speedMps > 2.5 * deltaTime, cachedSignalPermission.mustStop || isBrakingWarning {
       let decelEvent = SimulationEvent(
@@ -556,19 +580,11 @@ public actor SimulationPhysicsActor {
       await telemetryRecorder.record(decelEvent)
     }
 
-    if !isPausedForSignal {
-      arcLengthPosition += speedMps * deltaTime
-      if speedMps > 0.1 {
-        simulationElapsedSeconds += deltaTime
-      }
+    if !isPausedForSignal, speedMps > 0.1 {
+      simulationElapsedSeconds += deltaTime
     }
 
     await recordLateralDynamics(deltaTime: deltaTime, config: config)
-
-    if arcLengthPosition >= config.totalRouteLength {
-      arcLengthPosition = config.totalRouteLength
-      speedMps = 0
-    }
   }
 
   private func recordLateralDynamics(deltaTime: Double, config: SimulationPhysicsConfiguration) async {
@@ -595,14 +611,14 @@ public actor SimulationPhysicsActor {
 
   private func updateSteering(deltaTime: Double, config: SimulationPhysicsConfiguration) {
     guard deltaTime > 0 else { return }
+    if isPausedForSignal {
+      return
+    }
 
-    let tangentBearing = arcLengthSampler.bearingDegrees(at: arcLengthPosition)
-    let center = arcLengthSampler.coordinate(at: arcLengthPosition)
-    let coordinate = CLLocationCoordinate2D(latitude: center.latitude, longitude: center.longitude)
     let wheelbase = resolvedWheelbaseMeters(config: config)
     let targetWaypoint = lookAheadWaypoint(fromArcLength: arcLengthPosition, wheelbaseMeters: wheelbase, config: config)
     let currentState = KinematicVehicleState(
-      position: coordinate,
+      position: rearAxleCoordinate,
       headingDegrees: headingDegrees,
       currentSpeedMetersPerSecond: speedMps
     )
@@ -621,19 +637,94 @@ public actor SimulationPhysicsActor {
       steerAngleRadians: steerAngle,
       wheelbaseMeters: wheelbase
     )
-    let blendFactor = min(1, deltaTime * 4.0)
-    headingDegrees = VehiclePoseInterpolator.angleLerp(
-      from: updatedState.headingDegrees,
-      to: tangentBearing,
-      t: blendFactor
+
+    // Pose authority: integrated Ackermann rear axle (no lateral teleport / tangent blend).
+    rearAxleCoordinate = updatedState.position
+    headingDegrees = updatedState.headingDegrees
+
+    updateTrailerHeading(deltaTime: deltaTime, config: config)
+
+    // Sync route progress from projected pose (monotonic forward).
+    let projected = arcLengthSampler.nearestArcLengthMeters(
+      to: rearAxleCoordinate.latitude,
+      longitude: rearAxleCoordinate.longitude,
+      fromArcLength: arcLengthPosition
     )
+    let projectionStalled = projected <= arcLengthPosition + 0.05 && speedMps > 0.5
+    if projectionStalled {
+      // Large sim steps / Ackermann drift can leave the corridor; projection then freezes
+      // governors at the urban limit. Fall back to spine integration + snap (pre-WIP path).
+      arcLengthPosition += speedMps * deltaTime
+      let snapped = arcLengthSampler.coordinate(at: arcLengthPosition)
+      rearAxleCoordinate = CLLocationCoordinate2D(
+        latitude: snapped.latitude,
+        longitude: snapped.longitude
+      )
+      headingDegrees = arcLengthSampler.bearingDegrees(at: arcLengthPosition)
+      trailerHeadingDegrees = headingDegrees
+    } else {
+      arcLengthPosition = projected
+    }
+    if arcLengthPosition >= config.totalRouteLength {
+      arcLengthPosition = config.totalRouteLength
+      speedMps = 0
+    }
+  }
+
+  private func updateTrailerHeading(deltaTime: Double, config: SimulationPhysicsConfiguration) {
+    guard usesArticulatedTrailer(config: config) else {
+      trailerHeadingDegrees = headingDegrees
+      return
+    }
+
+    let lengths = VehicleGeometryCalculator.articBodyLengths(
+      totalLengthMeters: resolvedVehicleLengthMeters(config: config)
+    )
+    let trailerLength = max(lengths.trailer, 0.1)
+    let cabRadians = headingDegrees * .pi / 180.0
+    let trailerRadians = trailerHeadingDegrees * .pi / 180.0
+    var hitch = cabRadians - trailerRadians
+    while hitch > .pi { hitch -= 2 * .pi }
+    while hitch < -.pi { hitch += 2 * .pi }
+
+    let yawRate = (max(0, speedMps) / trailerLength) * sin(hitch)
+    var nextTrailer = trailerHeadingDegrees + yawRate * deltaTime * 180.0 / .pi
+    while nextTrailer < 0 { nextTrailer += 360 }
+    while nextTrailer >= 360 { nextTrailer -= 360 }
+
+    // Clamp articulation to avoid jackknife in sim.
+    var articulation = headingDegrees - nextTrailer
+    while articulation > 180 { articulation -= 360 }
+    while articulation < -180 { articulation += 360 }
+    if articulation > Self.maxArticulationDegrees {
+      nextTrailer = headingDegrees - Self.maxArticulationDegrees
+    } else if articulation < -Self.maxArticulationDegrees {
+      nextTrailer = headingDegrees + Self.maxArticulationDegrees
+    }
+    while nextTrailer < 0 { nextTrailer += 360 }
+    while nextTrailer >= 360 { nextTrailer -= 360 }
+    trailerHeadingDegrees = nextTrailer
+  }
+
+  private func usesArticulatedTrailer(config: SimulationPhysicsConfiguration) -> Bool {
+    !config.isPassengerCarMode && resolvedVehicleLengthMeters(config: config) >= 6.0
+  }
+
+  private func resolvedVehicleLengthMeters(config: SimulationPhysicsConfiguration) -> Double {
+    if let length = config.activeSpecificationProfile?.lengthMeters, length > 0 {
+      return length
+    }
+    return config.isPassengerCarMode ? Self.defaultCarLengthMeters : Self.defaultHGVLengthMeters
   }
 
   private func publishPoseSnapshot() {
     let snapshot = SimulationPoseSnapshot(
       arcLengthMeters: arcLengthPosition,
       bearingDegrees: headingDegrees,
+      trailerBearingDegrees: trailerHeadingDegrees,
       speedMps: speedMps,
+      latitude: rearAxleCoordinate.latitude,
+      longitude: rearAxleCoordinate.longitude,
       wallClockTime: ContinuousClock.now,
       simulationTimeSeconds: simulationElapsedSeconds
     )
@@ -649,6 +740,7 @@ public actor SimulationPhysicsActor {
         poseSnapshots: poseSnapshots,
         arcLengthMeters: arcLengthPosition,
         bearingDegrees: headingDegrees,
+        trailerBearingDegrees: trailerHeadingDegrees,
         speedMps: speedMps,
         revision: revision
       )

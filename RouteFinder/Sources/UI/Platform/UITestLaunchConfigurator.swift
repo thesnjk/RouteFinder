@@ -27,6 +27,7 @@ public enum UITestLaunchConfigurator {
             || arguments.contains("UITEST_SEED_HAZARD_BANNER")
             || arguments.contains("UITEST_SEED_ROADWORKS_BANNER")
             || arguments.contains("UITEST_SEED_PREDICTIVE_RISK")
+            || arguments.contains("UITEST_SEED_DISPATCH_TOAST")
             || arguments.contains("UITEST_OPEN_WALKAROUND")
         guard isUITest else { return }
 
@@ -111,6 +112,10 @@ public enum UITestLaunchConfigurator {
         UserDefaults.standard.set(
             arguments.contains("UITEST_SEED_PREDICTIVE_RISK"),
             forKey: "RouteFinder.uitestSeedPredictiveRisk"
+        )
+        UserDefaults.standard.set(
+            arguments.contains("UITEST_SEED_DISPATCH_TOAST"),
+            forKey: "RouteFinder.uitestSeedDispatchToast"
         )
     }
 }

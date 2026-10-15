@@ -122,7 +122,18 @@ Not added automatically in Phase 9 — set when you create the App Store archive
 
 ---
 
-## 7. CarPlay / entitlements
+## 7. Screenshot source assets
+
+Repo product captures (not yet uploaded to App Store Connect):
+
+- [`screenshots/ios-route-map.png`](screenshots/ios-route-map.png)
+- [`screenshots/ios-rehearse.png`](screenshots/ios-rehearse.png)
+- [`screenshots/ios-dispatch-toast.png`](screenshots/ios-dispatch-toast.png)
+- [`screenshots/web-dispatch-desk.png`](screenshots/web-dispatch-desk.png) (web desk; iPhone App Store set is iOS-only)
+
+Captions and re-capture: [`screenshots/README.md`](screenshots/README.md). Crop status bar / mask keys before ASC upload.
+
+## 8. CarPlay / entitlements
 
 Only claim CarPlay in screenshots/copy if the **paid Apple Developer** build includes CarPlay entitlements (see [`carplay-weatherkit-restore.md`](carplay-weatherkit-restore.md)). Personal-team builds strip CarPlay — do not advertise CarPlay on those binaries.
 

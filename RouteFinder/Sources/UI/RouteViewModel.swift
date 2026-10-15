@@ -2127,6 +2127,13 @@ public final class RouteViewModel {
             UserDefaults.standard.set(false, forKey: "RouteFinder.uitestSeedPredictiveRisk")
             Task { await refreshPredictiveRiskAdvisories() }
         }
+
+        let seedDispatchToast = ProcessInfo.processInfo.arguments.contains("UITEST_SEED_DISPATCH_TOAST")
+            || UserDefaults.standard.bool(forKey: "RouteFinder.uitestSeedDispatchToast")
+        if seedDispatchToast {
+            showFleetDispatchToast("New dispatch received — Norwich → King's Lynn")
+            UserDefaults.standard.set(false, forKey: "RouteFinder.uitestSeedDispatchToast")
+        }
     }
     #endif
 

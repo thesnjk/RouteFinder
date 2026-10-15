@@ -396,6 +396,12 @@ public final class FleetDispatchCoordinator {
         guard let host else { return }
         host.fleetDispatchToast = message
         fleetDispatchToastDismissTask?.cancel()
+        #if DEBUG
+        // Keep UITEST seeded toasts visible for product/screenshot captures.
+        if ProcessInfo.processInfo.arguments.contains("UITEST_SEED_DISPATCH_TOAST") {
+            return
+        }
+        #endif
         fleetDispatchToastDismissTask = Task { [weak host] in
             try? await Task.sleep(nanoseconds: 4_000_000_000)
             guard !Task.isCancelled else { return }

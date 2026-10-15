@@ -6,6 +6,16 @@ Native **HGV / truck navigator** for Apple platforms (iOS 17+ / macOS 14+). Rout
 
 Built as a Swift 6 Swift Package with SwiftUI, MapLibre (WKWebView), and HeiGIT OpenRouteService for global HGV routing.
 
+## Screenshots
+
+Product showcase captures (see [`Docs/screenshots/`](Docs/screenshots/) for captions and re-capture notes).
+
+| iOS route | iOS dispatch toast | Web dispatch |
+|-----------|--------------------|--------------|
+| ![HGV route ready](Docs/screenshots/ios-route-map.png) | ![Trip received toast](Docs/screenshots/ios-dispatch-toast.png) | ![Connected desk](Docs/screenshots/web-dispatch-desk.png) |
+
+![Active navigation / rehearse](Docs/screenshots/ios-rehearse.png)
+
 ## User guide
 
 - [Route simulation and rehearsal](Docs/user-guide-simulation.md) — Rehearse Route vs Play, traffic banner, lane guidance, vehicle footprint, language settings

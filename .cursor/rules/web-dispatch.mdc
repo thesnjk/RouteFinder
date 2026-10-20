@@ -1,0 +1,13 @@
+---
+description: web-dispatch Vite/React desk conventions
+globs: web-dispatch/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# web-dispatch
+
+- Vite + React; lint with `oxlint` (`npm run lint`), smoke with `npm test`.
+- Health pill wording: Connected / Auth failed / Offline — see `fleetHealthLabel.ts` (parity with Mac).
+- Never paste operator ORS keys into the Bearer field; Bearer is `--api-key` / org token only.
+- Dev proxy: base URL `http://127.0.0.1:5173/fleet` → fleet server `:8080`.
+- Prefer existing MapLibre patterns in `TripMapPreview.tsx`; avoid new dashboard chrome.

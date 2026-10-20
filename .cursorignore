@@ -1,0 +1,41 @@
+# Build / SPM / Xcode
+**/.build/
+**/DerivedData/
+**/.swiftpm/
+**/xcuserdata/
+Packages/
+**/Logs/Test/
+**/*.xcresult/
+**/*.xcresult
+
+# Node
+**/node_modules/
+**/dist/
+
+# Android
+android-fleet-driver/.gradle/
+android-fleet-driver/**/build/
+android-fleet-driver/local.properties
+android-fleet-driver/.idea/
+
+# Scrape / local archives (summaries live under Docs/)
+.firecrawl/
+
+# Packaged app bundles
+**/*.app/
+
+# Non-product local trees
+cv/
+
+# Hosted gateway runtime data
+hosted-gateway/data/
+hosted-gateway/config/orgs.json
+
+# P0 / QA evidence dumps (product shots live under Docs/screenshots/)
+Docs/qa-screenshots/
+
+# Secrets / credentials
+.netrc
+**/.env
+**/.env.*
+**/credentials.json

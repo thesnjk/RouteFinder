@@ -33,5 +33,8 @@ android-fleet-driver/local.properties
 android-fleet-driver/.idea/
 
 
-# Cursor / local agent state (never ship)
-.cursor/
+# Cursor / local agent state (never ship) — commit rules + project plugin enables
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+!.cursor/settings.json

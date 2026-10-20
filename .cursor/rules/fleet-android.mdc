@@ -1,0 +1,13 @@
+---
+description: Fleet LAN, hosted gateway, and Android C2 pointers (on demand)
+globs: android-fleet-driver/**/*,hosted-gateway/**/*,**/Fleet*/**/*
+alwaysApply: false
+---
+
+# Fleet / Android / hosted gateway
+
+- LAN server: `RouteFinder/Sources/RouteFinderFleetServer` + `FleetServerCore`; smoke via `Docs/fleet-e2e-qa.md`.
+- Web desk: `web-dispatch/` (Bearer = `--api-key` / org token — never operator ORS key).
+- Hosted: `hosted-gateway/` (Operator VPS); see `Docs/hosted-gateway-deployment.md`.
+- Android C2: `android-fleet-driver/`; gate notes in `Docs/android-c2-gate.md`.
+- Prefer `@Docs/fleet-e2e-qa.md` or `@Docs/fleet-setup-guide.md` over scanning the whole Docs tree.

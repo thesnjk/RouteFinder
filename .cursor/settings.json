@@ -1,0 +1,16 @@
+{
+  "plugins": {
+    "cloudflare": {
+      "enabled": true
+    },
+    "context7": {
+      "enabled": true
+    },
+    "firecrawl": {
+      "enabled": true
+    },
+    "playwright": {
+      "enabled": true
+    }
+  }
+}

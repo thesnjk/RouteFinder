@@ -1,0 +1,13 @@
+---
+description: Swift UI and package conventions for RouteFinder
+globs: RouteFinder/**/*.swift
+alwaysApply: false
+---
+
+# Swift / UI
+
+- Swift 5.9+ with strict concurrency; prefer structs; actors for shared mutable state; async/await for I/O.
+- Public APIs need doc comments; follow Swift API Design Guidelines.
+- All UI: `GlassmorphicModifiers` (`glassPanel`, `controlSheetStyle`, …).
+- UITEST launch args live in `UITestLaunchConfigurator` / `RouteViewModel` seed helpers — extend those rather than ad-hoc UserDefaults.
+- Fleet toast / SSE: `FleetDispatchCoordinator`; do not log Bearer tokens.

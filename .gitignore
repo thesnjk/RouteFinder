@@ -38,3 +38,6 @@ android-fleet-driver/.idea/
 !.cursor/rules/
 !.cursor/rules/**
 !.cursor/settings.json
+
+# Local-only session prompt (never commit)
+Docs/agent-master-prompt.md

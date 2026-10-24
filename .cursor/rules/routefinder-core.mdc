@@ -7,6 +7,7 @@ alwaysApply: true
 
 - Read `AGENTS.md` for layout, tests, and hard rules.
 - Prefer `@Docs/<file>.md` for deep context; do not dump the whole Docs tree.
+- If present, honor `@Docs/agent-master-prompt.md` (local-only; never commit that file or run git commit/push — print commands instead).
 - Swift package root: `RouteFinder/`. App: `RouteFinderApp.xcodeproj`. Desk: `web-dispatch/`.
 - UI must use `GlassmorphicModifiers`. Never commit secrets or unmasked API keys in screenshots.
 - Commit only when the user asks; leave unrelated WIP unstaged unless asked.

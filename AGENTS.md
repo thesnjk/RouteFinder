@@ -34,6 +34,7 @@ xcodebuild test -project RouteFinderApp.xcodeproj -scheme RouteFinderApp \
 
 ## Docs pointers
 
+- **Master session prompt (local-only, gitignored):** `@Docs/agent-master-prompt.md` — attach each chat; agent plans/executes; prints git commands — never commit/push
 - Fleet LAN QA: `Docs/fleet-e2e-qa.md`
 - Getting started: `Docs/getting-started.md`
 - Screenshots re-capture: `Docs/screenshots/README.md`

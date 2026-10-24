@@ -65,6 +65,10 @@ Live playback integrates an **Ackermann** (nonholonomic) pose along the route: t
 
 During simulation the **green start pin is hidden** so the vehicle footprint is not confused with the origin marker. Zoom in while tracking to see the full polygon; at low zoom a blue circle may be used when not tracking.
 
+## Layby and parking availability
+
+On HGV routes, ahead truck stops and the layby advisory banner show a **Spaces / Limited / Full** color chip. Tiers fuse hour-of-day priors with on-device “Looks full” / “Has spaces” taps — planning aid, not a live bay sensor.
+
 ## Language (Settings)
 
 **Settings → Language**:

@@ -1,4 +1,5 @@
 import Contracts
+import CostModel
 import SwiftUI
 
 /// Compact list of truck fuel / parking / weigh POIs ahead on the route.
@@ -6,6 +7,8 @@ struct TruckPoiAheadList: View {
     let pois: [TruckPoi]
     let isLoading: Bool
     let fuelCardProvider: FuelCardProvider
+    /// Crowd occupancy taps used for availability badges on parking / layby rows.
+    var crowdReports: [CrowdReport] = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: RFSpacing.sm) {
@@ -81,7 +84,12 @@ struct TruckPoiAheadList: View {
                             }
                         }
                         Spacer(minLength: 0)
-                        if let confidence = poi.confidence {
+                        if let tier = ParkingOccupancyPrior.availabilityTier(
+                            for: poi,
+                            reports: crowdReports
+                        ) {
+                            ParkingAvailabilityBadge(tier: tier)
+                        } else if let confidence = poi.confidence {
                             Text(String(format: "%.0f%%", confidence * 100))
                                 .font(.caption2.monospacedDigit())
                                 .foregroundStyle(.secondary)

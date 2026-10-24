@@ -89,6 +89,46 @@ public enum ParkingOccupancyPrior: Sendable {
         return .high
     }
 
+    /// Driver-facing availability tier for a truck parking / layby POI.
+    ///
+    /// Returns `nil` for non-parking kinds (fuel, weighbridges). Laybys prefer crowd +
+    /// hour-of-day prior; secure/ADR parking use post-``adjust`` confidence bands.
+    public static func availabilityTier(
+        for poi: TruckPoi,
+        reports: [CrowdReport] = [],
+        asOf date: Date = Date(),
+        calendar: Calendar = .current
+    ) -> ParkingAvailabilityTier? {
+        switch poi.kind {
+        case .layby:
+            let stop = LaybyStop(
+                id: poi.id,
+                coordinate: Coordinate(latitude: poi.latitude, longitude: poi.longitude),
+                label: poi.label,
+                arcLengthAlongRouteMeters: poi.arcLengthAlongRouteMeters,
+                distanceFromRouteMeters: poi.distanceFromRouteMeters
+            )
+            let prior = laybyOccupancyPrior(
+                at: date,
+                for: stop,
+                reports: reports,
+                calendar: calendar
+            )
+            return ParkingAvailabilityTier(occupancyPrior: prior)
+        case .overnightSecureParking, .adrCompatibleParking:
+            let adjusted = adjust(
+                pois: [poi],
+                reports: reports,
+                date: date,
+                calendar: calendar
+            )
+            let confidence = adjusted.first?.confidence ?? poi.confidence ?? 0.5
+            return ParkingAvailabilityTier(confidence: confidence)
+        case .highFlowDiesel, .weighStation:
+            return nil
+        }
+    }
+
     /// Newest occupancy report for a stop (any age), used for banner last-seen copy.
     public static func latestOccupancySignal(
         for stop: LaybyStop,

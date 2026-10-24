@@ -502,6 +502,11 @@ public final class RouteViewModel {
         get { hazardState.crowdReports }
         set { hazardState.crowdReports = newValue }
     }
+
+    /// Crowd occupancy taps used for parking / layby availability badges.
+    public var parkingOccupancyCrowdReports: [CrowdReport] {
+        crowdReports
+    }
     private let laybyAdvisor = LaybyAdvisor()
     private var laybyLoadTask: Task<Void, Never>?
     private var truckPoiLoadTask: Task<Void, Never>?

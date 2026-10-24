@@ -717,4 +717,32 @@ assert.equal(
   'v3',
 )
 
+assert.equal(
+  joinUrl('http://127.0.0.1:8080', '/v1/telematics/pings'),
+  'http://127.0.0.1:8080/v1/telematics/pings',
+)
+assert.equal(joinUrl('/fleet', '/v1/telematics/pings?limit=50'), '/fleet/v1/telematics/pings?limit=50')
+
+/** Mirrors web-dispatch/src/connectionProfiles.ts migrateLegacyConnection. */
+function migrateLegacyConnection(legacy) {
+  const base =
+    !legacy?.baseUrl ||
+    legacy.baseUrl === 'http://127.0.0.1:8080' ||
+    legacy.baseUrl === 'http://localhost:8080'
+      ? '/fleet'
+      : legacy.baseUrl
+  return {
+    profile: { id: 'migrated-default', name: 'Default depot', baseUrl: base },
+    apiKey: legacy?.apiKey ?? '',
+  }
+}
+
+const migrated = migrateLegacyConnection({
+  baseUrl: 'http://127.0.0.1:8080',
+  apiKey: 'tok',
+})
+assert.equal(migrated.profile.name, 'Default depot')
+assert.equal(migrated.profile.baseUrl, '/fleet')
+assert.equal(migrated.apiKey, 'tok')
+
 console.log('fleet types smoke ok')

@@ -38,53 +38,39 @@ import {
   rosterDriverPins,
   type FleetVehicleStatus,
 } from './fleetRoster'
+import {
+  DEFAULT_BASE_URL,
+  activeConnection,
+  addProfile,
+  deleteProfile,
+  loadProfilesState,
+  setProfileApiKey,
+  switchProfile,
+  upsertActiveProfile,
+  type ProfilesState,
+} from './connectionProfiles'
+import type { TelematicsVehiclePing } from './fleet/types'
 
-const STORAGE_KEY = 'routefinder.webDispatch.connection'
 const ONBOARDING_KEY = 'routefinder.webDispatch.onboardingDone'
-/** Dev default: Vite proxy avoids CORS. Direct :8080 works once fleet CORS is enabled. */
-const DEFAULT_BASE_URL = '/fleet'
 
-/**
- * Persists base URL in localStorage; API key only in sessionStorage (cleared when the tab closes).
- * Migrates legacy localStorage apiKey once, then strips it from localStorage.
- */
-function loadConnection(): { baseUrl: string; apiKey: string } {
-  let baseUrl = DEFAULT_BASE_URL
-  let apiKey = ''
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw) as { baseUrl?: string; apiKey?: string }
-      if (parsed.baseUrl === 'http://127.0.0.1:8080' || parsed.baseUrl === 'http://localhost:8080') {
-        baseUrl = DEFAULT_BASE_URL
-      } else if (parsed.baseUrl) {
-        baseUrl = parsed.baseUrl
-      }
-      if (parsed.apiKey) {
-        apiKey = parsed.apiKey
-        // One-time migration: move secret out of long-lived localStorage.
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ baseUrl }))
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ apiKey }))
-      }
-    }
-  } catch {
-    /* ignore */
-  }
-  try {
-    const sessionRaw = sessionStorage.getItem(STORAGE_KEY)
-    if (sessionRaw) {
-      const sessionParsed = JSON.parse(sessionRaw) as { apiKey?: string }
-      if (sessionParsed.apiKey) apiKey = sessionParsed.apiKey
-    }
-  } catch {
-    /* ignore */
-  }
-  return { baseUrl, apiKey }
+function connectionFromProfiles(state: ProfilesState): {
+  baseUrl: string
+  apiKey: string
+  profileName: string
+} {
+  const { profile, apiKey } = activeConnection(state)
+  return { baseUrl: profile.baseUrl, apiKey, profileName: profile.name }
 }
 
 export default function App() {
-  const [baseUrl, setBaseUrl] = useState(() => loadConnection().baseUrl)
-  const [apiKey, setApiKey] = useState(() => loadConnection().apiKey)
+  const [profilesState, setProfilesState] = useState<ProfilesState>(() => loadProfilesState())
+  const [baseUrl, setBaseUrl] = useState(() => connectionFromProfiles(loadProfilesState()).baseUrl)
+  const [apiKey, setApiKey] = useState(() => connectionFromProfiles(loadProfilesState()).apiKey)
+  const [profileName, setProfileName] = useState(
+    () => connectionFromProfiles(loadProfilesState()).profileName,
+  )
+  const [partnerPings, setPartnerPings] = useState<TelematicsVehiclePing[]>([])
+  const [partnerPingsError, setPartnerPingsError] = useState<string | null>(null)
   const [health, setHealth] = useState<string>('Not checked')
   const [healthOk, setHealthOk] = useState(false)
   const [proxyStatus, setProxyStatus] = useState<FleetProxyStatus | null>(null)
@@ -128,9 +114,31 @@ export default function App() {
   )
 
   const persist = useCallback(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ baseUrl }))
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ apiKey }))
-  }, [baseUrl, apiKey])
+    setProfilesState((prev) => {
+      const next = upsertActiveProfile(prev, { name: profileName, baseUrl })
+      setProfileApiKey(next.activeProfileId, apiKey)
+      return next
+    })
+  }, [baseUrl, apiKey, profileName])
+
+  const applyProfileState = useCallback((next: ProfilesState) => {
+    setProfilesState(next)
+    const conn = connectionFromProfiles(next)
+    setBaseUrl(conn.baseUrl)
+    setApiKey(conn.apiKey)
+    setProfileName(conn.profileName)
+  }, [])
+
+  const refreshPartnerPings = useCallback(async () => {
+    try {
+      const pings = await client.listTelematicsPings(50)
+      setPartnerPings(pings)
+      setPartnerPingsError(null)
+    } catch (err) {
+      setPartnerPings([])
+      setPartnerPingsError(err instanceof Error ? err.message : String(err))
+    }
+  }, [client])
 
   const run = useCallback(
     async (action: () => Promise<void>) => {
@@ -155,6 +163,7 @@ export default function App() {
         setHealthOk(false)
         setHealth(fleetHealthLabel({ healthOk: false, authSucceeded: false }))
         setProxyStatus(null)
+        setPartnerPings([])
         return
       }
       try {
@@ -167,6 +176,7 @@ export default function App() {
             version: h.version,
           }),
         )
+        await refreshPartnerPings()
       } catch (err) {
         setProxyStatus(null)
         setHealthOk(false)
@@ -178,6 +188,7 @@ export default function App() {
             errorMessage: message,
           }),
         )
+        setPartnerPings([])
       }
     } catch (err) {
       setHealthOk(false)
@@ -189,14 +200,23 @@ export default function App() {
         }),
       )
       setProxyStatus(null)
+      setPartnerPings([])
     }
-  }, [client, persist])
+  }, [client, persist, refreshPartnerPings])
 
   // Mac parity: probe on mount and whenever fleet URL / API key rebuilds the client —
   // strangers must not stay on "Not checked" until they find Test /health.
   useEffect(() => {
     void refreshHealth()
   }, [refreshHealth])
+
+  useEffect(() => {
+    if (!healthOk) return
+    const id = window.setInterval(() => {
+      void refreshPartnerPings()
+    }, 60_000)
+    return () => window.clearInterval(id)
+  }, [healthOk, refreshPartnerPings])
 
   useEffect(() => {
     if (!vehicleId) {
@@ -416,6 +436,53 @@ export default function App() {
       <section className="panel">
         <h2>Connection</h2>
         <label>
+          Depot profile
+          <select
+            value={profilesState.activeProfileId}
+            onChange={(e) => {
+              persist()
+              applyProfileState(switchProfile(profilesState, e.target.value))
+            }}
+          >
+            {profilesState.profiles.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Profile name
+          <input
+            value={profileName}
+            onChange={(e) => setProfileName(e.target.value)}
+            placeholder="Norwich depot"
+          />
+        </label>
+        <div className="row">
+          <button
+            type="button"
+            className="button-secondary"
+            disabled={busy}
+            onClick={() => {
+              persist()
+              applyProfileState(addProfile(profilesState, 'New depot', DEFAULT_BASE_URL))
+            }}
+          >
+            Add depot
+          </button>
+          <button
+            type="button"
+            className="button-secondary"
+            disabled={busy || profilesState.profiles.length <= 1}
+            onClick={() => {
+              applyProfileState(deleteProfile(profilesState, profilesState.activeProfileId))
+            }}
+          >
+            Delete depot
+          </button>
+        </div>
+        <label>
           Server base URL
           <input
             value={baseUrl}
@@ -424,8 +491,8 @@ export default function App() {
           />
         </label>
         <p className="muted">
-          LAN fleet server, Vite proxy <code>/fleet</code>, or hosted gateway HTTPS URL. Use the org
-          bearer token below for hosted — never paste the operator ORS key.
+          Save one profile per hosted org bearer token (or LAN server). Vite proxy{' '}
+          <code>/fleet</code> works for local. Never paste the operator ORS key.
         </p>
         <label>
           API key / org bearer token
@@ -469,6 +536,29 @@ export default function App() {
             </p>
           </>
         ) : null}
+        <h3>Partner telematics</h3>
+        <p className="muted">
+          Read-only pings from <code>GET /v1/telematics/pings</code> — not a legal VU / tachograph.
+        </p>
+        {partnerPingsError && healthOk ? (
+          <p className="muted roster-warn">{partnerPingsError}</p>
+        ) : null}
+        {partnerPings.length > 0 ? (
+          <ul className="roster-list">
+            {[...partnerPings]
+              .reverse()
+              .slice(0, 12)
+              .map((ping) => (
+                <li key={`${ping.vehicleLabel}-${ping.recordedAt}`}>
+                  <strong>{ping.vehicleLabel}</strong> · {ping.provider} ·{' '}
+                  {ping.latitude.toFixed(4)}, {ping.longitude.toFixed(4)} ·{' '}
+                  {new Date(ping.recordedAt).toLocaleString()}
+                </li>
+              ))}
+          </ul>
+        ) : (
+          <p className="muted">No partner pings yet (ingest webhook or wait for refresh).</p>
+        )}
       </section>
 
       <section className="panel">
@@ -921,6 +1011,12 @@ export default function App() {
           }
           onRoutePreviewError={(msg) => setError(msg)}
           fleetPins={rosterDriverPins(rosterRows)}
+          partnerPins={partnerPings.map((p) => ({
+            id: `${p.vehicleLabel}-${p.recordedAt}`,
+            label: p.vehicleLabel,
+            latitude: p.latitude,
+            longitude: p.longitude,
+          }))}
           selectedVehicleId={vehicleId || null}
         />
       </section>

@@ -103,6 +103,16 @@ export interface FleetConnection {
   apiKey: string
 }
 
+/** Read-only partner telematics ping from GET /v1/telematics/pings. */
+export interface TelematicsVehiclePing {
+  provider: 'geotab' | 'samsara' | 'unknown' | string
+  vehicleLabel: string
+  latitude: number
+  longitude: number
+  recordedAt: string
+  speedKph?: number | null
+}
+
 export function authHeaders(apiKey: string): HeadersInit {
   if (!apiKey.trim()) return { Accept: 'application/json', 'Content-Type': 'application/json' }
   return {

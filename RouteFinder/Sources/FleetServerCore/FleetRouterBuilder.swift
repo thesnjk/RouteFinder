@@ -108,7 +108,31 @@ public enum FleetRouterBuilder {
             return try jsonResponse(try await store.ingestTelematics(body))
         }
 
+        router.get("v1/telematics/pings") { request, _ async throws -> Response in
+            let limit = Self.clampedTelematicsLimit(from: request)
+            return try jsonResponse(try await store.latestTelematicsPings(limit: limit))
+        }
+
         return router
+    }
+
+    /// Parses `?limit=` for telematics GET (default 50, clamp 1…200).
+    private static func clampedTelematicsLimit(from request: Request) -> Int {
+        guard let raw = queryValue(request, name: "limit"), let parsed = Int(raw) else {
+            return 50
+        }
+        return min(200, max(1, parsed))
+    }
+
+    private static func queryValue(_ request: Request, name: String) -> String? {
+        guard let query = request.uri.query else { return nil }
+        let pairs = query.split(separator: "&")
+        for pair in pairs {
+            let parts = pair.split(separator: "=", maxSplits: 1)
+            guard parts.count == 2, parts[0] == name else { continue }
+            return String(parts[1]).removingPercentEncoding ?? String(parts[1])
+        }
+        return nil
     }
 
     private static func sseResponse(

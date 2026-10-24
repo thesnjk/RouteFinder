@@ -214,6 +214,14 @@ code {
   box-shadow: 0 0 0 2px rgba(194, 65, 12, 0.35);
 }
 
+.map-marker--partner {
+  background: #7c3aed;
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+  opacity: 0.95;
+}
+
 .geocode-field {
   position: relative;
   margin: 0.5rem 0;

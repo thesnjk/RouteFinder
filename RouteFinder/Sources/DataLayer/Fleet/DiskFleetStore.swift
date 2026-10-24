@@ -175,11 +175,14 @@ public actor DiskFleetStore: FleetDispatchPort {
     }
 
     /// Latest telematics pings (newest last), for smoke tests / future GET.
+    /// Returns the newest telematics pings (chronological oldest→newest within the window).
+    ///
+    /// - Parameter limit: Max rows to return (clamped to 1…200; default 50).
     public func latestTelematicsPings(limit: Int = 50) async throws -> [TelematicsVehiclePing] {
         try await loadIfNeeded()
         let pings = try loadTelematicsPings()
-        guard limit > 0 else { return [] }
-        return Array(pings.suffix(limit))
+        let clamped = min(200, max(1, limit))
+        return Array(pings.suffix(clamped))
     }
 
     /// Seeds a demo org, vehicle, and 3-stop UK job (persisted across restarts).

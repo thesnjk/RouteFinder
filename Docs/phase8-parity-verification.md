@@ -5,9 +5,11 @@ Manual QA for toll hints, telematics stub, parking deep links, offline UX, and l
 ## Toll advisories
 
 - [ ] Plan a route that passes Dartford or M6 Toll (or inject polyline in tests)
-- [ ] Results / route summary shows **named** toll chips (advisory copy, not prices)
-- [ ] During navigation within ~5 km, map chrome shows `TollAdvisoryBanner`
+- [ ] Results / route summary shows **named** toll chips plus **indicative ~£** where seeded (Severn free → no £)
+- [ ] Route summary shows **Indicative tolls ~£N** total when any matched advisory has a £
+- [ ] During navigation within ~5 km, map chrome shows `TollAdvisoryBanner` with Indicative ~£ when set
 - [ ] Info link opens operator page when present
+- [ ] Copy still says check operator / not a live tariff
 
 ## Telematics (read-only)
 
@@ -36,4 +38,4 @@ Manual QA for toll hints, telematics stub, parking deep links, offline UX, and l
 
 ## Honest limits
 
-- No live toll tariffs / booking commerce / remote VU / full HD lane maps
+- No live toll tariffs (static indicative £ only) / booking commerce / remote VU / full HD lane maps

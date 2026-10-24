@@ -10,6 +10,25 @@ import Testing
     #expect(UKTollAdvisoryCatalog.advisory(id: "m6-toll") != nil)
 }
 
+@Test func ukTollCatalogSeedsIndicativeGBPForTolledCrossings() {
+    let dartford = UKTollAdvisoryCatalog.advisory(id: "dartford-crossing")
+    let m6 = UKTollAdvisoryCatalog.advisory(id: "m6-toll")
+    let severn = UKTollAdvisoryCatalog.advisory(id: "severn-crossings")
+    #expect(dartford?.indicativeCostGBP != nil)
+    #expect(m6?.indicativeCostGBP != nil)
+    #expect(severn?.indicativeCostGBP == nil)
+}
+
+@Test func ukTollIndicativeRouteTotalSumsMatchedCosts() {
+    let dartford = UKTollAdvisoryCatalog.advisory(id: "dartford-crossing")!
+    let m6 = UKTollAdvisoryCatalog.advisory(id: "m6-toll")!
+    let severn = UKTollAdvisoryCatalog.advisory(id: "severn-crossings")!
+    let total = UKTollAdvisory.indicativeRouteTotalGBP(advisories: [dartford, m6, severn])
+    #expect(total == (dartford.indicativeCostGBP! + m6.indicativeCostGBP!))
+    #expect(UKTollAdvisory.indicativeRouteTotalLabel(advisories: [dartford, m6]) != nil)
+    #expect(UKTollAdvisory.indicativeRouteTotalGBP(advisories: [severn]) == nil)
+}
+
 @Test func tollMatcherHitsDartfordPolyline() {
     guard let dartford = UKTollAdvisoryCatalog.advisory(id: "dartford-crossing") else {
         Issue.record("Missing Dartford catalog entry")

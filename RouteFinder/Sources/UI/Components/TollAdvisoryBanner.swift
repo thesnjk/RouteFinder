@@ -14,11 +14,16 @@ struct TollAdvisoryBanner: View {
                 Text(titleLine)
                     .font(RFFont.caption.weight(.semibold))
                     .fixedSize(horizontal: false, vertical: true)
+                if let cost = advisory.indicativeCostLabel {
+                    Text(cost)
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.orange)
+                }
                 Text(advisory.hint)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("Advisory only — not a live tariff.")
+                Text("Advisory only — check operator; not a live tariff.")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -33,7 +38,7 @@ struct TollAdvisoryBanner: View {
         .padding(.horizontal, RFSpacing.md)
         .padding(.vertical, RFSpacing.sm)
         .controlSheetStyle()
-        .accessibilityLabel("\(advisory.name). \(advisory.hint)")
+        .accessibilityLabel(accessibilitySummary)
     }
 
     private var titleLine: String {
@@ -44,5 +49,14 @@ struct TollAdvisoryBanner: View {
             return "\(advisory.name) · \(Int(distanceMeters)) m"
         }
         return advisory.name
+    }
+
+    private var accessibilitySummary: String {
+        var parts = [advisory.name]
+        if let cost = advisory.indicativeCostLabel {
+            parts.append(cost)
+        }
+        parts.append(advisory.hint)
+        return parts.joined(separator: ". ")
     }
 }

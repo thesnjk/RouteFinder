@@ -237,14 +237,29 @@ struct RouteSummaryCard: View {
             .font(.caption2)
             .foregroundStyle(.secondary)
             if !viewModel.routeTollAdvisories.isEmpty {
-                Text(viewModel.routeTollAdvisories.map(\.name).joined(separator: " · "))
+                Text(routeTollNamesLine)
                     .font(.caption2)
                     .foregroundStyle(.orange)
-                Text("Named tolls are advisory only — not live tariffs.")
+                if let total = UKTollAdvisory.indicativeRouteTotalLabel(advisories: viewModel.routeTollAdvisories) {
+                    Text(total)
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.orange)
+                }
+                Text("Named tolls are advisory only — check operator; not live tariffs.")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
         }
+    }
+
+    /// Per-toll names with optional indicative £ (e.g. `Dartford Crossing (~£6.00)`).
+    private var routeTollNamesLine: String {
+        viewModel.routeTollAdvisories.map { advisory in
+            if let gbp = advisory.indicativeCostGBP {
+                return String(format: "%@ (~£%.2f)", advisory.name, gbp)
+            }
+            return advisory.name
+        }.joined(separator: " · ")
     }
 
     private func summaryLine(for result: SearchResult) -> String {

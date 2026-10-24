@@ -69,6 +69,8 @@ During simulation the **green start pin is hidden** so the vehicle footprint is 
 
 On HGV routes, ahead truck stops and the layby advisory banner show a **Spaces / Limited / Full** color chip. Tiers fuse hour-of-day priors with on-device “Looks full” / “Has spaces” taps — planning aid, not a live bay sensor.
 
+**Book (TRAVIS)** / **Book (SNAP)** open the partner site in the browser so you can reserve a bay there. RouteFinder does not take payment or complete booking in-app.
+
 ## Language (Settings)
 
 **Settings → Language**:

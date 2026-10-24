@@ -89,6 +89,25 @@ public final class VoiceGuidanceCoordinator: NavigationSessionDelegate {
         voiceService.speak(prompt)
     }
 
+    /// Speaks a driver voice-assist confirmation (works even when TBT guidance is muted).
+    public func speakVoiceAssist(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        try? voiceService.configureAudioSession()
+        let prompt = SpeechPrompt(
+            text: trimmed,
+            priority: AnnouncementTier.prepare.priority,
+            tier: .prepare,
+            instructionID: stableInstructionID(namespace: "voiceAssist", value: trimmed)
+        )
+        voiceService.speak(prompt)
+    }
+
+    /// Stops any in-flight utterance without disabling guidance permanently.
+    public func stopSpeaking() {
+        voiceService.stop()
+    }
+
     /// Speaks an upcoming closure/traffic hazard when hazard voice alerts are enabled.
     public func speakHazardAdvisory(_ text: String, hazardId: String) {
         let prompt = SpeechPrompt(

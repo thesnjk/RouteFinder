@@ -146,10 +146,12 @@ public final class RouteViewModel {
     public var preferredTelemetryMode = NavigationWorkspaceSettings.loadTelemetrySourceMode()
     #if os(iOS)
     public var voiceGuidanceEnabled = NavigationWorkspaceSettings.loadVoiceGuidanceEnabled()
-    #if os(iOS)
+    /// Push-to-talk driver voice assist; default off until the driver enables it.
+    public var voiceAssistEnabled = NavigationWorkspaceSettings.loadVoiceAssistEnabled()
+    /// True while the mic listen window is open.
+    public private(set) var isVoiceAssistListening = false
     public var speechVoiceIdentifier: String? = NavigationWorkspaceSettings.loadSpeechVoiceIdentifier()
     public var speechRate = Double(NavigationWorkspaceSettings.loadSpeechRate())
-    #endif
     #endif
 
     /// Whether the advisory EU hours-of-service clock is enabled.
@@ -509,6 +511,7 @@ public final class RouteViewModel {
 
     #if os(iOS)
     private let voiceGuidanceCoordinator = VoiceGuidanceCoordinator()
+    private let driverVoiceCommandCoordinator = DriverVoiceCommandCoordinator()
     #endif
     private var vehicleWorkspacePersistTask: Task<Void, Never>?
     private let laneGuidanceNavigationAdapter = LaneGuidanceNavigationAdapter()
@@ -1159,11 +1162,95 @@ public final class RouteViewModel {
         voiceGuidanceCoordinator.setEnabled(voiceGuidanceEnabled)
     }
 
+    /// Persists push-to-talk driver voice assist preference.
+    public func persistVoiceAssistEnabled() {
+        NavigationWorkspaceSettings.saveVoiceAssistEnabled(voiceAssistEnabled)
+    }
+
     /// Persists navigation speech voice and rate preferences.
     public func persistSpeechVoiceSettings() {
         NavigationWorkspaceSettings.saveSpeechVoiceIdentifier(speechVoiceIdentifier)
         NavigationWorkspaceSettings.saveSpeechRate(Float(speechRate))
     }
+
+    /// Starts a push-to-talk listen window and dispatches a matched domain command.
+    public func beginVoiceAssistListen() async {
+        guard voiceAssistEnabled else { return }
+        guard result != nil else {
+            showFleetDispatchToast("Calculate a route before using voice assist.")
+            return
+        }
+        guard !isVoiceAssistListening else { return }
+        isVoiceAssistListening = true
+        voiceGuidanceCoordinator.stopSpeaking()
+        let command = await driverVoiceCommandCoordinator.listen(durationSeconds: 4.0)
+        isVoiceAssistListening = false
+        if let command {
+            await handleDriverVoiceCommand(command)
+        } else {
+            showFleetDispatchToast(VoiceAssistResponseFormatter.unrecognized)
+            speakVoiceAssist(VoiceAssistResponseFormatter.unrecognized)
+        }
+    }
+
+    /// Cancels an in-flight push-to-talk listen window.
+    public func cancelVoiceAssistListen() {
+        driverVoiceCommandCoordinator.cancel()
+        isVoiceAssistListening = false
+    }
+
+    /// Dispatches a matched driver voice command to existing Break Now / mute / layby APIs.
+    public func handleDriverVoiceCommand(_ command: DriverVoiceCommand) async {
+        switch command {
+        case .breakNow:
+            await findBreakNow()
+            speakVoiceAssist(VoiceAssistResponseFormatter.breakNow(advisory: laybyAdvisory))
+        case .nextLayby:
+            await advanceToNextLayby()
+            speakVoiceAssist(VoiceAssistResponseFormatter.nextLayby(advisory: laybyAdvisory))
+        case .mute:
+            voiceGuidanceEnabled = false
+            persistVoiceGuidanceEnabled()
+            voiceGuidanceCoordinator.stopSpeaking()
+            showFleetDispatchToast(VoiceAssistResponseFormatter.muted)
+        case .unmute:
+            voiceGuidanceEnabled = true
+            persistVoiceGuidanceEnabled()
+            speakVoiceAssist(VoiceAssistResponseFormatter.unmuted)
+        case .whereStopping:
+            let destination = endpointDisplayLabel(for: destinationWaypoint)
+            let spoken = VoiceAssistResponseFormatter.whereStopping(
+                advisory: laybyAdvisory,
+                destinationLabel: destination.isEmpty ? nil : destination
+            )
+            speakVoiceAssist(spoken)
+        }
+    }
+
+    private func speakVoiceAssist(_ text: String) {
+        voiceGuidanceCoordinator.speakVoiceAssist(text)
+    }
+
+    /// Async layby advance used by voice assist (shared with the banner “Looks full” path).
+    public func advanceToNextLayby() async {
+        if let advisory = laybyAdvisory {
+            await submitLaybyOccupancyReport(stop: advisory.stop, kind: .full)
+        }
+        let arcLength = simulationEngine.currentArcLengthMeters
+        let speedMps = max(simulationEngine.currentSpeedKmh / 3.6, 1.0)
+        let input = laybyPredictionInput(
+            currentArcLengthMeters: arcLength,
+            speedMps: speedMps
+        )
+        _ = await laybyAdvisor.markCurrentFull(
+            currentArcLengthMeters: arcLength,
+            speedMps: speedMps,
+            predictionInput: input
+        )
+        routeSimulationCoordinator.clearLastAnnouncedLayby()
+        await refreshLaybyAdvisory()
+    }
+    #endif
 
     /// Applies the first-launch Car vs HGV onboarding choice.
     public func applyVehicleModeFromOnboarding(passengerCar: Bool) {
@@ -1182,7 +1269,6 @@ public final class RouteViewModel {
         }
         return "Car · HeiGIT ORS"
     }
-    #endif
 
     /// Persists advisory HOS clock preference and refreshes HUD state.
     public func persistHosEnabled() {
@@ -3177,6 +3263,9 @@ public final class RouteViewModel {
     /// Marks the current layby as full, records an on-device occupancy report, and advances to the next candidate.
     public func markCurrentLaybyFull() {
         Task { @MainActor in
+            #if os(iOS)
+            await advanceToNextLayby()
+            #else
             if let advisory = laybyAdvisory {
                 await submitLaybyOccupancyReport(stop: advisory.stop, kind: .full)
             }
@@ -3193,6 +3282,7 @@ public final class RouteViewModel {
             )
             routeSimulationCoordinator.clearLastAnnouncedLayby()
             await refreshLaybyAdvisory()
+            #endif
             showFleetDispatchToast(LaybyAlertFormatter.nextLaybyToast(next: laybyAdvisory))
         }
     }

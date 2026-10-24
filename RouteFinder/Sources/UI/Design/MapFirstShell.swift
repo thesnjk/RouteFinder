@@ -393,6 +393,24 @@ struct MapFirstShell: View {
                 .accessibilityLabel("Break now")
             }
 
+            #if os(iOS)
+            if viewModel.voiceAssistEnabled,
+               viewModel.result != nil,
+               (viewModel.isFollowModeEnabled || viewModel.isNavigationActive || viewModel.simulationEngine.isRunning) {
+                MapControlButton(
+                    icon: viewModel.isVoiceAssistListening ? "mic.fill" : "mic"
+                ) {
+                    if viewModel.isVoiceAssistListening {
+                        viewModel.cancelVoiceAssistListen()
+                    } else {
+                        Task { await viewModel.beginVoiceAssistListen() }
+                    }
+                }
+                .accessibilityLabel(viewModel.isVoiceAssistListening ? "Cancel voice assist" : "Voice assist")
+                .accessibilityIdentifier("voiceAssistMicButton")
+            }
+            #endif
+
             if viewModel.simulationEngine.isRunning {
                 MapControlButton(
                     icon: viewModel.mapBridge?.isTrackingVehicle == true

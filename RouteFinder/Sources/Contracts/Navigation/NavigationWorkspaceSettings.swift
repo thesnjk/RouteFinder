@@ -5,6 +5,7 @@ public enum NavigationWorkspaceSettings {
     private static let telemetrySourceModeKey = "RouteFinder.telemetrySourceMode"
     private static let autoOptimizeOnRouteFindKey = "RouteFinder.autoOptimizeOnRouteFind"
     private static let voiceGuidanceEnabledKey = "RouteFinder.voiceGuidanceEnabled"
+    private static let voiceAssistEnabledKey = "RouteFinder.voiceAssistEnabled"
     private static let hosAdvisoryClockEnabledKey = "RouteFinder.hosAdvisoryClockEnabled"
     private static let applyTrafficToSimulationKey = "RouteFinder.applyTrafficToSimulation"
     private static let avoidTrafficDelaysWhenRoutingKey = "RouteFinder.avoidTrafficDelaysWhenRouting"
@@ -66,6 +67,16 @@ public enum NavigationWorkspaceSettings {
     /// Persists voice guidance preference.
     public static func saveVoiceGuidanceEnabled(_ enabled: Bool, defaults: UserDefaults = .standard) {
         defaults.set(enabled, forKey: voiceGuidanceEnabledKey)
+    }
+
+    /// Whether push-to-talk driver voice assist is enabled (default off — requires mic).
+    public static func loadVoiceAssistEnabled(defaults: UserDefaults = .standard) -> Bool {
+        defaults.bool(forKey: voiceAssistEnabledKey)
+    }
+
+    /// Persists push-to-talk driver voice assist preference.
+    public static func saveVoiceAssistEnabled(_ enabled: Bool, defaults: UserDefaults = .standard) {
+        defaults.set(enabled, forKey: voiceAssistEnabledKey)
     }
 
     /// Whether the advisory EU hours-of-service clock is enabled.

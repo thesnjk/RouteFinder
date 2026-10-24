@@ -86,6 +86,20 @@ import Testing
     #expect(ids.contains("portsmouth-caz"))
 }
 
+@Test func ukLezFormerCircleZonesNowHaveAuthoredRings() {
+    let formerCircleIds = [
+        "manchester-caz", "glasgow-lez", "bradford-caz", "oxford-zez", "portsmouth-caz",
+    ]
+    for id in formerCircleIds {
+        #expect(UKLowEmissionZoneBoundaries.ringsByZoneId[id] != nil)
+        let zone = try! #require(UKLowEmissionZoneCatalog.zones.first { $0.id == id })
+        #expect(zone.boundaryRing != nil)
+        #expect(zone.contains(Coordinate(latitude: zone.latitude, longitude: zone.longitude)))
+    }
+    #expect(UKLowEmissionZoneBoundaries.ringsByZoneId.count == UKLowEmissionZoneCatalog.zones.count)
+    #expect(UKLowEmissionZoneCatalog.zones.allSatisfy { $0.boundaryRing != nil })
+}
+
 @Test func ukLezPolygonContainsCentralPointsAndExcludesFarAway() {
     let london = try! #require(UKLowEmissionZoneCatalog.zones.first { $0.id == "london-ulez" })
     #expect(london.contains(Coordinate(latitude: 51.5074, longitude: -0.1278)))

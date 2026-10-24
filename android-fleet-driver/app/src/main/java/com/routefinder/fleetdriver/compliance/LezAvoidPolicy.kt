@@ -54,8 +54,12 @@ object LezAvoidPolicy {
         return rank < zone.minimumCompliantClass.euroRank
     }
 
-    /** N-gon circle approximation around [zone] center (closed ring of `[lon, lat]`). */
+    /**
+     * Prefer authored ``boundaryRing`` when present; otherwise N-gon circle around [zone] center
+     * (closed ring of `[lon, lat]`).
+     */
     fun avoidPolygonRing(zone: UkLezCatalog.Zone, pointCount: Int = 16): List<DoubleArray> {
+        zone.boundaryRing?.let { return it }
         val count = maxOf(3, pointCount)
         val earthRadius = 6_371_000.0
         val angularDistance = zone.radiusMeters / earthRadius
@@ -107,7 +111,7 @@ object LezAvoidPolicy {
     }
 
     private fun zoneContains(zone: UkLezCatalog.Zone, point: LatLon): Boolean =
-        haversineMeters(zone.center, point) <= zone.radiusMeters
+        zone.contains(point)
 
     private fun haversineMeters(a: LatLon, b: LatLon): Double {
         val earth = 6_371_000.0

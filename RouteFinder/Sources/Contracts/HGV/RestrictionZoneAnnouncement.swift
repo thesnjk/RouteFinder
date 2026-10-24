@@ -185,21 +185,24 @@ public enum UKLowEmissionZoneCatalog: Sendable {
             label: "Manchester CAZ",
             latitude: 53.4808,
             longitude: -2.2426,
-            radiusMeters: 3_500
+            radiusMeters: 3_500,
+            boundaryRing: UKLowEmissionZoneBoundaries.manchesterCAZ
         ),
         Zone(
             id: "glasgow-lez",
             label: "Glasgow LEZ",
             latitude: 55.8642,
             longitude: -4.2518,
-            radiusMeters: 4_000
+            radiusMeters: 4_000,
+            boundaryRing: UKLowEmissionZoneBoundaries.glasgowLEZ
         ),
         Zone(
             id: "bradford-caz",
             label: "Bradford CAZ",
             latitude: 53.7959,
             longitude: -1.7594,
-            radiusMeters: 3_000
+            radiusMeters: 3_000,
+            boundaryRing: UKLowEmissionZoneBoundaries.bradfordCAZ
         ),
         Zone(
             id: "oxford-zez",
@@ -207,14 +210,16 @@ public enum UKLowEmissionZoneCatalog: Sendable {
             latitude: 51.7520,
             longitude: -1.2577,
             radiusMeters: 2_500,
-            minimumCompliantClass: .euro6
+            minimumCompliantClass: .euro6,
+            boundaryRing: UKLowEmissionZoneBoundaries.oxfordZEZ
         ),
         Zone(
             id: "portsmouth-caz",
             label: "Portsmouth CAZ",
             latitude: 50.8198,
             longitude: -1.0880,
-            radiusMeters: 3_000
+            radiusMeters: 3_000,
+            boundaryRing: UKLowEmissionZoneBoundaries.portsmouthCAZ
         ),
     ]
 

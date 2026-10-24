@@ -39,6 +39,8 @@ public final class RouteSimulationEngine: ObservableObject {
   @Published public var simulationSpeedMultiplier: Double = 1.0
   @Published public private(set) var currentCoordinate: CLLocationCoordinate2D?
   @Published public private(set) var currentBearing: Double = 0
+  /// Trailer yaw for articulated HGVs (equals `currentBearing` for passenger cars).
+  @Published public private(set) var currentTrailerBearing: Double = 0
   @Published public private(set) var currentSpeedKmh: Double = 0
   @Published public private(set) var activeLegalSpeedLimitKmh: Double?
   @Published public private(set) var trafficAdjustedLimitKmh: Double?
@@ -296,6 +298,7 @@ public final class RouteSimulationEngine: ObservableObject {
       )
       if densifiedRoute.count >= 2 {
         currentBearing = arcLengthSampler.bearingDegrees(at: 0)
+        currentTrailerBearing = currentBearing
       }
     } else {
       currentCoordinate = nil
@@ -514,6 +517,7 @@ public final class RouteSimulationEngine: ObservableObject {
       )
       if densifiedRoute.count >= 2 {
         currentBearing = arcLengthSampler.bearingDegrees(at: 0)
+        currentTrailerBearing = currentBearing
       }
     }
   }
@@ -678,9 +682,11 @@ public final class RouteSimulationEngine: ObservableObject {
   private func applyInterpolatedDisplay(at time: ContinuousClock.Instant) {
     guard let interpolator = poseInterpolator else { return }
 
-    let snapshots = mailbox.readDisplay()?.poseSnapshots ?? []
-    let fallbackArcLength = mailbox.readDisplay()?.arcLengthMeters ?? 0
-    let fallbackBearing = mailbox.readDisplay()?.bearingDegrees ?? currentBearing
+    let display = mailbox.readDisplay()
+    let snapshots = display?.poseSnapshots ?? []
+    let fallbackArcLength = display?.arcLengthMeters ?? 0
+    let fallbackBearing = display?.bearingDegrees ?? currentBearing
+    let fallbackTrailer = display?.trailerBearingDegrees ?? currentTrailerBearing
 
     let pose: InterpolatedVehiclePose
     if snapshots.count >= 2 {
@@ -699,6 +705,7 @@ public final class RouteSimulationEngine: ObservableObject {
       pose = InterpolatedVehiclePose(
         coordinate: center,
         bearingDegrees: fallbackBearing,
+        trailerBearingDegrees: fallbackTrailer,
         arcLengthMeters: fallbackArcLength
       )
     }
@@ -708,6 +715,7 @@ public final class RouteSimulationEngine: ObservableObject {
       longitude: pose.coordinate.longitude
     )
     currentBearing = pose.bearingDegrees
+    currentTrailerBearing = pose.trailerBearingDegrees
     currentArcLengthStorage = pose.arcLengthMeters
   }
 
@@ -727,13 +735,37 @@ public final class RouteSimulationEngine: ObservableObject {
     return (length, width)
   }
 
+  /// Builds the map vehicle state for the current pose (cab + optional artic trailer parts).
+  public func simulatedVehicleStateForMap(
+    renderMode: VehicleRenderMode = .polygon
+  ) -> SimulatedVehicleState? {
+    guard let coordinate = currentCoordinate else { return nil }
+    return makeSimulatedVehicleState(coordinate: coordinate, renderMode: renderMode)
+  }
+
   private func makeSimulatedVehicleState(
     coordinate: CLLocationCoordinate2D,
     renderMode: VehicleRenderMode = .polygon
   ) -> SimulatedVehicleState {
     let dimensions = resolvedFootprintDimensions()
+    let articTrailerHeading: Double? =
+      (!isPassengerCarMode && dimensions.length >= 6.0) ? currentTrailerBearing : nil
+    // Full outline uses overall vehicle rear; artic pose `coordinate` is the kingpin.
+    let footprintRear: CLLocationCoordinate2D
+    if let trailerHeading = articTrailerHeading {
+      let trailerLength = VehicleGeometryCalculator.articBodyLengths(
+        totalLengthMeters: dimensions.length
+      ).trailer
+      footprintRear = VehicleGeometryCalculator.offsetForward(
+        from: coordinate,
+        bearingDegrees: trailerHeading,
+        forwardMeters: -trailerLength
+      )
+    } else {
+      footprintRear = coordinate
+    }
     let footprint = VehicleGeometryCalculator.generateFootprint(
-      rearAxle: coordinate,
+      rearAxle: footprintRear,
       headingDegrees: currentBearing,
       lengthMeters: dimensions.length,
       widthMeters: dimensions.width
@@ -743,7 +775,8 @@ public final class RouteSimulationEngine: ObservableObject {
       headingDegrees: currentBearing,
       lengthMeters: dimensions.length,
       widthMeters: dimensions.width,
-      isPassengerCar: isPassengerCarMode
+      isPassengerCar: isPassengerCarMode,
+      trailerHeadingDegrees: articTrailerHeading
     )
     return SimulatedVehicleState(
       latitude: coordinate.latitude,

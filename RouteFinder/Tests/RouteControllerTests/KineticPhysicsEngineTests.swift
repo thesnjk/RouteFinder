@@ -99,4 +99,53 @@ struct KineticPhysicsEngineTests {
 
         #expect(updated.headingDegrees <= maxHeadingChangeDegrees + 0.5)
     }
+
+    @Test func negativeSpeedProducesNoReverseDisplacement() {
+        let origin = londonCoordinate()
+        let state = KinematicVehicleState(
+            position: origin,
+            headingDegrees: 90.0,
+            currentSpeedMetersPerSecond: -12.0
+        )
+        let updated = KineticPhysicsEngine.updateVehicleState(
+            currentState: state,
+            targetWaypoint: eastWaypoint(from: origin),
+            wheelbaseMeters: 6.5,
+            deltaTime: 0.5
+        )
+
+        #expect(abs(updated.position.latitude - origin.latitude) < 1e-12)
+        #expect(abs(updated.position.longitude - origin.longitude) < 1e-12)
+        #expect(updated.headingDegrees == 90.0)
+        #expect(updated.currentSpeedMetersPerSecond == 0.0)
+    }
+
+    @Test func steeredTurnLeavesChordNotLateralSlide() {
+        // Start facing north; steer toward a waypoint east and ahead.
+        let origin = londonCoordinate()
+        var state = KinematicVehicleState(
+            position: origin,
+            headingDegrees: 0.0,
+            currentSpeedMetersPerSecond: 15.0
+        )
+        let waypoint = CLLocationCoordinate2D(
+            latitude: origin.latitude + 0.002,
+            longitude: origin.longitude + 0.002
+        )
+
+        for _ in 0..<30 {
+            state = KineticPhysicsEngine.updateVehicleState(
+                currentState: state,
+                targetWaypoint: waypoint,
+                wheelbaseMeters: 6.5,
+                deltaTime: 0.1
+            )
+        }
+
+        // Arc path: both lat and lon change; not a pure lateral (east-only) slide at heading 0.
+        #expect(state.position.latitude > origin.latitude)
+        #expect(state.position.longitude > origin.longitude)
+        #expect(state.headingDegrees > 5.0)
+        #expect(state.headingDegrees < 90.0)
+    }
 }

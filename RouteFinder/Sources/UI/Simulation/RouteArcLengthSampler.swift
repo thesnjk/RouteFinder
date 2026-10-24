@@ -66,6 +66,89 @@ public struct RouteArcLengthSampler: Sendable {
         coordinate(at: arcLength + distanceMeters)
     }
 
+    /// Projects a world coordinate onto the densified route, searching forward from `fromArcLength`.
+    ///
+    /// Progress is **monotonic**: the returned arc length is never less than `fromArcLength`
+    /// (clamped to the route terminus). Used to sync route governors with Ackermann pose.
+    public func nearestArcLengthMeters(
+        to latitude: Double,
+        longitude: Double,
+        fromArcLength: Double,
+        searchWindowMeters: Double = 250.0
+    ) -> Double {
+        guard densifiedRoute.count >= 2, !segmentLengths.isEmpty else {
+            return min(max(fromArcLength, 0), totalRouteLength)
+        }
+
+        let startArc = min(max(fromArcLength, 0), totalRouteLength)
+        let endArc = min(totalRouteLength, startArc + max(searchWindowMeters, 1.0))
+
+        var bestArc = startArc
+        var bestDistance = Double.greatestFiniteMagnitude
+
+        var segmentStartArc = 0.0
+        for (index, length) in segmentLengths.enumerated() {
+            let segmentEndArc = segmentStartArc + length
+            defer { segmentStartArc = segmentEndArc }
+
+            if segmentEndArc < startArc { continue }
+            if segmentStartArc > endArc { break }
+
+            let from = densifiedRoute[index]
+            let to = densifiedRoute[min(index + 1, densifiedRoute.count - 1)]
+            let (closestArc, distance) = Self.closestPointOnSegment(
+                pointLat: latitude,
+                pointLon: longitude,
+                from: from,
+                to: to,
+                segmentStartArc: segmentStartArc,
+                segmentLength: length
+            )
+            let clampedArc = min(max(closestArc, startArc), endArc)
+            if distance < bestDistance {
+                bestDistance = distance
+                bestArc = clampedArc
+            }
+        }
+
+        return min(max(bestArc, startArc), totalRouteLength)
+    }
+
+    private static func closestPointOnSegment(
+        pointLat: Double,
+        pointLon: Double,
+        from: Coordinate,
+        to: Coordinate,
+        segmentStartArc: Double,
+        segmentLength: Double
+    ) -> (arcLength: Double, distanceMeters: Double) {
+        let latRad = pointLat * .pi / 180.0
+        let metersPerDegreeLongitude = 111_320.0 * cos(latRad)
+        let metersPerDegreeLatitude = 111_320.0
+
+        let ax = (from.longitude - pointLon) * metersPerDegreeLongitude
+        let ay = (from.latitude - pointLat) * metersPerDegreeLatitude
+        let bx = (to.longitude - pointLon) * metersPerDegreeLongitude
+        let by = (to.latitude - pointLat) * metersPerDegreeLatitude
+        let abx = bx - ax
+        let aby = by - ay
+        let abLenSq = abx * abx + aby * aby
+        let t: Double
+        if abLenSq < 1e-12 {
+            t = 0
+        } else {
+            // Projection of A→P onto A→B in local meters; A is origin relative to P so P is (0,0)
+            // Vector AP = -A, AB = (abx, aby)
+            let apx = -ax
+            let apy = -ay
+            t = min(1, max(0, (apx * abx + apy * aby) / abLenSq))
+        }
+        let closestX = ax + abx * t
+        let closestY = ay + aby * t
+        let distance = sqrt(closestX * closestX + closestY * closestY)
+        return (segmentStartArc + segmentLength * t, distance)
+    }
+
     private static func bearingBetween(from: Coordinate, to: Coordinate) -> Double {
         let lat1 = from.latitude * .pi / 180
         let lat2 = to.latitude * .pi / 180

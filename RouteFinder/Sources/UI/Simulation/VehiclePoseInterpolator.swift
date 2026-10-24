@@ -5,15 +5,23 @@ import Foundation
 public struct InterpolatedVehiclePose: Sendable, Equatable {
     /// Map coordinate including interpolated elevation when available.
     public let coordinate: Coordinate
-    /// Interpolated heading in degrees clockwise from north.
+    /// Interpolated cab / tractor heading in degrees clockwise from north.
     public let bearingDegrees: Double
+    /// Interpolated trailer heading in degrees clockwise from north.
+    public let trailerBearingDegrees: Double
     /// Interpolated arc length along the route spine in meters.
     public let arcLengthMeters: Double
 
     /// Creates an interpolated vehicle pose.
-    public init(coordinate: Coordinate, bearingDegrees: Double, arcLengthMeters: Double = 0) {
+    public init(
+        coordinate: Coordinate,
+        bearingDegrees: Double,
+        trailerBearingDegrees: Double? = nil,
+        arcLengthMeters: Double = 0
+    ) {
         self.coordinate = coordinate
         self.bearingDegrees = bearingDegrees
+        self.trailerBearingDegrees = trailerBearingDegrees ?? bearingDegrees
         self.arcLengthMeters = arcLengthMeters
     }
 }
@@ -22,7 +30,7 @@ public struct InterpolatedVehiclePose: Sendable, Equatable {
 public struct VehiclePoseInterpolator: Sendable {
     private let sampler: RouteArcLengthSampler
 
-    /// Creates an interpolator that samples coordinates along the route arc length.
+    /// Creates an interpolator that samples elevation from the route arc-length spine.
     public init(sampler: RouteArcLengthSampler) {
         self.sampler = sampler
     }
@@ -47,18 +55,37 @@ public struct VehiclePoseInterpolator: Sendable {
             to: later.bearingDegrees,
             t: alpha
         )
+        let trailerBearing = Self.angleLerp(
+            from: earlier.trailerBearingDegrees,
+            to: later.trailerBearingDegrees,
+            t: alpha
+        )
+        let latitude = earlier.latitude + (later.latitude - earlier.latitude) * alpha
+        let longitude = earlier.longitude + (later.longitude - earlier.longitude) * alpha
+        let elevation = sampler.coordinate(at: arcLength).elevationMeters
         return InterpolatedVehiclePose(
-            coordinate: sampler.coordinate(at: arcLength),
+            coordinate: Coordinate(
+                latitude: latitude,
+                longitude: longitude,
+                elevationMeters: elevation
+            ),
             bearingDegrees: bearing,
+            trailerBearingDegrees: trailerBearing,
             arcLengthMeters: arcLength
         )
     }
 
     /// Returns pose from the latest snapshot when only one sample exists.
     public func pose(from snapshot: SimulationPoseSnapshot) -> InterpolatedVehiclePose {
-        InterpolatedVehiclePose(
-            coordinate: sampler.coordinate(at: snapshot.arcLengthMeters),
+        let elevation = sampler.coordinate(at: snapshot.arcLengthMeters).elevationMeters
+        return InterpolatedVehiclePose(
+            coordinate: Coordinate(
+                latitude: snapshot.latitude,
+                longitude: snapshot.longitude,
+                elevationMeters: elevation
+            ),
             bearingDegrees: snapshot.bearingDegrees,
+            trailerBearingDegrees: snapshot.trailerBearingDegrees,
             arcLengthMeters: snapshot.arcLengthMeters
         )
     }

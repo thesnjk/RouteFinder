@@ -367,6 +367,59 @@ struct RouteSimulationEngineTests {
     #expect(engine.currentBearing < 185)
   }
 
+  @Test func articTrailerHeadingLagsOnBend() async {
+    let bendRoute = [
+      CLLocationCoordinate2D(latitude: 51.5000, longitude: -0.1110),
+      CLLocationCoordinate2D(latitude: 51.5000, longitude: -0.1100),
+      CLLocationCoordinate2D(latitude: 51.4995, longitude: -0.1100),
+      CLLocationCoordinate2D(latitude: 51.4985, longitude: -0.1100),
+      CLLocationCoordinate2D(latitude: 51.4975, longitude: -0.1100),
+    ]
+
+    let engine = RouteSimulationEngine()
+    engine.configure(route: bendRoute, vehicle: .ukArtic, totalDuration: 120)
+    engine.simulationSpeedMultiplier = 10.0
+
+    var maxArticulation = 0.0
+    for _ in 0..<200 {
+      await engine.simulateTick(deltaTime: 0.1)
+      var delta = abs(engine.currentBearing - engine.currentTrailerBearing)
+      if delta > 180 { delta = 360 - delta }
+      maxArticulation = max(maxArticulation, delta)
+    }
+
+    #expect(maxArticulation > 1.0)
+    #expect(maxArticulation <= 75.0)
+
+    let mapState = engine.simulatedVehicleStateForMap()
+    #expect(mapState != nil)
+    #expect(mapState?.footprintParts.count == 2)
+    #expect(mapState?.isPassengerCar == false)
+  }
+
+  @Test func simulatedPoseUsesIntegratedCoordinates() async {
+    let eastRoute = [
+      CLLocationCoordinate2D(latitude: 51.5000, longitude: -0.1300),
+      CLLocationCoordinate2D(latitude: 51.5000, longitude: -0.1200),
+      CLLocationCoordinate2D(latitude: 51.5000, longitude: -0.1100),
+    ]
+
+    let engine = RouteSimulationEngine()
+    engine.configure(route: eastRoute, vehicle: .ukArtic, totalDuration: 120)
+    engine.simulationSpeedMultiplier = 5.0
+
+    let startLon = engine.currentCoordinate?.longitude
+    for _ in 0..<25 {
+      await engine.simulateTick(deltaTime: 0.1)
+    }
+
+    #expect(engine.currentCoordinate != nil)
+    if let startLon, let lon = engine.currentCoordinate?.longitude {
+      #expect(lon > startLon)
+    }
+    #expect(engine.currentSpeedKmh >= 0)
+  }
+
   @Test func wheelbaseUsesProfileClassDefaults() {
     let engine = RouteSimulationEngine()
     engine.configure(

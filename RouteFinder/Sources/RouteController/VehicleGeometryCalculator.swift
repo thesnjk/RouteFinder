@@ -12,7 +12,15 @@ public enum VehicleFootprintAnchor: Sendable {
 /// Translates vehicle dimensions and tracking headings into geodetic coordinate bounding polygons.
 public struct VehicleGeometryCalculator: Sendable {
     private static let metersPerDegreeLatitude = 111_320.0
-    private static let cabLengthFraction = 0.35
+    /// Fraction of overall length assigned to the tractor / cab body.
+    public static let cabLengthFraction = 0.35
+
+    /// Cab and trailer body lengths for an HGV footprint (meters).
+    public static func articBodyLengths(totalLengthMeters: Double) -> (cab: Double, trailer: Double) {
+        let cabLength = max(totalLengthMeters * cabLengthFraction, 2.5)
+        let trailerLength = max(totalLengthMeters - cabLength, 3.0)
+        return (cabLength, trailerLength)
+    }
 
     /// Generates a rotated four-corner bounding polygon footprint.
     ///
@@ -67,12 +75,24 @@ public struct VehicleGeometryCalculator: Sendable {
     }
 
     /// Generates cab and trailer/body footprint parts for map rendering.
+    ///
+    /// - Parameters:
+    ///   - rearAxle: For passenger cars, the vehicle rear axle. For HGVs, the **kingpin /
+    ///     tractor rear axle** when `trailerHeadingDegrees` is provided; otherwise the overall
+    ///     vehicle rear (legacy rigid layout).
+    ///   - headingDegrees: Cab / tractor heading in degrees clockwise from north.
+    ///   - lengthMeters: Overall vehicle length.
+    ///   - widthMeters: Vehicle width.
+    ///   - isPassengerCar: When true, emits a single body polygon.
+    ///   - trailerHeadingDegrees: Independent trailer yaw. When `nil`, cab and trailer share
+    ///     `headingDegrees` (rigid stick). When set, trailer pivots at the kingpin.
     public static func generateFootprintParts(
         rearAxle: CLLocationCoordinate2D,
         headingDegrees: Double,
         lengthMeters: Double,
         widthMeters: Double,
-        isPassengerCar: Bool
+        isPassengerCar: Bool,
+        trailerHeadingDegrees: Double? = nil
     ) -> [[CLLocationCoordinate2D]] {
         if isPassengerCar || lengthMeters < 6 {
             return [
@@ -85,8 +105,34 @@ public struct VehicleGeometryCalculator: Sendable {
             ]
         }
 
-        let cabLength = max(lengthMeters * Self.cabLengthFraction, 2.5)
-        let trailerLength = max(lengthMeters - cabLength, 3.0)
+        let lengths = articBodyLengths(totalLengthMeters: lengthMeters)
+        let cabLength = lengths.cab
+        let trailerLength = lengths.trailer
+
+        if let trailerHeading = trailerHeadingDegrees {
+            // Articulated: `rearAxle` is the kingpin / tractor rear axle.
+            let trailerRear = offsetForward(
+                from: rearAxle,
+                bearingDegrees: trailerHeading,
+                forwardMeters: -trailerLength
+            )
+            return [
+                generateFootprintRing(
+                    rearAxle: rearAxle,
+                    headingDegrees: headingDegrees,
+                    lengthMeters: cabLength,
+                    widthMeters: widthMeters
+                ),
+                generateFootprintRing(
+                    rearAxle: trailerRear,
+                    headingDegrees: trailerHeading,
+                    lengthMeters: trailerLength,
+                    widthMeters: widthMeters
+                ),
+            ]
+        }
+
+        // Legacy rigid layout: `rearAxle` is the overall vehicle rear.
         let cabRear = offsetForward(
             from: rearAxle,
             bearingDegrees: headingDegrees,

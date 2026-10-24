@@ -16,7 +16,10 @@ struct SimulationStateMailboxTests {
         SimulationPoseSnapshot(
           arcLengthMeters: 10,
           bearingDegrees: 90,
+          trailerBearingDegrees: 90,
           speedMps: 5,
+          latitude: 51.5007,
+          longitude: -0.1246,
           wallClockTime: ContinuousClock.now,
           simulationTimeSeconds: 0.1
         ),
@@ -121,6 +124,80 @@ struct SimulationPhysicsActorTests {
     #expect(snapshot != nil)
     #expect(snapshot?.revision == 1)
     #expect((snapshot?.speedMps ?? 0) >= 0)
+    #expect(snapshot?.poseSnapshots.last != nil)
+    if let pose = snapshot?.poseSnapshots.last {
+      #expect(pose.latitude != 0 || pose.longitude != 0)
+      #expect(pose.speedMps >= 0)
+    }
+  }
+
+  @Test func articulatedTrailerLagsCabOnBend() async {
+    // Short east approach then sharp south bend so cab yaw changes while trailer lags.
+    let route = [
+      Coordinate(latitude: 51.5000, longitude: -0.1110),
+      Coordinate(latitude: 51.5000, longitude: -0.1100),
+      Coordinate(latitude: 51.4995, longitude: -0.1100),
+      Coordinate(latitude: 51.4985, longitude: -0.1100),
+      Coordinate(latitude: 51.4975, longitude: -0.1100),
+    ]
+    let segmentLengths = zip(route, route.dropFirst()).map { from, to in
+      let earthRadius = 6_371_000.0
+      let lat1 = from.latitude * .pi / 180
+      let lat2 = to.latitude * .pi / 180
+      let deltaLat = (to.latitude - from.latitude) * .pi / 180
+      let deltaLon = (to.longitude - from.longitude) * .pi / 180
+      let sinDLat = sin(deltaLat / 2)
+      let sinDLon = sin(deltaLon / 2)
+      let h = sinDLat * sinDLat + cos(lat1) * cos(lat2) * sinDLon * sinDLon
+      return 2 * earthRadius * atan2(sqrt(h), sqrt(max(0, 1 - h)))
+    }
+    var cumulative: [Double] = [0]
+    for length in segmentLengths {
+      cumulative.append(cumulative.last! + length)
+    }
+    let total = segmentLengths.reduce(0, +)
+    let speedProfile = SimulationSpeedProfile()
+    let config = SimulationPhysicsConfiguration(
+      densifiedRoute: route,
+      segmentLengths: segmentLengths,
+      cumulativeLengths: cumulative,
+      totalRouteLength: total,
+      routingCoordinates: route.map {
+        RoutingCoordinate(latitude: $0.latitude, longitude: $0.longitude)
+      },
+      elevationProfile: ElevationProfile(coordinates: route),
+      speedProfile: speedProfile,
+      speedLimitResolver: BoxedRouteSpeedLimitResolver(speedProfile),
+      transitionProfile: .standard,
+      vehicleMaxSpeedMps: 96 / 3.6,
+      defaultSpeedFloorMps: 48 / 3.6,
+      kineticStressProfile: KineticStressProfile(segments: [], segmentStartArcLengths: []),
+      dynamics: .forVehicle(weightTonnes: 44, isPassengerCar: false),
+      environmentalContext: .dry,
+      vehicleWeightTonnes: 44,
+      enginePowerHP: 450,
+      cruiseSpeedMps: 20,
+      isPassengerCarMode: false,
+      activeSpecificationProfile: nil,
+      staticWebETASeconds: 120
+    )
+
+    let mailbox = SimulationStateMailbox()
+    let actor = SimulationPhysicsActor(mailbox: mailbox)
+    await actor.configure(config)
+    await actor.start()
+
+    var maxArticulation = 0.0
+    for _ in 0..<400 {
+      _ = await actor.step(fixedDeltaTime: 1.0 / 30.0, simulationSpeedMultiplier: 8.0)
+      guard let pose = mailbox.readDisplay()?.poseSnapshots.last else { continue }
+      var delta = abs(pose.bearingDegrees - pose.trailerBearingDegrees)
+      if delta > 180 { delta = 360 - delta }
+      maxArticulation = max(maxArticulation, delta)
+    }
+
+    #expect(maxArticulation > 2.0)
+    #expect(maxArticulation <= 75.0)
   }
 }
 
@@ -153,14 +230,20 @@ struct VehiclePoseInterpolatorTests {
     let earlier = SimulationPoseSnapshot(
       arcLengthMeters: 0,
       bearingDegrees: 90,
+      trailerBearingDegrees: 88,
       speedMps: 10,
+      latitude: route[0].latitude,
+      longitude: route[0].longitude,
       wallClockTime: now,
       simulationTimeSeconds: 0
     )
     let later = SimulationPoseSnapshot(
       arcLengthMeters: 100,
       bearingDegrees: 90,
+      trailerBearingDegrees: 92,
       speedMps: 10,
+      latitude: route[2].latitude,
+      longitude: route[2].longitude,
       wallClockTime: now,
       simulationTimeSeconds: 1.0
     )
@@ -174,5 +257,44 @@ struct VehiclePoseInterpolatorTests {
 
     #expect(midpoint.coordinate.longitude > route[0].longitude)
     #expect(midpoint.coordinate.longitude < route[2].longitude)
+    #expect(abs(midpoint.trailerBearingDegrees - 90) < 1.0)
+  }
+}
+
+struct RouteArcLengthSamplerProjectionTests {
+  @Test func nearestArcLengthIsMonotonicForward() {
+    let route = [
+      Coordinate(latitude: 51.5000, longitude: -0.1200),
+      Coordinate(latitude: 51.5000, longitude: -0.1100),
+      Coordinate(latitude: 51.5000, longitude: -0.1000),
+    ]
+    let segmentLengths = zip(route, route.dropFirst()).map { from, to in
+      let earthRadius = 6_371_000.0
+      let lat1 = from.latitude * .pi / 180
+      let lat2 = to.latitude * .pi / 180
+      let deltaLat = (to.latitude - from.latitude) * .pi / 180
+      let deltaLon = (to.longitude - from.longitude) * .pi / 180
+      let sinDLat = sin(deltaLat / 2)
+      let sinDLon = sin(deltaLon / 2)
+      let h = sinDLat * sinDLat + cos(lat1) * cos(lat2) * sinDLon * sinDLon
+      return 2 * earthRadius * atan2(sqrt(h), sqrt(max(0, 1 - h)))
+    }
+    let total = segmentLengths.reduce(0, +)
+    let sampler = RouteArcLengthSampler(
+      densifiedRoute: route,
+      segmentLengths: segmentLengths,
+      totalRouteLength: total
+    )
+
+    // Point near the middle of the first segment, but claim progress already past it.
+    let midLon = (route[0].longitude + route[1].longitude) / 2
+    let fromArc = total * 0.55
+    let projected = sampler.nearestArcLengthMeters(
+      to: route[0].latitude,
+      longitude: midLon,
+      fromArcLength: fromArc
+    )
+    #expect(projected >= fromArc)
+    #expect(projected <= total)
   }
 }

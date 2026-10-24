@@ -18,8 +18,8 @@ Manual QA for toll hints, telematics stub, parking deep links, offline UX, and l
 
 ## Parking partner links
 
-- [ ] Layby banner → **Find parking (TRAVIS)** opens HTTPS map with lat/lng
-- [ ] Truck POI overnight parking row shows TRAVIS + SNAP links
+- [ ] Layby banner → **Book (TRAVIS)** and **Book (SNAP)** open HTTPS partner map/locator with lat/lng
+- [ ] Truck POI overnight / layby / ADR parking rows show the same **Book (TRAVIS)** + **Book (SNAP)** links
 - [ ] Copy clarifies booking/fees are with the operator
 
 ## Offline pack UX

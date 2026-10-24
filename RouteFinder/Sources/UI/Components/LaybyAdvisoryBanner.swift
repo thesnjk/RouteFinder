@@ -7,16 +7,23 @@ struct LaybyAdvisoryBanner: View {
     var onLaybyFull: () -> Void
     var onLaybyHasSpaces: () -> Void = {}
 
+    private var availabilityTier: ParkingAvailabilityTier {
+        ParkingAvailabilityTier(occupancyPrior: advisory.occupancyPrior)
+    }
+
     var body: some View {
         HStack(spacing: RFSpacing.md) {
-            Image(systemName: "parkingsign.circle.fill")
+            Image(systemName: availabilityTier.systemImageName)
                 .font(.title3)
-                .foregroundStyle(.tint)
+                .foregroundStyle(availabilityTint)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(primaryLine)
-                    .font(RFFont.sectionTitle)
-                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: RFSpacing.sm) {
+                    Text(primaryLine)
+                        .font(RFFont.sectionTitle)
+                        .fixedSize(horizontal: false, vertical: true)
+                    ParkingAvailabilityBadge(tier: availabilityTier)
+                }
                 Text(advisory.stop.label)
                     .font(RFFont.caption)
                     .foregroundStyle(.secondary)
@@ -75,12 +82,20 @@ struct LaybyAdvisoryBanner: View {
         "You will need to stop at \(advisory.stop.label) in \(formattedETA) / \(formattedDistance)"
     }
 
+    private var availabilityTint: Color {
+        switch availabilityTier {
+        case .ample: return .green
+        case .limited: return .orange
+        case .full: return RFColor.hazard
+        }
+    }
+
     private var detailLine: String {
         var parts: [String] = []
         if let opensAt = advisory.breakWindowOpensAt {
             parts.append("break window opens at \(formattedTime(opensAt))")
         }
-        parts.append("occupancy prior: \(advisory.occupancyPrior.displayLabel)")
+        parts.append("Availability: \(availabilityTier.displayLabel)")
         if let lastSeen = lastSeenLine {
             parts.append(lastSeen)
         }

@@ -332,6 +332,7 @@ public final class RouteSimulationEngine: ObservableObject {
       isPassengerCarMode: isPassengerCarMode,
       activeSpecificationProfile: activeSpecificationProfile,
       staticWebETASeconds: staticWebETASeconds,
+      trailerCount: vehicle.trailerCount,
       minimumTurnRadiusMeters: minimumTurnRadiusMeters,
       turnInstructions: turnInstructions,
       applyTrafficToSimulation: applyTrafficToSimulation
@@ -743,13 +744,21 @@ public final class RouteSimulationEngine: ObservableObject {
     return makeSimulatedVehicleState(coordinate: coordinate, renderMode: renderMode)
   }
 
+  private func usesArticulatedTrailer(lengthMeters: Double) -> Bool {
+    guard !isPassengerCarMode else { return false }
+    if let trailerCount = lastConfigureVehicle.trailerCount {
+      return trailerCount >= 1
+    }
+    return lastConfigureVehicle.usesArticulatedTrailer || lengthMeters >= 6.0
+  }
+
   private func makeSimulatedVehicleState(
     coordinate: CLLocationCoordinate2D,
     renderMode: VehicleRenderMode = .polygon
   ) -> SimulatedVehicleState {
     let dimensions = resolvedFootprintDimensions()
-    let articTrailerHeading: Double? =
-      (!isPassengerCarMode && dimensions.length >= 6.0) ? currentTrailerBearing : nil
+    let usesArtic = usesArticulatedTrailer(lengthMeters: dimensions.length)
+    let articTrailerHeading: Double? = usesArtic ? currentTrailerBearing : nil
     // Full outline uses overall vehicle rear; artic pose `coordinate` is the kingpin.
     let footprintRear: CLLocationCoordinate2D
     if let trailerHeading = articTrailerHeading {

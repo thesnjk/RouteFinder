@@ -43,6 +43,9 @@ import Testing
     #expect(restrictions["weight"] as? Double == 44.0)
     #expect(restrictions["length"] as? Double == 16.5)
     #expect(restrictions["axleload"] as? Double == 11.5)
+    // Trailer count is a profile/sim field only — never invent an ORS key.
+    #expect(restrictions["trailer_count"] == nil)
+    #expect(restrictions["trailerCount"] == nil)
 }
 
 @Test func orsPayloadBuilderFullHazmatAndAvoidFeatures() throws {
@@ -51,6 +54,7 @@ import Testing
         weight: 40,
         width: 2.55,
         length: 16.5,
+        trailerCount: 1,
         axleWeight: 11.5,
         hazmatClass: .class3,
         tunnelRestrictionCode: .c

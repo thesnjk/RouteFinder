@@ -93,6 +93,8 @@ public final class RouteViewModel {
     public var vehicleWeight: String = ""
     public var vehicleWidth: String = ""
     public var vehicleLength: String = ""
+    /// Trailer count for artic vs rigid map/sim bodies (0…3).
+    public var vehicleTrailerCount: Int = 0
     public var vehicleAxleWeight: String = ""
     public var vehicleGroundClearance: String = ""
     public var vehicleTurningRadius: String = ""
@@ -780,6 +782,7 @@ public final class RouteViewModel {
             weight: VehicleDimensionParser.parseOptional(vehicleWeight),
             width: VehicleDimensionParser.parseOptional(vehicleWidth),
             length: VehicleDimensionParser.parseOptional(vehicleLength),
+            trailerCount: vehicleTrailerCount,
             axleWeight: VehicleDimensionParser.parseOptional(vehicleAxleWeight),
             groundClearance: VehicleDimensionParser.parseOptional(vehicleGroundClearance),
             turningRadius: VehicleDimensionParser.parseOptional(vehicleTurningRadius),
@@ -819,6 +822,7 @@ public final class RouteViewModel {
             weight: raw.weight,
             width: raw.width,
             length: raw.length,
+            trailerCount: raw.trailerCount,
             axleWeight: physics.axleWeightTonnes,
             groundClearance: physics.groundClearanceMeters,
             turningRadius: physics.turningRadiusMeters,
@@ -872,6 +876,7 @@ public final class RouteViewModel {
         vehicleWeight = profile.weight.map { String($0) } ?? ""
         vehicleWidth = profile.width.map { String($0) } ?? ""
         vehicleLength = profile.length.map { String($0) } ?? ""
+        vehicleTrailerCount = profile.resolvedTrailerCount
         vehicleAxleWeight = profile.axleWeight.map { String($0) } ?? ""
         vehicleGroundClearance = profile.groundClearance.map { String($0) } ?? ""
         vehicleTurningRadius = profile.turningRadius.map { String($0) } ?? ""
@@ -879,6 +884,30 @@ public final class RouteViewModel {
         tunnelRestrictionCode = profile.tunnelRestrictionCode
         emissionClass = profile.emissionClass
         activeProfileName = profile.savedProfileName
+        if profile.usesArticulatedTrailer || (profile.length ?? 0) >= 6 {
+            isHGVMode = true
+        }
+        refreshMapVehicleFootprint()
+        scheduleVehicleWorkspacePersist()
+        Task { await recalculateIfReady() }
+    }
+
+    /// Updates trailer count; on stock presets, suggests matching overall length.
+    public func setVehicleTrailerCount(_ count: Int) {
+        let clamped = min(max(count, 0), 3)
+        vehicleTrailerCount = clamped
+        let stockPreset =
+            activeProfileName == VehicleProfile.ukArtic.savedProfileName
+            || activeProfileName == VehicleProfile.ukRigid26t.savedProfileName
+        if stockPreset {
+            if clamped == 0 {
+                vehicleLength = String(VehicleProfile.ukRigid26t.length ?? 12.0)
+                activeProfileName = VehicleProfile.ukRigid26t.savedProfileName
+            } else {
+                vehicleLength = String(VehicleProfile.ukArtic.length ?? 16.5)
+                activeProfileName = VehicleProfile.ukArtic.savedProfileName
+            }
+        }
         refreshMapVehicleFootprint()
         scheduleVehicleWorkspacePersist()
         Task { await recalculateIfReady() }
@@ -999,8 +1028,12 @@ public final class RouteViewModel {
         vehicleTypeLabel = profile.displayName
         registrationSource = profile.registrySource
         isHGVMode = profile.isHGVMode
+        // Registry has no trailer field — infer artic from overall length for HGV.
         if profile.isHGVMode {
+            vehicleTrailerCount = profile.lengthM >= 14.0 ? 1 : 0
             avoidResidential = true
+        } else {
+            vehicleTrailerCount = 0
         }
         if let emissionClass = profile.emissionClass {
             self.emissionClass = emissionClass
@@ -1219,6 +1252,7 @@ public final class RouteViewModel {
         vehicleWeight = snapshot.vehicleWeight
         vehicleWidth = snapshot.vehicleWidth
         vehicleLength = snapshot.vehicleLength
+        vehicleTrailerCount = min(max(snapshot.vehicleTrailerCount ?? 0, 0), 3)
         vehicleAxleWeight = snapshot.vehicleAxleWeight
         vehicleGroundClearance = snapshot.vehicleGroundClearance
         vehicleTurningRadius = snapshot.vehicleTurningRadius
@@ -1264,6 +1298,7 @@ public final class RouteViewModel {
             vehicleWeight: vehicleWeight,
             vehicleWidth: vehicleWidth,
             vehicleLength: vehicleLength,
+            vehicleTrailerCount: vehicleTrailerCount,
             vehicleAxleWeight: vehicleAxleWeight,
             vehicleGroundClearance: vehicleGroundClearance,
             vehicleTurningRadius: vehicleTurningRadius,
@@ -1996,9 +2031,10 @@ public final class RouteViewModel {
         let width = profile?.widthMeters ?? simulationEngine.vehicleWidthMeters
         let isPassengerCar = !isHGVMode
         let bearing = simulationEngine.currentBearing
+        let usesArtic = currentVehicleProfile().usesArticulatedTrailer && !isPassengerCar
         // Match RouteSimulationEngine: artic pose coordinate is kingpin; pass trailer yaw.
         let articTrailerHeading: Double? =
-            (!isPassengerCar && length >= 6.0) ? simulationEngine.currentTrailerBearing : nil
+            usesArtic ? simulationEngine.currentTrailerBearing : nil
         let footprintRear: CLLocationCoordinate2D
         if let trailerHeading = articTrailerHeading {
             let trailerLength = VehicleGeometryCalculator.articBodyLengths(

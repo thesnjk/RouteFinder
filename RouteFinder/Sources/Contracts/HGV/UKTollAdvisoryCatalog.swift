@@ -1,6 +1,9 @@
 import Foundation
 
-/// A named UK toll / tolled crossing advisory (indicative — not a live tariff table).
+/// A named UK toll / tolled crossing advisory with optional static indicative £.
+///
+/// Prices are **not** live tariffs — operators change class-based rates. Always check
+/// the linked operator / GOV.UK page before travel.
 public struct UKTollAdvisory: Sendable, Hashable, Codable, Identifiable, Equatable {
     public let id: String
     public let name: String
@@ -8,10 +11,14 @@ public struct UKTollAdvisory: Sendable, Hashable, Codable, Identifiable, Equatab
     public let longitude: Double
     /// Distance from the toll point within which a route vertex counts as a hit.
     public let approachRadiusMeters: Double
-    /// Short driver-facing hint (no prices — operators change tariffs).
+    /// Short driver-facing hint (payment scheme, directionality, free-context).
     public let hint: String
     /// Optional official operator information URL.
     public let infoURL: URL?
+    /// Static indicative single-crossing cost in GBP (planning aid only).
+    public let indicativeCostGBP: Double?
+    /// Short note clarifying the £ figure (e.g. day rate / class).
+    public let indicativeCostNote: String?
 
     public init(
         id: String,
@@ -20,7 +27,9 @@ public struct UKTollAdvisory: Sendable, Hashable, Codable, Identifiable, Equatab
         longitude: Double,
         approachRadiusMeters: Double = 2_500,
         hint: String,
-        infoURL: URL? = nil
+        infoURL: URL? = nil,
+        indicativeCostGBP: Double? = nil,
+        indicativeCostNote: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -29,17 +38,44 @@ public struct UKTollAdvisory: Sendable, Hashable, Codable, Identifiable, Equatab
         self.approachRadiusMeters = approachRadiusMeters
         self.hint = hint
         self.infoURL = infoURL
+        self.indicativeCostGBP = indicativeCostGBP
+        self.indicativeCostNote = indicativeCostNote
     }
 
     /// Catalog point as a route coordinate.
     public var coordinate: Coordinate {
         Coordinate(latitude: latitude, longitude: longitude)
     }
+
+    /// Driver-facing “Indicative ~£X” line when a static £ is seeded.
+    public var indicativeCostLabel: String? {
+        guard let indicativeCostGBP else { return nil }
+        let amount = String(format: "£%.2f", indicativeCostGBP)
+        if let indicativeCostNote, !indicativeCostNote.isEmpty {
+            return "Indicative ~\(amount) (\(indicativeCostNote))"
+        }
+        return "Indicative ~\(amount)"
+    }
+
+    /// Sum of non-nil indicative costs on matched advisories (planning total only).
+    public static func indicativeRouteTotalGBP(advisories: [UKTollAdvisory]) -> Double? {
+        let amounts = advisories.compactMap(\.indicativeCostGBP)
+        guard !amounts.isEmpty else { return nil }
+        return amounts.reduce(0, +)
+    }
+
+    /// Formatted route total, e.g. `Indicative tolls ~£18.00`.
+    public static func indicativeRouteTotalLabel(advisories: [UKTollAdvisory]) -> String? {
+        guard let total = indicativeRouteTotalGBP(advisories: advisories) else { return nil }
+        return String(format: "Indicative tolls ~£%.2f", total)
+    }
 }
 
 /// Hand-authored UK toll / crossing points for along-route advisories.
 ///
-/// Hints are **indicative only** — not legal tariff tables or live pricing.
+/// Indicative £ figures are static planning aids (approx. day / single-crossing rates for
+/// larger goods vehicles where published) — **not** live class tables. As-of **2025-10**
+/// public operator pages; always verify before travel.
 public enum UKTollAdvisoryCatalog: Sendable {
     /// All seeded advisories (≈16 major UK truck-relevant tolls / crossings).
     public static let all: [UKTollAdvisory] = [
@@ -49,8 +85,10 @@ public enum UKTollAdvisoryCatalog: Sendable {
             latitude: 52.6500,
             longitude: -1.7500,
             approachRadiusMeters: 4_000,
-            hint: "Private motorway — class-based charges; tag or account. No live tariff in-app.",
-            infoURL: URL(string: "https://www.m6toll.co.uk/")
+            hint: "Private motorway — class-based charges; tag or account.",
+            infoURL: URL(string: "https://www.m6toll.co.uk/"),
+            indicativeCostGBP: 13.00,
+            indicativeCostNote: "indicative HGV class; check M6 Toll"
         ),
         UKTollAdvisory(
             id: "dartford-crossing",
@@ -58,8 +96,10 @@ public enum UKTollAdvisoryCatalog: Sendable {
             latitude: 51.4640,
             longitude: 0.2580,
             approachRadiusMeters: 3_500,
-            hint: "Dart Charge — pay by midnight next day for most vehicles. Check GOV.UK for HGV rates.",
-            infoURL: URL(string: "https://www.gov.uk/dart-charge")
+            hint: "Dart Charge — pay by midnight next day for most vehicles.",
+            infoURL: URL(string: "https://www.gov.uk/dart-charge"),
+            indicativeCostGBP: 6.00,
+            indicativeCostNote: "indicative HGV day; check GOV.UK"
         ),
         UKTollAdvisory(
             id: "mersey-gateway",
@@ -68,7 +108,9 @@ public enum UKTollAdvisoryCatalog: Sendable {
             longitude: -2.7300,
             approachRadiusMeters: 3_000,
             hint: "Merseyflow account or pay-as-you-go. Silver Jubilee Bridge free for most local traffic.",
-            infoURL: URL(string: "https://www.merseyflow.co.uk/")
+            infoURL: URL(string: "https://www.merseyflow.co.uk/"),
+            indicativeCostGBP: 4.00,
+            indicativeCostNote: "indicative; check Merseyflow class"
         ),
         UKTollAdvisory(
             id: "severn-crossings",
@@ -86,7 +128,9 @@ public enum UKTollAdvisoryCatalog: Sendable {
             longitude: -0.4500,
             approachRadiusMeters: 2_500,
             hint: "Tolled bridge — HGV class rates apply. Pay at plaza or check operator site.",
-            infoURL: URL(string: "https://www.humberbridge.co.uk/")
+            infoURL: URL(string: "https://www.humberbridge.co.uk/"),
+            indicativeCostGBP: 5.00,
+            indicativeCostNote: "indicative; check Humber Bridge"
         ),
         UKTollAdvisory(
             id: "tyne-tunnel",
@@ -95,7 +139,9 @@ public enum UKTollAdvisoryCatalog: Sendable {
             longitude: -1.4800,
             approachRadiusMeters: 2_500,
             hint: "TT2 account recommended for HGVs. Day rates vary by vehicle class.",
-            infoURL: URL(string: "https://www.tt2.co.uk/")
+            infoURL: URL(string: "https://www.tt2.co.uk/"),
+            indicativeCostGBP: 3.00,
+            indicativeCostNote: "indicative; check TT2"
         ),
         UKTollAdvisory(
             id: "tamar-bridge",
@@ -104,7 +150,9 @@ public enum UKTollAdvisoryCatalog: Sendable {
             longitude: -4.2040,
             approachRadiusMeters: 2_000,
             hint: "Toll westbound (into Cornwall). Check current HGV tariffs with the authority.",
-            infoURL: URL(string: "https://www.tamarcrossings.org.uk/")
+            infoURL: URL(string: "https://www.tamarcrossings.org.uk/"),
+            indicativeCostGBP: 3.00,
+            indicativeCostNote: "westbound indicative; check authority"
         ),
         UKTollAdvisory(
             id: "forth-road-bridge",
@@ -149,7 +197,9 @@ public enum UKTollAdvisoryCatalog: Sendable {
             longitude: 0.0200,
             approachRadiusMeters: 2_500,
             hint: "User charge applies — check TfL for HGV rates and exemptions.",
-            infoURL: URL(string: "https://tfl.gov.uk/modes/driving/silvertown-tunnel")
+            infoURL: URL(string: "https://tfl.gov.uk/modes/driving/silvertown-tunnel"),
+            indicativeCostGBP: 4.00,
+            indicativeCostNote: "indicative TfL user charge; check class"
         ),
         UKTollAdvisory(
             id: "conwy-tunnel",
@@ -176,7 +226,9 @@ public enum UKTollAdvisoryCatalog: Sendable {
             longitude: -1.3850,
             approachRadiusMeters: 1_500,
             hint: "Local toll bridge — check Southampton City Council for current charges.",
-            infoURL: URL(string: "https://www.southampton.gov.uk/")
+            infoURL: URL(string: "https://www.southampton.gov.uk/"),
+            indicativeCostGBP: 1.00,
+            indicativeCostNote: "indicative local; check council"
         ),
         UKTollAdvisory(
             id: "whitchurch-bridge",

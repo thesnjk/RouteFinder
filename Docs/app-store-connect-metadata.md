@@ -32,7 +32,7 @@ RouteFinder is professional HGV navigation and small-fleet dispatch for UK indep
 
 • Constraint-aware truck routing and physics route rehearsal
 • Turn-by-turn guidance with lane hints from OpenStreetMap where available
-• Named UK toll advisories along your route (hints only — not live tariffs)
+• Named UK toll advisories with indicative £ hints along your route (check operator — not live tariffs)
 • Walkaround inspections and shareable trip briefs
 • Mac / iPad / browser dispatch on your office Wi‑Fi: push trips to drivers over LAN
 • Optional remote depot via your own hosted gateway (Operator-run VPS)

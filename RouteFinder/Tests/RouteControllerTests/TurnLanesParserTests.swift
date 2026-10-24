@@ -46,7 +46,20 @@ struct TurnLanesParserTests {
             turnLanes: "none|left|through",
             forManeuver: .left
         )
+        #expect(guidance?.lanes.count == 3)
+        #expect(guidance?.lanes[0] == .unknown)
+        #expect(guidance?.lanes[1] == .left)
+        #expect(guidance?.lanes[2] == .straight)
         #expect(guidance?.recommendedIndices == [1])
+    }
+
+    @Test func parseNoneOnlyLaneIsUnknownSlot() {
+        let guidance = TurnLanesParser.parse(turnLanes: "none|none|through")
+        #expect(guidance?.lanes.count == 3)
+        #expect(guidance?.lanes[0] == .unknown)
+        #expect(guidance?.lanes[1] == .unknown)
+        #expect(guidance?.lanes[2] == .straight)
+        #expect(guidance?.recommendedIndices == [2])
     }
 
     @Test func parseCompoundLaneForStraightManeuver() {

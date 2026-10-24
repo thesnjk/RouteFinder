@@ -13,6 +13,11 @@ public enum UKLowEmissionZoneBoundaries: Sendable {
         "sheffield-caz": sheffieldCAZ,
         "bath-caz": bathCAZ,
         "newcastle-caz": newcastleCAZ,
+        "manchester-caz": manchesterCAZ,
+        "glasgow-lez": glasgowLEZ,
+        "bradford-caz": bradfordCAZ,
+        "oxford-zez": oxfordZEZ,
+        "portsmouth-caz": portsmouthCAZ,
     ]
 
     /// Greater London ULEZ (expanded) — coarse envelope inside North/South Circular area.
@@ -88,6 +93,66 @@ public enum UKLowEmissionZoneBoundaries: Sendable {
         [-1.650, 54.998],
         [-1.665, 54.988],
         [-1.665, 54.972],
+    ])
+
+    /// Greater Manchester CAZ — city-centre / inner ring envelope (not full GMCA).
+    public static let manchesterCAZ: [[Double]] = closed([
+        [-2.300, 53.460],
+        [-2.200, 53.460],
+        [-2.180, 53.470],
+        [-2.180, 53.495],
+        [-2.200, 53.505],
+        [-2.300, 53.505],
+        [-2.320, 53.492],
+        [-2.320, 53.472],
+    ])
+
+    /// Glasgow LEZ — city-centre / M8 / river envelope.
+    public static let glasgowLEZ: [[Double]] = closed([
+        [-4.300, 55.845],
+        [-4.200, 55.845],
+        [-4.180, 55.855],
+        [-4.180, 55.878],
+        [-4.200, 55.888],
+        [-4.300, 55.888],
+        [-4.320, 55.875],
+        [-4.320, 55.855],
+    ])
+
+    /// Bradford CAZ — city-centre envelope.
+    public static let bradfordCAZ: [[Double]] = closed([
+        [-1.800, 53.780],
+        [-1.720, 53.780],
+        [-1.700, 53.790],
+        [-1.700, 53.812],
+        [-1.720, 53.822],
+        [-1.800, 53.822],
+        [-1.820, 53.810],
+        [-1.820, 53.790],
+    ])
+
+    /// Oxford Zero Emission Zone — compact historic centre envelope.
+    public static let oxfordZEZ: [[Double]] = closed([
+        [-1.280, 51.740],
+        [-1.235, 51.740],
+        [-1.225, 51.748],
+        [-1.225, 51.760],
+        [-1.235, 51.768],
+        [-1.280, 51.768],
+        [-1.290, 51.760],
+        [-1.290, 51.748],
+    ])
+
+    /// Portsmouth CAZ — city-centre / harbour approaches envelope.
+    public static let portsmouthCAZ: [[Double]] = closed([
+        [-1.120, 50.800],
+        [-1.050, 50.800],
+        [-1.040, 50.810],
+        [-1.040, 50.832],
+        [-1.050, 50.842],
+        [-1.120, 50.842],
+        [-1.130, 50.830],
+        [-1.130, 50.810],
     ])
 
     private static func closed(_ points: [[Double]]) -> [[Double]] {

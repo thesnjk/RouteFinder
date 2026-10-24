@@ -9,6 +9,21 @@ import org.junit.Test
 
 class ComplianceParityTest {
     @Test
+    fun lezCatalogHasElevenZonesWithAuthoredRings() {
+        assertEquals(11, UkLezCatalog.zones.size)
+        assertEquals(11, UkLezBoundaries.ringsByZoneId.size)
+        for (zone in UkLezCatalog.zones) {
+            assertNotNull(zone.boundaryRing)
+            assertTrue(zone.contains(zone.center))
+        }
+        assertTrue(UkLezBoundaries.ringsByZoneId.containsKey("manchester-caz"))
+        assertTrue(UkLezBoundaries.ringsByZoneId.containsKey("glasgow-lez"))
+        assertTrue(UkLezBoundaries.ringsByZoneId.containsKey("bradford-caz"))
+        assertTrue(UkLezBoundaries.ringsByZoneId.containsKey("oxford-zez"))
+        assertTrue(UkLezBoundaries.ringsByZoneId.containsKey("portsmouth-caz"))
+    }
+
+    @Test
     fun lezAvoidsNonCompliantLondonRoute() {
         val route = listOf(LatLon(51.50, -0.12), LatLon(51.51, -0.13))
         val zones = UkLezCatalog.intersectingAvoidZones(

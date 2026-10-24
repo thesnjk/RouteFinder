@@ -329,7 +329,7 @@ struct SettingsSheet: View {
                     viewModel.scheduleVehicleWorkspacePersist()
                 }
                 .help("Routes around UK ULEZ/CAZ zones when emission class is missing or below Euro 6. Destinations inside a zone are still allowed.")
-            Text("LEZ rings are simplified envelopes — not legal cadastral boundaries. Euro 6 exempt vehicles skip avoid routing when class is set in the vehicle profile.")
+            Text("All 11 UK LEZ/CAZ zones use simplified rings — not legal cadastral boundaries. Euro 6 exempt vehicles skip avoid routing when class is set in the vehicle profile.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             Toggle("Hurry Mode", isOn: $viewModel.hurryMode)

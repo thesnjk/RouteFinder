@@ -23,14 +23,18 @@ public struct KinematicVehicleState: Sendable {
 }
 
 /// Analytical Ackermann bicycle-model vehicle motion integrator.
+///
+/// Motion is **nonholonomic**: the rear axle advances along the body heading under
+/// front-wheel steering only. There is no lateral (crab) slide. Reverse is not modeled —
+/// negative speeds produce zero displacement.
 public enum KineticPhysicsEngine: Sendable {
     private static let metersPerDegreeLatitude: Double = 111_320.0
     private static let maxSteerAngleDegrees: Double = 35.0
 
     /// Computes the next simulation frame using Ackermann vehicle tracking mechanics.
     ///
-    /// The model derives heading change from wheel articulation over the wheelbase distance
-    /// and projects displacement from the rear-axle tracking line.
+    /// The model derives heading change from front-wheel articulation over the wheelbase
+    /// and projects **forward-only** displacement from the rear-axle tracking line.
     ///
     /// - Parameters:
     ///   - currentState: Current rear-axle position, heading, and speed.
@@ -65,7 +69,8 @@ public enum KineticPhysicsEngine: Sendable {
         let maxSteerAngleRadians = Self.maxSteerAngleDegrees * Double.pi / 180.0
         steeringAngle = max(min(steeringAngle, maxSteerAngleRadians), -maxSteerAngleRadians)
 
-        let distanceMoved = currentState.currentSpeedMetersPerSecond * safeDeltaTime
+        // Forward-only: never integrate reverse displacement.
+        let distanceMoved = max(0.0, currentState.currentSpeedMetersPerSecond) * safeDeltaTime
 
         let headingChangeRadians = (distanceMoved / safeWheelbase) * sin(steeringAngle)
         let updatedHeadingRadians = currentHeadingRadians + headingChangeRadians
@@ -83,7 +88,7 @@ public enum KineticPhysicsEngine: Sendable {
         return KinematicVehicleState(
             position: CLLocationCoordinate2D(latitude: nextLatitude, longitude: nextLongitude),
             headingDegrees: finalHeadingDegrees,
-            currentSpeedMetersPerSecond: currentState.currentSpeedMetersPerSecond
+            currentSpeedMetersPerSecond: max(0.0, currentState.currentSpeedMetersPerSecond)
         )
     }
 

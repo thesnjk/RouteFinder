@@ -1,4 +1,5 @@
 import Contracts
+import MapLibreUI
 import SwiftUI
 
 /// Guided first-run / re-entry flow for pairing a driver device to LAN or hosted fleet.
@@ -35,6 +36,7 @@ struct FleetSetupWizardView: View {
                 navigationRow
             }
             .padding(RFSpacing.lg)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .navigationTitle("Fleet setup")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -44,6 +46,10 @@ struct FleetSetupWizardView: View {
                     Button("Close") { finish() }
                 }
             }
+            #if os(iOS)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(MapCanvasBackdrop.color, for: .navigationBar)
+            #endif
             .accessibilityIdentifier("fleetSetupWizard")
             .onAppear {
                 // Pair-with-fleet always means remote sync — avoid an extra toggle tap.

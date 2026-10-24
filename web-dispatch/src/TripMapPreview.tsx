@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   GeoJSONSource,
   LngLatBounds,
@@ -16,7 +16,7 @@ import {
 import { tripMapFingerprint, tripMapFetchFingerprint } from './tripMapFingerprint'
 
 function setTripLine(map: MapLibreMap, coords: LngLat[]) {
-  if (coords.length < 2) return
+  if (coords.length < 2 || !map.isStyleLoaded()) return
   const sourceId = 'trip-line'
   const data = {
     type: 'Feature' as const,
@@ -38,6 +38,7 @@ function setTripLine(map: MapLibreMap, coords: LngLat[]) {
 }
 
 function clearTripLine(map: MapLibreMap) {
+  if (!map.isStyleLoaded()) return
   if (map.getLayer('trip-line-layer')) map.removeLayer('trip-line-layer')
   if (map.getSource('trip-line')) map.removeSource('trip-line')
 }
@@ -62,6 +63,7 @@ export function TripMapPreview({
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
+  const [styleReady, setStyleReady] = useState(false)
   const tripRef = useRef(trip)
   tripRef.current = trip
   const clientRef = useRef(client)
@@ -93,6 +95,7 @@ export function TripMapPreview({
     if (!showMap || !containerRef.current) return
     if (mapRef.current) return
 
+    setStyleReady(false)
     const map = new MapLibreMap({
       container: containerRef.current,
       style: {
@@ -112,16 +115,21 @@ export function TripMapPreview({
     })
     map.addControl(new NavigationControl({ showCompass: false }), 'top-right')
     mapRef.current = map
+    const onLoad = () => setStyleReady(true)
+    map.once('load', onLoad)
+    if (map.isStyleLoaded()) onLoad()
 
     return () => {
+      map.off('load', onLoad)
       map.remove()
       mapRef.current = null
+      setStyleReady(false)
     }
   }, [showMap])
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map || (tripFp === 'empty' && pinsFp === 'none')) return
+    if (!map || !styleReady || (tripFp === 'empty' && pinsFp === 'none')) return
 
     let cancelled = false
     const markers: Marker[] = []
@@ -201,7 +209,7 @@ export function TripMapPreview({
         void api
           .routePreviewHGV(ordered, profileRef.current)
           .then((corridor) => {
-            if (cancelled || corridor.length < 2) return
+            if (cancelled || corridor.length < 2 || !map.isStyleLoaded()) return
             setTripLine(map, corridor)
             const corridorBounds = new LngLatBounds()
             for (const [lng, lat] of corridor) corridorBounds.extend([lng, lat])
@@ -223,7 +231,7 @@ export function TripMapPreview({
       cancelled = true
       for (const marker of markers) marker.remove()
     }
-  }, [fingerprint, tripFp, pinsFp])
+  }, [fingerprint, tripFp, pinsFp, styleReady])
 
   if (!showMap) {
     return (

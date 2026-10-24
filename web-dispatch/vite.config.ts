@@ -1,12 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// Safe headers that do not break Vite HMR / React (strict CSP blanks the app in dev).
 const securityHeaders = {
   'Referrer-Policy': 'no-referrer',
   'X-Content-Type-Options': 'nosniff',
-  // Desk is LAN/local; keep CSP strict enough to block accidental remote script injection.
-  'Content-Security-Policy':
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https: http://127.0.0.1:* http://localhost:* http://*.local:* ws://127.0.0.1:* ws://localhost:*; worker-src 'self' blob:; font-src 'self' data:",
 }
 
 // https://vite.dev/config/

@@ -1996,20 +1996,36 @@ public final class RouteViewModel {
         let width = profile?.widthMeters ?? simulationEngine.vehicleWidthMeters
         let isPassengerCar = !isHGVMode
         let bearing = simulationEngine.currentBearing
+        // Match RouteSimulationEngine: artic pose coordinate is kingpin; pass trailer yaw.
+        let articTrailerHeading: Double? =
+            (!isPassengerCar && length >= 6.0) ? simulationEngine.currentTrailerBearing : nil
+        let footprintRear: CLLocationCoordinate2D
+        if let trailerHeading = articTrailerHeading {
+            let trailerLength = VehicleGeometryCalculator.articBodyLengths(
+                totalLengthMeters: length
+            ).trailer
+            footprintRear = VehicleGeometryCalculator.offsetForward(
+                from: coordinate,
+                bearingDegrees: trailerHeading,
+                forwardMeters: -trailerLength
+            )
+        } else {
+            footprintRear = coordinate
+        }
+        let footprint = VehicleGeometryCalculator.generateFootprint(
+            rearAxle: footprintRear,
+            headingDegrees: bearing,
+            lengthMeters: length,
+            widthMeters: width
+        )
         let parts = VehicleGeometryCalculator.generateFootprintParts(
             rearAxle: coordinate,
             headingDegrees: bearing,
             lengthMeters: length,
             widthMeters: width,
-            isPassengerCar: isPassengerCar
+            isPassengerCar: isPassengerCar,
+            trailerHeadingDegrees: articTrailerHeading
         )
-        let footprint = parts.first
-            ?? VehicleGeometryCalculator.generateFootprint(
-                rearAxle: coordinate,
-                headingDegrees: bearing,
-                lengthMeters: length,
-                widthMeters: width
-            )
         return SimulatedVehicleState(
             latitude: coordinate.latitude,
             longitude: coordinate.longitude,

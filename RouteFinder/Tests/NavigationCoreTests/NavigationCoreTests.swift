@@ -131,6 +131,22 @@ func maneuverSpeechIncludesLaneGuidance() {
     let spoken = ManeuverSpeechFormatter.spokenPrompt(for: instruction, tier: .execute)
     #expect(spoken.contains(instruction.laneGuidance!.guidanceText))
     #expect(spoken.localizedCaseInsensitiveContains("turn right"))
+    #expect(spoken.contains("onto A47"))
+}
+
+@Test("Maneuver speech prepare includes road with lanes")
+func maneuverSpeechPrepareIncludesRoadWithLanes() {
+    let instruction = TurnInstruction(
+        maneuver: .right,
+        roadName: "A47",
+        distance: 400,
+        bearing: 90,
+        laneGuidance: LaneGuidance(lanes: [.straight, .right], recommendedIndices: [1])
+    )
+    let prepare = ManeuverSpeechFormatter.spokenPrompt(for: instruction, tier: .prepare)
+    #expect(prepare.contains("400 metres"))
+    #expect(prepare.localizedCaseInsensitiveContains("right lane") || prepare.contains("lane"))
+    #expect(prepare.contains("onto A47"))
 }
 
 @Test("Maneuver speech uses metric approach distances")
@@ -145,4 +161,6 @@ func maneuverSpeechUsesMetricDistances() {
     let prepare = ManeuverSpeechFormatter.spokenPrompt(for: instruction, tier: .prepare)
     #expect(approach.contains("kilometres"))
     #expect(prepare.contains("metres"))
+    #expect(approach.contains("onto M6"))
+    #expect(prepare.contains("onto M6"))
 }

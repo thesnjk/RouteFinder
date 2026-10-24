@@ -89,23 +89,24 @@ public enum ManeuverSpeechFormatter {
         switch tier {
         case .approach:
             if let laneText = instruction.laneGuidance.map({ spokenLanePhrase(for: $0) }), !laneText.isEmpty {
-                return "In 1.6 kilometres, \(laneText.lowercased())\(roadSuffix(for: instruction, tier: tier))"
+                return "In 1.6 kilometres, \(laneText.lowercased())\(roadSuffix(for: instruction))"
             }
-            return "In 1.6 kilometres, \(phrase.lowercased())\(roadSuffix(for: instruction, tier: tier))"
+            return "In 1.6 kilometres, \(phrase.lowercased())\(roadSuffix(for: instruction))"
         case .prepare:
             if let laneText = instruction.laneGuidance.map({ spokenLanePhrase(for: $0) }), !laneText.isEmpty {
-                return "In 400 metres, \(laneText.lowercased())"
+                return "In 400 metres, \(laneText.lowercased())\(roadSuffix(for: instruction))"
             }
-            return "In 400 metres, \(phrase.lowercased())"
+            return "In 400 metres, \(phrase.lowercased())\(roadSuffix(for: instruction))"
         case .execute:
             if instruction.maneuver == .arrive {
                 return phrase
             }
             if let laneText = instruction.laneGuidance.map({ spokenLanePhrase(for: $0) }), !laneText.isEmpty {
-                return "\(laneText), then \(phrase.lowercased())"
+                return "\(laneText), then \(phrase.lowercased())\(roadSuffix(for: instruction))"
             }
-            if let roadName = instruction.roadName, !roadName.isEmpty {
-                return "\(phrase) onto \(roadName)"
+            let suffix = roadSuffix(for: instruction)
+            if !suffix.isEmpty {
+                return "\(phrase)\(suffix)"
             }
             return phrase
         }
@@ -126,9 +127,9 @@ public enum ManeuverSpeechFormatter {
         }
     }
 
-    private static func roadSuffix(for instruction: TurnInstruction, tier: AnnouncementTier) -> String {
-        guard tier == .approach,
-              instruction.maneuver != .arrive,
+    /// ` onto {road}` when a street name is known (all announcement tiers).
+    private static func roadSuffix(for instruction: TurnInstruction) -> String {
+        guard instruction.maneuver != .arrive,
               let road = instruction.roadName,
               !road.isEmpty else { return "" }
         return " onto \(road)"

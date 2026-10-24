@@ -57,6 +57,15 @@ import Testing
     #expect(best == "left|through|through|right")
 }
 
+@Test func overpassPrefersBothWaysOverBackward() {
+    let tags: [[String: String]] = [
+        ["turn:lanes:backward": "left|through"],
+        ["turn:lanes:both_ways": "left|through|right"],
+    ]
+    let best = OverpassLaneGuidanceClient.richestTurnLanesTag(from: tags)
+    #expect(best == "left|through|right")
+}
+
 @Test func laneGuidanceSourceDistinguishesHeuristic() {
     let heuristic = TurnLanesParser.heuristic(for: .left)
     #expect(heuristic.source == .heuristic)

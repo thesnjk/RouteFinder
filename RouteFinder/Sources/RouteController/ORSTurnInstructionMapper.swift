@@ -24,7 +24,7 @@ public enum ORSTurnInstructionMapper {
 
             instructions.append(TurnInstruction(
                 maneuver: maneuverType,
-                roadName: roadName(from: maneuver.instruction),
+                roadName: extractedRoadName(from: maneuver.instruction),
                 distance: maneuver.distanceMeters,
                 bearing: bearing
             ))
@@ -83,11 +83,34 @@ public enum ORSTurnInstructionMapper {
         return .straight
     }
 
-    private static func roadName(from instruction: String) -> String? {
+    /// Extracts a target street / road name from an ORS step instruction.
+    ///
+    /// Recognizes `onto`, `on`, `toward`, and `towards` patterns. Returns `nil` for
+    /// depart “Head…” lines, arrive wording, or instructions with no road clause.
+    public static func extractedRoadName(from instruction: String) -> String? {
         let trimmed = instruction.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
-        if trimmed.lowercased().hasPrefix("head") { return nil }
-        return trimmed
+        let lower = trimmed.lowercased()
+        if lower.hasPrefix("head") { return nil }
+        if lower.contains("arrive") || lower.contains("you have reached") { return nil }
+
+        // Longer delimiters first so "onto" is not split by "on".
+        let delimiters = [" onto ", " towards ", " toward ", " on "]
+        for delimiter in delimiters {
+            guard let range = lower.range(of: delimiter) else { continue }
+            let startOffset = lower.distance(from: lower.startIndex, to: range.upperBound)
+            let start = trimmed.index(trimmed.startIndex, offsetBy: startOffset)
+            var name = String(trimmed[start...]).trimmingCharacters(in: .whitespacesAndNewlines)
+            if let andRange = name.range(of: " and ", options: .caseInsensitive) {
+                name = String(name[..<andRange.lowerBound])
+            }
+            if let forRange = name.range(of: " for ", options: .caseInsensitive) {
+                name = String(name[..<forRange.lowerBound])
+            }
+            name = name.trimmingCharacters(in: CharacterSet(charactersIn: ".,;"))
+            if !name.isEmpty { return name }
+        }
+        return nil
     }
 
     private static func bearingForStep(

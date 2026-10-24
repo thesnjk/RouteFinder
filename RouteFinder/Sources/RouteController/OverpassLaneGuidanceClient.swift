@@ -40,6 +40,7 @@ public struct OverpassLaneGuidanceClient: Sendable {
         (
           way(around:\(Int(searchRadiusMeters)),\(coordinate.latitude),\(coordinate.longitude))["turn:lanes"];
           way(around:\(Int(searchRadiusMeters)),\(coordinate.latitude),\(coordinate.longitude))["turn:lanes:forward"];
+          way(around:\(Int(searchRadiusMeters)),\(coordinate.latitude),\(coordinate.longitude))["turn:lanes:both_ways"];
           way(around:\(Int(searchRadiusMeters)),\(coordinate.latitude),\(coordinate.longitude))["turn:lanes:backward"];
           way(around:\(Int(searchRadiusMeters)),\(coordinate.latitude),\(coordinate.longitude))["destination:lanes"];
         );
@@ -76,9 +77,15 @@ public struct OverpassLaneGuidanceClient: Sendable {
         return TurnLanesParser.parse(turnLanes: turnLanes, forManeuver: maneuver)
     }
 
-    /// Prefers the richest lane tag: turn:lanes > forward > backward > destination:lanes.
+    /// Prefers the richest lane tag: turn:lanes > forward > both_ways > backward > destination:lanes.
     public static func richestTurnLanesTag(from tagMaps: [[String: String]]) -> String? {
-        let priorityKeys = ["turn:lanes", "turn:lanes:forward", "turn:lanes:backward", "destination:lanes"]
+        let priorityKeys = [
+            "turn:lanes",
+            "turn:lanes:forward",
+            "turn:lanes:both_ways",
+            "turn:lanes:backward",
+            "destination:lanes",
+        ]
         var best: String?
         var bestScore = -1
         for tags in tagMaps {

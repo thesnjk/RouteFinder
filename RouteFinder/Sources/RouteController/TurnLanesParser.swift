@@ -70,10 +70,15 @@ public enum TurnLanesParser: Sendable {
     }
 
     private static func compoundSubTokens(from laneToken: String) -> [String] {
-        laneToken
+        let normalized = laneToken
             .split(separator: ";")
             .map { normalizeSubToken(String($0)) }
-            .filter { isRecommended($0) }
+            .filter { !$0.isEmpty }
+        // Bare `none` keeps a lane slot (`.unknown`); compound `none;left` keeps the usable turns.
+        if normalized.allSatisfy({ $0 == "none" }) {
+            return ["none"]
+        }
+        return normalized.filter { isRecommended($0) }
     }
 
     private static func normalizeSubToken(_ raw: String) -> String {
@@ -117,6 +122,7 @@ public enum TurnLanesParser: Sendable {
     }
 
     private static func arrow(for token: String) -> LaneArrow {
+        if token == "none" { return .unknown }
         if token.contains("slight_left") || token == "slightleft" { return .slightLeft }
         if token.contains("sharp_left") || token == "sharpleft" { return .left }
         if token.contains("left") { return .left }

@@ -153,7 +153,8 @@ struct RouteSummaryCard: View {
                         TruckPoiAheadList(
                             pois: viewModel.upcomingTruckPois,
                             isLoading: viewModel.isLoadingTruckPois,
-                            fuelCardProvider: viewModel.fuelCardProvider
+                            fuelCardProvider: viewModel.fuelCardProvider,
+                            crowdReports: viewModel.parkingOccupancyCrowdReports
                         )
                     }
 

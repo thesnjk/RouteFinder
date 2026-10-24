@@ -141,7 +141,51 @@ public struct VehicleProfileManager: View {
             dimensionRow(icon: "arrow.up.and.down", label: "Height (m)", text: $viewModel.vehicleHeight)
             dimensionRow(icon: "arrow.left.and.right", label: "Width (m)", text: $viewModel.vehicleWidth)
             dimensionRow(icon: "ruler", label: "Length (m)", text: $viewModel.vehicleLength)
+            trailerCountRow
             dimensionRow(icon: "scalemass", label: "Weight (t)", text: $viewModel.vehicleWeight)
+
+            Text("Length is bumper-to-bumper (ORS). Trailer count selects artic vs rigid map body.")
+                .font(RFFont.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var trailerCountRow: some View {
+        HStack(spacing: RFSpacing.sm) {
+            Image(systemName: "trailer")
+                .frame(width: 22)
+                .foregroundStyle(.secondary)
+            Text("Trailers")
+                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: RFSpacing.xs) {
+                Button {
+                    viewModel.setVehicleTrailerCount(viewModel.vehicleTrailerCount - 1)
+                } label: {
+                    Image(systemName: "minus")
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.borderless)
+                .disabled(viewModel.vehicleTrailerCount <= 0)
+
+                Text("\(viewModel.vehicleTrailerCount)")
+                    .font(RFFont.caption)
+                    .monospacedDigit()
+                    .frame(minWidth: 24)
+                    .accessibilityIdentifier("vehicleTrailerCount")
+
+                Button {
+                    viewModel.setVehicleTrailerCount(viewModel.vehicleTrailerCount + 1)
+                } label: {
+                    Image(systemName: "plus")
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.borderless)
+                .disabled(viewModel.vehicleTrailerCount >= 3)
+            }
+            .padding(.horizontal, RFSpacing.sm)
+            .padding(.vertical, 6)
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay(Capsule().strokeBorder(.white.opacity(0.2), lineWidth: 0.5))
         }
     }
 
@@ -304,10 +348,12 @@ public struct VehicleProfileManager: View {
             weight: profile.weight,
             width: profile.width,
             length: profile.length,
+            trailerCount: profile.trailerCount,
             axleWeight: profile.axleWeight,
             groundClearance: profile.groundClearance,
             turningRadius: profile.turningRadius,
             hazmatClass: profile.hazmatClass,
+            tunnelRestrictionCode: profile.tunnelRestrictionCode,
             emissionClass: profile.emissionClass,
             savedProfileName: trimmed
         )

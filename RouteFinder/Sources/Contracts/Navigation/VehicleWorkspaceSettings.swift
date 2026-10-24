@@ -8,6 +8,8 @@ public struct VehicleWorkspaceSnapshot: Codable, Sendable, Equatable {
     public var vehicleWeight: String
     public var vehicleWidth: String
     public var vehicleLength: String
+    /// Trailer count 0…3; nil when older snapshots omit the field.
+    public var vehicleTrailerCount: Int?
     public var vehicleAxleWeight: String
     public var vehicleGroundClearance: String
     public var vehicleTurningRadius: String
@@ -27,6 +29,7 @@ public struct VehicleWorkspaceSnapshot: Codable, Sendable, Equatable {
         vehicleWeight: String = "",
         vehicleWidth: String = "",
         vehicleLength: String = "",
+        vehicleTrailerCount: Int? = nil,
         vehicleAxleWeight: String = "",
         vehicleGroundClearance: String = "",
         vehicleTurningRadius: String = "",
@@ -44,6 +47,7 @@ public struct VehicleWorkspaceSnapshot: Codable, Sendable, Equatable {
         self.vehicleWeight = vehicleWeight
         self.vehicleWidth = vehicleWidth
         self.vehicleLength = vehicleLength
+        self.vehicleTrailerCount = vehicleTrailerCount.map { min(max($0, 0), 3) }
         self.vehicleAxleWeight = vehicleAxleWeight
         self.vehicleGroundClearance = vehicleGroundClearance
         self.vehicleTurningRadius = vehicleTurningRadius

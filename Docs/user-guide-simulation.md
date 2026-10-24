@@ -57,7 +57,9 @@ Lane guidance appears:
 RouteFinder draws your vehicle as a **2D oriented footprint** (not a 3D model):
 
 - **Passenger cars** — single sky-blue polygon sized to your registered dimensions
-- **HGV** — cab + trailer polygons when length ≥ 6 m
+- **HGV** — cab + trailer polygons when **Trailers ≥ 1** (Vehicle Profile); legacy profiles without a trailer count still use overall length ≥ 6 m
+
+**Length (m)** is bumper-to-bumper and is what cloud routing (ORS) uses. **Trailers** selects artic vs rigid map/sim body; it is not an ORS field.
 
 Live playback integrates an **Ackermann** (nonholonomic) pose along the route: the tractor follows front-wheel steering rather than skating sideways along the polyline. On articulated HGVs the **trailer yaw lags** the cab through bends so the two polygons articulate; they are not locked as a single rigid stick.
 

@@ -427,6 +427,12 @@ struct SettingsSheet: View {
                     viewModel.persistVoiceGuidanceEnabled()
                 }
 
+            Toggle("Voice assist (push-to-talk)", isOn: $viewModel.voiceAssistEnabled)
+                .onChange(of: viewModel.voiceAssistEnabled) { _, _ in
+                    viewModel.persistVoiceAssistEnabled()
+                }
+                .help("Hold the mic on the map during navigation to say Break Now, next layby, mute, or where am I stopping.")
+
             speechVoiceSettings
             #endif
 

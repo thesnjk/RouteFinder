@@ -38,3 +38,5 @@ android-fleet-driver/.idea/
 !.cursor/rules/
 !.cursor/rules/**
 !.cursor/settings.json
+
+# Local session notes (never commit)

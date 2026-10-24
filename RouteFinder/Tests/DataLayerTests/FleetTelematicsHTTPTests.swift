@@ -5,7 +5,7 @@ import Foundation
 import Hummingbird
 import Testing
 
-/// HTTP coverage for `POST /v1/telematics/ingest` on the LAN fleet server (mirrors hosted-gateway vitest).
+/// HTTP coverage for `POST /v1/telematics/ingest` and `GET /v1/telematics/pings` on the LAN fleet server.
 @Test func fleetTelematicsIngestViaHTTP() async throws {
     let storageDir = FileManager.default.temporaryDirectory
         .appendingPathComponent("FleetTelematicsHTTP-\(UUID().uuidString)", isDirectory: true)
@@ -59,4 +59,26 @@ import Testing
     let latest = try await store.latestTelematicsPings()
     #expect(latest.count == 1)
     #expect(latest.first?.vehicleLabel == "Artic HTTP")
+
+    var getRequest = URLRequest(url: baseURL.appendingPathComponent("v1/telematics/pings"))
+    getRequest.httpMethod = "GET"
+    let (getData, getResponse) = try await URLSession.shared.data(for: getRequest)
+    let getHTTP = try #require(getResponse as? HTTPURLResponse)
+    #expect(getHTTP.statusCode == 200)
+    let listed = try decoder.decode([TelematicsVehiclePing].self, from: getData)
+    #expect(listed.count == 1)
+    #expect(listed.first?.vehicleLabel == "Artic HTTP")
+    #expect(listed.first?.provider == .geotab)
+
+    var limited = URLRequest(
+        url: baseURL.appendingPathComponent("v1/telematics/pings").appending(queryItems: [
+            URLQueryItem(name: "limit", value: "1"),
+        ])
+    )
+    limited.httpMethod = "GET"
+    let (limitedData, limitedResponse) = try await URLSession.shared.data(for: limited)
+    let limitedHTTP = try #require(limitedResponse as? HTTPURLResponse)
+    #expect(limitedHTTP.statusCode == 200)
+    let limitedList = try decoder.decode([TelematicsVehiclePing].self, from: limitedData)
+    #expect(limitedList.count == 1)
 }

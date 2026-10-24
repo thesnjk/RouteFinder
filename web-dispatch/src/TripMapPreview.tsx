@@ -43,6 +43,24 @@ function clearTripLine(map: MapLibreMap) {
   if (map.getSource('trip-line')) map.removeSource('trip-line')
 }
 
+/** Partner telematics pin (distinct from snapshot GPS fleet pins). */
+export type PartnerTelematicsPin = {
+  id: string
+  label: string
+  latitude: number
+  longitude: number
+}
+
+function partnerPinsFingerprint(pins: PartnerTelematicsPin[]): string {
+  if (pins.length === 0) return 'none'
+  return pins
+    .map(
+      (p) =>
+        `${p.id}:${Number(p.latitude).toFixed(5)},${Number(p.longitude).toFixed(5)}`,
+    )
+    .join('|')
+}
+
 /** MapLibre GL preview: selected trip corridor + fleet-wide driver GPS pins. */
 export function TripMapPreview({
   trip,
@@ -50,6 +68,7 @@ export function TripMapPreview({
   vehicleProfile,
   onRoutePreviewError,
   fleetPins = [],
+  partnerPins = [],
   selectedVehicleId = null,
 }: {
   trip: FleetTrip | null
@@ -59,6 +78,8 @@ export function TripMapPreview({
   onRoutePreviewError?: (message: string) => void
   /** Yard pins from roster GPS (no per-truck ORS). */
   fleetPins?: RosterDriverPin[]
+  /** Partner telematics pings (read-only webhook/CSV ingest). */
+  partnerPins?: PartnerTelematicsPin[]
   selectedVehicleId?: string | null
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -74,11 +95,17 @@ export function TripMapPreview({
   onErrorRef.current = onRoutePreviewError
   const pinsRef = useRef(fleetPins)
   pinsRef.current = fleetPins
+  const partnerPinsRef = useRef(partnerPins)
+  partnerPinsRef.current = partnerPins
   const selectedRef = useRef(selectedVehicleId)
   selectedRef.current = selectedVehicleId
 
   const tripFp = useMemo(() => tripMapFingerprint(trip), [trip])
-  const pinsFp = useMemo(() => fleetPinsFingerprint(fleetPins), [fleetPins])
+  const pinsFp = useMemo(
+    () =>
+      `${fleetPinsFingerprint(fleetPins)}#${partnerPinsFingerprint(partnerPins)}`,
+    [fleetPins, partnerPins],
+  )
   const fingerprint = tripMapFetchFingerprint({
     tripFp,
     pinsFp,
@@ -88,7 +115,7 @@ export function TripMapPreview({
   })
 
   const hasTripCorridor = trip != null && trip.stops.length >= 2
-  const hasYardPins = fleetPins.length > 0
+  const hasYardPins = fleetPins.length > 0 || partnerPins.length > 0
   const showMap = hasTripCorridor || hasYardPins
 
   useEffect(() => {
@@ -137,6 +164,7 @@ export function TripMapPreview({
     let hasBounds = false
     const current = tripRef.current
     const pins = pinsRef.current
+    const partners = partnerPinsRef.current
     const selectedId = selectedRef.current
 
     if (current && current.stops.length > 0) {
@@ -169,6 +197,18 @@ export function TripMapPreview({
       )
     }
 
+    for (const pin of partners) {
+      bounds.extend([pin.longitude, pin.latitude])
+      hasBounds = true
+      const el = document.createElement('div')
+      el.className = 'map-marker map-marker--partner'
+      el.title = `Partner: ${pin.label}`
+      el.textContent = '◇'
+      markers.push(
+        new Marker({ element: el }).setLngLat([pin.longitude, pin.latitude]).addTo(map),
+      )
+    }
+
     if (
       current?.driverLatitude != null &&
       current.driverLongitude != null &&
@@ -187,7 +227,7 @@ export function TripMapPreview({
     }
 
     if (hasBounds) {
-      if (current && current.stops.length === 1 && pins.length === 0) {
+      if (current && current.stops.length === 1 && pins.length === 0 && partners.length === 0) {
         map.easeTo({
           center: [current.stops[0].longitude, current.stops[0].latitude],
           zoom: 11,
@@ -214,6 +254,9 @@ export function TripMapPreview({
             const corridorBounds = new LngLatBounds()
             for (const [lng, lat] of corridor) corridorBounds.extend([lng, lat])
             for (const pin of pinsRef.current) {
+              corridorBounds.extend([pin.longitude, pin.latitude])
+            }
+            for (const pin of partnerPinsRef.current) {
               corridorBounds.extend([pin.longitude, pin.latitude])
             }
             map.fitBounds(corridorBounds, { padding: 48, maxZoom: 12 })

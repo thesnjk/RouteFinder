@@ -51,4 +51,6 @@ Operator steps: [`../Docs/web-dispatch-operator-guide.md`](../Docs/web-dispatch-
 - Geocode stop search via fleet Pelias proxy
 - ORS + optional TomTom / OpenWeather proxy status from `/v1/proxy/status`
 - Hosted HTTPS base URL supported (same client as LAN)
+- **Named depot profiles** — save one Connection profile per hosted org bearer token (or LAN URL); switch without re-pasting
+- **Partner telematics** — `GET /v1/telematics/pings` list + map pins (read-only; not legal VU)
 - **Not yet:** billing UI / self-serve multi-tenant admin

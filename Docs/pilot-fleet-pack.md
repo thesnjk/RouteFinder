@@ -94,6 +94,7 @@ Ops guide: [README — Fleet LAN server](../README.md#fleet-lan-server-multi-dev
 | `GET` | `/v1/vehicles/{vehicleId}/events` | **SSE** — `tripPushed` + heartbeats |
 | `PUT` | `/v1/trips/{tripId}/snapshot` | `FleetTripSnapshot` — physics ETA, layby, optional inspection PDF, **periodic GPS** (lat/lon + timestamp) for dispatch map pin |
 | `POST` | `/v1/telematics/ingest` | Read-only partner ping stub (`vehicleId`, lat/lon, `recordedAt`) — capped store; **not** legal VU |
+| `GET` | `/v1/telematics/pings` | Latest partner pings (`?limit=` default 50, max 200) — read-only; **not** legal VU |
 
 Optional auth: `Authorization: Bearer <api-key>` when server started with `--api-key`. **Recommended for 5–15 truck LAN pilots** — paste the same secret into Mac Settings / web Bearer / driver wizard.
 

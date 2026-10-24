@@ -212,5 +212,12 @@ describe('telematics ingest', () => {
     const body = (await res.json()) as { vehicleLabel: string; provider: string }
     expect(body.vehicleLabel).toBe('Artic 1')
     expect(body.provider).toBe('geotab')
+
+    const getRes = await app.request('/v1/telematics/pings?limit=10', { headers })
+    expect(getRes.status).toBe(200)
+    const pings = (await getRes.json()) as { vehicleLabel: string; provider: string }[]
+    expect(pings).toHaveLength(1)
+    expect(pings[0]?.vehicleLabel).toBe('Artic 1')
+    expect(pings[0]?.provider).toBe('geotab')
   })
 })

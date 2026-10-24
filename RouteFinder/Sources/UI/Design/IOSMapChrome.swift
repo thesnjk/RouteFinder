@@ -1011,6 +1011,22 @@ private struct IOSMapToolbar: View {
                 .accessibilityIdentifier("mapRouteOverviewButton")
             }
 
+            if viewModel.voiceAssistEnabled,
+               viewModel.result != nil,
+               (viewModel.isFollowModeEnabled || viewModel.isNavigationActive || viewModel.simulationEngine.isRunning) {
+                MapControlButton(
+                    icon: viewModel.isVoiceAssistListening ? "mic.fill" : "mic"
+                ) {
+                    if viewModel.isVoiceAssistListening {
+                        viewModel.cancelVoiceAssistListen()
+                    } else {
+                        Task { await viewModel.beginVoiceAssistListen() }
+                    }
+                }
+                .accessibilityLabel(viewModel.isVoiceAssistListening ? "Cancel voice assist" : "Voice assist")
+                .accessibilityIdentifier("voiceAssistMicButton")
+            }
+
             Menu {
                 Button {
                     viewModel.mapBridge?.zoomBy(1)

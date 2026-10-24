@@ -62,25 +62,13 @@ struct TruckPoiAheadList: View {
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                             if showsParkingPartnerLink(poi) {
-                                HStack(spacing: 8) {
-                                    Link(
-                                        "TRAVIS",
-                                        destination: ParkingPartnerLinks.travisURL(
-                                            latitude: poi.latitude,
-                                            longitude: poi.longitude,
-                                            label: poi.label
-                                        )
-                                    )
-                                    Link(
-                                        "SNAP",
-                                        destination: ParkingPartnerLinks.snapURL(
-                                            latitude: poi.latitude,
-                                            longitude: poi.longitude,
-                                            label: poi.label
-                                        )
-                                    )
-                                }
-                                .font(.caption2)
+                                ParkingPartnerBookLinks(
+                                    latitude: poi.latitude,
+                                    longitude: poi.longitude,
+                                    label: poi.label,
+                                    showsDisclaimer: false,
+                                    compact: true
+                                )
                             }
                         }
                         Spacer(minLength: 0)

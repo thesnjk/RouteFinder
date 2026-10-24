@@ -1,6 +1,9 @@
 import Foundation
 
-/// Builds HTTPS deep links to parking partner sites (redirect only — no booking commerce).
+/// Builds HTTPS deep links to parking partner sites (redirect only — no in-app commerce).
+///
+/// Partners own the book step on their sites. RouteFinder does not invent `/book` paths
+/// or process payments — the driver completes reservation with TRAVIS / SNAP / the operator.
 public enum ParkingPartnerLinks: Sendable {
     /// TRAVIS truck parking map / search with optional focus coordinate.
     ///

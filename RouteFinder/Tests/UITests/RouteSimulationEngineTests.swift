@@ -367,6 +367,27 @@ struct RouteSimulationEngineTests {
     #expect(engine.currentBearing < 185)
   }
 
+  @Test func rigidTrailerCountZeroSkipsArticFootprint() async {
+    let route = [
+      CLLocationCoordinate2D(latitude: 51.5000, longitude: -0.1300),
+      CLLocationCoordinate2D(latitude: 51.5000, longitude: -0.1200),
+      CLLocationCoordinate2D(latitude: 51.5000, longitude: -0.1100),
+    ]
+    let engine = RouteSimulationEngine()
+    engine.configure(
+      route: route,
+      vehicle: VehicleProfile(width: 2.55, length: 16.5, trailerCount: 0),
+      totalDuration: 120
+    )
+    for _ in 0..<10 {
+      await engine.simulateTick(deltaTime: 0.1)
+    }
+    let mapState = engine.simulatedVehicleStateForMap()
+    #expect(mapState != nil)
+    // Rigid stick still emits cab+body parts, but trailer yaw stays locked to cab.
+    #expect(abs(engine.currentBearing - engine.currentTrailerBearing) < 0.5)
+  }
+
   @Test func articTrailerHeadingLagsOnBend() async {
     let bendRoute = [
       CLLocationCoordinate2D(latitude: 51.5000, longitude: -0.1110),

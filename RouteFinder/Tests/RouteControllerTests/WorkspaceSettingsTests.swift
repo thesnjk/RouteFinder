@@ -15,6 +15,7 @@ struct VehicleWorkspaceSettingsTests {
             vehicleWeight: "44",
             vehicleWidth: "2.55",
             vehicleLength: "16.5",
+            vehicleTrailerCount: 1,
             vehicleAxleWeight: "11.5",
             vehicleGroundClearance: "0.35",
             vehicleTurningRadius: "12.5",
@@ -30,6 +31,22 @@ struct VehicleWorkspaceSettingsTests {
         let loaded = VehicleWorkspaceSettings.load(defaults: defaults)
 
         #expect(loaded == snapshot)
+        #expect(loaded?.vehicleTrailerCount == 1)
+    }
+
+    @Test func legacySnapshotWithoutTrailerCountDecodes() throws {
+        let suiteName = "RouteFinder.WorkspaceLegacy.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { UserDefaults.standard.removeSuite(named: suiteName) }
+
+        let legacyJSON = #"""
+        {"vehicleRegistration":"AB12 CDE","isHGVMode":true,"vehicleHeight":"4","vehicleWeight":"44","vehicleWidth":"2.55","vehicleLength":"16.5","vehicleAxleWeight":"","vehicleGroundClearance":"","vehicleTurningRadius":"","vehicleEnginePowerHP":"","avoidNonCompliantLEZ":true,"avoidResidential":true}
+        """#.data(using: .utf8)!
+        defaults.set(legacyJSON, forKey: "RouteFinder.vehicleWorkspaceSnapshot")
+
+        let loaded = VehicleWorkspaceSettings.load(defaults: defaults)
+        #expect(loaded?.vehicleLength == "16.5")
+        #expect(loaded?.vehicleTrailerCount == nil)
     }
 }
 

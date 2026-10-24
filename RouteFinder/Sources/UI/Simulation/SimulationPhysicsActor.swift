@@ -27,6 +27,8 @@ public struct SimulationPhysicsConfiguration: Sendable {
   public let cruiseSpeedMps: Double
   public let isPassengerCarMode: Bool
   public let activeSpecificationProfile: VehicleSpecificationProfile?
+  /// Trailer count from the vehicle profile (nil = legacy length heuristic).
+  public let trailerCount: Int?
   public let staticWebETASeconds: TimeInterval
   /// Minimum physical turn radius used as a floor for curve speed caps.
   public let minimumTurnRadiusMeters: Double?
@@ -57,6 +59,7 @@ public struct SimulationPhysicsConfiguration: Sendable {
     isPassengerCarMode: Bool,
     activeSpecificationProfile: VehicleSpecificationProfile?,
     staticWebETASeconds: TimeInterval,
+    trailerCount: Int? = nil,
     minimumTurnRadiusMeters: Double? = nil,
     turnInstructions: [TurnInstruction] = [],
     applyTrafficToSimulation: Bool = false
@@ -80,6 +83,7 @@ public struct SimulationPhysicsConfiguration: Sendable {
     self.cruiseSpeedMps = cruiseSpeedMps
     self.isPassengerCarMode = isPassengerCarMode
     self.activeSpecificationProfile = activeSpecificationProfile
+    self.trailerCount = trailerCount.map { min(max($0, 0), 3) }
     self.staticWebETASeconds = staticWebETASeconds
     self.minimumTurnRadiusMeters = minimumTurnRadiusMeters
     self.turnInstructions = turnInstructions
@@ -128,6 +132,7 @@ public struct SimulationPhysicsConfiguration: Sendable {
       isPassengerCarMode: profile.vehicleClass == .passengerCar,
       activeSpecificationProfile: profile,
       staticWebETASeconds: staticWebETASeconds,
+      trailerCount: trailerCount,
       minimumTurnRadiusMeters: minimumTurnRadiusMeters,
       turnInstructions: turnInstructions,
       applyTrafficToSimulation: applyTrafficToSimulation
@@ -707,7 +712,11 @@ public actor SimulationPhysicsActor {
   }
 
   private func usesArticulatedTrailer(config: SimulationPhysicsConfiguration) -> Bool {
-    !config.isPassengerCarMode && resolvedVehicleLengthMeters(config: config) >= 6.0
+    guard !config.isPassengerCarMode else { return false }
+    if let trailerCount = config.trailerCount {
+      return trailerCount >= 1
+    }
+    return resolvedVehicleLengthMeters(config: config) >= 6.0
   }
 
   private func resolvedVehicleLengthMeters(config: SimulationPhysicsConfiguration) -> Double {

@@ -59,6 +59,8 @@ RouteFinder draws your vehicle as a **2D oriented footprint** (not a 3D model):
 - **Passenger cars** — single sky-blue polygon sized to your registered dimensions
 - **HGV** — cab + trailer polygons when length ≥ 6 m
 
+Live playback integrates an **Ackermann** (nonholonomic) pose along the route: the tractor follows front-wheel steering rather than skating sideways along the polyline. On articulated HGVs the **trailer yaw lags** the cab through bends so the two polygons articulate; they are not locked as a single rigid stick.
+
 During simulation the **green start pin is hidden** so the vehicle footprint is not confused with the origin marker. Zoom in while tracking to see the full polygon; at low zoom a blue circle may be used when not tracking.
 
 ## Language (Settings)

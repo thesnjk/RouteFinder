@@ -85,4 +85,30 @@ struct VehicleFootprintPartsTests {
         )
         #expect(parts.count == 1)
     }
+
+    @Test func articulatedPartsUseIndependentTrailerHeading() {
+        let kingpin = CLLocationCoordinate2D(latitude: 52.63, longitude: 1.297)
+        let cabHeading = 0.0
+        let trailerHeading = 20.0
+        let parts = VehicleGeometryCalculator.generateFootprintParts(
+            rearAxle: kingpin,
+            headingDegrees: cabHeading,
+            lengthMeters: 16.5,
+            widthMeters: 2.55,
+            isPassengerCar: false,
+            trailerHeadingDegrees: trailerHeading
+        )
+        #expect(parts.count == 2)
+
+        let rigid = VehicleGeometryCalculator.generateFootprintParts(
+            rearAxle: kingpin,
+            headingDegrees: cabHeading,
+            lengthMeters: 16.5,
+            widthMeters: 2.55,
+            isPassengerCar: false,
+            trailerHeadingDegrees: cabHeading
+        )
+        // Trailer corner should differ when yaw diverges from cab.
+        #expect(parts[1][0].latitude != rigid[1][0].latitude || parts[1][0].longitude != rigid[1][0].longitude)
+    }
 }

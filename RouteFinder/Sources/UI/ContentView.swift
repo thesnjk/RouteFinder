@@ -267,15 +267,6 @@ private struct MapWorkspaceView: View {
                 onOpenSettings: onOpenSettings,
                 hideRouteSheet: shouldShowLaunchCover
             )
-
-            if shouldShowLaunchCover, let cover = launchCover {
-                launchCoverView(cover)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(MapCanvasBackdrop.color)
-                    .ignoresSafeArea()
-                    .transition(.opacity)
-                    .zIndex(10)
-            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(MapCanvasBackdrop.color)
@@ -284,6 +275,18 @@ private struct MapWorkspaceView: View {
             if case .setPin = viewModel.interactionMode {
                 MapPinToolbar(viewModel: viewModel)
                     .padding(.bottom, RFSpacing.lg + 120)
+            }
+        }
+        // Launch covers sit in a window overlay (not inside the map's ignoresSafeArea tree)
+        // so NavigationStack / Close stay below the iOS status bar and Mac traffic lights.
+        .overlay {
+            if shouldShowLaunchCover, let cover = launchCover {
+                ZStack {
+                    MapCanvasBackdrop.color.ignoresSafeArea()
+                    launchCoverView(cover)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .transition(.opacity)
             }
         }
         .onAppear {

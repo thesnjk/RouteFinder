@@ -9,8 +9,10 @@ public struct SimulationDisplaySnapshot: Sendable, Equatable {
   public let poseSnapshots: [SimulationPoseSnapshot]
   /// Distance along the route in meters.
   public let arcLengthMeters: Double
-  /// Vehicle heading in degrees clockwise from north.
+  /// Tractor / cab heading in degrees clockwise from north.
   public let bearingDegrees: Double
+  /// Trailer heading in degrees clockwise from north.
+  public let trailerBearingDegrees: Double
   /// Longitudinal speed in meters per second.
   public let speedMps: Double
   /// Monotonically increasing revision for bridge deduplication.
@@ -21,12 +23,14 @@ public struct SimulationDisplaySnapshot: Sendable, Equatable {
     poseSnapshots: [SimulationPoseSnapshot],
     arcLengthMeters: Double,
     bearingDegrees: Double,
+    trailerBearingDegrees: Double? = nil,
     speedMps: Double,
     revision: UInt64
   ) {
     self.poseSnapshots = poseSnapshots
     self.arcLengthMeters = arcLengthMeters
     self.bearingDegrees = bearingDegrees
+    self.trailerBearingDegrees = trailerBearingDegrees ?? bearingDegrees
     self.speedMps = speedMps
     self.revision = revision
   }

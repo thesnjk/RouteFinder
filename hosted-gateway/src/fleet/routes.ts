@@ -162,5 +162,13 @@ export function createFleetRoutes(stores: StoreRegistry, eventHub: EventHub): Ho
     )
   })
 
+  app.get('/telematics/pings', async (c) => {
+    const org = c.get('org') as OrgConfig
+    const raw = c.req.query('limit')
+    const parsed = raw != null ? Number.parseInt(raw, 10) : 50
+    const limit = Number.isFinite(parsed) ? parsed : 50
+    return c.json(stores.forOrg(org).latestTelematicsPings(limit))
+  })
+
   return app
 }

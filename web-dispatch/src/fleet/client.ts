@@ -11,6 +11,7 @@ import {
   type FleetTripStop,
   type FleetVehicle,
   type GeocodeSuggestion,
+  type TelematicsVehiclePing,
 } from './types'
 import { fleetProxyUserMessage, type FleetProxyErrorKind } from '../fleetProxyError'
 import {
@@ -65,6 +66,15 @@ export class FleetApiClient {
 
   async proxyStatus(): Promise<FleetProxyStatus> {
     const response = await fetch(this.url('/v1/proxy/status'), { headers: this.headers() })
+    return parseJson(response)
+  }
+
+  /** Latest partner telematics pings (read-only; not legal VU). */
+  async listTelematicsPings(limit = 50): Promise<TelematicsVehiclePing[]> {
+    const clamped = Math.min(200, Math.max(1, Math.trunc(limit)))
+    const response = await fetch(this.url(`/v1/telematics/pings?limit=${clamped}`), {
+      headers: this.headers(),
+    })
     return parseJson(response)
   }
 

@@ -109,6 +109,17 @@ curl -s -H "Authorization: Bearer YOUR_ORG_TOKEN" \
 
 Raise caps in `orgs.json` (or LAN `--route-daily-cap` / `--geocode-daily-cap`) and restart, or wait until the UTC day rolls. Budget guidance: [`unit-economics.md`](unit-economics.md).
 
+## Telematics (read-only)
+
+Partner webhooks can `POST /v1/telematics/ingest` (same body as LAN). Pings persist under `data/<orgId>/telematics-pings.json` (cap 200). Desk and clients read with:
+
+```bash
+curl -s -H "Authorization: Bearer YOUR_ORG_TOKEN" \
+  'https://fleet.yourdomain.com/v1/telematics/pings?limit=50'
+```
+
+**Not a legal VU** — planning / desk pins only.
+
 ## Smoke test
 
 ```bash
@@ -119,11 +130,12 @@ curl -s -H "Authorization: Bearer YOUR_ORG_TOKEN" \
   https://fleet.yourdomain.com/v1/proxy/status
 ```
 
-1. Open **web-dispatch** → Connection → paste `https://fleet.yourdomain.com` + org token → Test /health.
+1. Open **web-dispatch** → Connection → save a **depot profile** (name + `https://fleet.yourdomain.com` + that org’s bearer token) → Test /health. Use one profile per org token for multi-depot.
 2. Geocode a stop (needs ORS proxy on).
 3. Push a trip to a vehicle UUID.
 4. On a phone **on cellular**, run fleet setup → **Hosted (HTTPS)** → same URL + token → pair vehicle → receive SSE trip → Find route (no device ORS key).
 5. Restart the Node process; `GET /v1/proxy/status` still shows today’s counts.
+6. Optional: ingest a ping, then confirm `GET /v1/telematics/pings` and purple partner pins on the desk map.
 
 ## Rotating the operator ORS key
 

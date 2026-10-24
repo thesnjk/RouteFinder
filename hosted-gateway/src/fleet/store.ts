@@ -199,6 +199,22 @@ export class OrgFleetStore {
     renameSync(tmp, telematicsPath)
     return ping
   }
+
+  /** Newest telematics pings (chronological oldest→newest within the window). Default 50, clamp 1…200. */
+  latestTelematicsPings(limit = 50): Record<string, unknown>[] {
+    this.ensureLoaded()
+    const telematicsPath = join(this.directory, 'telematics-pings.json')
+    let pings: Record<string, unknown>[] = []
+    if (existsSync(telematicsPath)) {
+      try {
+        pings = JSON.parse(readFileSync(telematicsPath, 'utf8')) as Record<string, unknown>[]
+      } catch {
+        pings = []
+      }
+    }
+    const clamped = Math.min(200, Math.max(1, Number.isFinite(limit) ? Math.trunc(limit) : 50))
+    return pings.slice(-clamped)
+  }
 }
 
 /** Factory that caches stores per org id. */

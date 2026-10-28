@@ -37,6 +37,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
+import com.routefinder.fleetdriver.compliance.CanIDriveEvaluator
 import com.routefinder.fleetdriver.fleet.FleetPreferences
 import com.routefinder.fleetdriver.fleet.FleetConnectionGate
 import com.routefinder.fleetdriver.map.MapLibreMapView
@@ -334,6 +335,23 @@ fun NavigationMapScreen(
                     }
                     viewModel.laybyAdvisoryMessage?.let {
                         Text(it, style = MaterialTheme.typography.bodySmall)
+                    }
+                    viewModel.canIDriveStatus?.let { status ->
+                        val chip = if (status.canDrive) "Can drive" else "Break"
+                        val partnerTag = if (status.usesPartnerAdvisory) " · Partner" else ""
+                        Text(
+                            "$chip$partnerTag",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        val shortReason = status.reason
+                            .substringBefore(CanIDriveEvaluator.LEGAL_DISCLAIMER)
+                            .trim()
+                        Text(shortReason, style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            "planning aid — not legal VU",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.tertiary,
+                        )
                     }
                     viewModel.hosAdvisoryMessage?.let {
                         Text(it, style = MaterialTheme.typography.bodySmall)

@@ -185,6 +185,27 @@ public actor DiskFleetStore: FleetDispatchPort {
         return Array(pings.suffix(clamped))
     }
 
+    /// Persists the latest partner remaining-drive advisory (planning aid — not legal VU).
+    public func ingestPartnerTacho(_ request: PartnerTachoIngestRequest) async throws -> PartnerTachoAdvisory {
+        try await loadIfNeeded()
+        let advisory = PartnerTachoAdvisory(
+            remainingContinuousDriveSeconds: request.remainingContinuousDriveSeconds,
+            remainingDailyDriveSeconds: request.remainingDailyDriveSeconds,
+            remainingWeeklyDriveSeconds: request.remainingWeeklyDriveSeconds,
+            recordedAt: request.recordedAt ?? Date(),
+            provider: request.provider,
+            vehicleLabel: request.vehicleLabel
+        )
+        try savePartnerTacho(advisory)
+        return advisory
+    }
+
+    /// Returns the latest partner tacho advisory, if any.
+    public func latestPartnerTacho() async throws -> PartnerTachoAdvisory? {
+        try await loadIfNeeded()
+        return try loadPartnerTacho()
+    }
+
     /// Seeds a demo org, vehicle, and 3-stop UK job (persisted across restarts).
     public func seedDemoThreeStopJob() async throws -> (org: FleetOrg, vehicle: FleetVehicle, trip: FleetTrip) {
         try await loadIfNeeded()
@@ -246,6 +267,10 @@ public actor DiskFleetStore: FleetDispatchPort {
         directory.appendingPathComponent("telematics-pings.json")
     }
 
+    private var partnerTachoURL: URL {
+        directory.appendingPathComponent("partner-tacho.json")
+    }
+
     private func loadTelematicsPings() throws -> [TelematicsVehiclePing] {
         guard FileManager.default.fileExists(atPath: telematicsURL.path) else { return [] }
         let data = try Data(contentsOf: telematicsURL)
@@ -255,6 +280,17 @@ public actor DiskFleetStore: FleetDispatchPort {
     private func saveTelematicsPings(_ pings: [TelematicsVehiclePing]) throws {
         let data = try encoder.encode(pings)
         try data.write(to: telematicsURL, options: .atomic)
+    }
+
+    private func loadPartnerTacho() throws -> PartnerTachoAdvisory? {
+        guard FileManager.default.fileExists(atPath: partnerTachoURL.path) else { return nil }
+        let data = try Data(contentsOf: partnerTachoURL)
+        return try decoder.decode(PartnerTachoAdvisory.self, from: data)
+    }
+
+    private func savePartnerTacho(_ advisory: PartnerTachoAdvisory) throws {
+        let data = try encoder.encode(advisory)
+        try data.write(to: partnerTachoURL, options: .atomic)
     }
 
     private func loadIfNeeded() async throws {

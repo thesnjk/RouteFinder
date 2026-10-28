@@ -43,18 +43,87 @@ public struct CanIDriveStatus: Sendable, Hashable, Codable, Equatable {
     public let remainingContinuousDriveSeconds: TimeInterval
     /// True when the decision used an imported card summary rather than the advisory clock.
     public let usesImportedCard: Bool
+    /// True when the decision used a partner webhook advisory (not legal VU).
+    public let usesPartnerAdvisory: Bool
 
     /// Creates a can-I-drive status.
     public init(
         canDrive: Bool,
         reason: String,
         remainingContinuousDriveSeconds: TimeInterval,
-        usesImportedCard: Bool
+        usesImportedCard: Bool,
+        usesPartnerAdvisory: Bool = false
     ) {
         self.canDrive = canDrive
         self.reason = reason
         self.remainingContinuousDriveSeconds = remainingContinuousDriveSeconds
         self.usesImportedCard = usesImportedCard
+        self.usesPartnerAdvisory = usesPartnerAdvisory
+    }
+}
+
+/// Partner remaining-drive advisory from a webhook (planning aid — **not** a legal VU record).
+public struct PartnerTachoAdvisory: Sendable, Hashable, Codable, Equatable {
+    public let remainingContinuousDriveSeconds: TimeInterval
+    public let remainingDailyDriveSeconds: TimeInterval
+    public let remainingWeeklyDriveSeconds: TimeInterval?
+    public let recordedAt: Date
+    public let provider: String?
+    public let vehicleLabel: String?
+
+    public init(
+        remainingContinuousDriveSeconds: TimeInterval,
+        remainingDailyDriveSeconds: TimeInterval,
+        remainingWeeklyDriveSeconds: TimeInterval? = nil,
+        recordedAt: Date = Date(),
+        provider: String? = nil,
+        vehicleLabel: String? = nil
+    ) {
+        self.remainingContinuousDriveSeconds = remainingContinuousDriveSeconds
+        self.remainingDailyDriveSeconds = remainingDailyDriveSeconds
+        self.remainingWeeklyDriveSeconds = remainingWeeklyDriveSeconds
+        self.recordedAt = recordedAt
+        self.provider = provider
+        self.vehicleLabel = vehicleLabel
+    }
+
+    /// Maps to ``TachoCardSummary`` for Can-I-drive evaluation.
+    public func asTachoCardSummary() -> TachoCardSummary {
+        let label = (provider?.isEmpty == false ? provider! : "partner")
+        return TachoCardSummary(
+            remainingContinuousDriveSeconds: remainingContinuousDriveSeconds,
+            remainingDailyDriveSeconds: remainingDailyDriveSeconds,
+            remainingWeeklyDriveSeconds: remainingWeeklyDriveSeconds ?? 0,
+            cardNumber: vehicleLabel,
+            importedAt: recordedAt,
+            sourceFileName: "partner-webhook (\(label))"
+        )
+    }
+}
+
+/// Fleet webhook body for partner remaining-drive ingest.
+public struct PartnerTachoIngestRequest: Sendable, Hashable, Codable, Equatable {
+    public let remainingContinuousDriveSeconds: TimeInterval
+    public let remainingDailyDriveSeconds: TimeInterval
+    public let remainingWeeklyDriveSeconds: TimeInterval?
+    public let recordedAt: Date?
+    public let provider: String?
+    public let vehicleLabel: String?
+
+    public init(
+        remainingContinuousDriveSeconds: TimeInterval,
+        remainingDailyDriveSeconds: TimeInterval,
+        remainingWeeklyDriveSeconds: TimeInterval? = nil,
+        recordedAt: Date? = nil,
+        provider: String? = nil,
+        vehicleLabel: String? = nil
+    ) {
+        self.remainingContinuousDriveSeconds = remainingContinuousDriveSeconds
+        self.remainingDailyDriveSeconds = remainingDailyDriveSeconds
+        self.remainingWeeklyDriveSeconds = remainingWeeklyDriveSeconds
+        self.recordedAt = recordedAt
+        self.provider = provider
+        self.vehicleLabel = vehicleLabel
     }
 }
 

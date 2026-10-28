@@ -31,6 +31,23 @@ struct TachoAdvisorySettingsSection: View {
                     .foregroundStyle(.secondary)
             }
 
+            if let partner = viewModel.partnerTachoSummary {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Partner advisory · \(partner.sourceFileName)")
+                        .font(RFFont.caption.weight(.semibold))
+                    if let label = partner.cardNumber {
+                        Text(label)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    Text(
+                        "Continuous \(format(partner.remainingContinuousDriveSeconds)) · day \(format(partner.remainingDailyDriveSeconds))"
+                    )
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                }
+            }
+
             if let summary = viewModel.tachoSummary {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Imported · \(summary.sourceFileName)")
@@ -58,6 +75,18 @@ struct TachoAdvisorySettingsSection: View {
                 Label("Import JSON / DDD", systemImage: "square.and.arrow.down")
             }
             .buttonStyle(.borderless)
+
+            Button {
+                Task { await viewModel.refreshCanIDriveStatus() }
+            } label: {
+                Label("Refresh partner from fleet", systemImage: "arrow.clockwise")
+            }
+            .buttonStyle(.borderless)
+
+            Text("Partner webhooks: POST /v1/tacho/advisory on the fleet server (remaining continuous/daily seconds). Not a legal VU.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
 
             if let error = viewModel.tachoImportError {
                 Text(error)

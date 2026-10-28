@@ -113,6 +113,18 @@ public enum FleetRouterBuilder {
             return try jsonResponse(try await store.latestTelematicsPings(limit: limit))
         }
 
+        router.post("v1/tacho/advisory") { request, context async throws -> Response in
+            let body = try await request.decode(as: PartnerTachoIngestRequest.self, context: context)
+            return try jsonResponse(try await store.ingestPartnerTacho(body))
+        }
+
+        router.get("v1/tacho/advisory") { _, _ async throws -> Response in
+            guard let advisory = try await store.latestPartnerTacho() else {
+                return Response(status: .notFound)
+            }
+            return try jsonResponse(advisory)
+        }
+
         return router
     }
 

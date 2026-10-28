@@ -32,6 +32,7 @@ public struct DispatchConsoleView: View {
                     vehicleLabel: viewModel.selectedVehicleLabel,
                     previewCoordinates: viewModel.previewCoordinates,
                     telematicsImportBatch: viewModel.telematicsImportBatch,
+                    canIDriveStatus: viewModel.canIDriveStatus,
                     rosterRows: viewModel.displayedRosterRows,
                     selectedVehicleId: viewModel.selectedVehicleId,
                     draftDiffersFromActiveTrip: viewModel.draftDiffersFromActiveTrip,

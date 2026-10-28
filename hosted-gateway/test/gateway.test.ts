@@ -190,6 +190,41 @@ describe('proxy metering', () => {
   })
 })
 
+describe('partner tacho advisory', () => {
+  it('accepts ingest and returns latest', async () => {
+    const { app } = createGatewayApp(makeConfig(tempDir()))
+    const headers = {
+      Authorization: 'Bearer test-token-alpha',
+      'Content-Type': 'application/json',
+    }
+    const missing = await app.request('/v1/tacho/advisory', { headers })
+    expect(missing.status).toBe(404)
+
+    const res = await app.request('/v1/tacho/advisory', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        remainingContinuousDriveSeconds: 3600,
+        remainingDailyDriveSeconds: 18000,
+        provider: 'samsara',
+        vehicleLabel: 'Artic 1',
+      }),
+    })
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as {
+      remainingContinuousDriveSeconds: number
+      provider: string
+    }
+    expect(body.remainingContinuousDriveSeconds).toBe(3600)
+    expect(body.provider).toBe('samsara')
+
+    const getRes = await app.request('/v1/tacho/advisory', { headers })
+    expect(getRes.status).toBe(200)
+    const latest = (await getRes.json()) as { vehicleLabel: string }
+    expect(latest.vehicleLabel).toBe('Artic 1')
+  })
+})
+
 describe('telematics ingest', () => {
   it('accepts webhook stub and persists', async () => {
     const { app } = createGatewayApp(makeConfig(tempDir()))

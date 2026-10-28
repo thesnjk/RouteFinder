@@ -245,6 +245,8 @@ public final class RouteViewModel {
     public var hosForecast: HosRestInsertionResult?
     /// Latest imported driver-card remaining-time summary (advisory).
     public var tachoSummary: TachoCardSummary?
+    /// Latest partner webhook remaining-drive summary (advisory — not legal VU).
+    public var partnerTachoSummary: TachoCardSummary?
     /// Latest “Can I drive now?” advisory status.
     public var canIDriveStatus: CanIDriveStatus?
     /// Error from the most recent tachograph file import, if any.
@@ -494,6 +496,17 @@ public final class RouteViewModel {
     public let hosClock: EU561HosClock
     /// Best-effort DDD / JSON driver-card importer.
     public let tachoImporter = DDDImporter()
+    /// Partner remaining-drive port (fleet GET when remote fleet is configured).
+    public var partnerTachoPort: any PartnerTachoPort {
+        guard useRemoteFleetServer,
+              let url = URL(string: fleetServerURLText.trimmingCharacters(in: .whitespacesAndNewlines)),
+              !fleetServerURLText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
+            return StubPartnerTachoPort()
+        }
+        let key = (try? FleetServerCredentials.loadAPIKey()) ?? fleetServerAPIKeyText
+        return HTTPFleetPartnerTachoPort(baseURL: url, apiKey: key)
+    }
     /// Local DVSA walkaround inspection store.
     public let inspectionStore = DiskInspectionStore()
     /// Active walkaround checklist for the inspection sheet.

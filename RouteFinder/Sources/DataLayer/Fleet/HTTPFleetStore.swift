@@ -73,6 +73,16 @@ public actor HTTPFleetStore: FleetDispatchPort {
         _ = try await fetchProxyStatus()
     }
 
+    /// Latest partner remaining-drive advisory, or nil when none (404).
+    public func fetchPartnerTachoAdvisory() async throws -> PartnerTachoAdvisory? {
+        let (data, response) = try await rawRequest(path: "v1/tacho/advisory", method: "GET")
+        if response.statusCode == 404 { return nil }
+        guard (200 ... 299).contains(response.statusCode) else {
+            throw mapError(status: response.statusCode, data: data)
+        }
+        return try decode(PartnerTachoAdvisory.self, from: data)
+    }
+
     /// Reads full desk metering from `/v1/proxy/status` (ORS + forecast caps).
     public func fetchProxyStatus() async throws -> FleetProxyDeskStatus {
         let (data, response) = try await rawRequest(path: "v1/proxy/status", method: "GET")

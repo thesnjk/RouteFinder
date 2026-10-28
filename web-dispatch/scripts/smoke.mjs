@@ -722,6 +722,7 @@ assert.equal(
   'http://127.0.0.1:8080/v1/telematics/pings',
 )
 assert.equal(joinUrl('/fleet', '/v1/telematics/pings?limit=50'), '/fleet/v1/telematics/pings?limit=50')
+assert.equal(joinUrl('/fleet', '/v1/tacho/advisory'), '/fleet/v1/tacho/advisory')
 
 /** Mirrors web-dispatch/src/connectionProfiles.ts migrateLegacyConnection. */
 function migrateLegacyConnection(legacy) {

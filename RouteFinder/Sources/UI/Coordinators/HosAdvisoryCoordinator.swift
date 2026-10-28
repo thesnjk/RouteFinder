@@ -16,6 +16,8 @@ public protocol HosAdvisoryHost: AnyObject {
     var hosForecast: HosRestInsertionResult? { get set }
     /// Imported tachograph card summary.
     var tachoSummary: TachoCardSummary? { get set }
+    /// Latest partner webhook advisory summary (planning aid).
+    var partnerTachoSummary: TachoCardSummary? { get set }
     /// Can-I-drive evaluation status.
     var canIDriveStatus: CanIDriveStatus? { get set }
     /// Error from the most recent tachograph import.
@@ -24,6 +26,8 @@ public protocol HosAdvisoryHost: AnyObject {
     var hosClock: EU561HosClock { get }
     /// Best-effort DDD / JSON driver-card importer.
     var tachoImporter: DDDImporter { get }
+    /// Remote partner remaining-drive port (stub when fleet is not configured).
+    var partnerTachoPort: any PartnerTachoPort { get }
     /// Inline error banner text.
     var errorMessage: String? { get set }
     /// Latest search / route result.
@@ -85,7 +89,7 @@ public final class HosAdvisoryCoordinator {
         await refreshCanIDriveStatus()
     }
 
-    /// Recomputes the advisory “Can I drive now?” status from import + clock.
+    /// Recomputes the advisory “Can I drive now?” status from partner + import + clock.
     public func refreshCanIDriveStatus() async {
         guard let host else { return }
         let snapshot: HosClockSnapshot
@@ -94,7 +98,16 @@ public final class HosAdvisoryCoordinator {
         } else {
             snapshot = await host.hosClock.snapshot()
         }
+        var partnerSummary: TachoCardSummary?
+        do {
+            partnerSummary = try await host.partnerTachoPort.fetchRemoteStatus()
+            host.partnerTachoSummary = partnerSummary
+        } catch {
+            host.partnerTachoSummary = nil
+            partnerSummary = nil
+        }
         host.canIDriveStatus = CanIDriveEvaluator.evaluate(
+            partner: partnerSummary,
             imported: host.tachoSummary,
             clockSnapshot: snapshot
         )

@@ -49,7 +49,7 @@ import {
   upsertActiveProfile,
   type ProfilesState,
 } from './connectionProfiles'
-import type { TelematicsVehiclePing } from './fleet/types'
+import type { PartnerTachoAdvisory, TelematicsVehiclePing } from './fleet/types'
 
 const ONBOARDING_KEY = 'routefinder.webDispatch.onboardingDone'
 
@@ -71,6 +71,7 @@ export default function App() {
   )
   const [partnerPings, setPartnerPings] = useState<TelematicsVehiclePing[]>([])
   const [partnerPingsError, setPartnerPingsError] = useState<string | null>(null)
+  const [tachoAdvisory, setTachoAdvisory] = useState<PartnerTachoAdvisory | null>(null)
   const [health, setHealth] = useState<string>('Not checked')
   const [healthOk, setHealthOk] = useState(false)
   const [proxyStatus, setProxyStatus] = useState<FleetProxyStatus | null>(null)
@@ -137,6 +138,11 @@ export default function App() {
     } catch (err) {
       setPartnerPings([])
       setPartnerPingsError(err instanceof Error ? err.message : String(err))
+    }
+    try {
+      setTachoAdvisory(await client.getTachoAdvisory())
+    } catch {
+      setTachoAdvisory(null)
     }
   }, [client])
 
@@ -536,6 +542,21 @@ export default function App() {
             </p>
           </>
         ) : null}
+        <h3>Partner VU advisory</h3>
+        <p className="muted">
+          Remaining drive from <code>GET /v1/tacho/advisory</code> — planning aid only, not a legal VU.
+        </p>
+        {tachoAdvisory ? (
+          <p>
+            <strong>{tachoAdvisory.vehicleLabel ?? 'Vehicle'}</strong>
+            {tachoAdvisory.provider ? ` · ${tachoAdvisory.provider}` : ''} · continuous{' '}
+            {Math.round(tachoAdvisory.remainingContinuousDriveSeconds / 60)}m · day{' '}
+            {Math.round(tachoAdvisory.remainingDailyDriveSeconds / 60)}m · recorded{' '}
+            {new Date(tachoAdvisory.recordedAt).toLocaleString()}
+          </p>
+        ) : (
+          <p className="muted">No partner advisory yet (POST /v1/tacho/advisory).</p>
+        )}
         <h3>Partner telematics</h3>
         <p className="muted">
           Read-only pings from <code>GET /v1/telematics/pings</code> — not a legal VU / tachograph.

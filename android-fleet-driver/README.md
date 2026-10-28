@@ -2,7 +2,7 @@
 
 Kotlin + Jetpack Compose **HGV navigator** using the office fleet ORS proxy (no customer API keys on the phone).
 
-**In scope (C2 MVP + U10–U15):** Driver Terms, fleet wizard (C1), MapLibre Native map, Pelias geocode + ORS `driving-hgv` via `/v1/proxy/*`, metric voice TBT, SSE trip handoff, physics rehearsal, RegCheck, time windows, predictive fuse, fleet TomTom/OpenWeather/Overpass proxy, off-route clearance, DVSA walkaround photos + PDF, LEZ advisory + ORS `avoid_polygons`, HOS clock, layby ahead.
+**In scope (C2 MVP + U10–U15):** Driver Terms, fleet wizard (C1), MapLibre Native map, Pelias geocode + ORS `driving-hgv` via `/v1/proxy/*`, metric voice TBT, SSE trip handoff, physics rehearsal, RegCheck, time windows, predictive fuse, fleet TomTom/OpenWeather/Overpass proxy, off-route clearance, DVSA walkaround photos + PDF, LEZ advisory + ORS `avoid_polygons`, HOS clock, layby ahead, named UK toll advisories with indicative £ (same seeds as iOS — check operator; not live tariffs).
 
 **Still deferred (product / operator):** Android Auto, offline graph/tiles, production CarPlay signing (Apple).
 

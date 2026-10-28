@@ -306,6 +306,29 @@ fun NavigationMapScreen(
                     viewModel.timeWindowLines.forEach { line ->
                         Text(line, style = MaterialTheme.typography.bodySmall)
                     }
+                    viewModel.tollSummaryMessage?.let {
+                        Text(it, style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            "Check operator — indicative only; not a live tariff.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.tertiary,
+                        )
+                    }
+                    viewModel.activeTollAdvisory?.let { toll ->
+                        val dist = viewModel.activeTollDistanceMeters
+                        val distLabel = when {
+                            dist == null -> null
+                            dist >= 1000 -> String.format("%.1f km", dist / 1000.0)
+                            else -> "${dist.toInt()} m"
+                        }
+                        val cost = toll.indicativeCostLabel
+                        val title = if (distLabel != null) "${toll.name} · $distLabel" else toll.name
+                        Text(title, style = MaterialTheme.typography.bodyMedium)
+                        if (cost != null) {
+                            Text(cost, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Text(toll.hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
+                    }
                     viewModel.lezAdvisoryMessage?.let {
                         Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
                     }

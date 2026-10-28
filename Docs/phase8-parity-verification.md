@@ -11,6 +11,7 @@ Manual QA for toll hints, telematics stub, parking deep links, offline UX, and l
 - [ ] Info link opens operator page when present
 - [ ] Copy still says check operator / not a live tariff
 - [ ] Trip brief plain text **and** PDF include **UK tolls (indicative)** with ~£ where seeded
+- [ ] Android C2: after Find route on a tolled corridor, map panel shows named tolls + indicative ~£ (same catalog seeds as iOS)
 
 ## Telematics (read-only)
 

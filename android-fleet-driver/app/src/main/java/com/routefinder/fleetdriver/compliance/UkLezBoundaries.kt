@@ -6,20 +6,6 @@ package com.routefinder.fleetdriver.compliance
  * not legal cadastral boundaries.
  */
 object UkLezBoundaries {
-    val ringsByZoneId: Map<String, List<DoubleArray>> = mapOf(
-        "london-ulez" to londonULEZ,
-        "birmingham-caz" to birminghamCAZ,
-        "bristol-caz" to bristolCAZ,
-        "sheffield-caz" to sheffieldCAZ,
-        "bath-caz" to bathCAZ,
-        "newcastle-caz" to newcastleCAZ,
-        "manchester-caz" to manchesterCAZ,
-        "glasgow-lez" to glasgowLEZ,
-        "bradford-caz" to bradfordCAZ,
-        "oxford-zez" to oxfordZEZ,
-        "portsmouth-caz" to portsmouthCAZ,
-    )
-
     val londonULEZ: List<DoubleArray> = closed(
         listOf(
             doubleArrayOf(-0.50, 51.48),
@@ -164,6 +150,21 @@ object UkLezBoundaries {
             doubleArrayOf(-1.130, 50.830),
             doubleArrayOf(-1.130, 50.810),
         ),
+    )
+
+    /** Closed rings keyed by catalog zone id (after ring vals so init order is valid). */
+    val ringsByZoneId: Map<String, List<DoubleArray>> = mapOf(
+        "london-ulez" to londonULEZ,
+        "birmingham-caz" to birminghamCAZ,
+        "bristol-caz" to bristolCAZ,
+        "sheffield-caz" to sheffieldCAZ,
+        "bath-caz" to bathCAZ,
+        "newcastle-caz" to newcastleCAZ,
+        "manchester-caz" to manchesterCAZ,
+        "glasgow-lez" to glasgowLEZ,
+        "bradford-caz" to bradfordCAZ,
+        "oxford-zez" to oxfordZEZ,
+        "portsmouth-caz" to portsmouthCAZ,
     )
 
     private fun closed(points: List<DoubleArray>): List<DoubleArray> {

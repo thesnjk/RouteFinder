@@ -114,4 +114,47 @@ import Testing
     let status = CanIDriveEvaluator.evaluate(imported: nil, clockSnapshot: clock)
     #expect(status.canDrive == false)
     #expect(status.usesImportedCard == false)
+    #expect(status.usesPartnerAdvisory == false)
+}
+
+@Test func canIDriveEvaluatorPrefersFreshPartnerOverImport() {
+    let partner = TachoCardSummary(
+        remainingContinuousDriveSeconds: 100,
+        remainingDailyDriveSeconds: 200,
+        remainingWeeklyDriveSeconds: 1_000,
+        importedAt: Date(),
+        sourceFileName: "partner-webhook (samsara)"
+    )
+    let imported = TachoCardSummary(
+        remainingContinuousDriveSeconds: 9_000,
+        remainingDailyDriveSeconds: 9_000,
+        remainingWeeklyDriveSeconds: 10_000,
+        importedAt: Date(),
+        sourceFileName: "card.json"
+    )
+    let clock = HosClockSnapshot(
+        mode: .driving,
+        remainingContinuousDriveSeconds: 0,
+        remainingDailyDriveSeconds: 0,
+        remainingWeeklyDriveSeconds: 0
+    )
+    let status = CanIDriveEvaluator.evaluate(partner: partner, imported: imported, clockSnapshot: clock)
+    #expect(status.canDrive == true)
+    #expect(status.usesPartnerAdvisory == true)
+    #expect(status.usesImportedCard == false)
+    #expect(status.remainingContinuousDriveSeconds == 100)
+    #expect(status.reason.contains("partner"))
+}
+
+@Test func partnerTachoAdvisoryMapsToCardSummary() {
+    let advisory = PartnerTachoAdvisory(
+        remainingContinuousDriveSeconds: 1_200,
+        remainingDailyDriveSeconds: 3_600,
+        provider: "geotab",
+        vehicleLabel: "Artic"
+    )
+    let summary = advisory.asTachoCardSummary()
+    #expect(summary.remainingContinuousDriveSeconds == 1_200)
+    #expect(summary.cardNumber == "Artic")
+    #expect(summary.sourceFileName.contains("geotab"))
 }

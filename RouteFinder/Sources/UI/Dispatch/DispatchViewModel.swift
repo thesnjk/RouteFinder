@@ -50,6 +50,8 @@ public final class DispatchViewModel {
     public private(set) var isSavingFleetAPIKey = false
     /// Last telematics CSV import (read-only stub) for status panel.
     public private(set) var telematicsImportBatch: TelematicsImportBatch?
+    /// Partner remaining-drive Can-I-drive status for the desk (advisory — not legal VU).
+    public private(set) var canIDriveStatus: CanIDriveStatus?
 
     public var searchSuggestions: [UUID: [GeocodeSuggestion]] = [:]
     public var searchFeedback: [UUID: String] = [:]
@@ -99,6 +101,38 @@ public final class DispatchViewModel {
     /// Reloads the last telematics CSV import for the status panel.
     public func reloadTelematicsImport() async {
         telematicsImportBatch = await telematicsImportStore.load()
+        await refreshPartnerCanIDrive()
+    }
+
+    /// Loads partner remaining-drive advisory from local disk or remote fleet GET.
+    public func refreshPartnerCanIDrive() async {
+        let clock = HosClockSnapshot(
+            mode: .otherWork,
+            remainingContinuousDriveSeconds: 0,
+            remainingDailyDriveSeconds: 0,
+            remainingWeeklyDriveSeconds: 0
+        )
+        do {
+            let advisory: PartnerTachoAdvisory?
+            if let disk = store as? DiskFleetStore {
+                advisory = try await disk.latestPartnerTacho()
+            } else if let http = store as? HTTPFleetStore {
+                advisory = try await http.fetchPartnerTachoAdvisory()
+            } else {
+                advisory = nil
+            }
+            guard let advisory else {
+                canIDriveStatus = nil
+                return
+            }
+            canIDriveStatus = CanIDriveEvaluator.evaluate(
+                partner: advisory.asTachoCardSummary(),
+                imported: nil,
+                clockSnapshot: clock
+            )
+        } catch {
+            canIDriveStatus = nil
+        }
     }
 
     /// Loads orgs and vehicles from disk.

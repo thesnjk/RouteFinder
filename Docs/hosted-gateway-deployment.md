@@ -120,6 +120,22 @@ curl -s -H "Authorization: Bearer YOUR_ORG_TOKEN" \
 
 **Not a legal VU** — planning / desk pins only.
 
+## Partner remaining-drive advisory (read-only)
+
+Partners can post remaining continuous/daily drive seconds (planning aid — **not** a legal VU download):
+
+```bash
+curl -s -X POST -H "Authorization: Bearer YOUR_ORG_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"remainingContinuousDriveSeconds":3600,"remainingDailyDriveSeconds":18000,"provider":"samsara","vehicleLabel":"Artic 1"}' \
+  https://fleet.yourdomain.com/v1/tacho/advisory
+
+curl -s -H "Authorization: Bearer YOUR_ORG_TOKEN" \
+  https://fleet.yourdomain.com/v1/tacho/advisory
+```
+
+Persists as `data/<orgId>/partner-tacho.json`. Driver Can-I-drive + desk fuse this when fresher than 24h.
+
 ## Smoke test
 
 ```bash

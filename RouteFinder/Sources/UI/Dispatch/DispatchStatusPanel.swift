@@ -9,6 +9,7 @@ struct DispatchStatusPanel: View {
     let vehicleLabel: String?
     let previewCoordinates: [CLLocationCoordinate2D]
     var telematicsImportBatch: TelematicsImportBatch? = nil
+    var canIDriveStatus: CanIDriveStatus? = nil
     var rosterRows: [DispatchRosterRow] = []
     var selectedVehicleId: UUID?
     /// When true, sidebar draft stops do not match this active trip.
@@ -20,6 +21,7 @@ struct DispatchStatusPanel: View {
         vehicleLabel: String? = nil,
         previewCoordinates: [CLLocationCoordinate2D] = [],
         telematicsImportBatch: TelematicsImportBatch? = nil,
+        canIDriveStatus: CanIDriveStatus? = nil,
         rosterRows: [DispatchRosterRow] = [],
         selectedVehicleId: UUID? = nil,
         draftDiffersFromActiveTrip: Bool = false,
@@ -29,6 +31,7 @@ struct DispatchStatusPanel: View {
         self.vehicleLabel = vehicleLabel
         self.previewCoordinates = previewCoordinates
         self.telematicsImportBatch = telematicsImportBatch
+        self.canIDriveStatus = canIDriveStatus
         self.rosterRows = rosterRows
         self.selectedVehicleId = selectedVehicleId
         self.draftDiffersFromActiveTrip = draftDiffersFromActiveTrip
@@ -51,6 +54,9 @@ struct DispatchStatusPanel: View {
             VStack(alignment: .leading, spacing: RFSpacing.md) {
                 if let batch = telematicsImportBatch {
                     telematicsImportCard(batch)
+                }
+                if let status = canIDriveStatus {
+                    canIDriveCard(status)
                 }
                 fleetRosterSection
                 if let trip {
@@ -335,6 +341,23 @@ struct DispatchStatusPanel: View {
             Text("Read-only partner export — not legal VU / not live tracking.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+        }
+        .controlSheetStyle()
+    }
+
+    private func canIDriveCard(_ status: CanIDriveStatus) -> some View {
+        VStack(alignment: .leading, spacing: RFSpacing.xs) {
+            Text(status.canDrive ? "Can I drive? Yes" : "Can I drive? No")
+                .font(RFFont.sectionTitle)
+            Text(status.reason)
+                .font(RFFont.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if status.usesPartnerAdvisory {
+                Text("Source: partner advisory webhook — not legal VU.")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
         }
         .controlSheetStyle()
     }

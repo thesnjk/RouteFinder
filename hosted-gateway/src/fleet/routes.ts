@@ -170,5 +170,43 @@ export function createFleetRoutes(stores: StoreRegistry, eventHub: EventHub): Ho
     return c.json(stores.forOrg(org).latestTelematicsPings(limit))
   })
 
+  app.post('/tacho/advisory', async (c) => {
+    const org = c.get('org') as OrgConfig
+    const body = (await c.req.json()) as {
+      remainingContinuousDriveSeconds?: number
+      remainingDailyDriveSeconds?: number
+      remainingWeeklyDriveSeconds?: number
+      recordedAt?: string
+      provider?: string
+      vehicleLabel?: string
+    }
+    if (
+      typeof body.remainingContinuousDriveSeconds !== 'number' ||
+      typeof body.remainingDailyDriveSeconds !== 'number'
+    ) {
+      return c.json(
+        { error: 'remainingContinuousDriveSeconds and remainingDailyDriveSeconds are required' },
+        400,
+      )
+    }
+    return c.json(
+      stores.forOrg(org).ingestPartnerTacho({
+        remainingContinuousDriveSeconds: body.remainingContinuousDriveSeconds,
+        remainingDailyDriveSeconds: body.remainingDailyDriveSeconds,
+        remainingWeeklyDriveSeconds: body.remainingWeeklyDriveSeconds,
+        recordedAt: body.recordedAt,
+        provider: body.provider,
+        vehicleLabel: body.vehicleLabel,
+      }),
+    )
+  })
+
+  app.get('/tacho/advisory', async (c) => {
+    const org = c.get('org') as OrgConfig
+    const advisory = stores.forOrg(org).latestPartnerTacho()
+    if (!advisory) return c.json({ error: 'No partner tacho advisory' }, 404)
+    return c.json(advisory)
+  })
+
   return app
 }

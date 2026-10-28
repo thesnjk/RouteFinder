@@ -6,9 +6,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.routefinder.fleetdriver.compliance.CanIDriveEvaluator
+import com.routefinder.fleetdriver.compliance.CanIDriveStatus
 import com.routefinder.fleetdriver.compliance.HosAdvisoryClock
 import com.routefinder.fleetdriver.compliance.LaybyAdvisoryEngine
 import com.routefinder.fleetdriver.compliance.LezAvoidPolicy
+import com.routefinder.fleetdriver.compliance.PartnerTachoAdvisory
 import com.routefinder.fleetdriver.compliance.UkLezCatalog
 import com.routefinder.fleetdriver.fleet.FleetApi
 import com.routefinder.fleetdriver.fleet.FleetConnectionGate
@@ -118,6 +121,9 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     var lezAdvisoryMessage by mutableStateOf<String?>(null)
     var laybyAdvisoryMessage by mutableStateOf<String?>(null)
     var hosAdvisoryMessage by mutableStateOf<String?>(null)
+    /** Fused Can-I-drive status (partner advisory preferred when fresh). */
+    var canIDriveStatus by mutableStateOf<CanIDriveStatus?>(null)
+    private var partnerTachoAdvisory by mutableStateOf<PartnerTachoAdvisory?>(null)
     /** Named UK toll advisories matched to the active route polyline. */
     var routeTollAdvisories by mutableStateOf<List<UKTollAdvisory>>(emptyList())
     /** Near-horizon toll banner (within ~5 km). */
@@ -191,12 +197,14 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         prefs.continuousDriveSeconds = continuousDriveSeconds
         prefs.dailyDriveSeconds = dailyDriveSeconds
         refreshComplianceAdvisories()
+        refreshPartnerTachoAdvisoryAsync()
     }
 
     fun resetHosBreak() {
         continuousDriveSeconds = 0.0
         prefs.continuousDriveSeconds = 0.0
         refreshComplianceAdvisories()
+        refreshPartnerTachoAdvisoryAsync()
         toastMessage = "Break recorded — continuous clock reset"
     }
 
@@ -268,6 +276,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                     "openWeatherConfigured",
                     proxyJson.optBoolean("openWeatherConfigured", false),
                 )
+                refreshPartnerTachoAdvisory(api)
             } catch (e: Exception) {
                 connected = false
                 statusLabel = FleetConnectionGate.statusLabel(
@@ -611,11 +620,42 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             avoidEnabled = lezAvoidEnabled,
         )
         laybyAdvisoryMessage = LaybyAdvisoryEngine.nearestAhead(route)
-        hosAdvisoryMessage = HosAdvisoryClock.snapshot(
+        val clock = HosAdvisoryClock.snapshot(
             continuousDriveSeconds = continuousDriveSeconds,
             dailyDriveSeconds = dailyDriveSeconds,
-        ).message
+        )
+        hosAdvisoryMessage = clock.message
+        canIDriveStatus = CanIDriveEvaluator.evaluate(
+            partner = partnerTachoAdvisory?.asCardSummary(),
+            clock = clock,
+        )
         refreshRouteTollAdvisories(route)
+    }
+
+    /** Fetches partner remaining-drive advisory when fleet is authenticated. */
+    private suspend fun refreshPartnerTachoAdvisory(api: FleetApi) {
+        val advisory = withContext(Dispatchers.IO) {
+            runCatching { api.getTachoAdvisory() }.getOrNull()
+        }
+        partnerTachoAdvisory = advisory
+        val clock = HosAdvisoryClock.snapshot(
+            continuousDriveSeconds = continuousDriveSeconds,
+            dailyDriveSeconds = dailyDriveSeconds,
+        )
+        canIDriveStatus = CanIDriveEvaluator.evaluate(
+            partner = advisory?.asCardSummary(),
+            clock = clock,
+        )
+    }
+
+    private fun refreshPartnerTachoAdvisoryAsync() {
+        if (!connected) return
+        viewModelScope.launch {
+            runCatching {
+                val api = FleetApi(prefs.baseUrl, prefs.apiKey)
+                refreshPartnerTachoAdvisory(api)
+            }
+        }
     }
 
     /** Matches UK toll catalog against the route and refreshes the near-horizon banner. */

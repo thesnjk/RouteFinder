@@ -1,5 +1,6 @@
 package com.routefinder.fleetdriver.fleet
 
+import com.routefinder.fleetdriver.compliance.PartnerTachoAdvisory
 import com.routefinder.fleetdriver.routing.FleetOrsConfig
 import com.routefinder.fleetdriver.routing.FleetProxyErrorMapper
 import okhttp3.MediaType.Companion.toMediaType
@@ -140,6 +141,25 @@ class FleetApi(
     }
 
     fun eventsUrl(vehicleId: String): String = url("/v1/vehicles/$vehicleId/events")
+
+    /**
+     * Latest partner remaining-drive advisory, or null when none (404).
+     * Planning aid only — not a legal VU.
+     */
+    fun getTachoAdvisory(): PartnerTachoAdvisory? {
+        val request = Request.Builder()
+            .url(url("/v1/tacho/advisory"))
+            .auth()
+            .get()
+            .build()
+        client.newCall(request).execute().use { response ->
+            if (response.code == 404) return null
+            val body = response.body?.string().orEmpty()
+            if (!response.isSuccessful) error("tacho advisory ${response.code}: $body")
+            if (body.isBlank()) return null
+            return PartnerTachoAdvisory.fromJson(JSONObject(body))
+        }
+    }
 
     fun authorizedRequest(url: String): Request =
         Request.Builder().url(url).auth().get().build()

@@ -81,6 +81,10 @@ public enum TripBriefFormatter {
             result.append(laybySection(from: layby))
         }
 
+        if !context.tollAdvisories.isEmpty {
+            result.append(tollSection(from: context.tollAdvisories))
+        }
+
         if let inspection = context.latestInspectionSummary, inspection.defectCount > 0 {
             result.append(inspectionSection(from: inspection))
         }
@@ -182,6 +186,20 @@ public enum TripBriefFormatter {
             title: "Predicted layby (advisory — not legal tacho)",
             lines: lines
         )
+    }
+
+    private static func tollSection(from advisories: [UKTollAdvisory]) -> TripBriefSection {
+        var lines: [String] = advisories.map { advisory in
+            if let cost = advisory.indicativeCostLabel {
+                return "\(advisory.name) — \(cost)"
+            }
+            return advisory.name
+        }
+        if let total = UKTollAdvisory.indicativeRouteTotalLabel(advisories: advisories) {
+            lines.append(total)
+        }
+        lines.append("Check operator — indicative only; not a live tariff.")
+        return TripBriefSection(title: "UK tolls (indicative)", lines: lines)
     }
 
     private static func formatTimeWindowLine(_ window: StopTimeWindow, stops: [TripBriefStop]) -> String {

@@ -41,6 +41,8 @@ public struct TripBriefContext: Sendable, Equatable {
     public var latestInspectionSummary: TripBriefInspectionSummary?
     /// Dispatch-authored stop time windows from ``FleetJobBrief`` (planning aid).
     public var dispatchTimeWindows: [StopTimeWindow]
+    /// Named UK toll advisories along the route (indicative £ — not live tariffs).
+    public var tollAdvisories: [UKTollAdvisory]
 
     /// Creates a trip brief context.
     public init(
@@ -54,7 +56,8 @@ public struct TripBriefContext: Sendable, Equatable {
         tripStatus: String? = nil,
         routeCoordinates: [Coordinate] = [],
         latestInspectionSummary: TripBriefInspectionSummary? = nil,
-        dispatchTimeWindows: [StopTimeWindow] = []
+        dispatchTimeWindows: [StopTimeWindow] = [],
+        tollAdvisories: [UKTollAdvisory] = []
     ) {
         self.predictiveReport = predictiveReport
         self.hosForecast = hosForecast
@@ -67,6 +70,7 @@ public struct TripBriefContext: Sendable, Equatable {
         self.routeCoordinates = routeCoordinates
         self.latestInspectionSummary = latestInspectionSummary
         self.dispatchTimeWindows = dispatchTimeWindows
+        self.tollAdvisories = tollAdvisories
     }
 
     /// Builds brief context from a fleet trip snapshot visible to dispatch.

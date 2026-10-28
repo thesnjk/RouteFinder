@@ -57,7 +57,7 @@ Exit code `0` = all targeted tests passed.
 | 4 | — | Discover on LAN **or** paste LAN URL. Tap **Test connection**. Enter the same **Fleet API key** as `--api-key`. **Scan QR** (or paste vehicle UUID) → Save → Finish. |
 | 5 | **Push trip** (Norwich → King's Lynn is the default draft; Load optional reset) | Trip toast/banner within **~5 s** via SSE (`GET /v1/vehicles/{id}/events`); fallback poll every 30 s if SSE drops |
 | 6 | — | Toast **New dispatch received — loading route…** → stops apply → auto **Find route** (zero-tap intake). Then **Rehearse Route** if desired. Do **not** tap Settings **Load offline demo job** while paired — that seeds a local job and breaks the vehicle UUID. |
-| 7 | — | Open trip brief share menu → verify plain text **and** PDF include stops, physics ETA, layby/HOS blocks where applicable |
+| 7 | — | Open trip brief share menu → verify plain text **and** PDF include stops, physics ETA, layby/HOS blocks where applicable; on a tolled route also **UK tolls (indicative)** with ~£ |
 | 8 | web-dispatch shows updated trip status / physics ETA / Last GPS snapshot from driver publish | — |
 | 9 | web-dispatch shows **Walkaround defects** card with defect count; download PDF when driver saved inspection with defects | Complete zoned walkaround with ≥1 defect → **Save** on **driver iPhone** (not Mac Settings) |
 

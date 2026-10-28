@@ -189,3 +189,27 @@ import Testing
     #expect(text.contains("Stop time windows"))
     #expect(text.contains("Manchester Depot"))
 }
+
+@Test func tripBriefFormatterIncludesIndicativeTollGBP() {
+    let dartford = UKTollAdvisoryCatalog.advisory(id: "dartford-crossing")!
+    let m6 = UKTollAdvisoryCatalog.advisory(id: "m6-toll")!
+    let context = TripBriefContext(tollAdvisories: [dartford, m6])
+    let text = TripBriefFormatter.plainText(from: context)
+    #expect(text.contains("UK tolls (indicative)"))
+    #expect(text.contains("Dartford Crossing"))
+    #expect(text.contains("M6 Toll"))
+    #expect(text.contains("Indicative ~£"))
+    #expect(text.contains("Indicative tolls ~£"))
+    #expect(text.contains("Check operator"))
+    #expect(text.contains("not a live tariff"))
+}
+
+@Test func tripBriefFormatterTollSectionOmitsTotalWhenNoGBP() {
+    let severn = UKTollAdvisoryCatalog.advisory(id: "severn-crossings")!
+    #expect(severn.indicativeCostGBP == nil)
+    let text = TripBriefFormatter.plainText(from: TripBriefContext(tollAdvisories: [severn]))
+    #expect(text.contains("UK tolls (indicative)"))
+    #expect(text.contains("Severn"))
+    #expect(!text.contains("Indicative tolls ~£"))
+    #expect(text.contains("Check operator"))
+}

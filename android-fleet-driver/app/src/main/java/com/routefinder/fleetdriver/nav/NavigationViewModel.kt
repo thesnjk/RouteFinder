@@ -34,6 +34,8 @@ import com.routefinder.fleetdriver.routing.HgvVehicleProfile
 import com.routefinder.fleetdriver.routing.LatLon
 import com.routefinder.fleetdriver.routing.OrsRoutingClient
 import com.routefinder.fleetdriver.routing.PeliasGeocoder
+import com.routefinder.fleetdriver.routing.TollAdvisoryAlongRouteMatcher
+import com.routefinder.fleetdriver.routing.UKTollAdvisory
 import com.routefinder.fleetdriver.voice.VoiceGuidanceService
 import java.time.Instant
 import kotlinx.coroutines.Dispatchers
@@ -116,6 +118,13 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     var lezAdvisoryMessage by mutableStateOf<String?>(null)
     var laybyAdvisoryMessage by mutableStateOf<String?>(null)
     var hosAdvisoryMessage by mutableStateOf<String?>(null)
+    /** Named UK toll advisories matched to the active route polyline. */
+    var routeTollAdvisories by mutableStateOf<List<UKTollAdvisory>>(emptyList())
+    /** Near-horizon toll banner (within ~5 km). */
+    var activeTollAdvisory by mutableStateOf<UKTollAdvisory?>(null)
+    var activeTollDistanceMeters by mutableStateOf<Double?>(null)
+    /** Route-summary toll line (names + optional indicative total). */
+    var tollSummaryMessage by mutableStateOf<String?>(null)
     var lastWalkaroundPdfBytes by mutableStateOf<ByteArray?>(null)
     private var continuousDriveSeconds = prefs.continuousDriveSeconds
     private var dailyDriveSeconds = prefs.dailyDriveSeconds
@@ -606,6 +615,45 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             continuousDriveSeconds = continuousDriveSeconds,
             dailyDriveSeconds = dailyDriveSeconds,
         ).message
+        refreshRouteTollAdvisories(route)
+    }
+
+    /** Matches UK toll catalog against the route and refreshes the near-horizon banner. */
+    fun refreshRouteTollAdvisories(route: List<LatLon> = routeCoordinates) {
+        routeTollAdvisories = TollAdvisoryAlongRouteMatcher.advisories(along = route)
+        tollSummaryMessage = if (routeTollAdvisories.isEmpty()) {
+            null
+        } else {
+            val names = routeTollAdvisories.joinToString(" · ") { it.name }
+            val total = UKTollAdvisory.indicativeRouteTotalLabel(routeTollAdvisories)
+            if (total != null) "$names — $total" else names
+        }
+        refreshActiveTollAdvisory()
+    }
+
+    /** Updates the near-horizon toll banner from follow location or route start. */
+    fun refreshActiveTollAdvisory() {
+        if (routeTollAdvisories.isEmpty() || routeCoordinates.isEmpty()) {
+            activeTollAdvisory = null
+            activeTollDistanceMeters = null
+            return
+        }
+        val near = when {
+            followLat != null && followLon != null -> LatLon(followLat!!, followLon!!)
+            else -> routeCoordinates.first()
+        }
+        val next = TollAdvisoryAlongRouteMatcher.nextAdvisory(
+            along = routeCoordinates,
+            near = near,
+            catalog = routeTollAdvisories,
+        )
+        if (next != null) {
+            activeTollAdvisory = next.first
+            activeTollDistanceMeters = next.second
+        } else {
+            activeTollAdvisory = null
+            activeTollDistanceMeters = null
+        }
     }
 
     fun dismissWalkaround() {
@@ -789,6 +837,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         session.ingestPosition(lat, lon)
         phase = session.phase
         progress = session.progress
+        refreshActiveTollAdvisory()
         session.currentInstruction()?.let { instruction ->
             val p = progress
             if (p != null) {

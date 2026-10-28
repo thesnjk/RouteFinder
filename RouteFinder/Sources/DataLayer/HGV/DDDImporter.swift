@@ -229,3 +229,60 @@ public struct StubPartnerTachoPort: PartnerTachoPort, Sendable {
         throw TachoImportError.partnerNotConfigured
     }
 }
+
+/// Reads the latest partner advisory from a local ``DiskFleetStore`` (LAN smoke / tests).
+public struct DiskStorePartnerTachoPort: PartnerTachoPort, Sendable {
+    private let store: DiskFleetStore
+
+    public init(store: DiskFleetStore) {
+        self.store = store
+    }
+
+    public func fetchRemoteStatus() async throws -> TachoCardSummary {
+        guard let advisory = try await store.latestPartnerTacho() else {
+            throw TachoImportError.partnerNotConfigured
+        }
+        return advisory.asTachoCardSummary()
+    }
+}
+
+/// Fetches partner remaining-drive advisory from fleet `GET /v1/tacho/advisory`.
+public struct HTTPFleetPartnerTachoPort: PartnerTachoPort, Sendable {
+    private let baseURL: URL
+    private let apiKey: String?
+    private let session: URLSession
+
+    public init(baseURL: URL, apiKey: String? = nil, session: URLSession = .shared) {
+        var normalized = baseURL
+        if normalized.path.hasSuffix("/") {
+            normalized.deleteLastPathComponent()
+        }
+        self.baseURL = normalized
+        self.apiKey = apiKey?.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.session = session
+    }
+
+    public func fetchRemoteStatus() async throws -> TachoCardSummary {
+        let url = baseURL.appendingPathComponent("v1/tacho/advisory")
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let apiKey, !apiKey.isEmpty {
+            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        }
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw TachoImportError.partnerNotConfigured
+        }
+        if http.statusCode == 404 {
+            throw TachoImportError.partnerNotConfigured
+        }
+        guard (200 ... 299).contains(http.statusCode) else {
+            throw TachoImportError.partnerNotConfigured
+        }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let advisory = try decoder.decode(PartnerTachoAdvisory.self, from: data)
+        return advisory.asTachoCardSummary()
+    }
+}

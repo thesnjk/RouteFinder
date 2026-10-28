@@ -200,6 +200,41 @@ export class OrgFleetStore {
     return ping
   }
 
+  ingestPartnerTacho(body: {
+    remainingContinuousDriveSeconds: number
+    remainingDailyDriveSeconds: number
+    remainingWeeklyDriveSeconds?: number | null
+    recordedAt?: string
+    provider?: string | null
+    vehicleLabel?: string | null
+  }): Record<string, unknown> {
+    this.ensureLoaded()
+    const path = join(this.directory, 'partner-tacho.json')
+    const advisory = {
+      remainingContinuousDriveSeconds: body.remainingContinuousDriveSeconds,
+      remainingDailyDriveSeconds: body.remainingDailyDriveSeconds,
+      remainingWeeklyDriveSeconds: body.remainingWeeklyDriveSeconds ?? null,
+      recordedAt: body.recordedAt ?? new Date().toISOString(),
+      provider: body.provider ?? null,
+      vehicleLabel: body.vehicleLabel ?? null,
+    }
+    const tmp = `${path}.${process.pid}.tmp`
+    writeFileSync(tmp, JSON.stringify(advisory, null, 2), 'utf8')
+    renameSync(tmp, path)
+    return advisory
+  }
+
+  latestPartnerTacho(): Record<string, unknown> | null {
+    this.ensureLoaded()
+    const path = join(this.directory, 'partner-tacho.json')
+    if (!existsSync(path)) return null
+    try {
+      return JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>
+    } catch {
+      return null
+    }
+  }
+
   /** Newest telematics pings (chronological oldest→newest within the window). Default 50, clamp 1…200. */
   latestTelematicsPings(limit = 50): Record<string, unknown>[] {
     this.ensureLoaded()

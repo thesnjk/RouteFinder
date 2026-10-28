@@ -113,6 +113,16 @@ export interface TelematicsVehiclePing {
   speedKph?: number | null
 }
 
+/** Partner remaining-drive advisory from GET /v1/tacho/advisory (not legal VU). */
+export interface PartnerTachoAdvisory {
+  remainingContinuousDriveSeconds: number
+  remainingDailyDriveSeconds: number
+  remainingWeeklyDriveSeconds?: number | null
+  recordedAt: string
+  provider?: string | null
+  vehicleLabel?: string | null
+}
+
 export function authHeaders(apiKey: string): HeadersInit {
   if (!apiKey.trim()) return { Accept: 'application/json', 'Content-Type': 'application/json' }
   return {

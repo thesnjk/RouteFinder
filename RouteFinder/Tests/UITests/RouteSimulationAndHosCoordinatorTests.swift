@@ -189,10 +189,12 @@ private final class MockHosAdvisoryHost: HosAdvisoryHost {
     var hosSnapshot: HosClockSnapshot?
     var hosForecast: HosRestInsertionResult?
     var tachoSummary: TachoCardSummary?
+    var partnerTachoSummary: TachoCardSummary?
     var canIDriveStatus: CanIDriveStatus?
     var tachoImportError: String?
     let hosClock = EU561HosClock(alertBus: InMemoryDriverAlertBus())
     let tachoImporter = DDDImporter()
+    var partnerTachoPort: any PartnerTachoPort = StubPartnerTachoPort()
     var errorMessage: String?
     var result: SearchResult?
     var routeCoordinates: [CLLocationCoordinate2D] = []

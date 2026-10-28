@@ -198,6 +198,10 @@ struct MapFirstShell: View {
                 HosClockBanner(snapshot: hos)
             }
 
+            if let status = viewModel.canIDriveStatus {
+                CanIDriveNavChip(status: status)
+            }
+
             if viewModel.trafficRerouteAvailable || viewModel.isEvaluatingTrafficReroute {
                 TrafficRerouteBanner(isEvaluating: viewModel.isEvaluatingTrafficReroute) {
                     Task { await viewModel.applyTrafficReroute() }

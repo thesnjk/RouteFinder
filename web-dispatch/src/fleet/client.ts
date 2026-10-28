@@ -11,6 +11,7 @@ import {
   type FleetTripStop,
   type FleetVehicle,
   type GeocodeSuggestion,
+  type PartnerTachoAdvisory,
   type TelematicsVehiclePing,
 } from './types'
 import { fleetProxyUserMessage, type FleetProxyErrorKind } from '../fleetProxyError'
@@ -75,6 +76,13 @@ export class FleetApiClient {
     const response = await fetch(this.url(`/v1/telematics/pings?limit=${clamped}`), {
       headers: this.headers(),
     })
+    return parseJson(response)
+  }
+
+  /** Latest partner remaining-drive advisory, or null when none (404). */
+  async getTachoAdvisory(): Promise<PartnerTachoAdvisory | null> {
+    const response = await fetch(this.url('/v1/tacho/advisory'), { headers: this.headers() })
+    if (response.status === 404) return null
     return parseJson(response)
   }
 

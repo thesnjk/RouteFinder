@@ -10,6 +10,7 @@ Manual QA for toll hints, telematics stub, parking deep links, offline UX, and l
 - [ ] During navigation within ~5 km, map chrome shows `TollAdvisoryBanner` with Indicative ~£ when set
 - [ ] Info link opens operator page when present
 - [ ] Copy still says check operator / not a live tariff
+- [ ] Trip brief plain text **and** PDF include **UK tolls (indicative)** with ~£ where seeded
 
 ## Telematics (read-only)
 

@@ -1529,6 +1529,7 @@ public final class RouteViewModel {
     public func refreshRouteTollAdvisories(coordinates: [Coordinate]) {
         routeTollAdvisories = TollAdvisoryAlongRouteMatcher.advisories(along: coordinates)
         refreshActiveTollAdvisory()
+        refreshTripBriefShareText()
     }
 
     /// Updates the near-horizon toll banner from current location / arc progress.
@@ -2852,7 +2853,8 @@ public final class RouteViewModel {
         guard context.predictiveReport != nil
             || context.physicsETASeconds != nil
             || !context.stops.isEmpty
-            || context.latestInspectionSummary != nil else {
+            || context.latestInspectionSummary != nil
+            || !context.tollAdvisories.isEmpty else {
             tripBriefShareText = nil
             return
         }
@@ -2888,7 +2890,8 @@ public final class RouteViewModel {
             tripStatus: status,
             routeCoordinates: coordinates,
             latestInspectionSummary: latestInspectionSummary,
-            dispatchTimeWindows: activeDispatchTimeWindows
+            dispatchTimeWindows: activeDispatchTimeWindows,
+            tollAdvisories: routeTollAdvisories
         )
     }
 

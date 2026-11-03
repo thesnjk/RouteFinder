@@ -115,7 +115,7 @@ See also [`phase7-device-simulator-verification.md`](phase7-device-simulator-ver
 | `macos` | `swift build -c release`, `swift test`, `Scripts/fleet-e2e-smoke.sh` |
 | `ios` | `RouteFinderIOS` simulator build + `RouteFinderAppUITests` |
 | `web-dispatch` | `npm ci` → `npm test` → `npm run build` |
-| `android-c1` | `./gradlew :app:testDebugUnitTest` + `assembleDebug` (JDK 17) |
+| `android-c1` | `./gradlew :app:testDebugUnitTest` + `assembleDebug` (JDK 17; `setup-android@v4` + `platform-tools`, not legacy SDK `tools`) |
 | `hosted-gateway` | `npm test` + `npm run typecheck` |
 
 ---

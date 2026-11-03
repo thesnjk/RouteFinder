@@ -30,7 +30,7 @@ cd /Users/admin/Developer/RouteFinder/android-fleet-driver
 
 Use **JDK 17–22** for Gradle (CI uses 17). OpenJDK **25** fails the build with an opaque `25.0.2` error — e.g. `export JAVA_HOME=$(/usr/libexec/java_home -v 22)`.
 
-CI: `android-c1` job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs unit tests + assembleDebug.
+CI: `android-c1` job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs unit tests + assembleDebug via `android-actions/setup-android@v4` (`platform-tools` / cmdline-tools — not the removed legacy SDK `tools` package).
 
 ## First-run flow
 

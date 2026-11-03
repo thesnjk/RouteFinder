@@ -268,7 +268,7 @@ Original Oct 12 “Defer” list is **void** under the driver-first scope rule. 
 | Rank | Epic / work | Why first | First slice |
 |------|-------------|-----------|-------------|
 | H1 | `EPIC-SIM-SPEEDLIMIT` | Physics Lead must stay CI-honest | Restore `spineSpeedLimitAcceleratesToMotorwayLimit` |
-| H2 | `EPIC-ANDROID-JDK-CI` | `android-c1` red on `main`; OpenJDK 25 breaks AGP | Pin JDK 17–22 in docs/CI; green assemble + unit tests |
+| H2 | `EPIC-ANDROID-JDK-CI` | `android-c1` red on `main`; OpenJDK 25 breaks AGP; v3 SDK setup requests removed `tools` | Pin JDK 17–22; `setup-android@v4` + green assemble + unit tests |
 | H3 | `EPIC-P0-DEVICE` | Demo claims need hardware truth | Operator C4 / C9 / Fleet Part B |
 
 ### Ranked driver-first build backlog
@@ -341,7 +341,7 @@ Always **print** push commands. Do **not** push unless the user asked to push (o
 | Order | Who | Work |
 |------:|-----|------|
 | 1 | Agent | `EPIC-SIM-SPEEDLIMIT` — fix `spineSpeedLimitAcceleratesToMotorwayLimit` |
-| 2 | Agent | `EPIC-ANDROID-JDK-CI` — pin JDK 17–22; clear CI `android-c1` |
+| 2 | Agent | `EPIC-ANDROID-JDK-CI` — JDK 17 + `setup-android@v4` (no legacy `tools`); clear CI `android-c1` |
 | 3 | **Operator** | `EPIC-P0-DEVICE` — physical C4 / C9 / Fleet Part B (playbook below) |
 | 4 | Agent | Start `EPIC-VOICE-ASSIST` after H1–H2 green (H3 can run in parallel if phone available) |
 

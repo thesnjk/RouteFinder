@@ -25,23 +25,42 @@ object LaybyAdvisoryEngine {
         route: List<LatLon>,
         currentArcLengthMeters: Double = 0.0,
         maxAheadMeters: Double = 40_000.0,
+        skipCount: Int = 0,
     ): String? {
-        if (route.size < 2) return null
+        val ranked = rankedAhead(
+            route = route,
+            currentArcLengthMeters = currentArcLengthMeters,
+            maxAheadMeters = maxAheadMeters,
+        )
+        return ranked.getOrNull(skipCount.coerceAtLeast(0))
+    }
+
+    /**
+     * Layby messages sorted nearest-first along the route.
+     * Used by voice “next layby” to skip the current candidate.
+     */
+    fun rankedAhead(
+        route: List<LatLon>,
+        currentArcLengthMeters: Double = 0.0,
+        maxAheadMeters: Double = 40_000.0,
+    ): List<String> {
+        if (route.size < 2) return emptyList()
         val cumulative = cumulative(route)
-        val total = cumulative.lastOrNull() ?: return null
-        var best: Pair<String, Double>? = null
+        val total = cumulative.lastOrNull() ?: return emptyList()
+        val hits = mutableListOf<Pair<String, Double>>()
         for (site in sites) {
             val proj = project(site.coordinate, route, cumulative) ?: continue
             if (proj.second > 2_500) continue
             val remaining = proj.first - currentArcLengthMeters
             if (remaining <= 0 || remaining > maxAheadMeters || proj.first > total) continue
-            if (best == null || remaining < best.second) {
-                best = site.name to remaining
-            }
+            hits += site.name to remaining
         }
-        val hit = best ?: return null
-        val km = (hit.second / 1_000).toInt().coerceAtLeast(1)
-        return "Layby ahead: ${hit.first} (~${km} km)"
+        return hits
+            .sortedBy { it.second }
+            .map { hit ->
+                val km = (hit.second / 1_000).toInt().coerceAtLeast(1)
+                "Layby ahead: ${hit.first} (~${km} km)"
+            }
     }
 
     private fun cumulative(route: List<LatLon>): List<Double> {

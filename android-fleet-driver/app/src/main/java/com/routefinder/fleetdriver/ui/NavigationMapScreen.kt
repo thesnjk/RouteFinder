@@ -38,6 +38,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.routefinder.fleetdriver.compliance.CanIDriveEvaluator
+import com.routefinder.fleetdriver.compliance.ParkingAvailabilityTier
 import com.routefinder.fleetdriver.fleet.FleetPreferences
 import com.routefinder.fleetdriver.fleet.FleetConnectionGate
 import com.routefinder.fleetdriver.map.MapLibreMapView
@@ -363,7 +364,36 @@ fun NavigationMapScreen(
                     viewModel.lezAdvisoryMessage?.let {
                         Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
                     }
-                    viewModel.laybyAdvisoryMessage?.let {
+                    viewModel.laybyAdvisory?.let { advisory ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(advisory.message, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                            Text(
+                                advisory.tier.displayLabel,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = when (advisory.tier) {
+                                    ParkingAvailabilityTier.AMPLE -> MaterialTheme.colorScheme.primary
+                                    ParkingAvailabilityTier.LIMITED -> MaterialTheme.colorScheme.tertiary
+                                    ParkingAvailabilityTier.FULL -> MaterialTheme.colorScheme.error
+                                },
+                            )
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(onClick = { viewModel.reportLaybyFull() }) {
+                                Text("Looks full")
+                            }
+                            OutlinedButton(onClick = { viewModel.reportLaybySpaces() }) {
+                                Text("Spaces")
+                            }
+                        }
+                        Text(
+                            "crowd estimate — not live bay count",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.tertiary,
+                        )
+                    } ?: viewModel.laybyAdvisoryMessage?.let {
                         Text(it, style = MaterialTheme.typography.bodySmall)
                     }
                     viewModel.canIDriveStatus?.let { status ->

@@ -173,8 +173,9 @@ class ComplianceParityTest {
             LatLon(52.31, -1.12),
             LatLon(52.40, -1.10),
         )
-        val message = LaybyAdvisoryEngine.nearestAhead(route)
-        assertNotNull(message)
-        assertTrue(message!!.contains("Layby ahead"))
+        val advisory = LaybyAdvisoryEngine.nearestAhead(route)
+        assertNotNull(advisory)
+        assertTrue(advisory!!.message.contains("Layby ahead"))
+        assertNotNull(advisory.tier)
     }
 }

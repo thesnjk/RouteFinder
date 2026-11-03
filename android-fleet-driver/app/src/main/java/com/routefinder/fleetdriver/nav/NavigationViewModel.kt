@@ -10,9 +10,12 @@ import com.routefinder.fleetdriver.compliance.CanIDriveEvaluator
 import com.routefinder.fleetdriver.compliance.CanIDriveStatus
 import com.routefinder.fleetdriver.compliance.HosAdvisoryClock
 import com.routefinder.fleetdriver.compliance.LaybyAdvisoryEngine
+import com.routefinder.fleetdriver.compliance.LaybyOccupancyKind
+import com.routefinder.fleetdriver.compliance.LaybyOccupancyStore
 import com.routefinder.fleetdriver.compliance.LezAvoidPolicy
 import com.routefinder.fleetdriver.compliance.PartnerTachoAdvisory
 import com.routefinder.fleetdriver.compliance.UkLezCatalog
+import android.content.Context
 import com.routefinder.fleetdriver.fleet.FleetApi
 import com.routefinder.fleetdriver.fleet.FleetConnectionGate
 import com.routefinder.fleetdriver.fleet.FleetPreferences
@@ -123,6 +126,8 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     var emissionClassDraft by mutableStateOf(prefs.emissionClass)
     var lezAdvisoryMessage by mutableStateOf<String?>(null)
     var laybyAdvisoryMessage by mutableStateOf<String?>(null)
+    /** Structured layby ahead with parking availability tier. */
+    var laybyAdvisory by mutableStateOf<LaybyAdvisoryEngine.Advisory?>(null)
     var hosAdvisoryMessage by mutableStateOf<String?>(null)
     /** Fused Can-I-drive status (partner advisory preferred when fresh). */
     var canIDriveStatus by mutableStateOf<CanIDriveStatus?>(null)
@@ -147,6 +152,9 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
 
     private val voice = VoiceGuidanceService(application)
     private val voiceCommands = DriverVoiceCommandCoordinator(application)
+    private val laybyOccupancyStore = LaybyOccupancyStore(
+        application.getSharedPreferences("rf_layby_occupancy", Context.MODE_PRIVATE),
+    )
     private var sseJob: Job? = null
     private var healthJob: Job? = null
     private var gpsJob: Job? = null
@@ -203,10 +211,16 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                 voice.speakAssist(spoken)
             }
             DriverVoiceCommand.NEXT_LAYBY -> {
+                laybyAdvisory?.let { current ->
+                    laybyOccupancyStore.record(current.site.id, LaybyOccupancyKind.FULL)
+                }
                 laybySkipCount += 1
-                laybyAdvisoryMessage = LaybyAdvisoryEngine.nearestAhead(
-                    route = routeCoordinates,
-                    skipCount = laybySkipCount,
+                applyLaybyAdvisory(
+                    LaybyAdvisoryEngine.nearestAhead(
+                        route = routeCoordinates,
+                        skipCount = laybySkipCount,
+                        occupancyStore = laybyOccupancyStore,
+                    ),
                 )
                 val spoken = VoiceAssistResponseFormatter.nextLayby(laybyAdvisoryMessage)
                 toastMessage = spoken
@@ -698,9 +712,12 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             emissionClass = emission,
             avoidEnabled = lezAvoidEnabled,
         )
-        laybyAdvisoryMessage = LaybyAdvisoryEngine.nearestAhead(
-            route = route,
-            skipCount = laybySkipCount,
+        applyLaybyAdvisory(
+            LaybyAdvisoryEngine.nearestAhead(
+                route = route,
+                skipCount = laybySkipCount,
+                occupancyStore = laybyOccupancyStore,
+            ),
         )
         val clock = HosAdvisoryClock.snapshot(
             continuousDriveSeconds = continuousDriveSeconds,
@@ -712,6 +729,42 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             clock = clock,
         )
         refreshRouteTollAdvisories(route)
+    }
+
+    /** Records “Looks full” and advances to the next layby candidate. */
+    fun reportLaybyFull() {
+        val current = laybyAdvisory
+        if (current != null) {
+            laybyOccupancyStore.record(current.site.id, LaybyOccupancyKind.FULL)
+        }
+        laybySkipCount += 1
+        applyLaybyAdvisory(
+            LaybyAdvisoryEngine.nearestAhead(
+                route = routeCoordinates,
+                skipCount = laybySkipCount,
+                occupancyStore = laybyOccupancyStore,
+            ),
+        )
+        toastMessage = laybyAdvisoryMessage ?: "No further laybys ahead."
+    }
+
+    /** Records “Spaces” for the current layby and refreshes its availability tier. */
+    fun reportLaybySpaces() {
+        val current = laybyAdvisory ?: return
+        laybyOccupancyStore.record(current.site.id, LaybyOccupancyKind.SPACES_AVAILABLE)
+        applyLaybyAdvisory(
+            LaybyAdvisoryEngine.nearestAhead(
+                route = routeCoordinates,
+                skipCount = laybySkipCount,
+                occupancyStore = laybyOccupancyStore,
+            ),
+        )
+        toastMessage = "Marked spaces at ${current.site.name}"
+    }
+
+    private fun applyLaybyAdvisory(advisory: LaybyAdvisoryEngine.Advisory?) {
+        laybyAdvisory = advisory
+        laybyAdvisoryMessage = advisory?.message
     }
 
     /** Fetches partner remaining-drive advisory when fleet is authenticated. */

@@ -39,6 +39,9 @@ import com.routefinder.fleetdriver.routing.OrsRoutingClient
 import com.routefinder.fleetdriver.routing.PeliasGeocoder
 import com.routefinder.fleetdriver.routing.TollAdvisoryAlongRouteMatcher
 import com.routefinder.fleetdriver.routing.UKTollAdvisory
+import com.routefinder.fleetdriver.voice.DriverVoiceCommand
+import com.routefinder.fleetdriver.voice.DriverVoiceCommandCoordinator
+import com.routefinder.fleetdriver.voice.VoiceAssistResponseFormatter
 import com.routefinder.fleetdriver.voice.VoiceGuidanceService
 import java.time.Instant
 import kotlinx.coroutines.Dispatchers
@@ -132,18 +135,27 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     /** Route-summary toll line (names + optional indicative total). */
     var tollSummaryMessage by mutableStateOf<String?>(null)
     var lastWalkaroundPdfBytes by mutableStateOf<ByteArray?>(null)
+    /** True when turn-by-turn TTS is muted (voice assist still speaks confirmations). */
+    var voiceGuidanceMuted by mutableStateOf(!prefs.voiceGuidanceEnabled)
+    /** True while push-to-talk listen window is active. */
+    var voiceListening by mutableStateOf(false)
     private var continuousDriveSeconds = prefs.continuousDriveSeconds
     private var dailyDriveSeconds = prefs.dailyDriveSeconds
     private var lastDriveTickMs: Long = 0L
+    /** Skip count for “next layby” voice advances on the current route. */
+    private var laybySkipCount = 0
 
     private val voice = VoiceGuidanceService(application)
+    private val voiceCommands = DriverVoiceCommandCoordinator(application)
     private var sseJob: Job? = null
     private var healthJob: Job? = null
     private var gpsJob: Job? = null
     private var searchJob: Job? = null
+    private var voiceListenJob: Job? = null
 
     init {
         voice.enabled = prefs.voiceGuidanceEnabled
+        voiceGuidanceMuted = !prefs.voiceGuidanceEnabled
         if (prefs.isPaired()) {
             startFleetLoops()
         }
@@ -152,6 +164,72 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     fun setVoiceEnabled(enabled: Boolean) {
         prefs.voiceGuidanceEnabled = enabled
         voice.enabled = enabled
+        voiceGuidanceMuted = !enabled
+    }
+
+    /** Starts a short push-to-talk listen window and handles the matched command. */
+    fun startVoiceListen() {
+        if (voiceListening) return
+        voiceListenJob?.cancel()
+        voiceListenJob = viewModelScope.launch {
+            voiceListening = true
+            toastMessage = "Listening…"
+            val command = runCatching { voiceCommands.listen(durationSeconds = 4.0) }.getOrNull()
+            voiceListening = false
+            if (command == null) {
+                toastMessage = VoiceAssistResponseFormatter.UNRECOGNIZED
+                voice.speakAssist(VoiceAssistResponseFormatter.UNRECOGNIZED)
+                return@launch
+            }
+            handleDriverVoiceCommand(command)
+        }
+    }
+
+    /** Cancels an in-flight push-to-talk listen window. */
+    fun cancelVoiceListen() {
+        voiceListenJob?.cancel()
+        voiceCommands.cancel()
+        voiceListening = false
+    }
+
+    /** Applies a domain voice command (Break Now / mute / etc.). */
+    fun handleDriverVoiceCommand(command: DriverVoiceCommand) {
+        when (command) {
+            DriverVoiceCommand.BREAK_NOW -> {
+                laybySkipCount = 0
+                refreshComplianceAdvisories()
+                val spoken = VoiceAssistResponseFormatter.breakNow(laybyAdvisoryMessage)
+                toastMessage = spoken
+                voice.speakAssist(spoken)
+            }
+            DriverVoiceCommand.NEXT_LAYBY -> {
+                laybySkipCount += 1
+                laybyAdvisoryMessage = LaybyAdvisoryEngine.nearestAhead(
+                    route = routeCoordinates,
+                    skipCount = laybySkipCount,
+                )
+                val spoken = VoiceAssistResponseFormatter.nextLayby(laybyAdvisoryMessage)
+                toastMessage = spoken
+                voice.speakAssist(spoken)
+            }
+            DriverVoiceCommand.MUTE -> {
+                setVoiceEnabled(false)
+                toastMessage = VoiceAssistResponseFormatter.MUTED
+            }
+            DriverVoiceCommand.UNMUTE -> {
+                setVoiceEnabled(true)
+                toastMessage = VoiceAssistResponseFormatter.UNMUTED
+                voice.speakAssist(VoiceAssistResponseFormatter.UNMUTED)
+            }
+            DriverVoiceCommand.WHERE_STOPPING -> {
+                val spoken = VoiceAssistResponseFormatter.whereStopping(
+                    advisoryMessage = laybyAdvisoryMessage,
+                    destinationLabel = destination.label.ifBlank { null },
+                )
+                toastMessage = spoken
+                voice.speakAssist(spoken)
+            }
+        }
     }
 
     fun updateRegCheckUsername(value: String) {
@@ -379,6 +457,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             )
             session.loadRoute(geometry, result.instructions)
             routeCoordinates = result.coordinates
+            laybySkipCount = 0
             phase = session.phase
             progress = session.progress
             distanceLabel = formatDistance(result.distanceMeters)
@@ -619,7 +698,10 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             emissionClass = emission,
             avoidEnabled = lezAvoidEnabled,
         )
-        laybyAdvisoryMessage = LaybyAdvisoryEngine.nearestAhead(route)
+        laybyAdvisoryMessage = LaybyAdvisoryEngine.nearestAhead(
+            route = route,
+            skipCount = laybySkipCount,
+        )
         val clock = HosAdvisoryClock.snapshot(
             continuousDriveSeconds = continuousDriveSeconds,
             dailyDriveSeconds = dailyDriveSeconds,

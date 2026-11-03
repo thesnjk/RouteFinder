@@ -60,6 +60,7 @@ fun NavigationMapScreen(
     val context = LocalContext.current
     val fused = remember { LocationServices.getFusedLocationProviderClient(context) }
     val locationPermission = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
+    val recordAudioPermission = rememberPermissionState(Manifest.permission.RECORD_AUDIO)
 
     LaunchedEffect(Unit) {
         if (!locationPermission.status.isGranted) {
@@ -280,10 +281,39 @@ fun NavigationMapScreen(
                         ) {
                             Text("Voice", style = MaterialTheme.typography.bodySmall)
                             Switch(
-                                checked = prefs.voiceGuidanceEnabled,
+                                checked = !viewModel.voiceGuidanceMuted,
                                 onCheckedChange = { viewModel.setVoiceEnabled(it) },
                             )
                         }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Button(
+                            onClick = {
+                                if (!recordAudioPermission.status.isGranted) {
+                                    recordAudioPermission.launchPermissionRequest()
+                                    return@Button
+                                }
+                                if (viewModel.voiceListening) {
+                                    viewModel.cancelVoiceListen()
+                                } else {
+                                    viewModel.startVoiceListen()
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text(if (viewModel.voiceListening) "Listening…" else "Talk")
+                        }
+                        Text(
+                            "Break · layby · mute",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.weight(1f),
+                        )
                     }
 
                     viewModel.distanceLabel?.let {

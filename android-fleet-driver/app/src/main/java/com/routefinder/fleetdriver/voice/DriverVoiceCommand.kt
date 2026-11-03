@@ -1,0 +1,92 @@
+package com.routefinder.fleetdriver.voice
+
+/** Domain voice commands for hands-free driver assist (push-to-talk). */
+enum class DriverVoiceCommand {
+    /** Rank nearest layby ahead (Break Now). */
+    BREAK_NOW,
+
+    /** Skip current layby and advance to the next candidate. */
+    NEXT_LAYBY,
+
+    /** Mute turn-by-turn and proactive voice guidance. */
+    MUTE,
+
+    /** Restore voice guidance. */
+    UNMUTE,
+
+    /** Ask which layby / destination the driver is stopping at. */
+    WHERE_STOPPING,
+}
+
+/** Matches normalized speech transcripts to [DriverVoiceCommand] values. */
+object DriverVoiceCommandPhraseMatcher {
+    private val ranked: List<Pair<DriverVoiceCommand, List<String>>> = listOf(
+        DriverVoiceCommand.BREAK_NOW to listOf(
+            "break now",
+            "find a layby",
+            "find layby",
+            "find a rest stop",
+            "need a break",
+            "i need a break",
+        ),
+        DriverVoiceCommand.NEXT_LAYBY to listOf(
+            "next layby",
+            "skip this layby",
+            "skip layby",
+            "layby is full",
+            "this layby is full",
+            "looks full",
+        ),
+        DriverVoiceCommand.UNMUTE to listOf(
+            "unmute",
+            "voice on",
+            "turn voice on",
+            "enable voice",
+        ),
+        DriverVoiceCommand.MUTE to listOf(
+            "mute",
+            "be quiet",
+            "silence",
+            "voice off",
+            "turn voice off",
+            "stop talking",
+        ),
+        DriverVoiceCommand.WHERE_STOPPING to listOf(
+            "where am i stopping",
+            "where am i stopping?",
+            "next stop",
+            "where is my stop",
+            "whats my stop",
+            "what's my stop",
+            "where am i going",
+        ),
+    )
+
+    /** Returns the best matching command, or null when unrecognized. */
+    fun match(transcript: String): DriverVoiceCommand? {
+        val normalized = normalize(transcript)
+        if (normalized.isEmpty()) return null
+
+        var best: Pair<DriverVoiceCommand, Int>? = null
+        for ((command, phrases) in ranked) {
+            for (phrase in phrases) {
+                val phraseNorm = normalize(phrase)
+                if (normalized == phraseNorm || normalized.contains(phraseNorm)) {
+                    val score = phraseNorm.length
+                    if (best == null || score > best.second) {
+                        best = command to score
+                    }
+                }
+            }
+        }
+        return best?.first
+    }
+
+    /** Lowercases, strips punctuation, and collapses whitespace. */
+    fun normalize(transcript: String): String =
+        transcript
+            .lowercase()
+            .replace(Regex("[^a-z0-9\\s']"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+}

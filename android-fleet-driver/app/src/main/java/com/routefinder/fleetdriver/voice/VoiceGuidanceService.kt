@@ -64,6 +64,12 @@ class VoiceGuidanceService(context: Context) : TextToSpeech.OnInitListener {
 
     fun speak(text: String) {
         if (!enabled || !ready || text.isBlank()) return
+        speakAssist(text)
+    }
+
+    /** Speaks assist replies even when turn-by-turn guidance is muted. */
+    fun speakAssist(text: String) {
+        if (!ready || text.isBlank()) return
         tts?.speak(text, TextToSpeech.QUEUE_ADD, null, "rf-${System.currentTimeMillis()}")
     }
 

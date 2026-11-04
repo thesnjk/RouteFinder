@@ -3,6 +3,7 @@ import Contracts
 import MapLibreUI
 import RouteController
 import SwiftUI
+import UIKit
 
 private let iosMapPeekDetent = PresentationDetent.fraction(0.12)
 
@@ -111,7 +112,15 @@ struct IOSMapChrome: View {
                 .presentationDetents([Self.peekDetent, .medium, .large], selection: $selectedDetent)
                 .presentationDragIndicator(.visible)
                 .interactiveDismissDisabled()
-                .modifier(RouteSheetBackgroundInteraction(isEnabled: !isKeyboardVisible && sheetPhase == .results))
+                .modifier(
+                    RouteSheetBackgroundInteraction(
+                        isEnabled: !isKeyboardVisible && sheetPhase != .planning
+                    )
+                )
+                .background {
+                    // Undim through medium so peek (and medium results) leave map chrome unwashed.
+                    RouteSheetUndimmedDetentConfigurator(largestUndimmed: .medium)
+                }
             }
             .onChange(of: sheetPhase) { oldPhase, phase in
                 isRouteSheetVisible = phase == .planning || phase == .results
@@ -418,9 +427,52 @@ private struct RouteSheetBackgroundInteraction: ViewModifier {
 
     func body(content: Content) -> some View {
         if isEnabled {
+            // Keep map chrome (gear / Pair banner) interactive and undimmed under peek/medium.
             content.presentationBackgroundInteraction(.enabled(upThrough: .medium))
         } else {
             content
+        }
+    }
+}
+
+/// Sets UIKit `largestUndimmedDetentIdentifier` so the always-on peek sheet does not grey map chrome.
+private struct RouteSheetUndimmedDetentConfigurator: UIViewControllerRepresentable {
+    var largestUndimmed: UISheetPresentationController.Detent.Identifier
+
+    func makeUIViewController(context: Context) -> UndimmedDetentViewController {
+        let controller = UndimmedDetentViewController()
+        controller.largestUndimmed = largestUndimmed
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: UndimmedDetentViewController, context: Context) {
+        uiViewController.largestUndimmed = largestUndimmed
+        uiViewController.applyUndimmedDetent()
+    }
+
+    final class UndimmedDetentViewController: UIViewController {
+        var largestUndimmed: UISheetPresentationController.Detent.Identifier = .medium
+
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            applyUndimmedDetent()
+        }
+
+        override func didMove(toParent parent: UIViewController?) {
+            super.didMove(toParent: parent)
+            applyUndimmedDetent()
+        }
+
+        func applyUndimmedDetent() {
+            var current: UIViewController? = self
+            while let candidate = current {
+                if let sheet = candidate.sheetPresentationController {
+                    sheet.largestUndimmedDetentIdentifier = largestUndimmed
+                    sheet.prefersScrollingExpandsWhenScrolledToEdge = true
+                    return
+                }
+                current = candidate.parent ?? candidate.presentingViewController
+            }
         }
     }
 }

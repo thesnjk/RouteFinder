@@ -18,6 +18,39 @@ public struct GlassPanel: ViewModifier {
     }
 }
 
+/// Denser panel for Settings / Fleet forms — readable over parchment, not washed-out ultraThin.
+public struct SettingsPanel: ViewModifier {
+    private let cornerRadius: CGFloat
+
+    public init(cornerRadius: CGFloat = 16) {
+        self.cornerRadius = cornerRadius
+    }
+
+    public func body(content: Content) -> some View {
+        content
+            .background {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(.regularMaterial)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .fill(settingsPanelFill)
+                    }
+            }
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(.primary.opacity(0.12), lineWidth: 0.5)
+            )
+    }
+
+    private var settingsPanelFill: Color {
+        #if os(iOS)
+        Color(.secondarySystemGroupedBackground).opacity(0.92)
+        #else
+        Color.primary.opacity(0.08)
+        #endif
+    }
+}
+
 /// Sidebar-scale control sheet glass styling.
 public struct ControlSheetStyle: ViewModifier {
     public init() {}
@@ -138,6 +171,11 @@ public struct HurryModeBadge: View {
 extension View {
     public func glassPanel(cornerRadius: CGFloat = 16) -> some View {
         modifier(GlassPanel(cornerRadius: cornerRadius))
+    }
+
+    /// Opaque-leaning glass for Settings / Fleet & Dispatch forms.
+    public func settingsPanel(cornerRadius: CGFloat = 16) -> some View {
+        modifier(SettingsPanel(cornerRadius: cornerRadius))
     }
 
     public func controlSheetStyle() -> some View {

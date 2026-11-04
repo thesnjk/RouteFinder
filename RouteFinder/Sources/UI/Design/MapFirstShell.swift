@@ -32,13 +32,17 @@ struct MapFirstShell: View {
             }
         )
         .overlay {
-            if let presentedModal {
+            if let presentedModal, !presentedModal.isSettings {
                 iosModalContent(presentedModal)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(MapCanvasBackdrop.color)
                     .ignoresSafeArea()
                     .zIndex(20)
             }
+        }
+        .fullScreenCover(isPresented: settingsCoverBinding) {
+            SettingsSheet(viewModel: viewModel, onDismiss: { presentedModal = nil })
+                .background(Color(.systemGroupedBackground).ignoresSafeArea())
         }
         .onAppear {
             #if DEBUG
@@ -76,11 +80,18 @@ struct MapFirstShell: View {
     }
 
     #if os(iOS)
+    private var settingsCoverBinding: Binding<Bool> {
+        Binding(
+            get: { presentedModal?.isSettings == true },
+            set: { if !$0 { presentedModal = nil } }
+        )
+    }
+
     @ViewBuilder
     private func iosModalContent(_ modal: IOSModal) -> some View {
         switch modal {
         case .settings:
-            SettingsSheet(viewModel: viewModel, onDismiss: { presentedModal = nil })
+            EmptyView()
         case .profile:
             NavigationStack {
                 VehicleProfileManager(viewModel: viewModel)
@@ -716,6 +727,11 @@ enum IOSModal: Identifiable {
         case .walkaround: "walkaround"
         case .routeFailure(let presentation): "routeFailure-\(presentation.id)"
         }
+    }
+
+    var isSettings: Bool {
+        if case .settings = self { return true }
+        return false
     }
 }
 #endif

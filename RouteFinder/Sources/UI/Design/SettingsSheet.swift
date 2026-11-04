@@ -290,7 +290,7 @@ struct SettingsSheet: View {
         }
         .padding(RFSpacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassPanel(cornerRadius: 14)
+        .settingsPanel(cornerRadius: 14)
     }
     #else
     /// Mac is desk-only for walkaround: checklist runs on the cab phone; defects land in Dispatch.
@@ -305,7 +305,7 @@ struct SettingsSheet: View {
         }
         .padding(RFSpacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassPanel(cornerRadius: 14)
+        .settingsPanel(cornerRadius: 14)
     }
     #endif
 
@@ -605,7 +605,7 @@ struct SettingsSheet: View {
             }
         }
         .padding(RFSpacing.md)
-        .glassPanel(cornerRadius: 14)
+        .settingsPanel(cornerRadius: 14)
     }
 
     private var offlineRoutingSection: some View {
@@ -1102,7 +1102,7 @@ struct SettingsSheet: View {
                 .buttonStyle(.borderless)
             }
         }
-        .glassPanel(cornerRadius: 14)
+        .settingsPanel(cornerRadius: 14)
         .padding(RFSpacing.sm)
     }
 
@@ -1133,7 +1133,7 @@ struct SettingsSheet: View {
                 .controlSize(.small)
             }
         }
-        .glassPanel(cornerRadius: 14)
+        .settingsPanel(cornerRadius: 14)
         .padding(RFSpacing.sm)
     }
 
@@ -1176,7 +1176,7 @@ struct SettingsSheet: View {
             .buttonStyle(.bordered)
             .controlSize(.small)
         }
-        .glassPanel(cornerRadius: 14)
+        .settingsPanel(cornerRadius: 14)
         .padding(RFSpacing.sm)
     }
 
@@ -1281,7 +1281,7 @@ struct SettingsSheet: View {
             Text("Advanced / telematics")
                 .font(RFFont.sectionTitle)
         }
-        .glassPanel(cornerRadius: 14)
+        .settingsPanel(cornerRadius: 14)
         .padding(RFSpacing.sm)
     }
 

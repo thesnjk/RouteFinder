@@ -2,6 +2,7 @@ package com.routefinder.fleetdriver.ui
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.SystemClock
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,6 +40,7 @@ import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.routefinder.fleetdriver.compliance.CanIDriveEvaluator
 import com.routefinder.fleetdriver.compliance.ParkingAvailabilityTier
+import com.routefinder.fleetdriver.compliance.ParkingPartnerLinks
 import com.routefinder.fleetdriver.fleet.FleetPreferences
 import com.routefinder.fleetdriver.fleet.FleetConnectionGate
 import com.routefinder.fleetdriver.map.MapLibreMapView
@@ -388,6 +390,37 @@ fun NavigationMapScreen(
                                 Text("Spaces")
                             }
                         }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = {
+                                    val uri = ParkingPartnerLinks.travisUrl(
+                                        latitude = advisory.site.coordinate.latitude,
+                                        longitude = advisory.site.coordinate.longitude,
+                                        label = advisory.site.name,
+                                    )
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                                },
+                            ) {
+                                Text("Book (TRAVIS)")
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    val uri = ParkingPartnerLinks.snapUrl(
+                                        latitude = advisory.site.coordinate.latitude,
+                                        longitude = advisory.site.coordinate.longitude,
+                                        label = advisory.site.name,
+                                    )
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                                },
+                            ) {
+                                Text("Book (SNAP)")
+                            }
+                        }
+                        Text(
+                            "Opens partner site — booking and fees are between you and the operator.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.tertiary,
+                        )
                         Text(
                             "crowd estimate — not live bay count",
                             style = MaterialTheme.typography.bodySmall,

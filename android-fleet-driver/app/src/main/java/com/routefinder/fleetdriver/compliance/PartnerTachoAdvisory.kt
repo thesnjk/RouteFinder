@@ -59,4 +59,31 @@ data class TachoCardSummary(
     val cardNumber: String? = null,
     val importedAt: Instant = Instant.now(),
     val sourceFileName: String,
-)
+) {
+    /** Serializes for on-device persistence of the last imported card. */
+    fun toJson(): JSONObject =
+        JSONObject().apply {
+            put("remainingContinuousDriveSeconds", remainingContinuousDriveSeconds)
+            put("remainingDailyDriveSeconds", remainingDailyDriveSeconds)
+            put("remainingWeeklyDriveSeconds", remainingWeeklyDriveSeconds)
+            if (cardNumber != null) put("cardNumber", cardNumber) else put("cardNumber", JSONObject.NULL)
+            put("importedAt", importedAt.toString())
+            put("sourceFileName", sourceFileName)
+        }
+
+    companion object {
+        /** Restores a summary previously written by [toJson]. */
+        fun fromJson(json: JSONObject): TachoCardSummary {
+            val importedRaw = json.optString("importedAt", "")
+            val importedAt = runCatching { Instant.parse(importedRaw) }.getOrElse { Instant.now() }
+            return TachoCardSummary(
+                remainingContinuousDriveSeconds = json.getDouble("remainingContinuousDriveSeconds"),
+                remainingDailyDriveSeconds = json.getDouble("remainingDailyDriveSeconds"),
+                remainingWeeklyDriveSeconds = json.optDouble("remainingWeeklyDriveSeconds", 0.0),
+                cardNumber = json.optString("cardNumber").takeIf { it.isNotBlank() },
+                importedAt = importedAt,
+                sourceFileName = json.optString("sourceFileName", "import"),
+            )
+        }
+    }
+}

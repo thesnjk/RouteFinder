@@ -24,6 +24,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -64,6 +66,11 @@ fun NavigationMapScreen(
     val fused = remember { LocationServices.getFusedLocationProviderClient(context) }
     val locationPermission = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
     val recordAudioPermission = rememberPermissionState(Manifest.permission.RECORD_AUDIO)
+    val tachoImportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) viewModel.importTacho(uri)
+    }
 
     LaunchedEffect(Unit) {
         if (!locationPermission.status.isGranted) {
@@ -471,9 +478,13 @@ fun NavigationMapScreen(
                     }
                     viewModel.canIDriveStatus?.let { status ->
                         val chip = if (status.canDrive) "Can drive" else "Break"
-                        val partnerTag = if (status.usesPartnerAdvisory) " · Partner" else ""
+                        val sourceTag = when {
+                            status.usesPartnerAdvisory -> " · Partner"
+                            status.usesImportedCard -> " · Imported"
+                            else -> ""
+                        }
                         Text(
-                            "$chip$partnerTag",
+                            "$chip$sourceTag",
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         val shortReason = status.reason
@@ -486,11 +497,40 @@ fun NavigationMapScreen(
                             color = MaterialTheme.colorScheme.tertiary,
                         )
                     }
+                    viewModel.importedTachoSummary?.let { summary ->
+                        Text(
+                            "Card: ${summary.sourceFileName}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.tertiary,
+                        )
+                    }
+                    viewModel.tachoImportError?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
                     viewModel.hosAdvisoryMessage?.let {
                         Text(it, style = MaterialTheme.typography.bodySmall)
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = { viewModel.resetHosBreak() }) { Text("Record break") }
+                        OutlinedButton(
+                            onClick = {
+                                tachoImportLauncher.launch(
+                                    arrayOf(
+                                        "application/json",
+                                        "text/plain",
+                                        "application/octet-stream",
+                                        "*/*",
+                                    ),
+                                )
+                            },
+                        ) {
+                            Text("Import tacho")
+                        }
+                        if (viewModel.importedTachoSummary != null) {
+                            OutlinedButton(onClick = { viewModel.clearImportedTacho() }) {
+                                Text("Clear")
+                            }
+                        }
                     }
                     OutlinedTextField(
                         value = viewModel.emissionClassDraft,

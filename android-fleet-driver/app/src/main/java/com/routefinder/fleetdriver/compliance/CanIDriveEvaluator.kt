@@ -14,8 +14,8 @@ data class CanIDriveStatus(
 )
 
 /**
- * Evaluates Can-I-drive from partner webhook and/or local HOS clock.
- * Priority when fresh (&lt; 24 h): partner → clock. Always appends legal-tacho disclaimer.
+ * Evaluates Can-I-drive from partner webhook, imported card, and/or local HOS clock.
+ * Priority when fresh (&lt; 24 h): partner → imported card → clock. Always appends legal-tacho disclaimer.
  * Mirrors iOS ``CanIDriveEvaluator``.
  */
 object CanIDriveEvaluator {
@@ -26,6 +26,7 @@ object CanIDriveEvaluator {
 
     fun evaluate(
         partner: TachoCardSummary? = null,
+        imported: TachoCardSummary? = null,
         clock: HosAdvisoryClock.Snapshot,
         now: Instant = Instant.now(),
     ): CanIDriveStatus {
@@ -33,12 +34,20 @@ object CanIDriveEvaluator {
         val daily: Double
         val sourceLabel: String
         val usesPartner: Boolean
+        val usesImported: Boolean
 
         if (partner != null && ageSeconds(partner.importedAt, now) < FRESHNESS_LIMIT_SECONDS) {
             continuous = partner.remainingContinuousDriveSeconds
             daily = partner.remainingDailyDriveSeconds
             sourceLabel = "partner advisory (${partner.sourceFileName})"
             usesPartner = true
+            usesImported = false
+        } else if (imported != null && ageSeconds(imported.importedAt, now) < FRESHNESS_LIMIT_SECONDS) {
+            continuous = imported.remainingContinuousDriveSeconds
+            daily = imported.remainingDailyDriveSeconds
+            sourceLabel = "imported card (${imported.sourceFileName})"
+            usesPartner = false
+            usesImported = true
         } else {
             val continuousLeft = HosAdvisoryClock.CONTINUOUS_DRIVE_LIMIT_SECONDS - clock.continuousDriveSeconds
             val dailyLeft = HosAdvisoryClock.DAILY_DRIVE_LIMIT_SECONDS - clock.dailyDriveSeconds
@@ -46,6 +55,7 @@ object CanIDriveEvaluator {
             daily = dailyLeft
             sourceLabel = "advisory EU 561 clock"
             usesPartner = false
+            usesImported = false
         }
 
         val canDrive = continuous > 0 && daily > 0
@@ -61,7 +71,7 @@ object CanIDriveEvaluator {
             canDrive = canDrive,
             reason = "$budgetReason $LEGAL_DISCLAIMER",
             remainingContinuousDriveSeconds = continuous,
-            usesImportedCard = false,
+            usesImportedCard = usesImported,
             usesPartnerAdvisory = usesPartner,
         )
     }

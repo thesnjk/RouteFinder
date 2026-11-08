@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.routefinder.fleetdriver.compliance.CanIDriveEvaluator
 import com.routefinder.fleetdriver.compliance.CanIDriveStatus
+import com.routefinder.fleetdriver.compliance.DddImporter
 import com.routefinder.fleetdriver.compliance.HosAdvisoryClock
 import com.routefinder.fleetdriver.compliance.LaybyAdvisoryEngine
 import com.routefinder.fleetdriver.compliance.LaybyAlertFormatter
@@ -16,8 +17,13 @@ import com.routefinder.fleetdriver.compliance.LaybyOccupancyKind
 import com.routefinder.fleetdriver.compliance.LaybyOccupancyStore
 import com.routefinder.fleetdriver.compliance.LezAvoidPolicy
 import com.routefinder.fleetdriver.compliance.PartnerTachoAdvisory
+import com.routefinder.fleetdriver.compliance.TachoCardSummary
+import com.routefinder.fleetdriver.compliance.TachoImportError
 import com.routefinder.fleetdriver.compliance.UkLezCatalog
 import android.content.Context
+import android.net.Uri
+import android.provider.OpenableColumns
+import java.io.File
 import com.routefinder.fleetdriver.fleet.FleetApi
 import com.routefinder.fleetdriver.fleet.FleetConnectionGate
 import com.routefinder.fleetdriver.fleet.FleetPreferences
@@ -140,9 +146,16 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     /** Structured layby ahead with parking availability tier. */
     var laybyAdvisory by mutableStateOf<LaybyAdvisoryEngine.Advisory?>(null)
     var hosAdvisoryMessage by mutableStateOf<String?>(null)
-    /** Fused Can-I-drive status (partner advisory preferred when fresh). */
+    /** Fused Can-I-drive status (partner → imported card → clock when fresh). */
     var canIDriveStatus by mutableStateOf<CanIDriveStatus?>(null)
     private var partnerTachoAdvisory by mutableStateOf<PartnerTachoAdvisory?>(null)
+    /** Last local JSON / DDD-sidecar import (advisory; planning aid only). */
+    var importedTachoSummary by mutableStateOf<TachoCardSummary?>(null)
+        private set
+    /** User-facing message when a tacho file import fails. */
+    var tachoImportError by mutableStateOf<String?>(null)
+        private set
+    private val tachoImporter = DddImporter()
     /** Named UK toll advisories matched to the active route polyline. */
     var routeTollAdvisories by mutableStateOf<List<UKTollAdvisory>>(emptyList())
     /** Near-horizon toll banner (within ~5 km). */
@@ -181,9 +194,46 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     init {
         voice.enabled = prefs.voiceGuidanceEnabled
         voiceGuidanceMuted = !prefs.voiceGuidanceEnabled
+        loadPersistedTachoSummary()
+        refreshCanIDriveFromLocalSources()
         if (prefs.isPaired()) {
             startFleetLoops()
         }
+    }
+
+    /** Imports a driver-card JSON / DDD file (sidecar JSON preferred for opaque binaries). */
+    fun importTacho(uri: Uri) {
+        viewModelScope.launch {
+            tachoImportError = null
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    val app = getApplication<Application>()
+                    val name = displayNameFor(uri) ?: "import"
+                    val bytes = app.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                        ?: throw TachoImportError.InvalidJSON
+                    tachoImporter.importDriverCard(data = bytes, sourceFileName = name)
+                }
+            }
+            result.fold(
+                onSuccess = { summary ->
+                    importedTachoSummary = summary
+                    persistTachoSummary(summary)
+                    refreshCanIDriveFromLocalSources()
+                    toastMessage = "Imported tacho: ${summary.sourceFileName}"
+                },
+                onFailure = { error ->
+                    tachoImportError = error.message ?: "Could not import tachograph file."
+                },
+            )
+        }
+    }
+
+    /** Clears the imported tachograph summary and refreshes Can-I-drive. */
+    fun clearImportedTacho() {
+        importedTachoSummary = null
+        tachoImportError = null
+        removePersistedTachoSummary()
+        refreshCanIDriveFromLocalSources()
     }
 
     fun setVoiceEnabled(enabled: Boolean) {
@@ -808,6 +858,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         hosAdvisoryMessage = clock.message
         canIDriveStatus = CanIDriveEvaluator.evaluate(
             partner = partnerTachoAdvisory?.asCardSummary(),
+            imported = importedTachoSummary,
             clock = clock,
         )
         refreshRouteTollAdvisories(route)
@@ -949,14 +1000,55 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             runCatching { api.getTachoAdvisory() }.getOrNull()
         }
         partnerTachoAdvisory = advisory
+        refreshCanIDriveFromLocalSources()
+    }
+
+    private fun refreshCanIDriveFromLocalSources() {
         val clock = HosAdvisoryClock.snapshot(
             continuousDriveSeconds = continuousDriveSeconds,
             dailyDriveSeconds = dailyDriveSeconds,
         )
+        hosAdvisoryMessage = clock.message
         canIDriveStatus = CanIDriveEvaluator.evaluate(
-            partner = advisory?.asCardSummary(),
+            partner = partnerTachoAdvisory?.asCardSummary(),
+            imported = importedTachoSummary,
             clock = clock,
         )
+    }
+
+    private fun tachoSummaryFile(): File {
+        val dir = File(getApplication<Application>().filesDir, "tacho")
+        if (!dir.exists()) dir.mkdirs()
+        return File(dir, "imported_card.json")
+    }
+
+    private fun persistTachoSummary(summary: TachoCardSummary) {
+        runCatching {
+            tachoSummaryFile().writeText(summary.toJson().toString())
+        }
+    }
+
+    private fun loadPersistedTachoSummary() {
+        val file = tachoSummaryFile()
+        if (!file.exists()) return
+        runCatching {
+            importedTachoSummary = TachoCardSummary.fromJson(JSONObject(file.readText()))
+        }
+    }
+
+    private fun removePersistedTachoSummary() {
+        runCatching { tachoSummaryFile().delete() }
+    }
+
+    private fun displayNameFor(uri: Uri): String? {
+        val resolver = getApplication<Application>().contentResolver
+        resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (index >= 0) return cursor.getString(index)
+            }
+        }
+        return uri.lastPathSegment
     }
 
     private fun refreshPartnerTachoAdvisoryAsync() {

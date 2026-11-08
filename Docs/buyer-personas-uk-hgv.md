@@ -1,6 +1,6 @@
 # Buyer Personas — UK HGV (2026)
 
-Two primary personas for competitive positioning. Equal weight in Phase 26 research and gap ranking.
+Two primary personas for competitive positioning (equal weight in Phase 26 research and gap ranking), plus two secondary personas for Android / hosted surface scoring.
 
 ---
 
@@ -104,16 +104,59 @@ Two primary personas for competitive positioning. Equal weight in Phase 26 resea
 
 ---
 
+## Persona 3: Android-heavy small fleet ("Priya")
+
+| Attribute | Detail |
+|---|---|
+| **Fleet size** | 3–12 rigids; mixed phones, **Android-primary** drivers |
+| **Role** | Transport manager; cares about cab UX parity with iOS office demos |
+| **Tech** | Android fleet driver + LAN/hosted desk; may ask for Android Auto later |
+| **Budget sensitivity** | Medium — will not buy CoPilot AA seats if RF Android is “good enough” |
+
+### Jobs to be done
+
+1. Same fuse / layby / LEZ / Can-I-drive honesty as iOS demos.
+2. Hands-free rest prompts without leaving the map.
+3. Optional later: Android Auto (product-gated until renewals demand it).
+
+### Weighted emphasis
+
+Android C2 depth, PTT + proactive layby voice, roadworks-in-fuse, HOS/tacho import; AA/offline remain gated.
+
+---
+
+## Persona 4: Hosted-remote desk ("Omar")
+
+| Attribute | Detail |
+|---|---|
+| **Fleet size** | 5–25; **no office Mac on the depot LAN** |
+| **Role** | Owner operating from home / second site |
+| **Tech** | `hosted-gateway` + web-dispatch over HTTPS; drivers on iOS or Android |
+| **Budget sensitivity** | Medium — pays for reachable desk, resists per-seat nav SaaS |
+
+### Jobs to be done
+
+1. Push trips and see GPS age without Bonjour/LAN.
+2. Fair-use / auth clarity when caps hit.
+3. Multi-depot later (billing UI residual vs CoPilot Account Manager).
+
+### Weighted emphasis
+
+hosted-gateway + web-dispatch; SF dispatch rows split LAN vs hosted in scorecard footnotes.
+
+---
+
 ## Persona → feature map
 
-| Feature | Dave (OO) | Sarah (SF) |
-|---|---|---|
-| Break Now | **Critical** | Useful |
-| LEZ v2 | **Critical** | Important |
-| Lane voice | Important | Nice-to-have |
-| Fleet SSE dispatch | — | **Critical** |
-| Trip brief PDF | Useful | **Critical** |
-| Physics rehearsal | **Critical** | Important |
-| CarPlay | Wanted | Wanted — deferred |
+| Feature | Dave (OO) | Sarah (SF) | Priya (Android) | Omar (Hosted) |
+|---|---|---|---|---|
+| Break Now | **Critical** | Useful | **Critical** | Useful |
+| LEZ v2 | **Critical** | Important | **Critical** | Important |
+| Lane voice | Important | Nice-to-have | Important | Nice-to-have |
+| Fleet SSE dispatch | — | **Critical** | Important | **Critical** (hosted) |
+| Trip brief PDF | Useful | **Critical** | Useful | **Critical** |
+| Physics rehearsal | **Critical** | Important | Important | Useful |
+| CarPlay / AA | Wanted | Wanted — deferred | AA wanted — gated | — |
+| Tacho / Can-I-drive | Important | Important | **Critical** | Important |
 
 See [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md) for weighted scoring.

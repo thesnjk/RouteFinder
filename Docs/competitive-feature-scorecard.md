@@ -99,16 +99,16 @@ Weighted OO/SF tables above are **unchanged** by Phase 6 (performance / honesty,
 
 | Capability | iOS / macOS | Android C2 | Notes |
 |---|---:|---:|---|
-| Unified `RouteRiskAdvisory` fuse (kinetic / weather / hazard / roadworks / traffic) | **3** Lead | **3** (U11) | Primary HUD + voice dedup on Apple; Android fused banner + schedule/forecast/clearance |
+| Unified `RouteRiskAdvisory` fuse (kinetic / weather / hazard / roadworks / traffic) | **3** Lead | **3** (U11 + 2026-11 roadworks) | Primary HUD + voice dedup on Apple; Android fused banner + schedule/forecast/clearance + OSM `highway=construction` via fleet Overpass (`RoadworksAlongRouteClient`) |
 | `FleetJobBrief` weight / ADR / auto-find on SSE push | **3** | **3** | Android ORS includes ADR→hazmat; time windows on status card (U11) |
 | RegCheck on job intake (plate → dims) | **3** | **2** (U10) | Android RegCheck when username set (wizard + nav field) |
 | DVSA walkaround + defect photos + PDF | **3** | **3** (U12) | Android gallery attach + local PDF + richer snapshot handoff |
 | 1–3h traffic/weather forecast advisories | **3** (U8 + U14 proxy) | **3** (U11 + U14) | Fleet TomTom/OpenWeather proxy — zero driver forecast keys on iOS + Android |
 | Off-route / corridor clearance radar | **3** (U9 + U11-B2) | **3** (U14b) | Android: on-route Overpass + heading corridor when off-spine |
 | LEZ / CAZ ORS `avoid_polygons` | **3** | **3** (U15) | Android `LezAvoidPolicy` mirrors iOS area + long-haul caps |
-| HOS clock + layby ahead | **3** | **2** (U13 MVP) | Android advisory clock + layby ahead; Apple keeps full coordinator depth |
+| HOS clock + layby ahead | **3** | **2** (U13 MVP) | Android advisory clock + layby ahead + partner tacho + proactive layby TTS; Apple keeps full coordinator + DDD/JSON import depth |
 
-† U12–U15 closed Android walkaround PDF, LEZ/HOS/layby advisory, fleet forecast/clearance proxy, off-route clearance, and ORS LEZ avoid. Residual: Android LEZ geometry is circle envelopes (iOS has hand-authored rings); optional U16 shared boundary asset.
+† U12–U15 closed Android walkaround PDF, LEZ/HOS/layby advisory, fleet forecast/clearance proxy, off-route clearance, and ORS LEZ avoid. 2026-11: Android roadworks-in-fuse + corridor layby Overpass + ~5 km layby voice. Residual: Android HOS stays **2** until DDD/JSON import / coordinator depth; LEZ geometry is circle envelopes (iOS rings); optional U16 shared boundary asset.
 
 ---
 

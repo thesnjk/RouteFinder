@@ -2,7 +2,7 @@
 
 Full Android navigation beyond the shipped C2 MVP (offline graph, Android Auto) remains a **multi-month** Kotlin program for the deepest parity items. Split product prioritization from engineering parity below.
 
-Last updated: 2026-09-22 (U12–U15 Done; next = product-gated offline / Android Auto)
+Last updated: 2026-11-08 (U12–U15 Done + roadworks-in-fuse; next = product-gated offline / Android Auto)
 
 ---
 
@@ -33,7 +33,7 @@ Related mid-market items (also pilot-gated for *priority*):
 | Physics rehearsal (grade ETA) | `RouteRehearsalEngine` + unit tests | **Shipped** |
 | Job intake RegCheck + ADR→ORS hazmat | `RegCheckClient` + wizard/nav RegCheck username field + unit tests | **Shipped** (U10) |
 | Time windows on job brief + late-ETA fuse | `StopTimeWindow` parse + `TimeWindowRiskEvaluator` → fuse banner | **Shipped** (U11) |
-| Predictive risk primary banner (kinetic / traffic / hazard / schedule / forecast / clearance) | `PredictiveRiskEngine` + `ForecastRiskSampler` + `ClearanceCorridorProbe` | **Shipped** (U10 + U11) |
+| Predictive risk primary banner (kinetic / traffic / hazard / roadworks / schedule / forecast / clearance) | `PredictiveRiskEngine` + `ForecastRiskSampler` + `ClearanceCorridorProbe` + `RoadworksAlongRouteClient` (OSM construction via fleet Overpass) | **Shipped** (U10 + U11 + 2026-11 roadworks) |
 | DVSA walkaround → snapshot + PDF / photos | `InspectionWalkaroundDialog` + `InspectionReportPdfRenderer` | **Shipped** (U12) |
 | LEZ / HOS / layby advisory | `UkLezCatalog` + `HosAdvisoryClock` + `LaybyAdvisoryEngine` | **Shipped** (U13) |
 | Fleet TomTom / OpenWeather / Overpass proxy | `FleetForecastProxy` + Android clients via `FleetOrsConfig` | **Shipped** (U14) |

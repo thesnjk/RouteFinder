@@ -2,10 +2,11 @@
 
 **Track:** Competitive intel + engineering truth (no legal/GTM pricing).  
 **Cadence:** Quarterly (or early when tooling/access improves).  
-**Last run:** 2026-10-12  
-**Baseline docs:** `[competitive-research-2026-08.md](competitive-research-2026-08.md)`, `[competitive-feature-scorecard.md](competitive-feature-scorecard.md)`, `[competitive-gap-matrix.md](competitive-gap-matrix.md)`, `[engineering-benchmark-2026-09.md](engineering-benchmark-2026-09.md)`.
+**Last run:** 2026-10-12 (surface-matrix expansion 2026-11-08)  
+**Next scrape window:** 2026-11 (quarterly)  
+**Baseline docs:** `[competitive-research-2026-08.md](competitive-research-2026-08.md)`, `[competitive-feature-scorecard.md](competitive-feature-scorecard.md)`, `[competitive-gap-matrix.md](competitive-gap-matrix.md)`, `[engineering-benchmark-2026-09.md](engineering-benchmark-2026-09.md)`, `[engineering-test-matrix.md](engineering-test-matrix.md)`, `[buyer-personas-uk-hgv.md](buyer-personas-uk-hgv.md)`.
 
-This runbook is the repeatable procedure. Each execution appends a dated **Execution report** below.
+This runbook is the repeatable procedure. Each execution appends a dated **Execution report** below. Comprehensive sessions must also spot-check the **Phase 3b surface matrix** (not nav scrape alone).
 
 ---
 
@@ -87,8 +88,22 @@ Validate scorecard **Lead** and contested **Parity** rows against shipped symbol
 | Android parity         | `android-fleet-driver/`, `[android-c2-gate.md](android-c2-gate.md)`           |
 | Lane / LEZ / offline   | `LaneGuidanceEnricher`, `LEZAvoidPolicy`, `OfflineMapPackStore`               |
 
+### Phase 3b — Surface matrix (mandatory spot-check)
 
+For every continue / quarterly cycle, mark each RF surface **Lead / Parity / Gap** with one evidence path (code, test, or Doc). Skip product-gated cells unless unlocked (`android-c2-gate.md`).
 
+| Surface | Typical competitors | Spot-check focus | Evidence pointers |
+| ------- | ------------------- | ---------------- | ----------------- |
+| iOS driver | CoPilot, Sygic, TomTom | TBT, layby, lanes, LEZ, stranger UX | `RouteViewModel`, `getting-started.md`, phase3 |
+| Android C2 | CoPilot AA, Sygic Truck | Fuse, Overpass lanes/laybys/roadworks, PTT, HOS depth | `android-fleet-driver/`, `android-c2-gate.md`, phase6b |
+| CarPlay | Sygic / CoPilot CarPlay | Entitlements + head-unit QA | `phase5-carplay-verification.md` (**gated**) |
+| macOS / iPad desk | CoPilot Account Manager | Native dispatch push / brief | `DispatchConsoleView`, phase4-dispatch |
+| web-dispatch | Cloud fleet portals | Bootstrap, roster GPS age, trip push | `web-dispatch/`, Playwright, operator guide |
+| Fleet server (LAN) | Office portals | Bearer, fair-use, SSE smoke | `fleet-e2e-qa.md`, `fleet-e2e-smoke.sh` |
+| hosted-gateway | Multi-depot SaaS | Auth, caps, billing UX residual | `hosted-gateway-deployment.md`, phase7 |
+| Physics / sim | (RF wedge) | CI honesty on speed-limit / rehearsal | `KineticPhysicsEngine`, UITests |
+| Compliance / HOS / walkaround | Samsara, Geotab, CoPilot ELD | Can-I-drive, DDD import, DVSA PDF | scorecard Ultimate HGV table |
+| Screenshots / GTM | App Store comps | Masked product shots coverage | `Docs/screenshots/README.md` |
 
 ### Phase 4 — Engineering gates
 
@@ -114,6 +129,17 @@ Output: hygiene unblockers first, then a **ranked build backlog** (sequenced lat
 ### Phase 6 — Doc sync
 
 Update research appendix, scorecard `Last updated`, gap matrix backlog, `[phase20-verification.md](phase20-verification.md)` ledger, and cross-links. Pricing stays in `[competitor-pricing-2026.md](competitor-pricing-2026.md)` only.
+
+**Extended sync checklist (comprehensive cycle):**
+
+- [ ] `[engineering-test-matrix.md](engineering-test-matrix.md)`
+- [ ] `[android-c2-gate.md](android-c2-gate.md)`
+- [ ] `[phase4-dispatch-verification.md](phase4-dispatch-verification.md)` / `[phase4-platform-parity-verification.md](phase4-platform-parity-verification.md)`
+- [ ] `[phase5-carplay-verification.md](phase5-carplay-verification.md)` (status only if gated)
+- [ ] `[phase6-android-c1-verification.md](phase6-android-c1-verification.md)` / `[phase6b-android-nav-verification.md](phase6b-android-nav-verification.md)`
+- [ ] `[phase7-hosted-verification.md](phase7-hosted-verification.md)`
+- [ ] `[fleet-e2e-qa.md](fleet-e2e-qa.md)` / `[web-dispatch-operator-guide.md](web-dispatch-operator-guide.md)` / `[hosted-gateway-deployment.md](hosted-gateway-deployment.md)`
+- [ ] `[screenshots/README.md](screenshots/README.md)` / `[buyer-personas-uk-hgv.md](buyer-personas-uk-hgv.md)`
 
 ---
 
@@ -220,6 +246,7 @@ Update research appendix, scorecard `Last updated`, gap matrix backlog, `[phase2
 | Fleet dispatch / proxy | **Yes**   | `FleetSSEClient`; fleet smoke 14/14; web-dispatch + hosted-gateway green                                                                                                             |
 | Lane / LEZ / offline   | **Yes**   | `LaneGuidanceEnricher`, `spokenLanePhrase`, `LEZAvoidPolicy`, `OfflineMapPackStore`                                                                                                  |
 | Android U11–U15        | **Yes**   | `LezAvoidPolicy`, `ForecastRiskSampler`, `ClearanceCorridorProbe`, RegCheck wizard, walkaround — unit tests + `assembleDebug` Pass (JDK 22)                                          |
+| Android roadworks fuse | **Yes** (2026-11-08) | `RoadworksAlongRouteClient` + `RoadworksAheadFormatter` → `PredictiveRiskEngine` roadworks slot (fleet Overpass); was dead wire prior                                                                 |
 | Parking partners       | **Yes**   | `ParkingPartnerLinks` TRAVIS/SNAP deep links only                                                                                                                                    |
 
 
@@ -254,6 +281,8 @@ Original Oct 12 “Defer” list is **void** under the driver-first scope rule. 
 - [x] `[phase20-verification.md](phase20-verification.md)` ledger row
 - [x] README + ultimate-hgv cross-link
 - [x] Driver-first reopen (2026-10-12b) — Phase 5 + scorecard/matrix sequenced gaps
+- [x] Phase 3b surface matrix + extended Phase 6 checklist (2026-11-08)
+- [x] Android roadworks→fuse honesty note (2026-11-08)
 
 ---
 

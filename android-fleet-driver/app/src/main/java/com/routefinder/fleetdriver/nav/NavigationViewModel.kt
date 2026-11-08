@@ -90,6 +90,8 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     var routeCoordinates by mutableStateOf<List<LatLon>>(emptyList())
     var phase by mutableStateOf(NavigationPhase.IDLE)
     var progress by mutableStateOf<NavigationProgress?>(null)
+    /** Active turn instruction (lane strip + TTS). */
+    var currentInstruction by mutableStateOf<TurnInstruction?>(null)
     var distanceLabel by mutableStateOf<String?>(null)
     var etaLabel by mutableStateOf<String?>(null)
     var physicsEtaLabel by mutableStateOf<String?>(null)
@@ -510,6 +512,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             laybySkipCount = 0
             phase = session.phase
             progress = session.progress
+            currentInstruction = session.currentInstruction()
             distanceLabel = formatDistance(result.distanceMeters)
             etaLabel = formatDuration(result.durationSeconds)
             physicsEtaLabel = null
@@ -546,6 +549,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         session.startNavigation()
         phase = session.phase
         progress = session.progress
+        currentInstruction = session.currentInstruction()
         voice.resetAnnouncements()
         statusLabel = "Navigating"
         startGpsLoop()
@@ -555,6 +559,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         session.stopNavigation()
         phase = session.phase
         progress = null
+        currentInstruction = null
         gpsJob?.cancel()
         statusLabel = "Route loaded"
     }
@@ -1067,8 +1072,9 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         session.ingestPosition(lat, lon)
         phase = session.phase
         progress = session.progress
+        currentInstruction = session.currentInstruction()
         refreshActiveTollAdvisory()
-        session.currentInstruction()?.let { instruction ->
+        currentInstruction?.let { instruction ->
             val p = progress
             if (p != null) {
                 voice.onProgress(instruction, p.currentManeuverIndex, p.distanceToNextManeuverMeters)

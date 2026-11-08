@@ -10,6 +10,7 @@ import com.routefinder.fleetdriver.compliance.CanIDriveEvaluator
 import com.routefinder.fleetdriver.compliance.CanIDriveStatus
 import com.routefinder.fleetdriver.compliance.HosAdvisoryClock
 import com.routefinder.fleetdriver.compliance.LaybyAdvisoryEngine
+import com.routefinder.fleetdriver.compliance.LaybyAlertFormatter
 import com.routefinder.fleetdriver.compliance.LaybyCatalogClient
 import com.routefinder.fleetdriver.compliance.LaybyOccupancyKind
 import com.routefinder.fleetdriver.compliance.LaybyOccupancyStore
@@ -149,6 +150,8 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     var lastWalkaroundPdfBytes by mutableStateOf<ByteArray?>(null)
     /** True when turn-by-turn TTS is muted (voice assist still speaks confirmations). */
     var voiceGuidanceMuted by mutableStateOf(!prefs.voiceGuidanceEnabled)
+    /** When true, proactive layby TTS fires inside ~5 km. */
+    var laybyVoiceAlertsEnabled by mutableStateOf(prefs.laybyVoiceAlertsEnabled)
     /** True while push-to-talk listen window is active. */
     var voiceListening by mutableStateOf(false)
     private var continuousDriveSeconds = prefs.continuousDriveSeconds
@@ -158,6 +161,8 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     private var laybySkipCount = 0
     /** Overpass corridor sites for the active route; empty → seed fallback. */
     private var catalogLaybySites: List<LaybyAdvisoryEngine.Site> = emptyList()
+    /** Last layby site id announced via proactive TTS (dedupe until site/route changes). */
+    private var lastAnnouncedLaybyId: String? = null
 
     private val voice = VoiceGuidanceService(application)
     private val voiceCommands = DriverVoiceCommandCoordinator(application)
@@ -182,6 +187,15 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         prefs.voiceGuidanceEnabled = enabled
         voice.enabled = enabled
         voiceGuidanceMuted = !enabled
+    }
+
+    /** Enables or disables proactive layby voice alerts (~5 km window). */
+    fun updateLaybyVoiceAlertsEnabled(enabled: Boolean) {
+        prefs.laybyVoiceAlertsEnabled = enabled
+        laybyVoiceAlertsEnabled = enabled
+        if (!enabled) {
+            lastAnnouncedLaybyId = null
+        }
     }
 
     /** Starts a short push-to-talk listen window and handles the matched command. */
@@ -518,6 +532,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             routeCoordinates = result.coordinates
             laybySkipCount = 0
             catalogLaybySites = emptyList()
+            lastAnnouncedLaybyId = null
             phase = session.phase
             progress = session.progress
             currentInstruction = session.currentInstruction()
@@ -758,7 +773,10 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    private fun refreshComplianceAdvisories(route: List<LatLon> = routeCoordinates) {
+    private fun refreshComplianceAdvisories(
+        route: List<LatLon> = routeCoordinates,
+        currentArcLengthMeters: Double = progress?.traveledDistanceMeters ?: 0.0,
+    ) {
         val emission = runCatching {
             UkLezCatalog.EmissionClass.valueOf(emissionClassDraft.trim().uppercase())
         }.getOrNull()
@@ -770,6 +788,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         applyLaybyAdvisory(
             LaybyAdvisoryEngine.nearestAhead(
                 route = route,
+                currentArcLengthMeters = currentArcLengthMeters,
                 skipCount = laybySkipCount,
                 occupancyStore = laybyOccupancyStore,
                 sites = activeLaybySites(),
@@ -840,9 +859,41 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         toastMessage = "Marked spaces at ${current.site.name}"
     }
 
+    /** Updates layby ahead + proactive TTS from live arc progress (nav GPS tick). */
+    private fun refreshLaybyForProgress(currentArcLengthMeters: Double) {
+        applyLaybyAdvisory(
+            LaybyAdvisoryEngine.nearestAhead(
+                route = routeCoordinates,
+                currentArcLengthMeters = currentArcLengthMeters,
+                skipCount = laybySkipCount,
+                occupancyStore = laybyOccupancyStore,
+                sites = activeLaybySites(),
+            ),
+        )
+    }
+
     private fun applyLaybyAdvisory(advisory: LaybyAdvisoryEngine.Advisory?) {
         laybyAdvisory = advisory
         laybyAdvisoryMessage = advisory?.message
+        processLaybyVoiceAlertIfNeeded(advisory)
+    }
+
+    /** Speaks once when a layby enters the ~5 km window (uses speakAssist — works while TBT muted). */
+    private fun processLaybyVoiceAlertIfNeeded(advisory: LaybyAdvisoryEngine.Advisory?) {
+        if (!laybyVoiceAlertsEnabled || advisory == null) return
+        if (!LaybyAlertFormatter.shouldAnnounce(advisory, lastAnnouncedLaybyId)) return
+        val speedMps = progress?.let { p ->
+            if (p.remainingEtaSeconds > 0) p.remainingDistanceMeters / p.remainingEtaSeconds else null
+        }
+        val etaSeconds = if (speedMps != null && speedMps > 0.5) {
+            advisory.remainingMeters / speedMps
+        } else {
+            null
+        }
+        val spoken = LaybyAlertFormatter.spokenPrompt(advisory, estimatedArrivalSeconds = etaSeconds)
+        lastAnnouncedLaybyId = advisory.site.id
+        toastMessage = spoken
+        voice.speakAssist(spoken)
     }
 
     /** Fetches partner remaining-drive advisory when fleet is authenticated. */
@@ -1138,6 +1189,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             distanceLabel = formatDistance(it.remainingDistanceMeters)
             etaLabel = formatDuration(it.remainingEtaSeconds)
             if (phase == NavigationPhase.NAVIGATING) {
+                refreshLaybyForProgress(it.traveledDistanceMeters)
                 val now = System.currentTimeMillis()
                 if (now - lastRiskRefreshMs >= 5_000L) {
                     lastRiskRefreshMs = now

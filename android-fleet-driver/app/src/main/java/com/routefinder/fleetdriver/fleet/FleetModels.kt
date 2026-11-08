@@ -35,6 +35,8 @@ data class FleetVehicleProfile(
     val weight: Double? = null,
     val width: Double? = null,
     val length: Double? = null,
+    /** Number of trailers (0…3). Null = unknown / legacy. */
+    val trailerCount: Int? = null,
     val axleWeight: Double? = null,
 )
 
@@ -192,11 +194,17 @@ private fun shortenIso(raw: String): String {
 
 fun parseVehicleProfile(json: JSONObject?): FleetVehicleProfile? {
     if (json == null) return null
+    val rawTrailers = if (!json.has("trailerCount") || json.isNull("trailerCount")) {
+        null
+    } else {
+        json.optInt("trailerCount")
+    }
     return FleetVehicleProfile(
         height = if (json.isNull("height")) null else json.optDouble("height"),
         weight = if (json.isNull("weight")) null else json.optDouble("weight"),
         width = if (json.isNull("width")) null else json.optDouble("width"),
         length = if (json.isNull("length")) null else json.optDouble("length"),
+        trailerCount = HgvVehicleProfile.clampedTrailerCount(rawTrailers),
         axleWeight = if (json.isNull("axleWeight")) null else json.optDouble("axleWeight"),
     )
 }
@@ -220,6 +228,7 @@ fun FleetTrip.toHgvVehicleProfile(): HgvVehicleProfile {
         heightMeters = base?.height ?: 4.0,
         weightTonnes = weightTonnes,
         axleLoadTonnes = base?.axleWeight ?: 11.5,
+        trailerCount = HgvVehicleProfile.clampedTrailerCount(base?.trailerCount),
         hazmat = hazmat,
     )
 }

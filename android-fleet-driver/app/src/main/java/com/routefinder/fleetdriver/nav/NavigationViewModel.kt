@@ -119,6 +119,12 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     private var lastTrafficMessage: String? = null
     private var lastHazardMessage: String? = null
     private var lastHazardSevere: Boolean = false
+    /** Real remaining meters for the active hazard (live TomTom or crawl fallback). */
+    private var lastHazardDistanceMeters: Double? = null
+    /** True when [lastHazardMessage] came from TomTom live sampling (Ph36). */
+    private var liveTomTomHazardActive: Boolean = false
+    private var lastTomTomHazardSampleMs: Long? = null
+    private var liveTomTomHazardArcMeters: Double? = null
     private var lastRoadworksMessage: String? = null
     private var lastRoadworksDistanceMeters: Double? = null
     /** Overpass construction sites projected onto the active route. */
@@ -1147,7 +1153,8 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                 weatherMessage = lastWeatherMessage,
                 weatherDistanceMeters = if (lastWeatherMessage != null) 3_000.0 else null,
                 hazardMessage = lastHazardMessage,
-                hazardDistanceMeters = if (lastHazardMessage != null) 1_200.0 else null,
+                hazardDistanceMeters = lastHazardDistanceMeters
+                    ?: if (lastHazardMessage != null) 1_200.0 else null,
                 hazardSevere = lastHazardSevere,
                 roadworksMessage = lastRoadworksMessage,
                 roadworksDistanceMeters = lastRoadworksDistanceMeters,
@@ -1272,8 +1279,9 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     /**
-     * Derives traffic / hazard risk strings from live nav progress (no TomTom key required).
-     * Slow implied speed → traffic caution; crawl near a turn → hazard-style alert.
+     * Derives traffic / hazard risk strings from live nav progress.
+     * Slow implied speed → traffic caution; crawl near a turn → hazard-style alert
+     * (fallback only when no live TomTom hazard is active).
      */
     private fun updateRiskFromProgress(progress: NavigationProgress) {
         val remainingM = progress.remainingDistanceMeters
@@ -1289,22 +1297,82 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         } else {
             lastTrafficMessage = null
         }
-        // Near-maneuver crawl: treat as localized hazard when ETA for remaining route implies
-        // the vehicle is barely moving while still approaching the turn.
-        if (toManeuver in 80.0..1_500.0 && remainingM > 0 && remainingEta > 0) {
-            val corridorKmh = (remainingM / remainingEta) * 3.6
-            if (corridorKmh < 12) {
-                lastHazardMessage = "Congestion near next turn — ${formatDistance(toManeuver)}"
-                lastHazardSevere = corridorKmh < 6
-            } else {
-                lastHazardMessage = null
-                lastHazardSevere = false
+        clearLiveTomTomHazardIfPassed(progress.traveledDistanceMeters)
+        if (!liveTomTomHazardActive) {
+            // Near-maneuver crawl: localized hazard when barely moving toward the turn.
+            if (toManeuver in 80.0..1_500.0 && remainingM > 0 && remainingEta > 0) {
+                val corridorKmh = (remainingM / remainingEta) * 3.6
+                if (corridorKmh < 12) {
+                    lastHazardMessage = "Congestion near next turn — ${formatDistance(toManeuver)}"
+                    lastHazardSevere = corridorKmh < 6
+                    lastHazardDistanceMeters = toManeuver
+                } else {
+                    clearCrawlHazard()
+                }
+            } else if (toManeuver < 80) {
+                clearCrawlHazard()
             }
-        } else if (toManeuver < 80) {
-            lastHazardMessage = null
-            lastHazardSevere = false
         }
         refreshPredictiveRisk()
+    }
+
+    private fun clearCrawlHazard() {
+        lastHazardMessage = null
+        lastHazardSevere = false
+        lastHazardDistanceMeters = null
+    }
+
+    private fun clearLiveTomTomHazardIfPassed(currentArcLengthMeters: Double) {
+        val arc = liveTomTomHazardArcMeters ?: return
+        if (currentArcLengthMeters >= arc) {
+            liveTomTomHazardActive = false
+            liveTomTomHazardArcMeters = null
+            lastHazardMessage = null
+            lastHazardSevere = false
+            lastHazardDistanceMeters = null
+        } else if (liveTomTomHazardActive) {
+            lastHazardDistanceMeters = maxOf(0.0, arc - currentArcLengthMeters)
+        }
+    }
+
+    private fun tomTomLiveSamplingAvailable(): Boolean {
+        val key = prefs.tomTomApiKey.trim()
+        return tomTomProxyConfigured || key.isNotEmpty()
+    }
+
+    /** Live TomTom closure/standstill sampling (Ph36) — prefers over crawl heuristic. */
+    private suspend fun refreshLiveTomTomHazardIfNeeded(
+        currentArcLengthMeters: Double,
+        route: List<LatLon> = routeCoordinates,
+    ) {
+        if (route.size < 2 || !tomTomLiveSamplingAvailable()) return
+        if (!LiveTrafficHazardSampler.shouldPoll(lastTomTomHazardSampleMs)) return
+        val useProxy = tomTomProxyConfigured && prefs.baseUrl.isNotBlank()
+        val apiKey = prefs.tomTomApiKey.trim()
+        val hit = withContext(Dispatchers.IO) {
+            LiveTrafficHazardSampler.sampleAhead(
+                route = route,
+                currentArcLengthMeters = currentArcLengthMeters,
+                apiKey = apiKey,
+                fleetBaseUrl = if (useProxy) prefs.baseUrl else null,
+                fleetApiKey = prefs.apiKey,
+            )
+        }
+        lastTomTomHazardSampleMs = System.currentTimeMillis()
+        if (hit != null) {
+            liveTomTomHazardActive = true
+            liveTomTomHazardArcMeters = hit.arcLengthAlongRouteMeters
+            lastHazardMessage = hit.message
+            lastHazardSevere = hit.severe
+            lastHazardDistanceMeters = hit.remainingMeters
+            refreshPredictiveRisk()
+        } else if (liveTomTomHazardActive) {
+            // Poll found nothing worthy — clear live hit so crawl fallback can resume.
+            liveTomTomHazardActive = false
+            liveTomTomHazardArcMeters = null
+            clearCrawlHazard()
+            refreshPredictiveRisk()
+        }
     }
 
     fun ingestLocation(lat: Double, lon: Double, bearingDegrees: Double? = null) {
@@ -1341,6 +1409,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                     lastDriveTickMs = now
                     updateRiskFromProgress(it)
                     viewModelScope.launch {
+                        refreshLiveTomTomHazardIfNeeded(it.traveledDistanceMeters)
                         refreshForecastRiskIfNeeded()
                         refreshOffRouteClearanceIfNeeded(lat, lon, bearingDegrees ?: lastKnownBearingDegrees)
                         refreshPredictiveRisk()

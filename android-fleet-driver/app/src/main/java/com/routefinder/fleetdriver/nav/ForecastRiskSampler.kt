@@ -236,7 +236,8 @@ object ForecastRiskSampler {
         }
     }
 
-    private fun fetchTomTomFlow(
+    /** Fetches TomTom flow segment data (current / free-flow km/h + roadClosure). Package-visible for live hazard sampling. */
+    internal fun fetchTomTomFlow(
         coord: LatLon,
         apiKey: String,
         fleetBaseUrl: String?,

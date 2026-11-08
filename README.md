@@ -23,6 +23,7 @@ Product showcase captures (see [`Docs/screenshots/`](Docs/screenshots/) for capt
 - [CarPlay + WeatherKit restore](Docs/carplay-weatherkit-restore.md) — Paid-team entitlement restore (personal team: use OpenWeather instead)
 - [Competitive research (Aug 2026)](Docs/competitive-research-2026-08.md) — Positioning vs Sygic/TomTom/CoPilot; Ph29 refresh reflects Ph26–27 shipped wedge
 - [Ultimate competitive excellence sweep](Docs/ultimate-competitive-excellence-sweep.md) — Quarterly re-scrape runbook + Oct 2026 execution report
+- [Developer map](Docs/developer-map.md) — Layout, tests, and hard rules for contributors
 
 ## What it does
 

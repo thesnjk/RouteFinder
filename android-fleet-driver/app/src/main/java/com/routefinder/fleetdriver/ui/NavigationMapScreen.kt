@@ -459,6 +459,30 @@ fun NavigationMapScreen(
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                     )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        OutlinedTextField(
+                            value = viewModel.trailerCountDraft.toString(),
+                            onValueChange = viewModel::updateTrailerCount,
+                            label = { Text("Trailers (0–3)") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                        )
+                        OutlinedTextField(
+                            value = String.format("%.1f", viewModel.lengthMetersDraft),
+                            onValueChange = viewModel::updateLengthMeters,
+                            label = { Text("Length m") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                        )
+                    }
+                    Text(
+                        "Length is bumper-to-bumper (ORS). Trailers 0 = rigid, ≥1 = artic.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.tertiary,
+                    )
                     viewModel.lastInspectionSummary?.let {
                         Text(
                             "Walkaround: ${it.defectCount} defect(s), ${it.photoCount} photo(s)",

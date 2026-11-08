@@ -124,6 +124,10 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     var clearanceRadarEnabled by mutableStateOf(prefs.clearanceRadarEnabled)
     var lezAvoidEnabled by mutableStateOf(prefs.lezAvoidEnabled)
     var emissionClassDraft by mutableStateOf(prefs.emissionClass)
+    /** Trailer count draft for solo / override routing (0…3). */
+    var trailerCountDraft by mutableStateOf(1)
+    /** Overall bumper-to-bumper length draft (metres) for solo routing. */
+    var lengthMetersDraft by mutableStateOf(16.5)
     var lezAdvisoryMessage by mutableStateOf<String?>(null)
     var laybyAdvisoryMessage by mutableStateOf<String?>(null)
     /** Structured layby ahead with parking availability tier. */
@@ -281,6 +285,38 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         emissionClassDraft = value
         prefs.emissionClass = value
         refreshComplianceAdvisories()
+    }
+
+    /** Updates trailer count (0…3) and keeps intake profile in sync for ORS length mapping. */
+    fun updateTrailerCount(raw: String) {
+        val parsed = raw.trim().toIntOrNull()?.coerceIn(0, 3) ?: return
+        trailerCountDraft = parsed
+        if (parsed == 0 && lengthMetersDraft > 14.0) {
+            lengthMetersDraft = HgvVehicleProfile.ukRigid.lengthMeters
+        } else if (parsed >= 1 && lengthMetersDraft < 14.0) {
+            lengthMetersDraft = HgvVehicleProfile.ukArtic.lengthMeters
+        }
+        syncIntakeTrailerAndLength()
+    }
+
+    /** Updates overall bumper-to-bumper length for solo / override routing. */
+    fun updateLengthMeters(raw: String) {
+        val parsed = raw.trim().toDoubleOrNull() ?: return
+        if (parsed <= 0) return
+        lengthMetersDraft = parsed
+        syncIntakeTrailerAndLength()
+    }
+
+    private fun syncIntakeTrailerAndLength() {
+        val base = intakeVehicleProfile
+        intakeVehicleProfile = FleetVehicleProfile(
+            height = base?.height,
+            weight = base?.weight,
+            width = base?.width,
+            length = lengthMetersDraft,
+            trailerCount = trailerCountDraft,
+            axleWeight = base?.axleWeight,
+        )
     }
 
     fun recordDrivingSeconds(deltaSeconds: Double) {
@@ -564,6 +600,8 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             activeTrip = trip
             timeWindowLines = formatTimeWindowLines(trip)
             intakeVehicleProfile = trip.vehicleProfile
+            trip.vehicleProfile?.trailerCount?.let { trailerCountDraft = it.coerceIn(0, 3) }
+            trip.vehicleProfile?.length?.let { lengthMetersDraft = it }
             toastMessage = "Trip received"
             val ordered = JobIntakeHandler.orderedStops(trip)
             val first = ordered.firstOrNull()
@@ -592,8 +630,10 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                                 weight = spec.weightTonnes ?: trip.vehicleProfile?.weight,
                                 width = spec.widthMeters ?: trip.vehicleProfile?.width,
                                 length = spec.lengthMeters ?: trip.vehicleProfile?.length,
+                                trailerCount = trip.vehicleProfile?.trailerCount ?: trailerCountDraft,
                                 axleWeight = trip.vehicleProfile?.axleWeight,
                             )
+                            intakeVehicleProfile?.length?.let { lengthMetersDraft = it }
                             toastMessage = "RegCheck dims applied"
                         }
                     }
@@ -841,7 +881,22 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             val merged = trip.copy(vehicleProfile = intakeVehicleProfile ?: trip.vehicleProfile)
             return merged.toHgvVehicleProfile()
         }
-        return HgvVehicleProfile()
+        val intake = intakeVehicleProfile
+        if (intake != null) {
+            return HgvVehicleProfile(
+                lengthMeters = intake.length ?: lengthMetersDraft,
+                widthMeters = intake.width ?: 2.55,
+                heightMeters = intake.height ?: 4.0,
+                weightTonnes = intake.weight ?: 40.0,
+                axleLoadTonnes = intake.axleWeight ?: 11.5,
+                trailerCount = HgvVehicleProfile.clampedTrailerCount(intake.trailerCount)
+                    ?: trailerCountDraft,
+            )
+        }
+        return HgvVehicleProfile(
+            lengthMeters = lengthMetersDraft,
+            trailerCount = trailerCountDraft,
+        )
     }
 
     private fun refreshPredictiveRisk() {

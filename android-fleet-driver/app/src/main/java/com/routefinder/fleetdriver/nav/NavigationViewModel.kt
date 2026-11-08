@@ -10,6 +10,7 @@ import com.routefinder.fleetdriver.compliance.CanIDriveEvaluator
 import com.routefinder.fleetdriver.compliance.CanIDriveStatus
 import com.routefinder.fleetdriver.compliance.HosAdvisoryClock
 import com.routefinder.fleetdriver.compliance.LaybyAdvisoryEngine
+import com.routefinder.fleetdriver.compliance.LaybyCatalogClient
 import com.routefinder.fleetdriver.compliance.LaybyOccupancyKind
 import com.routefinder.fleetdriver.compliance.LaybyOccupancyStore
 import com.routefinder.fleetdriver.compliance.LezAvoidPolicy
@@ -155,6 +156,8 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     private var lastDriveTickMs: Long = 0L
     /** Skip count for “next layby” voice advances on the current route. */
     private var laybySkipCount = 0
+    /** Overpass corridor sites for the active route; empty → seed fallback. */
+    private var catalogLaybySites: List<LaybyAdvisoryEngine.Site> = emptyList()
 
     private val voice = VoiceGuidanceService(application)
     private val voiceCommands = DriverVoiceCommandCoordinator(application)
@@ -206,16 +209,19 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         voiceListening = false
     }
 
+    /** Ranks nearest layby ahead (Break Now) — shared by voice and HUD. */
+    fun breakNow() {
+        laybySkipCount = 0
+        refreshComplianceAdvisories()
+        val spoken = VoiceAssistResponseFormatter.breakNow(laybyAdvisoryMessage)
+        toastMessage = spoken
+        voice.speakAssist(spoken)
+    }
+
     /** Applies a domain voice command (Break Now / mute / etc.). */
     fun handleDriverVoiceCommand(command: DriverVoiceCommand) {
         when (command) {
-            DriverVoiceCommand.BREAK_NOW -> {
-                laybySkipCount = 0
-                refreshComplianceAdvisories()
-                val spoken = VoiceAssistResponseFormatter.breakNow(laybyAdvisoryMessage)
-                toastMessage = spoken
-                voice.speakAssist(spoken)
-            }
+            DriverVoiceCommand.BREAK_NOW -> breakNow()
             DriverVoiceCommand.NEXT_LAYBY -> {
                 laybyAdvisory?.let { current ->
                     laybyOccupancyStore.record(current.site.id, LaybyOccupancyKind.FULL)
@@ -226,6 +232,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                         route = routeCoordinates,
                         skipCount = laybySkipCount,
                         occupancyStore = laybyOccupancyStore,
+                        sites = activeLaybySites(),
                     ),
                 )
                 val spoken = VoiceAssistResponseFormatter.nextLayby(laybyAdvisoryMessage)
@@ -510,6 +517,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             session.loadRoute(geometry, result.instructions)
             routeCoordinates = result.coordinates
             laybySkipCount = 0
+            catalogLaybySites = emptyList()
             phase = session.phase
             progress = session.progress
             currentInstruction = session.currentInstruction()
@@ -521,6 +529,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             refreshComplianceAdvisories(result.coordinates)
             refreshClearanceAndForecastRisk(result.coordinates)
             enrichLaneGuidanceAsync(result.instructions, result.coordinates)
+            refreshLaybyCatalogAsync(result.coordinates)
             val tripForEta = activeTrip
             if (tripForEta != null) {
                 try {
@@ -763,6 +772,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                 route = route,
                 skipCount = laybySkipCount,
                 occupancyStore = laybyOccupancyStore,
+                sites = activeLaybySites(),
             ),
         )
         val clock = HosAdvisoryClock.snapshot(
@@ -777,6 +787,26 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         refreshRouteTollAdvisories(route)
     }
 
+    private fun activeLaybySites(): List<LaybyAdvisoryEngine.Site> =
+        catalogLaybySites.ifEmpty { LaybyAdvisoryEngine.seedSites }
+
+    /** Async Overpass corridor laybys via fleet proxy (seed fallback kept). */
+    private fun refreshLaybyCatalogAsync(route: List<LatLon>) {
+        viewModelScope.launch {
+            val sites = withContext(Dispatchers.IO) {
+                LaybyCatalogClient.laybysAlongRoute(
+                    route = route,
+                    fleetBaseUrl = prefs.baseUrl,
+                    fleetApiKey = prefs.apiKey,
+                )
+            }
+            if (sites.isNotEmpty()) {
+                catalogLaybySites = sites
+                refreshComplianceAdvisories(route)
+            }
+        }
+    }
+
     /** Records “Looks full” and advances to the next layby candidate. */
     fun reportLaybyFull() {
         val current = laybyAdvisory
@@ -789,6 +819,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                 route = routeCoordinates,
                 skipCount = laybySkipCount,
                 occupancyStore = laybyOccupancyStore,
+                sites = activeLaybySites(),
             ),
         )
         toastMessage = laybyAdvisoryMessage ?: "No further laybys ahead."
@@ -803,6 +834,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                 route = routeCoordinates,
                 skipCount = laybySkipCount,
                 occupancyStore = laybyOccupancyStore,
+                sites = activeLaybySites(),
             ),
         )
         toastMessage = "Marked spaces at ${current.site.name}"

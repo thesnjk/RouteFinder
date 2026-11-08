@@ -311,12 +311,13 @@ fun NavigationMapScreen(
                         ) {
                             Text(if (viewModel.voiceListening) "Listening…" else "Talk")
                         }
-                        Text(
-                            "Break · layby · mute",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.tertiary,
+                        OutlinedButton(
+                            onClick = { viewModel.breakNow() },
+                            enabled = viewModel.routeCoordinates.size >= 2,
                             modifier = Modifier.weight(1f),
-                        )
+                        ) {
+                            Text("Break Now")
+                        }
                     }
 
                     viewModel.distanceLabel?.let {

@@ -520,6 +520,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             statusLabel = "Route loaded"
             refreshComplianceAdvisories(result.coordinates)
             refreshClearanceAndForecastRisk(result.coordinates)
+            enrichLaneGuidanceAsync(result.instructions, result.coordinates)
             val tripForEta = activeTrip
             if (tripForEta != null) {
                 try {
@@ -958,6 +959,27 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         lastForecastRiskRefreshMs = null
         refreshForecastRiskIfNeeded(force = true, route = route)
         refreshPredictiveRisk()
+    }
+
+    /** Async OSM turn:lanes enrich via fleet Overpass proxy (heuristic fallback kept). */
+    private fun enrichLaneGuidanceAsync(
+        instructions: List<TurnInstruction>,
+        route: List<LatLon>,
+    ) {
+        viewModelScope.launch {
+            val enriched = withContext(Dispatchers.IO) {
+                OverpassLaneGuidanceClient.enrichInstructions(
+                    instructions = instructions,
+                    route = route,
+                    fleetBaseUrl = prefs.baseUrl,
+                    fleetApiKey = prefs.apiKey,
+                )
+            }
+            if (enriched !== instructions && enriched != instructions) {
+                session.updateInstructions(enriched)
+                currentInstruction = session.currentInstruction()
+            }
+        }
     }
 
     private suspend fun refreshForecastRiskIfNeeded(

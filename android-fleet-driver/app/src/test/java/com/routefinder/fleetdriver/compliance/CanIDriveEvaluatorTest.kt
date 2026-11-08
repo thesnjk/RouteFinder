@@ -23,6 +23,7 @@ class CanIDriveEvaluatorTest {
         val status = CanIDriveEvaluator.evaluate(partner = partner, clock = clock)
         assertTrue(status.canDrive)
         assertTrue(status.usesPartnerAdvisory)
+        assertFalse(status.usesImportedCard)
         assertEquals(100.0, status.remainingContinuousDriveSeconds, 0.01)
         assertTrue(status.reason.contains("partner"))
         assertTrue(status.reason.contains(CanIDriveEvaluator.LEGAL_DISCLAIMER))
@@ -43,7 +44,81 @@ class CanIDriveEvaluatorTest {
         val status = CanIDriveEvaluator.evaluate(partner = partner, clock = clock)
         assertFalse(status.canDrive)
         assertFalse(status.usesPartnerAdvisory)
+        assertFalse(status.usesImportedCard)
         assertTrue(status.reason.contains(CanIDriveEvaluator.LEGAL_DISCLAIMER))
+    }
+
+    @Test
+    fun usesFreshImportedCardOverExhaustedClock() {
+        val imported = TachoCardSummary(
+            remainingContinuousDriveSeconds = 500.0,
+            remainingDailyDriveSeconds = 1_000.0,
+            remainingWeeklyDriveSeconds = 10_000.0,
+            importedAt = Instant.now(),
+            sourceFileName = "card.json",
+        )
+        val clock = HosAdvisoryClock.snapshot(
+            continuousDriveSeconds = HosAdvisoryClock.CONTINUOUS_DRIVE_LIMIT_SECONDS,
+            dailyDriveSeconds = HosAdvisoryClock.DAILY_DRIVE_LIMIT_SECONDS,
+        )
+        val status = CanIDriveEvaluator.evaluate(imported = imported, clock = clock)
+        assertTrue(status.canDrive)
+        assertTrue(status.usesImportedCard)
+        assertFalse(status.usesPartnerAdvisory)
+        assertEquals(500.0, status.remainingContinuousDriveSeconds, 0.01)
+        assertTrue(status.reason.contains("imported card"))
+        assertTrue(status.reason.contains(CanIDriveEvaluator.LEGAL_DISCLAIMER))
+    }
+
+    @Test
+    fun fallsBackToClockWhenImportStale() {
+        val imported = TachoCardSummary(
+            remainingContinuousDriveSeconds = 5_000.0,
+            remainingDailyDriveSeconds = 5_000.0,
+            remainingWeeklyDriveSeconds = 10_000.0,
+            importedAt = Instant.now().minusSeconds(25 * 3600),
+            sourceFileName = "old.json",
+        )
+        val clock = HosAdvisoryClock.snapshot(
+            continuousDriveSeconds = HosAdvisoryClock.CONTINUOUS_DRIVE_LIMIT_SECONDS,
+            dailyDriveSeconds = 0.0,
+        )
+        val status = CanIDriveEvaluator.evaluate(imported = imported, clock = clock)
+        assertFalse(status.canDrive)
+        assertFalse(status.usesImportedCard)
+        assertTrue(status.reason.contains(CanIDriveEvaluator.LEGAL_DISCLAIMER))
+    }
+
+    @Test
+    fun prefersFreshPartnerOverImport() {
+        val partner = TachoCardSummary(
+            remainingContinuousDriveSeconds = 100.0,
+            remainingDailyDriveSeconds = 200.0,
+            remainingWeeklyDriveSeconds = 1_000.0,
+            importedAt = Instant.now(),
+            sourceFileName = "partner-webhook (samsara)",
+        )
+        val imported = TachoCardSummary(
+            remainingContinuousDriveSeconds = 9_000.0,
+            remainingDailyDriveSeconds = 9_000.0,
+            remainingWeeklyDriveSeconds = 10_000.0,
+            importedAt = Instant.now(),
+            sourceFileName = "card.json",
+        )
+        val clock = HosAdvisoryClock.snapshot(
+            continuousDriveSeconds = HosAdvisoryClock.CONTINUOUS_DRIVE_LIMIT_SECONDS,
+            dailyDriveSeconds = HosAdvisoryClock.DAILY_DRIVE_LIMIT_SECONDS,
+        )
+        val status = CanIDriveEvaluator.evaluate(
+            partner = partner,
+            imported = imported,
+            clock = clock,
+        )
+        assertTrue(status.canDrive)
+        assertTrue(status.usesPartnerAdvisory)
+        assertFalse(status.usesImportedCard)
+        assertEquals(100.0, status.remainingContinuousDriveSeconds, 0.01)
+        assertTrue(status.reason.contains("partner"))
     }
 
     @Test
@@ -55,6 +130,7 @@ class CanIDriveEvaluatorTest {
         val status = CanIDriveEvaluator.evaluate(partner = null, clock = clock)
         assertFalse(status.canDrive)
         assertFalse(status.usesPartnerAdvisory)
+        assertFalse(status.usesImportedCard)
     }
 
     @Test

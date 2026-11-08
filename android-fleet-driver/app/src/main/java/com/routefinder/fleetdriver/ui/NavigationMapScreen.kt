@@ -295,6 +295,18 @@ fun NavigationMapScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        Text("Layby voice", style = MaterialTheme.typography.bodySmall)
+                        Switch(
+                            checked = viewModel.laybyVoiceAlertsEnabled,
+                            onCheckedChange = { viewModel.updateLaybyVoiceAlertsEnabled(it) },
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Button(
                             onClick = {
                                 if (!recordAudioPermission.status.isGranted) {

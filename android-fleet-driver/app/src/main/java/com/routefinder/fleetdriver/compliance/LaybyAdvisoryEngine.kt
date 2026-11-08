@@ -27,7 +27,8 @@ object LaybyAdvisoryEngine {
         val occupancyPrior: LaybyOccupancyPrior,
     )
 
-    private val sites = listOf(
+    /** Seed UK corridor sites used when Overpass catalog is empty / offline. */
+    val seedSites: List<Site> = listOf(
         Site("m1-watford-gap", "M1 J18 Watford Gap", LatLon(52.306, -1.122)),
         Site("m6-keele", "M6 J15 Keele", LatLon(53.003, -2.288)),
         Site("m5-strensham", "M5 J9 Strensham", LatLon(52.037, -2.122)),
@@ -42,6 +43,7 @@ object LaybyAdvisoryEngine {
         skipCount: Int = 0,
         occupancyStore: LaybyOccupancyStore? = null,
         hourOfDay: Int = Calendar.getInstance().get(Calendar.HOUR_OF_DAY),
+        sites: List<Site> = seedSites,
     ): Advisory? {
         val ranked = rankedAhead(
             route = route,
@@ -49,6 +51,7 @@ object LaybyAdvisoryEngine {
             maxAheadMeters = maxAheadMeters,
             occupancyStore = occupancyStore,
             hourOfDay = hourOfDay,
+            sites = sites,
         )
         return ranked.getOrNull(skipCount.coerceAtLeast(0))
     }
@@ -56,6 +59,7 @@ object LaybyAdvisoryEngine {
     /**
      * Advisories sorted nearest-first along the route.
      * Used by voice “next layby” to skip the current candidate.
+     * Pass Overpass [sites] when available; falls back to [seedSites].
      */
     fun rankedAhead(
         route: List<LatLon>,
@@ -63,12 +67,14 @@ object LaybyAdvisoryEngine {
         maxAheadMeters: Double = 40_000.0,
         occupancyStore: LaybyOccupancyStore? = null,
         hourOfDay: Int = Calendar.getInstance().get(Calendar.HOUR_OF_DAY),
+        sites: List<Site> = seedSites,
     ): List<Advisory> {
         if (route.size < 2) return emptyList()
+        val catalog = sites.ifEmpty { seedSites }
         val cumulative = cumulative(route)
         val total = cumulative.lastOrNull() ?: return emptyList()
         val hits = mutableListOf<Pair<Site, Double>>()
-        for (site in sites) {
+        for (site in catalog) {
             val proj = project(site.coordinate, route, cumulative) ?: continue
             if (proj.second > 2_500) continue
             val remaining = proj.first - currentArcLengthMeters

@@ -36,6 +36,11 @@ class FleetPreferences(context: Context) {
         get() = prefs.getBoolean(KEY_VOICE, true)
         set(value) = prefs.edit().putBoolean(KEY_VOICE, value).apply()
 
+    /** When true, proactive layby TTS fires inside ~5 km (default on; mirrors iOS). */
+    var laybyVoiceAlertsEnabled: Boolean
+        get() = prefs.getBoolean(KEY_LAYBY_VOICE, true)
+        set(value) = prefs.edit().putBoolean(KEY_LAYBY_VOICE, value).apply()
+
     /** Optional RegCheck username for plate → dims on job intake. */
     var regCheckUsername: String
         get() = prefs.getString(KEY_REGCHECK, "") ?: ""
@@ -96,6 +101,7 @@ class FleetPreferences(context: Context) {
         const val KEY_ONBOARDING = "onboarding_seen"
         const val KEY_TERMS = "driver_terms_accepted"
         const val KEY_VOICE = "voice_guidance_enabled"
+        const val KEY_LAYBY_VOICE = "layby_voice_alerts_enabled"
         const val KEY_REGCHECK = "regcheck_username"
         const val KEY_TOMTOM = "tomtom_api_key"
         const val KEY_OPENWEATHER = "openweather_api_key"

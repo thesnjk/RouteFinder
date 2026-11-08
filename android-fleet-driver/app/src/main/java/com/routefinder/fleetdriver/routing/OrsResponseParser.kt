@@ -1,6 +1,7 @@
 package com.routefinder.fleetdriver.routing
 
 import com.routefinder.fleetdriver.nav.TurnInstruction
+import com.routefinder.fleetdriver.nav.TurnLanesParser
 import com.routefinder.fleetdriver.nav.TurnManeuver
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -86,12 +87,16 @@ object OrsResponseParser {
         maneuvers.forEachIndexed { index, maneuver ->
             val type = mapStepType(maneuver.stepType, maneuver.instruction)
             val bearing = bearingForStep(index, type, coordinates, cumulative)
+            val lanes = TurnLanesParser.heuristic(type)
             instructions.add(
                 TurnInstruction(
                     maneuver = type,
                     roadName = roadName(maneuver.instruction),
                     distanceMeters = maneuver.distanceMeters,
                     bearing = bearing,
+                    laneGuidance = lanes.takeUnless {
+                        type == TurnManeuver.ARRIVE || type == TurnManeuver.DEPART
+                    },
                 ),
             )
             cumulative += maneuver.distanceMeters

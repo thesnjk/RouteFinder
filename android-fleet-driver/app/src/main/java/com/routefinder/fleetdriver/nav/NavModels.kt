@@ -20,6 +20,8 @@ data class TurnInstruction(
     val roadName: String?,
     val distanceMeters: Double,
     val bearing: Double,
+    /** Optional lane strip / callout for the active junction. */
+    val laneGuidance: LaneGuidance? = null,
 )
 
 enum class NavigationPhase {

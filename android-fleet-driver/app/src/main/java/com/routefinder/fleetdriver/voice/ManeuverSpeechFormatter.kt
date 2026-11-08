@@ -22,23 +22,29 @@ object ManeuverSpeechFormatter {
 
     fun spokenPrompt(instruction: TurnInstruction, tier: AnnouncementTier): String {
         val phrase = shortPhrase(instruction.maneuver)
+        val street = streetCallout(instruction)
+        val lane = laneCallout(instruction)
         return when (tier) {
             AnnouncementTier.APPROACH -> {
                 val suffix = roadSuffix(instruction, tier)
-                "In 1.6 kilometres, ${phrase.lowercase()}$suffix"
+                buildString {
+                    append("In 1.6 kilometres, ${phrase.lowercase()}$suffix")
+                    if (lane != null) append(". $lane")
+                }
             }
-            AnnouncementTier.PREPARE -> "In 400 metres, ${phrase.lowercase()}"
+            AnnouncementTier.PREPARE -> {
+                buildString {
+                    append("In 400 metres, ${phrase.lowercase()}")
+                    if (street != null) append(" onto $street")
+                    if (lane != null) append(". $lane")
+                }
+            }
             AnnouncementTier.EXECUTE -> {
                 if (instruction.maneuver == TurnManeuver.ARRIVE) return phrase
-                val road = instruction.roadName
-                if (!road.isNullOrBlank() && !road.lowercase().startsWith("turn") &&
-                    !road.lowercase().startsWith("keep")
-                ) {
-                    // Prefer short road fragment if instruction string is long.
-                    val shortRoad = road.take(40)
-                    "$phrase onto $shortRoad"
-                } else {
-                    phrase
+                buildString {
+                    append(phrase)
+                    if (street != null) append(" onto $street")
+                    if (lane != null) append(". $lane")
                 }
             }
         }
@@ -50,10 +56,28 @@ object ManeuverSpeechFormatter {
             else -> false
         }
 
+    private fun streetCallout(instruction: TurnInstruction): String? {
+        if (instruction.maneuver == TurnManeuver.ARRIVE) return null
+        val road = instruction.roadName?.trim().orEmpty()
+        if (road.isEmpty()) return null
+        if (road.lowercase().startsWith("turn") || road.lowercase().startsWith("keep") ||
+            road.lowercase().startsWith("head")
+        ) {
+            return null
+        }
+        return road.take(40)
+    }
+
+    private fun laneCallout(instruction: TurnInstruction): String? {
+        val guidance = instruction.laneGuidance ?: return null
+        val text = guidance.guidanceText
+        return text.takeUnless { it == "Follow road" }
+    }
+
     private fun roadSuffix(instruction: TurnInstruction, tier: AnnouncementTier): String {
         if (tier != AnnouncementTier.APPROACH) return ""
         if (instruction.maneuver == TurnManeuver.ARRIVE) return ""
-        val road = instruction.roadName?.takeIf { it.isNotBlank() } ?: return ""
+        val road = streetCallout(instruction) ?: return ""
         return " onto $road"
     }
 }

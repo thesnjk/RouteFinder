@@ -114,6 +114,9 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     private var lastHazardMessage: String? = null
     private var lastHazardSevere: Boolean = false
     private var lastRoadworksMessage: String? = null
+    private var lastRoadworksDistanceMeters: Double? = null
+    /** Overpass construction sites projected onto the active route. */
+    private var catalogRoadworkSites: List<RoadworkSite> = emptyList()
     private var lastWeatherMessage: String? = null
     private var cachedForecastItems: List<PredictiveRiskEngine.Advisory> = emptyList()
     private var cachedClearanceItems: List<PredictiveRiskEngine.Advisory> = emptyList()
@@ -532,7 +535,10 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             routeCoordinates = result.coordinates
             laybySkipCount = 0
             catalogLaybySites = emptyList()
+            catalogRoadworkSites = emptyList()
             lastAnnouncedLaybyId = null
+            lastRoadworksMessage = null
+            lastRoadworksDistanceMeters = null
             phase = session.phase
             progress = session.progress
             currentInstruction = session.currentInstruction()
@@ -545,6 +551,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             refreshClearanceAndForecastRisk(result.coordinates)
             enrichLaneGuidanceAsync(result.instructions, result.coordinates)
             refreshLaybyCatalogAsync(result.coordinates)
+            refreshRoadworksCatalogAsync(result.coordinates)
             val tripForEta = activeTrip
             if (tripForEta != null) {
                 try {
@@ -870,6 +877,46 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                 sites = activeLaybySites(),
             ),
         )
+        refreshRoadworksForProgress(currentArcLengthMeters)
+    }
+
+    /** Async OSM construction sites via fleet Overpass → predictive fuse. */
+    private fun refreshRoadworksCatalogAsync(route: List<LatLon>) {
+        viewModelScope.launch {
+            val sites = withContext(Dispatchers.IO) {
+                RoadworksAlongRouteClient.queryAlongRoute(
+                    route = route,
+                    fleetBaseUrl = prefs.baseUrl,
+                    fleetApiKey = prefs.apiKey,
+                )
+            }
+            catalogRoadworkSites = sites
+            refreshRoadworksForProgress(progress?.traveledDistanceMeters ?: 0.0)
+        }
+    }
+
+    /** Nearest construction ahead → fuse message + real remaining distance. */
+    private fun refreshRoadworksForProgress(currentArcLengthMeters: Double) {
+        val ahead = RoadworksAheadFormatter.nearestAhead(
+            sites = catalogRoadworkSites,
+            currentArcLengthMeters = currentArcLengthMeters,
+        )
+        if (ahead == null) {
+            if (lastRoadworksMessage != null || lastRoadworksDistanceMeters != null) {
+                lastRoadworksMessage = null
+                lastRoadworksDistanceMeters = null
+                refreshPredictiveRisk()
+            }
+            return
+        }
+        val remaining = RoadworksAheadFormatter.remainingMeters(ahead, currentArcLengthMeters)
+        val message = RoadworksAheadFormatter.bannerMessage(ahead, currentArcLengthMeters)
+            ?: "Roadworks ahead: ${ahead.label}"
+        if (message != lastRoadworksMessage || remaining != lastRoadworksDistanceMeters) {
+            lastRoadworksMessage = message
+            lastRoadworksDistanceMeters = remaining
+            refreshPredictiveRisk()
+        }
     }
 
     private fun applyLaybyAdvisory(advisory: LaybyAdvisoryEngine.Advisory?) {
@@ -1011,7 +1058,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                 hazardDistanceMeters = if (lastHazardMessage != null) 1_200.0 else null,
                 hazardSevere = lastHazardSevere,
                 roadworksMessage = lastRoadworksMessage,
-                roadworksDistanceMeters = if (lastRoadworksMessage != null) 2_000.0 else null,
+                roadworksDistanceMeters = lastRoadworksDistanceMeters,
                 trafficMessage = lastTrafficMessage,
                 trafficDistanceMeters = if (lastTrafficMessage != null) 2_500.0 else null,
                 scheduleLateMessage = schedule?.message,

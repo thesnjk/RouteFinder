@@ -34,9 +34,5 @@ android-fleet-driver/.idea/
 
 
 # IDE / local tooling (never ship)
-.cursor/*
-!.cursor/rules/
-!.cursor/rules/**
-!.cursor/settings.json
-
-# Local session notes (never commit)
+.cursor/
+.cursorignore

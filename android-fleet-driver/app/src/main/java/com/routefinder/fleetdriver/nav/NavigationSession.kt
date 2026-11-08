@@ -25,6 +25,11 @@ class NavigationSession {
         phase = NavigationPhase.ROUTE_LOADED
     }
 
+    /** Replaces turn instructions after async Overpass lane enrichment. */
+    fun updateInstructions(instructions: List<TurnInstruction>) {
+        this.instructions = instructions
+    }
+
     fun startNavigation() {
         if (geometry == null) return
         phase = NavigationPhase.NAVIGATING

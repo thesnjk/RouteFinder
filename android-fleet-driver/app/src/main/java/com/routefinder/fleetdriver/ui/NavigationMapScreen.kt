@@ -334,6 +334,33 @@ fun NavigationMapScreen(
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
+                    viewModel.currentInstruction?.laneGuidance?.let { lanes ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            lanes.lanes.forEachIndexed { index, arrow ->
+                                val recommended = index in lanes.recommendedIndices
+                                Text(
+                                    lanes.symbol(arrow),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = if (recommended) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+                                    },
+                                )
+                            }
+                        }
+                        Text(
+                            lanes.guidanceText,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        viewModel.currentInstruction?.roadName?.takeIf { it.isNotBlank() }?.let { road ->
+                            Text(
+                                road.take(48),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.tertiary,
+                            )
+                        }
+                    }
                     viewModel.activeTrip?.let {
                         Text("Fleet trip ${it.status}", style = MaterialTheme.typography.bodySmall)
                     }

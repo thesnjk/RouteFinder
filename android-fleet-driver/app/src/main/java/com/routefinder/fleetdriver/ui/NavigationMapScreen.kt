@@ -416,6 +416,18 @@ fun NavigationMapScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        Text("Avoid tolls", style = MaterialTheme.typography.bodySmall)
+                        Switch(
+                            checked = viewModel.avoidTolls,
+                            onCheckedChange = { viewModel.updateAvoidTolls(it, replan = true) },
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Button(
                             onClick = {
                                 if (!recordAudioPermission.status.isGranted) {
@@ -497,6 +509,14 @@ fun NavigationMapScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.tertiary,
                         )
+                        if (!viewModel.avoidTolls) {
+                            Button(
+                                onClick = { viewModel.avoidTollsAndReplan() },
+                                enabled = !viewModel.isCalculating,
+                            ) {
+                                Text("Avoid tolls & replan")
+                            }
+                        }
                     }
                     viewModel.activeTollAdvisory?.let { toll ->
                         val dist = viewModel.activeTollDistanceMeters

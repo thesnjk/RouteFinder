@@ -3022,6 +3022,10 @@ public final class RouteViewModel {
 
     public func applyLaneGuidanceEnrichment(_ instructions: [TurnInstruction]) {
         guard let current = result else { return }
+        let upgradedIDs = ManeuverAnnouncementController.instructionIDsUpgradedToOSM(
+            previous: current.turnInstructions,
+            updated: instructions
+        )
         result = SearchResult(
             path: current.path,
             totalDistance: current.totalDistance,
@@ -3034,6 +3038,11 @@ public final class RouteViewModel {
         )
         navigationCoordinator.updateTurnInstructions(instructions)
         simulationEngine.updateTurnInstructions(instructions)
+        #if os(iOS)
+        if !upgradedIDs.isEmpty {
+            voiceGuidanceCoordinator.noteLaneGuidanceUpgradedToOSM(instructionIDs: upgradedIDs)
+        }
+        #endif
         refreshActiveLaneGuidance()
     }
 

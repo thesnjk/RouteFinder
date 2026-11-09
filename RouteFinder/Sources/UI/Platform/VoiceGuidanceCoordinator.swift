@@ -108,6 +108,14 @@ public final class VoiceGuidanceCoordinator: NavigationSessionDelegate {
         voiceService.stop()
     }
 
+    /// Allows prepare TTS to re-fire after Overpass upgrades heuristic lane tags to OSM.
+    public func noteLaneGuidanceUpgradedToOSM(instructionIDs: [UUID]) {
+        guard isEnabled, !instructionIDs.isEmpty else { return }
+        for id in instructionIDs {
+            announcementController.invalidatePrepareForLaneUpgrade(instructionID: id)
+        }
+    }
+
     /// Speaks an upcoming closure/traffic hazard when hazard voice alerts are enabled.
     public func speakHazardAdvisory(_ text: String, hazardId: String) {
         let prompt = SpeechPrompt(

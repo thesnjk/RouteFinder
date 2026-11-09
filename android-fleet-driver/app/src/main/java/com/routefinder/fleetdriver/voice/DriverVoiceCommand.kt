@@ -37,11 +37,23 @@ enum class DriverVoiceCommand {
 
     /** Ask about the primary fused predictive-risk advisory. */
     RISK_AHEAD,
+
+    /** Open the ahead parking book sheet (TRAVIS-first deep link). */
+    BOOK_PARKING,
 }
 
 /** Matches normalized speech transcripts to [DriverVoiceCommand] values. */
 object DriverVoiceCommandPhraseMatcher {
     private val ranked: List<Pair<DriverVoiceCommand, List<String>>> = listOf(
+        DriverVoiceCommand.BOOK_PARKING to listOf(
+            "book parking",
+            "reserve parking",
+            "book a parking",
+            "book truck stop",
+            "book a truck stop",
+            "book a layby bay",
+            "book layby bay",
+        ),
         DriverVoiceCommand.BREAK_NOW to listOf(
             "break now",
             "find a layby",

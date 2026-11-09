@@ -17,6 +17,19 @@ object VoiceAssistResponseFormatter {
         advisoryMessage?.takeIf { it.isNotBlank() }
             ?: "No further laybys ahead."
 
+    /** Reply after opening the parking book sheet for an ahead stop. */
+    fun bookParking(label: String?, tierLabel: String?): String {
+        val name = label?.trim()?.takeIf { it.isNotEmpty() } ?: "Ahead parking"
+        return if (!tierLabel.isNullOrBlank()) {
+            "Opening book options for $name. Availability: $tierLabel. Partner site — RouteFinder does not take payment."
+        } else {
+            "Opening book options for $name. Partner site — RouteFinder does not take payment."
+        }
+    }
+
+    /** Reply when no ahead parking / bookable stop is available. */
+    const val BOOK_PARKING_NONE = "No ahead parking to book on this route."
+
     /** Reply when voice guidance is muted. */
     const val MUTED = "Voice guidance muted."
 

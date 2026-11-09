@@ -1307,7 +1307,49 @@ public final class RouteViewModel {
         case .riskAhead:
             let prompt = primaryRouteRiskAdvisory.map { RouteRiskFormatter.spokenPrompt(for: $0) }
             speakVoiceAssist(VoiceAssistResponseFormatter.riskAhead(spokenPrompt: prompt))
+        case .bookParking:
+            await handleBookParkingVoiceCommand()
         }
+    }
+
+    /// Selects the first ahead parking pin / truck parking POI and speaks confirmation.
+    private func handleBookParkingVoiceCommand() async {
+        if let pin = displayMapPins.first(where: {
+            switch $0.kind {
+            case .parkingAmple, .parkingLimited, .parkingFull: return true
+            default: return false
+            }
+        }) {
+            let tier: ParkingAvailabilityTier? = switch pin.kind {
+            case .parkingAmple: .ample
+            case .parkingLimited: .limited
+            case .parkingFull: .full
+            default: nil
+            }
+            selectParkingBookStop(
+                id: pin.id,
+                label: pin.title,
+                latitude: pin.coordinate.latitude,
+                longitude: pin.coordinate.longitude,
+                tier: tier
+            )
+            speakVoiceAssist(VoiceAssistResponseFormatter.bookParking(label: pin.title, tier: tier))
+            return
+        }
+        let parkingKinds: Set<TruckPoiKind> = [.overnightSecureParking, .adrCompatibleParking, .layby]
+        if let poi = upcomingTruckPois.first(where: { parkingKinds.contains($0.kind) }) {
+            let tier = poi.confidence.map { ParkingAvailabilityTier(confidence: $0) }
+            selectParkingBookStop(
+                id: poi.id,
+                label: poi.label,
+                latitude: poi.latitude,
+                longitude: poi.longitude,
+                tier: tier
+            )
+            speakVoiceAssist(VoiceAssistResponseFormatter.bookParking(label: poi.label, tier: tier))
+            return
+        }
+        speakVoiceAssist(VoiceAssistResponseFormatter.bookParkingNone)
     }
 
     private func speakVoiceAssist(_ text: String) {

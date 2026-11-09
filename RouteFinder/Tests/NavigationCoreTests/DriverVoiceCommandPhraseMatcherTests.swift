@@ -54,6 +54,15 @@ struct DriverVoiceCommandPhraseMatcherTests {
         // "unmute" contains "mute" — longest / preferred phrase should win.
         #expect(DriverVoiceCommandPhraseMatcher.match("please unmute") == .unmute)
     }
+
+    @Test func matchesBookParkingPhrases() {
+        #expect(DriverVoiceCommandPhraseMatcher.match("Book parking") == .bookParking)
+        #expect(DriverVoiceCommandPhraseMatcher.match("Reserve parking please") == .bookParking)
+        #expect(DriverVoiceCommandPhraseMatcher.match("Book a truck stop") == .bookParking)
+        #expect(DriverVoiceCommandPhraseMatcher.match("Book a layby bay") == .bookParking)
+        // Distinct from nextLayby “layby is full”.
+        #expect(DriverVoiceCommandPhraseMatcher.match("This layby is full") == .nextLayby)
+    }
 }
 
 struct VoiceAssistResponseFormatterTests {
@@ -129,6 +138,17 @@ struct VoiceAssistResponseFormatterTests {
         )
         #expect(VoiceAssistResponseFormatter.eta(remainingSeconds: 3720).contains("hours"))
         #expect(VoiceAssistResponseFormatter.eta(remainingSeconds: nil) == "ETA is unavailable.")
+    }
+
+    @Test func bookParkingFormatsLabelTierAndNone() {
+        let withTier = VoiceAssistResponseFormatter.bookParking(label: "A14 Services", tier: .limited)
+        #expect(withTier.contains("A14 Services"))
+        #expect(withTier.contains("Limited"))
+        #expect(withTier.contains("Partner site"))
+        #expect(
+            VoiceAssistResponseFormatter.bookParking(label: "  ", tier: nil).contains("Ahead parking")
+        )
+        #expect(VoiceAssistResponseFormatter.bookParkingNone.contains("No ahead parking"))
     }
 
     @Test func hazardRoadworksRiskEmptyHonesty() {

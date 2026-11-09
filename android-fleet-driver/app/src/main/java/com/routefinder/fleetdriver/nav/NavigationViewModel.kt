@@ -686,7 +686,25 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                 toastMessage = spoken
                 voice.speakAssist(spoken)
             }
+            DriverVoiceCommand.BOOK_PARKING -> handleBookParkingVoiceCommand()
         }
+    }
+
+    /** Selects the first ahead parking marker and speaks confirmation. */
+    private fun handleBookParkingVoiceCommand() {
+        val marker = parkingMapMarkers.firstOrNull()
+        if (marker == null) {
+            toastMessage = VoiceAssistResponseFormatter.BOOK_PARKING_NONE
+            voice.speakAssist(VoiceAssistResponseFormatter.BOOK_PARKING_NONE)
+            return
+        }
+        selectParkingBookStop(marker)
+        val spoken = VoiceAssistResponseFormatter.bookParking(
+            label = marker.title,
+            tierLabel = marker.tier.displayLabel,
+        )
+        toastMessage = spoken
+        voice.speakAssist(spoken)
     }
 
     fun updateRegCheckUsername(value: String) {

@@ -123,6 +123,9 @@ public struct MapRouteView: View {
         case .start: return "#22c55e"
         case .end: return "#ef4444"
         case .waypoint: return "#a855f7"
+        case .parkingAmple: return "#22c55e"
+        case .parkingLimited: return "#f59e0b"
+        case .parkingFull: return "#ef4444"
         }
     }
 

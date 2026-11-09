@@ -104,6 +104,7 @@ fun NavigationMapScreen(
             routeCoordinates = viewModel.routeCoordinates,
             followLat = viewModel.followLat,
             followLon = viewModel.followLon,
+            parkingMarkers = viewModel.parkingMapMarkers,
             modifier = Modifier.fillMaxSize(),
         )
 

@@ -452,11 +452,17 @@ public final class RouteViewModel {
     }
 
     /// Map pins with the start marker hidden during live simulation so the vehicle footprint is visible.
+    /// Includes colored parking / layby availability markers from ahead truck POIs.
     public var displayMapPins: [RoutePin] {
+        var pins = mapPins
         if simulationEngine.isRunning {
-            return mapPins.filter { $0.kind != .start }
+            pins = pins.filter { $0.kind != .start }
         }
-        return mapPins
+        pins += ParkingMapPinBuilder.pins(
+            from: upcomingTruckPois,
+            reports: crowdReports
+        )
+        return pins
     }
 
     func resolutionStatus(for waypointID: UUID) -> EndpointResolutionStatus {

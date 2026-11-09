@@ -69,6 +69,27 @@ class DriverVoiceCommandPhraseMatcherTest {
     fun unmuteWinsOverMuteSubstring() {
         assertEquals(DriverVoiceCommand.UNMUTE, DriverVoiceCommandPhraseMatcher.match("please unmute"))
     }
+
+    @Test
+    fun matchesBookParkingPhrases() {
+        assertEquals(DriverVoiceCommand.BOOK_PARKING, DriverVoiceCommandPhraseMatcher.match("Book parking"))
+        assertEquals(
+            DriverVoiceCommand.BOOK_PARKING,
+            DriverVoiceCommandPhraseMatcher.match("Reserve parking please"),
+        )
+        assertEquals(
+            DriverVoiceCommand.BOOK_PARKING,
+            DriverVoiceCommandPhraseMatcher.match("Book a truck stop"),
+        )
+        assertEquals(
+            DriverVoiceCommand.BOOK_PARKING,
+            DriverVoiceCommandPhraseMatcher.match("Book a layby bay"),
+        )
+        assertEquals(
+            DriverVoiceCommand.NEXT_LAYBY,
+            DriverVoiceCommandPhraseMatcher.match("This layby is full"),
+        )
+    }
 }
 
 class VoiceAssistResponseFormatterTest {
@@ -112,6 +133,16 @@ class VoiceAssistResponseFormatterTest {
         )
         assertTrue(VoiceAssistResponseFormatter.eta(3720.0).contains("hours"))
         assertEquals("ETA is unavailable.", VoiceAssistResponseFormatter.eta(null))
+    }
+
+    @Test
+    fun bookParkingFormatsLabelTierAndNone() {
+        val withTier = VoiceAssistResponseFormatter.bookParking("A14 Services", "Limited")
+        assertTrue(withTier.contains("A14 Services"))
+        assertTrue(withTier.contains("Limited"))
+        assertTrue(withTier.contains("Partner site"))
+        assertTrue(VoiceAssistResponseFormatter.bookParking("  ", null).contains("Ahead parking"))
+        assertTrue(VoiceAssistResponseFormatter.BOOK_PARKING_NONE.contains("No ahead parking"))
     }
 
     @Test

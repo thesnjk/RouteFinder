@@ -129,9 +129,9 @@ Policy: ship anything that benefits the driver; sequence by impact, not permanen
 
 | Capability | Best-in-class | RouteFinder today | Sequenced epic |
 |---|---|---|---|
-| Hands-free driver assistant | CoPilot 11.4 | Domain voice (lane / layby / hazard) | `EPIC-VOICE-ASSIST` |
+| Hands-free driver assistant | CoPilot 11.4 | Domain voice (lane / layby / hazard / book parking) | `EPIC-VOICE-ASSIST` |
 | Parking availability UX | CoPilot 11.4 icons | Occupancy taps + Break Now | `EPIC-PARKING-AVAIL` |
-| Parking booking | CoPilot + TRAVIS | Deep links only (Ph8) | `EPIC-PARKING-BOOK` |
+| Parking booking | CoPilot + TRAVIS | Deep links + voice “book parking” entry (Ph8) | `EPIC-PARKING-BOOK` |
 | CarPlay production | Sygic / CoPilot | Code ready; entitlements inactive | `EPIC-CARPLAY-PROD` |
 | Android Auto | CoPilot 11.4 | Not shipped | `EPIC-ANDROID-AUTO` |
 | Combo / bumper length + trailer count | CoPilot 11.4 (NA maps) | Trailer→ORS length ladder (12 / 16.5 / 18.75 / 25.25 m); Constraint stays **3** | `EPIC-COMBO-LENGTH` |

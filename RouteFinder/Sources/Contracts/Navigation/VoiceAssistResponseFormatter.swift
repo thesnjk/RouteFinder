@@ -15,6 +15,21 @@ public enum VoiceAssistResponseFormatter: Sendable {
         LaybyAlertFormatter.nextLaybyToast(next: advisory)
     }
 
+    /// Reply after opening the parking book sheet for an ahead stop.
+    public static func bookParking(label: String, tier: ParkingAvailabilityTier?) -> String {
+        let trimmed = label.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = trimmed.isEmpty ? "Ahead parking" : trimmed
+        if let tier {
+            return "Opening book options for \(name). Availability: \(tier.displayLabel). Partner site — RouteFinder does not take payment."
+        }
+        return "Opening book options for \(name). Partner site — RouteFinder does not take payment."
+    }
+
+    /// Reply when no ahead parking / bookable stop is available.
+    public static var bookParkingNone: String {
+        "No ahead parking to book on this route."
+    }
+
     /// Reply when voice guidance is muted (prefer toast; keep short if spoken).
     public static var muted: String { "Voice guidance muted." }
 

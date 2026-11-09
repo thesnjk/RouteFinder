@@ -26,6 +26,8 @@ public enum DriverVoiceCommand: String, Sendable, Equatable, CaseIterable {
     case roadworksAhead
     /// Ask about the primary fused predictive-risk advisory.
     case riskAhead
+    /// Open the ahead parking book sheet (TRAVIS-first deep link).
+    case bookParking
 }
 
 /// Matches normalized speech transcripts to ``DriverVoiceCommand`` values.
@@ -36,6 +38,15 @@ public enum DriverVoiceCommandPhraseMatcher: Sendable {
         guard !normalized.isEmpty else { return nil }
 
         let ranked: [(DriverVoiceCommand, [String])] = [
+            (.bookParking, [
+                "book parking",
+                "reserve parking",
+                "book a parking",
+                "book truck stop",
+                "book a truck stop",
+                "book a layby bay",
+                "book layby bay",
+            ]),
             (.breakNow, [
                 "break now",
                 "find a layby",

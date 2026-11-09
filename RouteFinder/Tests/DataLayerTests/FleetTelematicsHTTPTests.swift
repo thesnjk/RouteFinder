@@ -70,6 +70,21 @@ import Testing
     #expect(listed.first?.vehicleLabel == "Artic HTTP")
     #expect(listed.first?.provider == .geotab)
 
+    // Client helper path (CSV → ingest) used by Settings / Android parity.
+    let client = HTTPFleetStore(baseURL: baseURL, apiKey: nil)
+    let batchPing = TelematicsVehiclePing(
+        provider: .samsara,
+        vehicleLabel: "CSV Unit",
+        latitude: 51.5,
+        longitude: -0.12,
+        recordedAt: Date(timeIntervalSince1970: 1_720_000_100),
+        speedKph: 40
+    )
+    let uploaded = try await client.ingestTelematicsBatch([batchPing])
+    #expect(uploaded == 1)
+    let afterClient = try await store.latestTelematicsPings()
+    #expect(afterClient.contains(where: { $0.vehicleLabel == "CSV Unit" }))
+
     var limited = URLRequest(
         url: baseURL.appendingPathComponent("v1/telematics/pings").appending(queryItems: [
             URLQueryItem(name: "limit", value: "1"),

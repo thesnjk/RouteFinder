@@ -46,6 +46,10 @@ import com.routefinder.fleetdriver.fleet.FleetTrip
 import com.routefinder.fleetdriver.fleet.FleetVehicleProfile
 import com.routefinder.fleetdriver.fleet.InspectionMediaBudget
 import com.routefinder.fleetdriver.fleet.JobIntakeHandler
+import com.routefinder.fleetdriver.fleet.TelematicsCSVImporter
+import com.routefinder.fleetdriver.fleet.TelematicsCSVImporterError
+import com.routefinder.fleetdriver.fleet.TelematicsImportBatch
+import com.routefinder.fleetdriver.fleet.TelematicsProvider
 import com.routefinder.fleetdriver.fleet.VehicleRegistrationResolver
 import com.routefinder.fleetdriver.fleet.SseConnectionState
 import com.routefinder.fleetdriver.fleet.formatTimeWindowLines
@@ -174,6 +178,12 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     /** Banner when weighbridges are on the corridor (OSM — not DVSA / PrePass). */
     var weighStationBannerMessage by mutableStateOf<String?>(null)
         private set
+    /** Last telematics CSV batch (local); upload pushes to fleet ingest. */
+    var telematicsImportBatch by mutableStateOf<TelematicsImportBatch?>(null)
+        private set
+    /** Telematics import / upload status or error (read-only — not legal VU). */
+    var telematicsStatusMessage by mutableStateOf<String?>(null)
+        private set
     var emissionClassDraft by mutableStateOf(prefs.emissionClass)
     /** Trailer count draft for solo / override routing (0…3). */
     var trailerCountDraft by mutableStateOf(1)
@@ -291,6 +301,71 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         tachoImportError = null
         removePersistedTachoSummary()
         refreshCanIDriveFromLocalSources()
+    }
+
+    /** Parses a Geotab/Samsara-style telematics CSV (local only until upload). */
+    fun importTelematicsCSV(uri: Uri) {
+        viewModelScope.launch {
+            telematicsStatusMessage = null
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    val app = getApplication<Application>()
+                    val name = displayNameFor(uri) ?: "export.csv"
+                    val text = app.contentResolver.openInputStream(uri)?.use {
+                        it.bufferedReader().readText()
+                    } ?: throw TelematicsCSVImporterError.EmptyFile()
+                    TelematicsCSVImporter.parseBatch(
+                        text = text,
+                        sourceFileName = name,
+                        defaultProvider = TelematicsProvider.UNKNOWN,
+                    )
+                }
+            }
+            result.fold(
+                onSuccess = { batch ->
+                    telematicsImportBatch = batch
+                    telematicsStatusMessage =
+                        "Parsed ${batch.pings.size} ping(s) from ${batch.sourceFileName ?: "CSV"}"
+                    toastMessage = telematicsStatusMessage
+                },
+                onFailure = { error ->
+                    telematicsStatusMessage = error.message ?: "Could not import telematics CSV."
+                },
+            )
+        }
+    }
+
+    /** POSTs the last CSV batch to fleet `POST /v1/telematics/ingest` (desk pins — not legal VU). */
+    fun uploadTelematicsToFleet() {
+        val batch = telematicsImportBatch
+        if (batch == null || batch.pings.isEmpty()) {
+            telematicsStatusMessage = "Import a telematics CSV first."
+            return
+        }
+        viewModelScope.launch {
+            val uploaded = withContext(Dispatchers.IO) {
+                runCatching {
+                    FleetApi(prefs.baseUrl, prefs.apiKey).ingestTelematicsBatch(batch.pings)
+                }
+            }
+            uploaded.fold(
+                onSuccess = { count ->
+                    telematicsStatusMessage =
+                        "Uploaded $count / ${batch.pings.size} ping(s) to fleet (read-only desk pins)."
+                    toastMessage = telematicsStatusMessage
+                },
+                onFailure = { error ->
+                    telematicsStatusMessage =
+                        error.message ?: "Fleet telematics upload failed."
+                },
+            )
+        }
+    }
+
+    /** Clears the local telematics CSV batch. */
+    fun clearTelematicsImport() {
+        telematicsImportBatch = null
+        telematicsStatusMessage = null
     }
 
     /** Records that the driver opened a partner parking book link. */

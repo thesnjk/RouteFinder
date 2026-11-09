@@ -1232,7 +1232,7 @@ struct SettingsSheet: View {
                     .font(RFFont.caption.weight(.semibold))
                     .padding(.top, RFSpacing.xs)
 
-                Text("Import a Geotab/Samsara-style CSV of last-known positions for dispatch display. Not legal VU.")
+                Text("Import a Geotab/Samsara-style CSV of last-known positions for dispatch display. When remote fleet is on, pings also POST to `/v1/telematics/ingest` for desk pins. Not legal VU.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
 
@@ -1248,6 +1248,15 @@ struct SettingsSheet: View {
                 .buttonStyle(.bordered)
                 .controlSize(.small)
 
+                if viewModel.telematicsImportBatch != nil {
+                    Button("Push to fleet server") {
+                        Task { await viewModel.pushTelematicsToFleetIfConfigured() }
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .disabled(!viewModel.useRemoteFleetServer)
+                }
+
                 if let batch = viewModel.telematicsImportBatch {
                     Text("Last import: \(batch.pings.count) vehicle(s) at \(batch.importedAt.formatted())")
                         .font(.caption2)
@@ -1261,6 +1270,12 @@ struct SettingsSheet: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
+                }
+
+                if let upload = viewModel.telematicsUploadStatus {
+                    Text(upload)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
 
                 if let error = viewModel.telematicsImportError {

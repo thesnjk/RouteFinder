@@ -225,6 +225,8 @@ public final class RouteViewModel {
     public var telematicsImportBatch: TelematicsImportBatch?
     /// Error from telematics CSV import, if any.
     public var telematicsImportError: String?
+    /// Status after pushing telematics pings to the fleet server (nil when not attempted).
+    public var telematicsUploadStatus: String?
     /// Named UK toll advisories intersecting the active route.
     public var routeTollAdvisories: [UKTollAdvisory] = []
     /// Next toll advisory within navigation horizon (≈5 km).
@@ -1563,6 +1565,7 @@ public final class RouteViewModel {
     /// Imports a telematics CSV (Geotab/Samsara-style) for read-only display.
     public func importTelematicsCSV(from url: URL) async {
         telematicsImportError = nil
+        telematicsUploadStatus = nil
         do {
             let accessed = url.startAccessingSecurityScopedResource()
             defer {
@@ -1575,6 +1578,7 @@ public final class RouteViewModel {
             )
             try await telematicsImportStore.save(batch)
             telematicsImportBatch = batch
+            await pushTelematicsToFleetIfConfigured()
         } catch {
             telematicsImportError = error.localizedDescription
         }
@@ -1590,6 +1594,33 @@ public final class RouteViewModel {
         await telematicsImportStore.clear()
         telematicsImportBatch = nil
         telematicsImportError = nil
+        telematicsUploadStatus = nil
+    }
+
+    /// POSTs the last CSV batch to fleet ingest when remote fleet is configured.
+    public func pushTelematicsToFleetIfConfigured() async {
+        guard useRemoteFleetServer,
+              let url = URL(string: fleetServerURLText.trimmingCharacters(in: .whitespacesAndNewlines)),
+              !fleetServerURLText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let batch = telematicsImportBatch,
+              !batch.pings.isEmpty
+        else {
+            return
+        }
+        let draftKey = fleetServerAPIKeyText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let apiKey = (try? FleetServerCredentials.loadAPIKey())
+            ?? (draftKey.isEmpty ? nil : draftKey)
+        do {
+            let store = HTTPFleetStore(baseURL: url, apiKey: apiKey)
+            let uploaded = try await store.ingestTelematicsBatch(
+                batch.pings,
+                fallbackVehicleId: fleetVehicleId
+            )
+            telematicsUploadStatus =
+                "Uploaded \(uploaded)/\(batch.pings.count) ping(s) to fleet (desk pins — not legal VU)."
+        } catch {
+            telematicsUploadStatus = error.localizedDescription
+        }
     }
 
     /// Refreshes named UK toll advisories for the active route polyline.

@@ -1,6 +1,6 @@
 # Competitive Feature Scorecard — September 2026
 
-Last updated: 2026-10-12 (Oct sweep + **driver-first reopen** — hard deferrals → sequenced gaps; no integer score changes yet; physics Lead + sim WIP footnote)
+Last updated: 2026-11-09 (desk Can-I-drive weekly parity; mark VOICE / PARKING-BOOK / COMBO shipped MVP; residual LANE/AA/CarPlay/VU)
 
 Scoring: **0** Absent · **1** Weak · **2** Parity · **3** Lead  
 Personas: **OO** = UK owner-operator · **SF** = small fleet (2–20 vehicles)
@@ -36,7 +36,7 @@ RouteFinder scores from code inventory + Phase 20/26/27/30–44 + **Phase 8** + 
 | Plate → profile (UK) | 8% | **3** | 0 | 0 | 0 | 0 | RF RegCheck + DVLA |
 | Crowd hazard / closure ahead | 5% | **2** | 1 | 1 | 0 | 0 | RF Ph33 + Ph36 TomTom live + Android report fuse + map pins + still-there confirm |
 | UK toll awareness | 5% | **2** | 2 | 3 | 2 | 2 | RF named hints + avoid-before-commit + commit TTS + in-nav HUD + avoid-tolls PTT; TomTom live tariffs still lead |
-| Telematics / tacho display | 5% | **2** | 1 | 1 | 2 | 1 | RF CSV + fleet ingest → desk pins; Samsara VU still leads |
+| Telematics / tacho display | 5% | **2** | 1 | 1 | 2 | 1 | RF CSV + fleet ingest → desk pins + Can-I-drive week card; Samsara VU still leads |
 | Price ($0 baseline) | 5% | **3** | 1 | 1 | 0 | 1 | Pilot £0 / post-pilot API-included desk subscription ([`pilot-fleet-pack.md`](pilot-fleet-pack.md)); not per-seat cloud portal; CoPilot quote-only |
 
 **Weighted OO score (approx.):** RouteFinder **~2.56** · Sygic **~2.00** · TomTom **~2.20** · CoPilot **~1.80**  
@@ -127,17 +127,17 @@ Full re-scrape: [`ultimate-competitive-excellence-sweep.md`](ultimate-competitiv
 
 Policy: ship anything that benefits the driver; sequence by impact, not permanent deferral. Full epic table: [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md#driver-first-reopen--2026-10-12b).
 
-| Capability | Best-in-class | RouteFinder today | Sequenced epic |
+| Capability | Best-in-class | RouteFinder today | Status / residual epic |
 |---|---|---|---|
-| Hands-free driver assistant | CoPilot 11.4 | Domain voice (which-lane / avoid-tolls / layby / hazard / book parking) | `EPIC-VOICE-ASSIST` |
-| Parking availability UX | CoPilot 11.4 icons | Occupancy taps + Break Now | `EPIC-PARKING-AVAIL` |
-| Parking booking | CoPilot + TRAVIS | Deep links + voice “book parking” entry (Ph8) | `EPIC-PARKING-BOOK` |
-| CarPlay production | Sygic / CoPilot | Code ready; entitlements inactive | `EPIC-CARPLAY-PROD` |
-| Android Auto | CoPilot 11.4 | Not shipped | `EPIC-ANDROID-AUTO` |
-| Combo / bumper length + trailer count | CoPilot 11.4 (NA maps) | Trailer→ORS length ladder (12 / 16.5 / 18.75 / 25.25 m); Constraint stays **3** | `EPIC-COMBO-LENGTH` |
-| Lane HD / street callouts | TomTom / Sygic / CoPilot 11.4 | OSM + voice phrase + which-lane PTT; residual HD visuals | `EPIC-LANE-DEPTH` |
-| Toll tariff depth | PTV / TomTom | Named UK advisories (Ph8) | `EPIC-TOLL-DEPTH` |
-| Remote VU download | Samsara / Geotab | Advisory tacho + CSV stub | `EPIC-VU-PARTNER` |
-| Legal LEZ cadastre | Sygic / TomTom | Simplified authored rings | `EPIC-LEZ-CADASTRE` |
-| Hosted multi-depot desk | CoPilot Account Manager | Hosted gateway; no billing UI | `EPIC-HOSTED-DESK` |
+| Hands-free driver assistant | CoPilot 11.4 | Domain PTT: which-lane / avoid-tolls / layby / hazard / book parking / Can-I-drive day+week | **Shipped (MVP)** — residual: freer NLU / street-name depth (`EPIC-LANE-DEPTH`) |
+| Parking availability UX | CoPilot 11.4 icons | Occupancy taps + Break Now | **Residual** `EPIC-PARKING-AVAIL` (color icons ahead) |
+| Parking booking | CoPilot + TRAVIS | Deep links + voice “book parking” entry | **Shipped (MVP)** — residual: native partner book API |
+| CarPlay production | Sygic / CoPilot | Code ready; entitlements inactive | **Gated** `EPIC-CARPLAY-PROD` |
+| Android Auto | CoPilot 11.4 | Not shipped | **Gated** `EPIC-ANDROID-AUTO` |
+| Combo / bumper length + trailer count | CoPilot 11.4 (NA maps) | Trailer→ORS length ladder (12 / 16.5 / 18.75 / 25.25 m); Constraint stays **3** | **Shipped (MVP)** |
+| Lane HD / street callouts | TomTom / Sygic / CoPilot 11.4 | OSM + voice phrase + which-lane PTT; residual HD visuals / street TTS | **Residual** `EPIC-LANE-DEPTH` |
+| Toll tariff depth | PTV / TomTom | Named UK advisories + avoid/commit/in-nav HUD + avoid-tolls PTT | **Residual** `EPIC-TOLL-DEPTH` (live £ tariffs) |
+| Remote VU download | Samsara / Geotab | Advisory tacho + desk Can-I-drive week card; CSV stub | **Residual** `EPIC-VU-PARTNER` (legal VU download) |
+| Legal LEZ cadastre | Sygic / TomTom | Simplified authored rings | **Residual** `EPIC-LEZ-CADASTRE` |
+| Hosted multi-depot desk | CoPilot Account Manager | Named depot profiles; no billing UI | **Residual** `EPIC-HOSTED-DESK` |
 | Per-seat API burn visibility | Enterprise fleet SaaS | On-device ledger + soft budgets (Ph45) | Keep ledger; expand when hosted seats ship |

@@ -50,6 +50,7 @@ import {
   type ProfilesState,
 } from './connectionProfiles'
 import type { PartnerTachoAdvisory, TelematicsVehiclePing } from './fleet/types'
+import { DEFAULT_WEEKLY_DRIVE_SECONDS, evaluatePartnerAdvisory } from './canIDriveDesk'
 
 const ONBOARDING_KEY = 'routefinder.webDispatch.onboardingDone'
 
@@ -112,6 +113,11 @@ export default function App() {
   const client = useMemo(
     () => new FleetApiClient({ baseUrl, apiKey }),
     [baseUrl, apiKey],
+  )
+
+  const canIDrive = useMemo(
+    () => (tachoAdvisory ? evaluatePartnerAdvisory(tachoAdvisory) : null),
+    [tachoAdvisory],
   )
 
   const persist = useCallback(() => {
@@ -547,13 +553,25 @@ export default function App() {
           Remaining drive from <code>GET /v1/tacho/advisory</code> — planning aid only, not a legal VU.
         </p>
         {tachoAdvisory ? (
-          <p>
-            <strong>{tachoAdvisory.vehicleLabel ?? 'Vehicle'}</strong>
-            {tachoAdvisory.provider ? ` · ${tachoAdvisory.provider}` : ''} · continuous{' '}
-            {Math.round(tachoAdvisory.remainingContinuousDriveSeconds / 60)}m · day{' '}
-            {Math.round(tachoAdvisory.remainingDailyDriveSeconds / 60)}m · recorded{' '}
-            {new Date(tachoAdvisory.recordedAt).toLocaleString()}
-          </p>
+          <>
+            <p>
+              <strong>{tachoAdvisory.vehicleLabel ?? 'Vehicle'}</strong>
+              {tachoAdvisory.provider ? ` · ${tachoAdvisory.provider}` : ''} · continuous{' '}
+              {Math.round(tachoAdvisory.remainingContinuousDriveSeconds / 60)}m · day{' '}
+              {Math.round(tachoAdvisory.remainingDailyDriveSeconds / 60)}m · week{' '}
+              {Math.round(
+                (tachoAdvisory.remainingWeeklyDriveSeconds ?? DEFAULT_WEEKLY_DRIVE_SECONDS) /
+                  60,
+              )}
+              m · recorded {new Date(tachoAdvisory.recordedAt).toLocaleString()}
+            </p>
+            {canIDrive ? (
+              <p>
+                <strong>Can I drive?</strong> {canIDrive.canDrive ? 'Yes' : 'No'} —{' '}
+                {canIDrive.reason}
+              </p>
+            ) : null}
+          </>
         ) : (
           <p className="muted">No partner advisory yet (POST /v1/tacho/advisory).</p>
         )}

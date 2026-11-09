@@ -14,6 +14,8 @@ import {
   type RosterDriverPin,
 } from './fleetRoster'
 import { tripMapFingerprint, tripMapFetchFingerprint } from './tripMapFingerprint'
+import { advisoriesAlongRoute } from './tollAdvisoryAlongRouteMatcher'
+import type { UKTollAdvisory } from './ukTollAdvisoryCatalog'
 
 function setTripLine(map: MapLibreMap, coords: LngLat[]) {
   if (coords.length < 2 || !map.isStyleLoaded()) return
@@ -67,6 +69,7 @@ export function TripMapPreview({
   client,
   vehicleProfile,
   onRoutePreviewError,
+  onTollAdvisories,
   fleetPins = [],
   partnerPins = [],
   selectedVehicleId = null,
@@ -76,6 +79,8 @@ export function TripMapPreview({
   vehicleProfile?: HgvPreviewProfile | null
   /** Fired when fleet ORS corridor preview fails (429/cap, network); map keeps straight-line. */
   onRoutePreviewError?: (message: string) => void
+  /** Indicative UK tolls matched on the HGV corridor polyline (empty when cleared). */
+  onTollAdvisories?: (advisories: UKTollAdvisory[]) => void
   /** Yard pins from roster GPS (no per-truck ORS). */
   fleetPins?: RosterDriverPin[]
   /** Partner telematics pings (read-only webhook/CSV ingest). */
@@ -93,6 +98,8 @@ export function TripMapPreview({
   profileRef.current = vehicleProfile
   const onErrorRef = useRef(onRoutePreviewError)
   onErrorRef.current = onRoutePreviewError
+  const onTollRef = useRef(onTollAdvisories)
+  onTollRef.current = onTollAdvisories
   const pinsRef = useRef(fleetPins)
   pinsRef.current = fleetPins
   const partnerPinsRef = useRef(partnerPins)
@@ -242,6 +249,7 @@ export function TripMapPreview({
         (s) => [s.longitude, s.latitude] as LngLat,
       )
       setTripLine(map, straightLine)
+      onTollRef.current?.(advisoriesAlongRoute(straightLine))
 
       const api = clientRef.current
       if (api) {
@@ -251,6 +259,7 @@ export function TripMapPreview({
           .then((corridor) => {
             if (cancelled || corridor.length < 2 || !map.isStyleLoaded()) return
             setTripLine(map, corridor)
+            onTollRef.current?.(advisoriesAlongRoute(corridor))
             const corridorBounds = new LngLatBounds()
             for (const [lng, lat] of corridor) corridorBounds.extend([lng, lat])
             for (const pin of pinsRef.current) {
@@ -268,11 +277,13 @@ export function TripMapPreview({
       }
     } else {
       clearTripLine(map)
+      onTollRef.current?.([])
     }
 
     return () => {
       cancelled = true
       for (const marker of markers) marker.remove()
+      onTollRef.current?.([])
     }
   }, [fingerprint, tripFp, pinsFp, styleReady])
 

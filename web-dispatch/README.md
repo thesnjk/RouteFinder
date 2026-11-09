@@ -54,4 +54,5 @@ Operator steps: [`../Docs/web-dispatch-operator-guide.md`](../Docs/web-dispatch-
 - **Named depot profiles** — save one Connection profile per hosted org bearer token (or LAN URL); switch without re-pasting
 - **Partner telematics** — `GET /v1/telematics/pings` list + map pins (read-only; not legal VU)
 - **Partner VU advisory** — `GET /v1/tacho/advisory` continuous / daily / weekly remaining + Can I drive? yes/no card (planning aid; not legal VU; omitted weekly → 56h allowance)
+- **UK tolls (indicative)** — static catalog £ matched on ORS corridor preview (not live tariffs; check operator)
 - **Not yet:** billing UI / self-serve multi-tenant admin

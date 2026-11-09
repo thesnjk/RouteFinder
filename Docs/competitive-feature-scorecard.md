@@ -1,6 +1,6 @@
 # Competitive Feature Scorecard — September 2026
 
-Last updated: 2026-11-09 (LANE-DEPTH street callout sanitize MVP slice; residual HD visuals / AA / CarPlay / VU)
+Last updated: 2026-11-09 (TOLL-DEPTH desk corridor £ MVP slice; residual live tariffs / AA / CarPlay / VU)
 
 Scoring: **0** Absent · **1** Weak · **2** Parity · **3** Lead  
 Personas: **OO** = UK owner-operator · **SF** = small fleet (2–20 vehicles)
@@ -136,7 +136,7 @@ Policy: ship anything that benefits the driver; sequence by impact, not permanen
 | Android Auto | CoPilot 11.4 | Not shipped | **Gated** `EPIC-ANDROID-AUTO` |
 | Combo / bumper length + trailer count | CoPilot 11.4 (NA maps) | Trailer→ORS length ladder (12 / 16.5 / 18.75 / 25.25 m); Constraint stays **3** | **Shipped (MVP)** |
 | Lane HD / street callouts | TomTom / Sygic / CoPilot 11.4 | OSM + sanitize street TTS/HUD/which-lane (drop turn/keep/head echoes); residual HD visuals | **Shipped (MVP slice)** — residual HD lane visuals / richer OSM (`EPIC-LANE-DEPTH`) |
-| Toll tariff depth | PTV / TomTom | Named UK advisories + avoid/commit/in-nav HUD + avoid-tolls PTT | **Residual** `EPIC-TOLL-DEPTH` (live £ tariffs) |
+| Toll tariff depth | PTV / TomTom | Named UK advisories + avoid/HUD/PTT + desk corridor indicative £ panel | **Shipped (MVP slice)** — residual live operator tariffs (`EPIC-TOLL-DEPTH`) |
 | Remote VU download | Samsara / Geotab | Advisory tacho + desk Can-I-drive week card; CSV stub | **Residual** `EPIC-VU-PARTNER` (legal VU download) |
 | Legal LEZ cadastre | Sygic / TomTom | Simplified authored rings | **Residual** `EPIC-LEZ-CADASTRE` |
 | Hosted multi-depot desk | CoPilot Account Manager | Named depot profiles; no billing UI | **Residual** `EPIC-HOSTED-DESK` |

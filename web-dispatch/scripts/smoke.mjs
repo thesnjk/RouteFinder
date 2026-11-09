@@ -817,4 +817,93 @@ const omittedWeekly = evaluatePartnerAdvisory({
 assert.equal(omittedWeekly.canDrive, true)
 assert.equal(omittedWeekly.weeklySeconds, DEFAULT_WEEKLY_DRIVE_SECONDS)
 
+/** Mirrors web-dispatch/src/tollAdvisoryAlongRouteMatcher.ts + ukTollAdvisoryCatalog.ts */
+const EARTH_RADIUS_M = 6_371_000
+function haversineMeters(lat1, lon1, lat2, lon2) {
+  const toRad = (deg) => (deg * Math.PI) / 180
+  const dLat = toRad(lat2 - lat1)
+  const dLon = toRad(lon2 - lon1)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2
+  return 2 * EARTH_RADIUS_M * Math.asin(Math.min(1, Math.sqrt(a)))
+}
+
+const SMOKE_TOLL_CATALOG = [
+  {
+    id: 'm6-toll',
+    name: 'M6 Toll',
+    latitude: 52.65,
+    longitude: -1.75,
+    approachRadiusMeters: 4000,
+    indicativeCostGBP: 13.0,
+  },
+  {
+    id: 'dartford-crossing',
+    name: 'Dartford Crossing',
+    latitude: 51.464,
+    longitude: 0.258,
+    approachRadiusMeters: 3500,
+    indicativeCostGBP: 6.0,
+  },
+  {
+    id: 'severn-crossings',
+    name: 'Severn Bridge / Second Severn Crossing',
+    latitude: 51.59,
+    longitude: -2.7,
+    approachRadiusMeters: 4000,
+  },
+]
+
+function advisoriesAlongRoute(coordinates, catalog = SMOKE_TOLL_CATALOG) {
+  if (coordinates.length < 2 || catalog.length === 0) return []
+  const hits = []
+  const seen = new Set()
+  for (const advisory of catalog) {
+    let firstIndex
+    for (let index = 0; index < coordinates.length; index++) {
+      const [lng, lat] = coordinates[index]
+      if (
+        haversineMeters(lat, lng, advisory.latitude, advisory.longitude) <=
+        advisory.approachRadiusMeters
+      ) {
+        firstIndex = index
+        break
+      }
+    }
+    if (firstIndex != null && !seen.has(advisory.id)) {
+      seen.add(advisory.id)
+      hits.push({ index: firstIndex, advisory })
+    }
+  }
+  return hits.sort((a, b) => a.index - b.index).map((h) => h.advisory)
+}
+
+function indicativeRouteTotalGBP(advisories) {
+  const amounts = advisories.map((a) => a.indicativeCostGBP).filter((v) => v != null)
+  if (amounts.length === 0) return null
+  return amounts.reduce((sum, v) => sum + v, 0)
+}
+
+assert.deepEqual(advisoriesAlongRoute([]), [])
+assert.deepEqual(advisoriesAlongRoute([[0, 0]]), [])
+
+const dartfordM6 = advisoriesAlongRoute([
+  [0.258, 51.464],
+  [-0.5, 52.0],
+  [-1.75, 52.65],
+])
+assert.equal(dartfordM6.length, 2)
+assert.equal(dartfordM6[0].id, 'dartford-crossing')
+assert.equal(dartfordM6[1].id, 'm6-toll')
+assert.equal(indicativeRouteTotalGBP(dartfordM6), 19)
+
+const severnOnly = advisoriesAlongRoute([
+  [-2.7, 51.59],
+  [-2.65, 51.6],
+])
+assert.equal(severnOnly.length, 1)
+assert.equal(severnOnly[0].id, 'severn-crossings')
+assert.equal(indicativeRouteTotalGBP(severnOnly), null)
+
 console.log('fleet types smoke ok')

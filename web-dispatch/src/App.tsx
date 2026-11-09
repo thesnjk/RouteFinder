@@ -23,6 +23,11 @@ import { loadNorfolkDemoStops } from './demoCorridor'
 import { bootstrapDemoFleet } from './bootstrapDemoFleet'
 import { canPushTrip, isPushBlockedByFleetHealth } from './dispatchPushGate'
 import { TripMapPreview } from './TripMapPreview'
+import type { UKTollAdvisory } from './ukTollAdvisoryCatalog'
+import {
+  indicativeCostLabel,
+  indicativeRouteTotalLabel,
+} from './ukTollAdvisoryCatalog'
 import { VehicleQR } from './VehicleQR'
 import { filterVehicles } from './vehicleFilter'
 import {
@@ -73,6 +78,9 @@ export default function App() {
   const [partnerPings, setPartnerPings] = useState<TelematicsVehiclePing[]>([])
   const [partnerPingsError, setPartnerPingsError] = useState<string | null>(null)
   const [tachoAdvisory, setTachoAdvisory] = useState<PartnerTachoAdvisory | null>(null)
+  const [corridorTollAdvisories, setCorridorTollAdvisories] = useState<UKTollAdvisory[]>(
+    [],
+  )
   const [health, setHealth] = useState<string>('Not checked')
   const [healthOk, setHealthOk] = useState(false)
   const [proxyStatus, setProxyStatus] = useState<FleetProxyStatus | null>(null)
@@ -118,6 +126,11 @@ export default function App() {
   const canIDrive = useMemo(
     () => (tachoAdvisory ? evaluatePartnerAdvisory(tachoAdvisory) : null),
     [tachoAdvisory],
+  )
+
+  const corridorTollTotalLabel = useMemo(
+    () => indicativeRouteTotalLabel(corridorTollAdvisories),
+    [corridorTollAdvisories],
   )
 
   const persist = useCallback(() => {
@@ -1049,6 +1062,7 @@ export default function App() {
               : null
           }
           onRoutePreviewError={(msg) => setError(msg)}
+          onTollAdvisories={setCorridorTollAdvisories}
           fleetPins={rosterDriverPins(rosterRows)}
           partnerPins={partnerPings.map((p) => ({
             id: `${p.vehicleLabel}-${p.recordedAt}`,
@@ -1058,6 +1072,29 @@ export default function App() {
           }))}
           selectedVehicleId={vehicleId || null}
         />
+        {corridorTollAdvisories.length > 0 ? (
+          <div className="toll-corridor-panel">
+            <h3>UK tolls (indicative)</h3>
+            <ul>
+              {corridorTollAdvisories.map((advisory) => {
+                const cost = indicativeCostLabel(advisory)
+                return (
+                  <li key={advisory.id}>
+                    {cost ? `${advisory.name} — ${cost}` : advisory.name}
+                  </li>
+                )
+              })}
+            </ul>
+            {corridorTollTotalLabel ? (
+              <p>
+                <strong>{corridorTollTotalLabel}</strong>
+              </p>
+            ) : null}
+            <p className="muted">
+              Check operator — indicative only; not a live tariff.
+            </p>
+          </div>
+        ) : null}
       </section>
 
       {error ? <p className="error">{error}</p> : null}

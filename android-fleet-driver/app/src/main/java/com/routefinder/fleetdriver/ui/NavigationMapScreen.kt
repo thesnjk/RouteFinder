@@ -19,6 +19,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -30,7 +32,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -47,6 +52,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.routefinder.fleetdriver.compliance.CanIDriveEvaluator
+import com.routefinder.fleetdriver.compliance.FuelCardProvider
 import com.routefinder.fleetdriver.compliance.ParkingAvailabilityTier
 import com.routefinder.fleetdriver.compliance.ParkingBookCtaCopy
 import com.routefinder.fleetdriver.compliance.ParkingBookPartner
@@ -420,6 +426,42 @@ fun NavigationMapScreen(
                         Switch(
                             checked = viewModel.avoidTolls,
                             onCheckedChange = { viewModel.updateAvoidTolls(it, replan = true) },
+                        )
+                    }
+
+                    var fuelCardMenuExpanded by remember { mutableStateOf(false) }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("Fuel card", style = MaterialTheme.typography.bodySmall)
+                        Box {
+                            OutlinedButton(onClick = { fuelCardMenuExpanded = true }) {
+                                Text(viewModel.fuelCardProvider.displayName)
+                            }
+                            DropdownMenu(
+                                expanded = fuelCardMenuExpanded,
+                                onDismissRequest = { fuelCardMenuExpanded = false },
+                            ) {
+                                FuelCardProvider.entries.forEach { provider ->
+                                    DropdownMenuItem(
+                                        text = { Text(provider.displayName) },
+                                        onClick = {
+                                            viewModel.updateFuelCardProvider(provider)
+                                            fuelCardMenuExpanded = false
+                                        },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    viewModel.fuelCardBannerMessage?.let { banner ->
+                        Text(banner, style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            "OSM brand match — not live card acceptance or pump prices.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.tertiary,
                         )
                     }
 

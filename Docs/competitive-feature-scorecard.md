@@ -134,7 +134,7 @@ Policy: ship anything that benefits the driver; sequence by impact, not permanen
 | Parking booking | CoPilot + TRAVIS | Deep links only (Ph8) | `EPIC-PARKING-BOOK` |
 | CarPlay production | Sygic / CoPilot | Code ready; entitlements inactive | `EPIC-CARPLAY-PROD` |
 | Android Auto | CoPilot 11.4 | Not shipped | `EPIC-ANDROID-AUTO` |
-| Combo / bumper length + trailer count | CoPilot 11.4 (NA maps) | Single length on profile | `EPIC-COMBO-LENGTH` |
+| Combo / bumper length + trailer count | CoPilot 11.4 (NA maps) | Trailer→ORS length ladder (12 / 16.5 / 18.75 / 25.25 m); Constraint stays **3** | `EPIC-COMBO-LENGTH` |
 | Lane HD / street callouts | TomTom / Sygic / CoPilot 11.4 | OSM + voice phrase | `EPIC-LANE-DEPTH` |
 | Toll tariff depth | PTV / TomTom | Named UK advisories (Ph8) | `EPIC-TOLL-DEPTH` |
 | Remote VU download | Samsara / Geotab | Advisory tacho + CSV stub | `EPIC-VU-PARTNER` |

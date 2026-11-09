@@ -777,7 +777,7 @@ fun NavigationMapScreen(
                         )
                     }
                     Text(
-                        "Length is bumper-to-bumper (ORS). Trailers 0 = rigid, ≥1 = artic.",
+                        "Length is bumper-to-bumper (ORS). Trailers suggest length: 0→12 m, 1→16.5 m, 2→18.75 m, 3→25.25 m; map body rigid when 0, artic when ≥1.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.tertiary,
                     )

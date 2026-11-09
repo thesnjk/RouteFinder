@@ -90,6 +90,20 @@ class DriverVoiceCommandPhraseMatcherTest {
             DriverVoiceCommandPhraseMatcher.match("This layby is full"),
         )
     }
+
+    @Test
+    fun matchesWhichLanePhrases() {
+        assertEquals(DriverVoiceCommand.WHICH_LANE, DriverVoiceCommandPhraseMatcher.match("Which lane"))
+        assertEquals(
+            DriverVoiceCommand.WHICH_LANE,
+            DriverVoiceCommandPhraseMatcher.match("Which lane should I take"),
+        )
+        assertEquals(DriverVoiceCommand.WHICH_LANE, DriverVoiceCommandPhraseMatcher.match("Lane guidance"))
+        assertEquals(
+            DriverVoiceCommand.WHICH_LANE,
+            DriverVoiceCommandPhraseMatcher.match("What lane am I in"),
+        )
+    }
 }
 
 class VoiceAssistResponseFormatterTest {
@@ -143,6 +157,19 @@ class VoiceAssistResponseFormatterTest {
         assertTrue(withTier.contains("Partner site"))
         assertTrue(VoiceAssistResponseFormatter.bookParking("  ", null).contains("Ahead parking"))
         assertTrue(VoiceAssistResponseFormatter.BOOK_PARKING_NONE.contains("No ahead parking"))
+    }
+
+    @Test
+    fun whichLaneFormatsGuidanceRoadDistanceAndNone() {
+        val spoken = VoiceAssistResponseFormatter.whichLane("Use the left lane", "A14", 400.0)
+        assertTrue(spoken.contains("Use the left lane"))
+        assertTrue(spoken.contains("onto A14"))
+        assertTrue(spoken.contains("metres") || spoken.contains("kilometres"))
+        assertEquals("No lane guidance right now.", VoiceAssistResponseFormatter.WHICH_LANE_NONE)
+        assertEquals(
+            VoiceAssistResponseFormatter.WHICH_LANE_NONE,
+            VoiceAssistResponseFormatter.whichLane(null, "A14", 100.0),
+        )
     }
 
     @Test

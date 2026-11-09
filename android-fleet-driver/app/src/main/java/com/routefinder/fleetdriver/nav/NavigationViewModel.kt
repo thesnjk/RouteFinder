@@ -687,7 +687,26 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                 voice.speakAssist(spoken)
             }
             DriverVoiceCommand.BOOK_PARKING -> handleBookParkingVoiceCommand()
+            DriverVoiceCommand.WHICH_LANE -> handleWhichLaneVoiceCommand()
         }
+    }
+
+    /** Speaks active junction lane guidance without mutating lane state. */
+    private fun handleWhichLaneVoiceCommand() {
+        val guidance = currentInstruction?.laneGuidance
+        if (guidance == null) {
+            toastMessage = VoiceAssistResponseFormatter.WHICH_LANE_NONE
+            voice.speakAssist(VoiceAssistResponseFormatter.WHICH_LANE_NONE)
+            return
+        }
+        val spoken = VoiceAssistResponseFormatter.whichLane(
+            guidanceText = guidance.spokenLanePhrase(),
+            roadName = currentInstruction?.roadName,
+            distanceMeters = progress?.distanceToNextManeuverMeters
+                ?: currentInstruction?.distanceMeters,
+        )
+        toastMessage = spoken
+        voice.speakAssist(spoken)
     }
 
     /** Selects the first ahead parking marker and speaks confirmation. */

@@ -63,6 +63,13 @@ struct DriverVoiceCommandPhraseMatcherTests {
         // Distinct from nextLayby “layby is full”.
         #expect(DriverVoiceCommandPhraseMatcher.match("This layby is full") == .nextLayby)
     }
+
+    @Test func matchesWhichLanePhrases() {
+        #expect(DriverVoiceCommandPhraseMatcher.match("Which lane") == .whichLane)
+        #expect(DriverVoiceCommandPhraseMatcher.match("Which lane should I take") == .whichLane)
+        #expect(DriverVoiceCommandPhraseMatcher.match("Lane guidance") == .whichLane)
+        #expect(DriverVoiceCommandPhraseMatcher.match("What lane am I in") == .whichLane)
+    }
 }
 
 struct VoiceAssistResponseFormatterTests {
@@ -149,6 +156,25 @@ struct VoiceAssistResponseFormatterTests {
             VoiceAssistResponseFormatter.bookParking(label: "  ", tier: nil).contains("Ahead parking")
         )
         #expect(VoiceAssistResponseFormatter.bookParkingNone.contains("No ahead parking"))
+    }
+
+    @Test func whichLaneFormatsGuidanceRoadDistanceAndNone() {
+        let spoken = VoiceAssistResponseFormatter.whichLane(
+            guidanceText: "Use the left lane",
+            roadName: "A14",
+            distanceMeters: 400
+        )
+        #expect(spoken.contains("Use the left lane"))
+        #expect(spoken.contains("onto A14"))
+        #expect(spoken.contains("metres") || spoken.contains("kilometres"))
+        #expect(VoiceAssistResponseFormatter.whichLaneNone == "No lane guidance right now.")
+        #expect(
+            VoiceAssistResponseFormatter.whichLane(
+                guidanceText: nil,
+                roadName: "A14",
+                distanceMeters: 100
+            ) == VoiceAssistResponseFormatter.whichLaneNone
+        )
     }
 
     @Test func hazardRoadworksRiskEmptyHonesty() {

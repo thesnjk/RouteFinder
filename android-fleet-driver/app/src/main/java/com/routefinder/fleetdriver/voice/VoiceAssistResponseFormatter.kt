@@ -30,6 +30,24 @@ object VoiceAssistResponseFormatter {
     /** Reply when no ahead parking / bookable stop is available. */
     const val BOOK_PARKING_NONE = "No ahead parking to book on this route."
 
+    /** Reply for “which lane?” using active junction lane guidance. */
+    fun whichLane(guidanceText: String?, roadName: String?, distanceMeters: Double?): String {
+        val guidance = guidanceText?.trim().orEmpty()
+        if (guidance.isEmpty()) return WHICH_LANE_NONE
+        var spoken = guidance
+        val road = roadName?.trim().orEmpty()
+        if (road.isNotEmpty()) {
+            spoken += " onto $road"
+        }
+        if (distanceMeters != null && distanceMeters > 0) {
+            spoken += " ${distancePhrase(distanceMeters)}"
+        }
+        return spoken
+    }
+
+    /** Reply when no active lane guidance is available. */
+    const val WHICH_LANE_NONE = "No lane guidance right now."
+
     /** Reply when voice guidance is muted. */
     const val MUTED = "Voice guidance muted."
 

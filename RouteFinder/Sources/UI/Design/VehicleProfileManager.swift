@@ -144,7 +144,7 @@ public struct VehicleProfileManager: View {
             trailerCountRow
             dimensionRow(icon: "scalemass", label: "Weight (t)", text: $viewModel.vehicleWeight)
 
-            Text("Length is bumper-to-bumper (ORS). Trailer count selects artic vs rigid map body.")
+            Text("Length is bumper-to-bumper (ORS). Trailers suggest length: 0→12 m, 1→16.5 m, 2→18.75 m, 3→25.25 m; map body is rigid when 0, artic when ≥1.")
                 .font(RFFont.caption)
                 .foregroundStyle(.secondary)
         }

@@ -57,6 +57,19 @@ data class HgvVehicleProfile(
 
         fun clampedTrailerCount(raw: Int?): Int? =
             raw?.coerceIn(0, 3)
+
+        /**
+         * UK bumper-to-bumper overall length suggested for a trailer count (ORS `length`).
+         *
+         * Ladder: rigid 12 m → artic 16.5 m → drawbar/road-train 18.75 m → EMS 25.25 m.
+         */
+        fun suggestedOverallLengthMeters(trailerCount: Int): Double =
+            when (trailerCount.coerceIn(0, 3)) {
+                0 -> 12.0
+                1 -> 16.5
+                2 -> 18.75
+                else -> 25.25
+            }
     }
 }
 

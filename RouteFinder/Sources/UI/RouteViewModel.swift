@@ -942,13 +942,10 @@ public final class RouteViewModel {
             activeProfileName == VehicleProfile.ukArtic.savedProfileName
             || activeProfileName == VehicleProfile.ukRigid26t.savedProfileName
         if stockPreset {
-            if clamped == 0 {
-                vehicleLength = String(VehicleProfile.ukRigid26t.length ?? 12.0)
-                activeProfileName = VehicleProfile.ukRigid26t.savedProfileName
-            } else {
-                vehicleLength = String(VehicleProfile.ukArtic.length ?? 16.5)
-                activeProfileName = VehicleProfile.ukArtic.savedProfileName
-            }
+            vehicleLength = String(VehicleProfile.suggestedOverallLengthMeters(trailerCount: clamped))
+            activeProfileName = clamped == 0
+                ? VehicleProfile.ukRigid26t.savedProfileName
+                : VehicleProfile.ukArtic.savedProfileName
         }
         refreshMapVehicleFootprint()
         scheduleVehicleWorkspacePersist()

@@ -756,11 +756,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     fun updateTrailerCount(raw: String) {
         val parsed = raw.trim().toIntOrNull()?.coerceIn(0, 3) ?: return
         trailerCountDraft = parsed
-        if (parsed == 0 && lengthMetersDraft > 14.0) {
-            lengthMetersDraft = HgvVehicleProfile.ukRigid.lengthMeters
-        } else if (parsed >= 1 && lengthMetersDraft < 14.0) {
-            lengthMetersDraft = HgvVehicleProfile.ukArtic.lengthMeters
-        }
+        lengthMetersDraft = HgvVehicleProfile.suggestedOverallLengthMeters(parsed)
         syncIntakeTrailerAndLength()
     }
 

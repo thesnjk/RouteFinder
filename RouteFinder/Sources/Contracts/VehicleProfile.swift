@@ -74,6 +74,18 @@ public struct VehicleProfile: Sendable, Hashable, Codable {
         return (length ?? 0) >= 6.0
     }
 
+    /// UK bumper-to-bumper overall length suggested for a trailer count (ORS `length`).
+    ///
+    /// Ladder: rigid 12 m → artic 16.5 m → drawbar/road-train 18.75 m → EMS 25.25 m.
+    public static func suggestedOverallLengthMeters(trailerCount: Int) -> Double {
+        switch min(max(trailerCount, 0), 3) {
+        case 0: return 12.0
+        case 1: return 16.5
+        case 2: return 18.75
+        default: return 25.25
+        }
+    }
+
     /// A default profile with no dimensional restrictions.
     public static let `default` = VehicleProfile()
 

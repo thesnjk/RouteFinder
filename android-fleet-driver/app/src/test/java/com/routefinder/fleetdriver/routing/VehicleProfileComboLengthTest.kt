@@ -49,6 +49,16 @@ class VehicleProfileComboLengthTest {
     }
 
     @Test
+    fun suggestedOverallLengthLadder() {
+        assertEquals(12.0, HgvVehicleProfile.suggestedOverallLengthMeters(0), 0.001)
+        assertEquals(16.5, HgvVehicleProfile.suggestedOverallLengthMeters(1), 0.001)
+        assertEquals(18.75, HgvVehicleProfile.suggestedOverallLengthMeters(2), 0.001)
+        assertEquals(25.25, HgvVehicleProfile.suggestedOverallLengthMeters(3), 0.001)
+        assertEquals(12.0, HgvVehicleProfile.suggestedOverallLengthMeters(-1), 0.001)
+        assertEquals(25.25, HgvVehicleProfile.suggestedOverallLengthMeters(99), 0.001)
+    }
+
+    @Test
     fun parseVehicleProfilePreservesTrailerCount() {
         val json = JSONObject(
             """{"height":4,"weight":44,"width":2.55,"length":16.5,"trailerCount":1}""",

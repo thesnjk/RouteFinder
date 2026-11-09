@@ -32,6 +32,15 @@ struct VehicleProfileComboLengthTests {
         #expect(profile.resolvedTrailerCount == 3)
     }
 
+    @Test func suggestedOverallLengthLadder() {
+        #expect(VehicleProfile.suggestedOverallLengthMeters(trailerCount: 0) == 12.0)
+        #expect(VehicleProfile.suggestedOverallLengthMeters(trailerCount: 1) == 16.5)
+        #expect(VehicleProfile.suggestedOverallLengthMeters(trailerCount: 2) == 18.75)
+        #expect(VehicleProfile.suggestedOverallLengthMeters(trailerCount: 3) == 25.25)
+        #expect(VehicleProfile.suggestedOverallLengthMeters(trailerCount: -1) == 12.0)
+        #expect(VehicleProfile.suggestedOverallLengthMeters(trailerCount: 99) == 25.25)
+    }
+
     @Test func codableRoundTripPreservesTrailerCount() throws {
         let profile = VehicleProfile.ukArtic
         let data = try JSONEncoder().encode(profile)

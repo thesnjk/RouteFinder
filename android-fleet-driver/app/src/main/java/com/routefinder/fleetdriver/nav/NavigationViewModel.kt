@@ -32,6 +32,7 @@ import com.routefinder.fleetdriver.compliance.TachoCardSummary
 import com.routefinder.fleetdriver.compliance.TachoImportError
 import com.routefinder.fleetdriver.compliance.TruckFuelPoi
 import com.routefinder.fleetdriver.compliance.UkLezCatalog
+import com.routefinder.fleetdriver.map.HazardOverlayBuilder
 import com.routefinder.fleetdriver.map.ParkingMapMarker
 import com.routefinder.fleetdriver.map.ParkingMapMarkerBuilder
 import android.content.Context
@@ -142,6 +143,8 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     var lastInspectionSummary by mutableStateOf<InspectionSummary?>(null)
     /** When true, Compose shows the local crowd hazard report sheet. */
     var presentHazardReportSheet by mutableStateOf(false)
+    /** GeoJSON FeatureCollection for MapLibre crowd hazard pins. */
+    var hazardOverlayGeoJson by mutableStateOf(HazardOverlayBuilder.EMPTY_FEATURE_COLLECTION)
     private var lastKineticMessage: String? = null
     private var lastTrafficMessage: String? = null
     private var lastHazardMessage: String? = null
@@ -280,6 +283,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         voice.enabled = prefs.voiceGuidanceEnabled
         voiceGuidanceMuted = !prefs.voiceGuidanceEnabled
         crowdReports = crowdEventStore.allReports()
+        rebuildHazardOverlay()
         loadPersistedTachoSummary()
         refreshCanIDriveFromLocalSources()
         if (prefs.isPaired()) {
@@ -309,6 +313,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         )
         crowdEventStore.submit(report)
         crowdReports = crowdEventStore.allReports()
+        rebuildHazardOverlay()
         presentHazardReportSheet = false
         toastMessage = "Hazard reported on-device"
         val arc = progress?.traveledDistanceMeters ?: 0.0
@@ -1711,7 +1716,13 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         return Triple(lastHazardMessage, lastHazardDistanceMeters, lastHazardSevere)
     }
 
+    private fun rebuildHazardOverlay() {
+        val promoted = HazardAheadFormatter.promotedHazards(crowdReports)
+        hazardOverlayGeoJson = HazardOverlayBuilder.geoJSON(promoted)
+    }
+
     private fun refreshCrowdHazardAhead(currentArcLengthMeters: Double) {
+        rebuildHazardOverlay()
         if (routeCoordinates.size < 2 || crowdReports.isEmpty()) {
             crowdHazardMessage = null
             crowdHazardDistanceMeters = null

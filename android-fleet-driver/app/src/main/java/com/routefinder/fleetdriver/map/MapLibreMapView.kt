@@ -35,10 +35,12 @@ private const val ROUTE_SOURCE = "rf-route-source"
 private const val ROUTE_LAYER = "rf-route-layer"
 private const val PARKING_SOURCE = "rf-parking-source"
 private const val PARKING_LAYER = "rf-parking-layer"
+private const val HAZARD_SOURCE = "rf-hazard-source"
+private const val HAZARD_LAYER = "rf-hazard-layer"
 private const val DEMO_STYLE = "https://demotiles.maplibre.org/style.json"
 
 /**
- * Compose MapLibre map with optional route polyline and parking availability markers.
+ * Compose MapLibre map with optional route polyline, parking markers, and crowd hazard pins.
  */
 @Composable
 fun MapLibreMapView(
@@ -46,6 +48,7 @@ fun MapLibreMapView(
     followLat: Double? = null,
     followLon: Double? = null,
     parkingMarkers: List<ParkingMapMarker> = emptyList(),
+    hazardOverlayGeoJson: String = HazardOverlayBuilder.EMPTY_FEATURE_COLLECTION,
     modifier: Modifier = Modifier.fillMaxSize(),
 ) {
     val context = LocalContext.current
@@ -83,8 +86,10 @@ fun MapLibreMapView(
                 map.setStyle(Style.Builder().fromUri(DEMO_STYLE)) { style ->
                     ensureRouteLayers(style)
                     ensureParkingLayers(style)
+                    ensureHazardLayers(style)
                     RouteLineController.setRoute(style, routeCoordinates)
                     ParkingMarkerController.setMarkers(style, parkingMarkers)
+                    HazardMarkerController.setGeoJson(style, hazardOverlayGeoJson)
                     if (routeCoordinates.size >= 2) {
                         fitRoute(map, routeCoordinates)
                     }
@@ -97,6 +102,7 @@ fun MapLibreMapView(
             mapState.value?.getStyle { style ->
                 RouteLineController.setRoute(style, routeCoordinates)
                 ParkingMarkerController.setMarkers(style, parkingMarkers)
+                HazardMarkerController.setGeoJson(style, hazardOverlayGeoJson)
             }
         },
     )
@@ -115,6 +121,13 @@ fun MapLibreMapView(
         val map = mapState.value ?: return@LaunchedEffect
         map.getStyle { style ->
             ParkingMarkerController.setMarkers(style, parkingMarkers)
+        }
+    }
+
+    LaunchedEffect(hazardOverlayGeoJson, mapState.value) {
+        val map = mapState.value ?: return@LaunchedEffect
+        map.getStyle { style ->
+            HazardMarkerController.setGeoJson(style, hazardOverlayGeoJson)
         }
     }
 
@@ -145,6 +158,15 @@ object ParkingMarkerController {
         ensureParkingLayers(style)
         val source = style.getSourceAs<GeoJsonSource>(PARKING_SOURCE) ?: return
         source.setGeoJson(ParkingMapMarkerBuilder.toFeatureCollection(markers))
+    }
+}
+
+object HazardMarkerController {
+    fun setGeoJson(style: Style, geoJson: String) {
+        ensureHazardLayers(style)
+        val source = style.getSourceAs<GeoJsonSource>(HAZARD_SOURCE) ?: return
+        val payload = geoJson.ifBlank { HazardOverlayBuilder.EMPTY_FEATURE_COLLECTION }
+        source.setGeoJson(payload)
     }
 }
 
@@ -186,6 +208,23 @@ private fun ensureParkingLayers(style: Style) {
                         Expression.color(Color.parseColor(ParkingMapMarkerBuilder.COLOR_LIMITED)),
                     ),
                 ),
+            ),
+        )
+    }
+}
+
+private fun ensureHazardLayers(style: Style) {
+    if (style.getSource(HAZARD_SOURCE) == null) {
+        style.addSource(GeoJsonSource(HAZARD_SOURCE))
+    }
+    if (style.getLayer(HAZARD_LAYER) == null) {
+        style.addLayer(
+            CircleLayer(HAZARD_LAYER, HAZARD_SOURCE).withProperties(
+                PropertyFactory.circleRadius(9f),
+                PropertyFactory.circleStrokeWidth(2f),
+                PropertyFactory.circleStrokeColor(Color.WHITE),
+                PropertyFactory.circleOpacity(0.95f),
+                PropertyFactory.circleColor(Color.parseColor(HazardOverlayBuilder.PIN_COLOR)),
             ),
         )
     }

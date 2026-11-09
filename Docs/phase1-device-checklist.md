@@ -1,8 +1,10 @@
 # Phase 1 — 30-minute device checklist (Mac + iPhone)
 
-Complete this on **real hardware** after CI is green. Same Wi‑Fi for Mac and iPhone. Mark Pass/Fail in [`phase20-verification.md`](phase20-verification.md) C3–C9 and P49b-2.
+**SSOT for `EPIC-P0-DEVICE`.** Complete this on **real hardware** after CI is green. Same Wi‑Fi for Mac and iPhone. Mark Pass/Fail **only** in [`phase20-verification.md`](phase20-verification.md) rows for **C4**, **C9**, and **Fleet Part B** (plus C3–C9 notes in the table below as you go).
 
-Last updated: 2026-09-29
+Agent Phase 31+ ungated tracks (H1/H2, HOS duty-log/extension/WTD, Lane Overpass parity) are **Done** 2026-11-09 — this checklist is the remaining programme gate. **Blocked ≠ code Fail.**
+
+Last updated: 2026-11-09
 
 ---
 
@@ -82,21 +84,24 @@ Mark **P49b-2 Fleet Part B** Pass/Fail in phase20 after **iPhone** walkaround �
 
 ---
 
-## E — Sign-off
+## E — Sign-off (paste-back)
 
-Paste to the agent (fill brackets), then update [`phase20-verification.md`](phase20-verification.md):
+Optional screenshots (local only; mask keys): `p0-c4-layby-voice.png`, `p0-c9-tomtom-hazard.png`, `p0-partb-toast.png`, `p0-partb-defect-card.png` → chat or `Docs/qa-screenshots/`.
+
+Paste to the agent (fill brackets). Agent updates **only** [`phase20-verification.md`](phase20-verification.md) C4 / C9 / Fleet Part B:
 
 ```text
 Operator QA done. Update Docs/phase20-verification.md only:
 C4 = [Pass/Fail/Skip + note],
 C9 = [Pass/Fail/Skip + note],
 Fleet Part B = [Pass/Fail + note].
+Screenshots: [attached / paths / none].
 ```
 
 1. [ ] Replace **Blocked** / **Pending local** with **Pass** / **Fail** / **Skip** + one-line note for C4, C9, Fleet Part B
 2. [ ] If any Fail: log in [`pilot-feedback-backlog.md`](pilot-feedback-backlog.md) and run a scoped fix loop
 
-**Phase 1 exit gate:** All automated tests green + you marked C4 / C9 / Fleet Part B on real hardware.
+**Phase 1 exit gate:** Automated CI green + you marked C4 / C9 / Fleet Part B on real hardware.
 
 ---
 

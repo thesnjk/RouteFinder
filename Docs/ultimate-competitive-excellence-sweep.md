@@ -298,7 +298,7 @@ Original Oct 12 “Defer” list is **void** under the driver-first scope rule. 
 |------|-------------|-----------|-------------|
 | H1 | `EPIC-SIM-SPEEDLIMIT` | **Done** (2026-11-09) — Physics Lead CI-honest | `swift test --filter spineSpeedLimitAcceleratesToMotorwayLimit` Pass |
 | H2 | `EPIC-ANDROID-JDK-CI` | **Done** (2026-11-09) — CI Temurin 17 + `setup-android@v4`; local `.java-version` 17 | OpenJDK 25 still a local footgun if unpinned |
-| H3 | `EPIC-P0-DEVICE` | Demo claims need hardware truth | Operator C4 / C9 / Fleet Part B |
+| H3 | `EPIC-P0-DEVICE` | Demo claims need hardware truth | Operator C4 / C9 / Fleet Part B — SSOT [`phase1-device-checklist.md`](phase1-device-checklist.md) |
 
 ### Ranked driver-first build backlog
 
@@ -326,7 +326,7 @@ Every agent completion under this programme ends with these four blocks, in orde
 
 ### 1. What’s next
 
-Ordered list of the next epic(s) (e.g. H3 device P0 → gated AA/CarPlay/VU/LEZ/live £). H1/H2 Done 2026-11-09. State whether the agent can do it alone or needs the operator.
+Ordered list of the next epic(s) (e.g. operator H3 via phase1 SSOT → gated AA/CarPlay/VU/LEZ/live £). Agent ungated tracks Done 2026-11-09. State whether the agent can do it alone or needs the operator.
 
 ### 2. Your involvement (if any)
 
@@ -369,96 +369,33 @@ Always **print** push commands. Do **not** push unless the user asked to push (o
 
 | Order | Who | Work |
 |------:|-----|------|
-| 1 | Agent | ~~`EPIC-SIM-SPEEDLIMIT`~~ **Done** (2026-11-09) |
-| 2 | Agent | ~~`EPIC-ANDROID-JDK-CI`~~ **Done** (2026-11-09) |
-| 3 | **Operator** | `EPIC-P0-DEVICE` — physical C4 / C9 / Fleet Part B (playbook below) |
-| 4 | Agent | ~~`EPIC-ANDROID-HOS-DUTYLOG`~~ **Shipped (MVP)** 2026-11-09 — Drive/Break/Off + weekly clock path |
-| 5 | Agent | ~~`EPIC-ANDROID-HOS-EXTENSION`~~ **Shipped (MVP)** 2026-11-09 — once-per-week 10h daily extension |
-| 6 | Agent | ~~`EPIC-ANDROID-HOS-WTD`~~ **Shipped (MVP)** 2026-11-09 — fortnight 90h + WTD 60h heads-up (Android HOS **3**) |
-| 7 | Agent | ~~`EPIC-LANE-DEPTH` Overpass parity~~ **Shipped** 2026-11-09 — cap 12 + STRAIGHT skip + 50 km arc iOS↔Android |
-| 8 | Agent / Operator | Gated residuals (AA / CarPlay / VU / LEZ / live £ / HD / billing) or operator `EPIC-P0-DEVICE` |
+| 1 | **Operator** | `EPIC-P0-DEVICE` — physical C4 / C9 / Fleet Part B via [`phase1-device-checklist.md`](phase1-device-checklist.md) (SSOT) |
+| 2 | Agent | ~~H1/H2 + HOS duty-log/extension/WTD + Lane Overpass parity~~ **Done** 2026-11-09 |
+| 3 | Agent | Gated residuals only (AA / CarPlay / VU / LEZ / live £ / HD / billing) — do not invent multi-surface epics (e.g. crowd LAN) until deliberately scoped |
+| 4 | Agent | After operator paste-back: update [`phase20-verification.md`](phase20-verification.md) C4/C9/Part B only |
 
-Also see: [`phase1-device-checklist.md`](phase1-device-checklist.md), [`fleet-e2e-qa.md`](fleet-e2e-qa.md).
+Also see: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B for walkaround → desk defect detail.
 
 ---
 
-## Operator playbook — exact instructions
+## Operator playbook — `EPIC-P0-DEVICE`
 
-Budget ~30 minutes. Same Wi‑Fi for Mac + iPhone. Mirrors [`phase1-device-checklist.md`](phase1-device-checklist.md) and [`fleet-e2e-qa.md`](fleet-e2e-qa.md).
+**Do not duplicate steps here.** Follow the SSOT checklist:
 
-### Prep (2 min) — no screenshot yet
+→ [`phase1-device-checklist.md`](phase1-device-checklist.md) (~30 min, Mac + iPhone, same Wi‑Fi)
 
-1. Unlock physical iPhone; plug in if battery low.
-2. Mac + iPhone on **same Wi‑Fi**.
-3. In Terminal:
+### Screenshot names (optional)
 
-```bash
-export ORS_API_KEY="your-heigit-key"
-export FLEET_API_KEY="your-shared-secret"
-```
+Take screenshots **only** if useful; mask keys. Suggested names: `p0-c4-layby-voice.png`, `p0-c9-tomtom-hazard.png`, `p0-partb-toast.png`, `p0-partb-defect-card.png` → chat or `Docs/qa-screenshots/`.
 
-4. Xcode: scheme `RouteFinderApp` → your iPhone → Run (signed).
-
-### Screenshot rule
-
-- Take a screenshot **only** at steps marked **SCREENSHOT**.
-- Name files: `p0-c4-layby-voice.png`, `p0-c9-tomtom-hazard.png`, `p0-partb-toast.png`, `p0-partb-defect-card.png`.
-- Drop them in chat or `Docs/qa-screenshots/` (local; do not commit secrets or API keys).
-
-### Step A — Fleet server + desk (8 min)
-
-```bash
-cd /Users/admin/Developer/RouteFinder/RouteFinder
-swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY" --api-key "$FLEET_API_KEY"
-```
-
-Second terminal:
-
-```bash
-cd /Users/admin/Developer/RouteFinder/web-dispatch && npm run dev
-```
-
-1. Open http://127.0.0.1:5173 → Bearer = `$FLEET_API_KEY` → Connected.
-2. **Bootstrap demo fleet** → Push Norwich → King's Lynn.
-3. **SCREENSHOT** (optional): web-dispatch Connected + vehicle selected.
-
-### Step B — iPhone pair (7 min)
-
-1. Launch RouteFinderApp → HGV → Fleet setup wizard.
-2. Discover LAN / paste `http://<mac-lan-ip>:8080` → same Fleet API key → Scan QR.
-3. Confirm no personal HeiGIT nag when ORS proxy is on.
-
-### Step C — Fleet Part B (push → toast → walkaround → desk)
-
-1. Push trip from web-dispatch.
-2. **SCREENSHOT:** iPhone **Trip received** toast (within ~10 s) → `p0-partb-toast.png`.
-3. Find route / Rehearse if needed → Start nav briefly.
-4. On **iPhone only**: Walkaround → mark ≥1 defect → Save.
-5. **SCREENSHOT:** web-dispatch defect card / PDF → `p0-partb-defect-card.png`.
-6. Mark **Fleet Part B** Pass/Fail.
-
-### Step D — C4 layby voice
-
-1. Settings → Navigation → **Layby voice on**.
-2. HGV route with layby ahead; drive/sim until inside ~5 km.
-3. **SCREENSHOT:** layby advisory banner while voice fires → `p0-c4-layby-voice.png`.
-4. Mark **C4** Pass/Fail/Skip + note.
-
-### Step E — C9 TomTom hazard (needs TomTom key on phone)
-
-1. Settings → save TomTom key on **iPhone**.
-2. Navigate live route with traffic/closure ahead.
-3. **SCREENSHOT:** hazard-ahead banner → `p0-c9-tomtom-hazard.png`.
-4. If no key: mark **C9 Skip** (no screenshot).
-
-### Step F — Paste back to agent
+### Paste-back (required)
 
 ```text
 Operator QA done. Update Docs/phase20-verification.md only:
 C4 = [Pass/Fail/Skip + note],
 C9 = [Pass/Fail/Skip + note],
 Fleet Part B = [Pass/Fail + note].
-Screenshots: [attached / paths].
+Screenshots: [attached / paths / none].
 ```
 
-Agent then updates [`phase20-verification.md`](phase20-verification.md) only (no unrelated edits) and ends that turn with the [Agent delivery protocol](#agent-delivery-protocol-mandatory-end-of-every-output) again.
+Agent then updates [`phase20-verification.md`](phase20-verification.md) **only** (no unrelated edits) and ends that turn with the [Agent delivery protocol](#agent-delivery-protocol-mandatory-end-of-every-output) again.

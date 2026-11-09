@@ -1,6 +1,6 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-11-09 (Lane Overpass parity; Android HOS WTD+fortnight; residual HD / live £ / AA / CarPlay / VU)  
+Last updated: 2026-11-09 (P0 Docs SSOT; Lane Overpass + HOS Done; residual HD / live £ / AA / CarPlay / VU)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then driver-benefit gaps previously deferred (CarPlay/AA, parking book, VU, tolls, LEZ cadastre).
 
 > **Oct 12 Ultimate competitive excellence sweep:** Full quarterly re-scrape (Firecrawl + Apify). CoPilot **11.4** captured; **no RF scorecard integer changes**. Engineering gates: fleet/web/hosted/Android Pass. Sim speed-limit UITest debt closed 2026-11-09 (`spineSpeedLimitAcceleratesToMotorwayLimit` Pass).
@@ -223,7 +223,7 @@ See [`ultimate-hgv-platform-spec.md`](ultimate-hgv-platform-spec.md).
 
 1. **`EPIC-SIM-SPEEDLIMIT`** — **Done** (2026-11-09) — `swift test --filter spineSpeedLimitAcceleratesToMotorwayLimit` Pass.
 2. **`EPIC-ANDROID-JDK-CI`** — **Done** (2026-11-09) — CI Temurin 17 + `setup-android@v4`; local pin `android-fleet-driver/.java-version` = 17.
-3. **`EPIC-P0-DEVICE`** — C4 / C9 / Fleet Part B physical (operator).
+3. **`EPIC-P0-DEVICE`** — C4 / C9 / Fleet Part B physical (**operator**; SSOT [`phase1-device-checklist.md`](phase1-device-checklist.md); still Blocked since 2026-09-19 — Blocked ≠ code Fail).
 3b. **`EPIC-ANDROID-HOS-DUTYLOG`** — **Shipped (MVP)** Drive/Break/Off duty + weekly 56h persist on Android clock path.
 3c. **`EPIC-ANDROID-HOS-EXTENSION`** — **Shipped (MVP)** once-per-week 10h daily extension (`activateDailyExtension`).
 3d. **`EPIC-ANDROID-HOS-WTD`** — **Shipped (MVP)** fortnight 90h gate + WTD ≥60h heads-up. Residual: DDD/JSON import depth / coordinator packaging.

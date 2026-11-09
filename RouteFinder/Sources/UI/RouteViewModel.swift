@@ -540,6 +540,8 @@ public final class RouteViewModel {
     private var laybyLoadTask: Task<Void, Never>?
     private var truckPoiLoadTask: Task<Void, Never>?
     private var offlineCorridorPrefetchTask: Task<Void, Never>?
+    /// Signature of the last commit-time toll TTS (dedupe across refreshes).
+    private var lastAnnouncedTollRouteSignature: String?
     /// Pending traffic-aware alternate response when `trafficRerouteAvailable` is true.
     public var pendingTrafficAlternate: ExternalRouteResponse?
     private var lastExternalRouteRequest: ExternalRouteRequest?
@@ -1686,6 +1688,20 @@ public final class RouteViewModel {
         routeTollAdvisories = TollAdvisoryAlongRouteMatcher.advisories(along: coordinates)
         refreshActiveTollAdvisory()
         refreshTripBriefShareText()
+        announceCommittedRouteTollSummaryIfNeeded()
+    }
+
+    /// Speaks indicative route toll total once per committed advisory set (silent when none).
+    private func announceCommittedRouteTollSummaryIfNeeded() {
+        guard let spoken = VoiceAssistResponseFormatter.committedRouteTollAnnouncement(
+            advisories: routeTollAdvisories
+        ) else { return }
+        let signature = VoiceAssistResponseFormatter.tollRouteSignature(advisories: routeTollAdvisories)
+        guard signature != lastAnnouncedTollRouteSignature else { return }
+        lastAnnouncedTollRouteSignature = signature
+        #if os(iOS)
+        speakVoiceAssist(spoken)
+        #endif
     }
 
     /// Updates the near-horizon toll banner from current location / arc progress.
@@ -2656,6 +2672,7 @@ public final class RouteViewModel {
         isCalculating = true
         errorMessage = nil
         routeFailure = nil
+        lastAnnouncedTollRouteSignature = nil
         simulationEngine.stop()
         updateCloudRoutingBanner()
         defer {
@@ -2865,6 +2882,7 @@ public final class RouteViewModel {
             queryOverpass: false
         )
         scheduleOfflineCorridorPrefetch(coordinates: coordinates)
+        refreshRouteTollAdvisories(coordinates: coordinates)
     }
 
     private func calculateExternalRoute(preferences: RoutingPreferences) async throws {
@@ -3630,6 +3648,7 @@ public final class RouteViewModel {
         routeTollAdvisories = []
         activeTollAdvisory = nil
         activeTollAdvisoryDistanceMeters = nil
+        lastAnnouncedTollRouteSignature = nil
         laybyLoadTask?.cancel()
         truckPoiLoadTask?.cancel()
         offlineCorridorPrefetchTask?.cancel()

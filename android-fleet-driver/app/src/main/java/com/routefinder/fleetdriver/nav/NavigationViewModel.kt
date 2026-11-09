@@ -247,6 +247,8 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     private var catalogLaybySites: List<LaybyAdvisoryEngine.Site> = emptyList()
     /** Last layby site id announced via proactive TTS (dedupe until site/route changes). */
     private var lastAnnouncedLaybyId: String? = null
+    /** Signature of the last commit-time toll TTS (dedupe across compliance refreshes). */
+    private var lastAnnouncedTollRouteSignature: String? = null
 
     private val voice = VoiceGuidanceService(application)
     private val voiceCommands = DriverVoiceCommandCoordinator(application)
@@ -844,6 +846,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             return
         }
         isCalculating = true
+        lastAnnouncedTollRouteSignature = null
         try {
             val emission = runCatching {
                 UkLezCatalog.EmissionClass.valueOf(emissionClassDraft.trim().uppercase())
@@ -895,6 +898,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             voice.resetAnnouncements()
             statusLabel = "Route loaded"
             refreshComplianceAdvisories(result.coordinates)
+            announceCommittedRouteTollSummaryIfNeeded()
             refreshClearanceAndForecastRisk(result.coordinates)
             enrichLaneGuidanceAsync(result.instructions, result.coordinates)
             refreshLaybyCatalogAsync(result.coordinates)
@@ -1544,14 +1548,18 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     /** Matches UK toll catalog against the route and refreshes the near-horizon banner. */
     fun refreshRouteTollAdvisories(route: List<LatLon> = routeCoordinates) {
         routeTollAdvisories = TollAdvisoryAlongRouteMatcher.advisories(along = route)
-        tollSummaryMessage = if (routeTollAdvisories.isEmpty()) {
-            null
-        } else {
-            val names = routeTollAdvisories.joinToString(" · ") { it.name }
-            val total = UKTollAdvisory.indicativeRouteTotalLabel(routeTollAdvisories)
-            if (total != null) "$names — $total" else names
-        }
+        tollSummaryMessage = VoiceAssistResponseFormatter.committedRouteTollSummary(routeTollAdvisories)
         refreshActiveTollAdvisory()
+    }
+
+    /** Speaks indicative route toll total once per committed advisory set (silent when none). */
+    private fun announceCommittedRouteTollSummaryIfNeeded() {
+        val spoken = VoiceAssistResponseFormatter.committedRouteTollAnnouncement(routeTollAdvisories)
+            ?: return
+        val signature = VoiceAssistResponseFormatter.tollRouteSignature(routeTollAdvisories)
+        if (signature == lastAnnouncedTollRouteSignature) return
+        lastAnnouncedTollRouteSignature = signature
+        voice.speakAssist(spoken)
     }
 
     /** Updates the near-horizon toll banner from follow location or route start. */

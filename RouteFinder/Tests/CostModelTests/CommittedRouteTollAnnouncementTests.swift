@@ -31,3 +31,22 @@ import Testing
     #expect(left == right)
     #expect(!left.isEmpty)
 }
+
+@Test func committedRouteTollSummaryNonNilForDartfordAndM6() {
+    let advisories = UKTollAdvisoryCatalog.all.filter {
+        $0.id == "dartford-crossing" || $0.id == "m6-toll"
+    }
+    let summary = VoiceAssistResponseFormatter.committedRouteTollSummary(advisories: advisories)
+    #expect(summary != nil)
+    #expect(summary?.contains("Indicative tolls") == true)
+}
+
+@Test func committedRouteTollSummaryNilForSevernOnly() {
+    let severn = UKTollAdvisoryCatalog.all.first { $0.id == "severn-crossings" }!
+    #expect(severn.indicativeCostGBP == nil)
+    // Free-crossing still yields a names-only summary (HUD can show it); GBP total stays nil.
+    let summary = VoiceAssistResponseFormatter.committedRouteTollSummary(advisories: [severn])
+    #expect(summary == "Severn Bridge / Second Severn Crossing")
+    #expect(UKTollAdvisory.indicativeRouteTotalLabel(advisories: [severn]) == nil)
+    #expect(VoiceAssistResponseFormatter.committedRouteTollSummary(advisories: []) == nil)
+}

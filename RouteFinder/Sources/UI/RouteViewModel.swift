@@ -233,6 +233,8 @@ public final class RouteViewModel {
     public var activeTollAdvisory: UKTollAdvisory?
     /// Distance to ``activeTollAdvisory`` in meters.
     public var activeTollAdvisoryDistanceMeters: Double?
+    /// Committed-route toll summary for in-nav HUD (Android `tollSummaryMessage` parity).
+    public var committedRouteTollSummaryMessage: String?
     /// Whether MapLibre should use a local map pack when present.
     public var useLocalMapStyleWhenPackPresent = VehicleProfileStore.loadUseLocalMapStyleWhenPackPresent()
     /// Human-readable offline map pack status for Settings.
@@ -1686,9 +1688,18 @@ public final class RouteViewModel {
     /// Refreshes named UK toll advisories for the active route polyline.
     public func refreshRouteTollAdvisories(coordinates: [Coordinate]) {
         routeTollAdvisories = TollAdvisoryAlongRouteMatcher.advisories(along: coordinates)
+        committedRouteTollSummaryMessage = VoiceAssistResponseFormatter.committedRouteTollSummary(
+            advisories: routeTollAdvisories
+        )
         refreshActiveTollAdvisory()
         refreshTripBriefShareText()
         announceCommittedRouteTollSummaryIfNeeded()
+    }
+
+    /// Enables avoid-tolls and recalculates the active route (in-nav HUD CTA).
+    public func avoidTollsAndReplan() {
+        avoidTolls = true
+        Task { await recalculateIfReady() }
     }
 
     /// Speaks indicative route toll total once per committed advisory set (silent when none).
@@ -3648,6 +3659,7 @@ public final class RouteViewModel {
         routeTollAdvisories = []
         activeTollAdvisory = nil
         activeTollAdvisoryDistanceMeters = nil
+        committedRouteTollSummaryMessage = nil
         lastAnnouncedTollRouteSignature = nil
         laybyLoadTask?.cancel()
         truckPoiLoadTask?.cancel()

@@ -47,6 +47,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.routefinder.fleetdriver.compliance.HosAdvisoryClock
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -728,8 +729,22 @@ fun NavigationMapScreen(
                     viewModel.telematicsStatusMessage?.let {
                         Text(it, style = MaterialTheme.typography.bodySmall)
                     }
+                    Text(
+                        "HOS duty: ${viewModel.hosDutyMode.name.lowercase().replace('_', ' ')}",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = { viewModel.resetHosBreak() }) { Text("Record break") }
+                        OutlinedButton(
+                            onClick = { viewModel.transitionHosDuty(HosAdvisoryClock.DutyMode.DRIVING) },
+                        ) { Text("Drive") }
+                        OutlinedButton(
+                            onClick = { viewModel.transitionHosDuty(HosAdvisoryClock.DutyMode.BREAK_REST) },
+                        ) { Text("Break") }
+                        OutlinedButton(
+                            onClick = { viewModel.transitionHosDuty(HosAdvisoryClock.DutyMode.OFF_DUTY) },
+                        ) { Text("Off duty") }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(
                             onClick = {
                                 tachoImportLauncher.launch(

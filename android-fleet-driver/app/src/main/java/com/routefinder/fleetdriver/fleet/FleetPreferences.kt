@@ -94,6 +94,19 @@ class FleetPreferences(context: Context) {
         get() = java.lang.Double.longBitsToDouble(prefs.getLong(KEY_HOS_DAILY, 0L))
         set(value) = prefs.edit().putLong(KEY_HOS_DAILY, java.lang.Double.doubleToRawLongBits(value)).apply()
 
+    var weeklyDriveSeconds: Double
+        get() = java.lang.Double.longBitsToDouble(prefs.getLong(KEY_HOS_WEEKLY, 0L))
+        set(value) = prefs.edit().putLong(KEY_HOS_WEEKLY, java.lang.Double.doubleToRawLongBits(value)).apply()
+
+    /** Advisory duty mode: `DRIVING`, `BREAK_REST`, or `OFF_DUTY`. */
+    var hosDutyMode: String
+        get() = prefs.getString(KEY_HOS_MODE, "OFF_DUTY") ?: "OFF_DUTY"
+        set(value) = prefs.edit().putString(KEY_HOS_MODE, value.trim()).apply()
+
+    var hosLastTransitionAtMillis: Long
+        get() = prefs.getLong(KEY_HOS_LAST_TRANSITION, 0L)
+        set(value) = prefs.edit().putLong(KEY_HOS_LAST_TRANSITION, value).apply()
+
     /** `lan` or `hosted` — UX preference for wizard copy. */
     var connectionKind: String
         get() {
@@ -128,6 +141,9 @@ class FleetPreferences(context: Context) {
         const val KEY_EMISSION = "emission_class"
         const val KEY_HOS_CONT = "hos_continuous_drive_seconds"
         const val KEY_HOS_DAILY = "hos_daily_drive_seconds"
+        const val KEY_HOS_WEEKLY = "hos_weekly_drive_seconds"
+        const val KEY_HOS_MODE = "hos_duty_mode"
+        const val KEY_HOS_LAST_TRANSITION = "hos_last_transition_at_millis"
         const val KEY_CONN_KIND = "connection_kind"
         const val DEFAULT_BASE = "http://10.0.2.2:8080"
         const val VEHICLE_QR_PREFIX = "routefinder-vehicle:"

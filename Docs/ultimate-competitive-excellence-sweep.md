@@ -372,7 +372,8 @@ Always **print** push commands. Do **not** push unless the user asked to push (o
 | 1 | Agent | ~~`EPIC-SIM-SPEEDLIMIT`~~ **Done** (2026-11-09) |
 | 2 | Agent | ~~`EPIC-ANDROID-JDK-CI`~~ **Done** (2026-11-09) |
 | 3 | **Operator** | `EPIC-P0-DEVICE` — physical C4 / C9 / Fleet Part B (playbook below) |
-| 4 | Agent | Gated product residuals only (AA / CarPlay / VU / LEZ / live £ / HD / billing / HOS) — ungated cab/desk MVPs exhausted |
+| 4 | Agent | ~~`EPIC-ANDROID-HOS-DUTYLOG`~~ **Shipped (MVP)** 2026-11-09 — Drive/Break/Off + weekly clock path |
+| 5 | Agent | Gated residuals only (AA / CarPlay / VU / LEZ / live £ / HD / billing / WTD-HOS polish) — ungated cab/desk MVPs exhausted |
 
 Also see: [`phase1-device-checklist.md`](phase1-device-checklist.md), [`fleet-e2e-qa.md`](fleet-e2e-qa.md).
 

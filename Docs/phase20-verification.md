@@ -289,6 +289,7 @@ Scope: Re-open Oct 12 “Defer / intentional non-parity” under sweep policy �
 | Gap matrix Phase 31+ + remaining gaps | **Done** |
 | Research appendix policy note | **Done** |
 | Hygiene retained ahead of feature chase | **H1** sim speed-limit **Done** · **H2** Android JDK/CI **Done** · **H3** device P0 (operator) |
+| Android HOS duty-log MVP (`EPIC-ANDROID-HOS-DUTYLOG`) | **Pass** (2026-11-09) — `./gradlew :app:testDebugUnitTest --tests 'com.routefinder.fleetdriver.compliance.*'` (Drive/Break/Off + weekly clock path) |
 | Agent delivery protocol + operator playbook in sweep doc | **Done** — commit/push end-blocks + C4/C9/Part B screenshot steps |
 
 

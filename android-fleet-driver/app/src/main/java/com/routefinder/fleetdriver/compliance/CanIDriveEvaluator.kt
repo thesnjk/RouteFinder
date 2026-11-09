@@ -18,8 +18,7 @@ data class CanIDriveStatus(
 /**
  * Evaluates Can-I-drive from partner webhook, imported card, and/or local HOS clock.
  * Priority when fresh (&lt; 24 h): partner → imported card → clock. Always appends legal-tacho disclaimer.
- * Gates continuous + daily; also weekly when the source provides a weekly budget (partner/import).
- * Android advisory clock has no weekly field — clock path gates continuous + daily only.
+ * Gates continuous + daily + weekly for partner, import, and local duty-log clock.
  * Mirrors iOS ``CanIDriveEvaluator``.
  */
 object CanIDriveEvaluator {
@@ -37,7 +36,6 @@ object CanIDriveEvaluator {
         val continuous: Double
         val daily: Double
         val weekly: Double
-        val applyWeekly: Boolean
         val sourceLabel: String
         val usesPartner: Boolean
         val usesImported: Boolean
@@ -46,7 +44,6 @@ object CanIDriveEvaluator {
             continuous = partner.remainingContinuousDriveSeconds
             daily = partner.remainingDailyDriveSeconds
             weekly = partner.remainingWeeklyDriveSeconds
-            applyWeekly = true
             sourceLabel = "partner advisory (${partner.sourceFileName})"
             usesPartner = true
             usesImported = false
@@ -54,31 +51,23 @@ object CanIDriveEvaluator {
             continuous = imported.remainingContinuousDriveSeconds
             daily = imported.remainingDailyDriveSeconds
             weekly = imported.remainingWeeklyDriveSeconds
-            applyWeekly = true
             sourceLabel = "imported card (${imported.sourceFileName})"
             usesPartner = false
             usesImported = true
         } else {
             continuous = HosAdvisoryClock.CONTINUOUS_DRIVE_LIMIT_SECONDS - clock.continuousDriveSeconds
             daily = HosAdvisoryClock.DAILY_DRIVE_LIMIT_SECONDS - clock.dailyDriveSeconds
-            weekly = 0.0
-            applyWeekly = false
+            weekly = HosAdvisoryClock.WEEKLY_DRIVE_LIMIT_SECONDS - clock.weeklyDriveSeconds
             sourceLabel = "advisory EU 561 clock"
             usesPartner = false
             usesImported = false
         }
 
-        val canDrive = if (applyWeekly) {
-            continuous > 0 && daily > 0 && weekly > 0
-        } else {
-            continuous > 0 && daily > 0
-        }
+        val canDrive = continuous > 0 && daily > 0 && weekly > 0
 
         val budgetReason = when {
-            canDrive && applyWeekly ->
-                "Yes — remaining continuous ${format(continuous)}, daily ${format(daily)}, weekly ${format(weekly)} from $sourceLabel."
             canDrive ->
-                "Yes — remaining continuous ${format(continuous)}, daily ${format(daily)} from $sourceLabel."
+                "Yes — remaining continuous ${format(continuous)}, daily ${format(daily)}, weekly ${format(weekly)} from $sourceLabel."
             continuous <= 0 ->
                 "No — continuous drive remaining is exhausted ($sourceLabel). Take a mandatory break."
             daily <= 0 ->

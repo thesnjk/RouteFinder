@@ -48,6 +48,14 @@ object VoiceAssistResponseFormatter {
     /** Reply when no active lane guidance is available. */
     const val WHICH_LANE_NONE = "No lane guidance right now."
 
+    /** Reply after starting avoid-tolls replan, or when already avoiding. */
+    fun avoidTolls(started: Boolean): String =
+        if (started) {
+            "Avoiding tolls and replanning. Indicative only — check the operator."
+        } else {
+            "Already avoiding tolls on this route."
+        }
+
     /** Reply when voice guidance is muted. */
     const val MUTED = "Voice guidance muted."
 

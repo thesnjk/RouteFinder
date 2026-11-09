@@ -23,6 +23,9 @@ enum class DriverVoiceCommand {
     /** Ask about named UK tolls on the active route. */
     TOLL_AHEAD,
 
+    /** Enable toll avoidance and replan the active route. */
+    AVOID_TOLLS,
+
     /** Ask about the next LEZ / CAZ restriction on the route. */
     NEXT_LEZ,
 
@@ -110,6 +113,13 @@ object DriverVoiceCommandPhraseMatcher {
             "am i allowed to drive",
             "can i keep driving",
             "how much drive time left",
+        ),
+        DriverVoiceCommand.AVOID_TOLLS to listOf(
+            "avoid tolls and replan",
+            "reroute without tolls",
+            "replan without tolls",
+            "avoid tolls",
+            "skip tolls",
         ),
         DriverVoiceCommand.TOLL_AHEAD to listOf(
             "any tolls",

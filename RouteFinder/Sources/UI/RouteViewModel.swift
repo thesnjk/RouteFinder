@@ -1311,7 +1311,19 @@ public final class RouteViewModel {
             await handleBookParkingVoiceCommand()
         case .whichLane:
             handleWhichLaneVoiceCommand()
+        case .avoidTolls:
+            handleAvoidTollsVoiceCommand()
         }
+    }
+
+    /// Enables avoid-tolls replan from push-to-talk (or acknowledges if already on).
+    private func handleAvoidTollsVoiceCommand() {
+        if avoidTolls {
+            speakVoiceAssist(VoiceAssistResponseFormatter.avoidTolls(started: false))
+            return
+        }
+        avoidTollsAndReplan()
+        speakVoiceAssist(VoiceAssistResponseFormatter.avoidTolls(started: true))
     }
 
     /// Speaks active junction lane guidance without mutating lane state.

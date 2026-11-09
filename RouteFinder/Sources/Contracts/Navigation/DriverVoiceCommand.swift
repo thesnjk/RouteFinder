@@ -16,6 +16,8 @@ public enum DriverVoiceCommand: String, Sendable, Equatable, CaseIterable {
     case canIDrive
     /// Ask about named UK tolls on the active route.
     case tollAhead
+    /// Enable toll avoidance and replan the active route.
+    case avoidTolls
     /// Ask about the next LEZ / CAZ restriction on the route.
     case nextLez
     /// Ask for remaining ETA.
@@ -102,6 +104,13 @@ public enum DriverVoiceCommandPhraseMatcher: Sendable {
                 "am i allowed to drive",
                 "can i keep driving",
                 "how much drive time left",
+            ]),
+            (.avoidTolls, [
+                "avoid tolls and replan",
+                "reroute without tolls",
+                "replan without tolls",
+                "avoid tolls",
+                "skip tolls",
             ]),
             (.tollAhead, [
                 "any tolls",

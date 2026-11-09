@@ -688,7 +688,22 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             }
             DriverVoiceCommand.BOOK_PARKING -> handleBookParkingVoiceCommand()
             DriverVoiceCommand.WHICH_LANE -> handleWhichLaneVoiceCommand()
+            DriverVoiceCommand.AVOID_TOLLS -> handleAvoidTollsVoiceCommand()
         }
+    }
+
+    /** Enables avoid-tolls replan from push-to-talk (or acknowledges if already on). */
+    private fun handleAvoidTollsVoiceCommand() {
+        if (avoidTolls) {
+            val spoken = VoiceAssistResponseFormatter.avoidTolls(started = false)
+            toastMessage = spoken
+            voice.speakAssist(spoken)
+            return
+        }
+        avoidTollsAndReplan()
+        val spoken = VoiceAssistResponseFormatter.avoidTolls(started = true)
+        toastMessage = spoken
+        voice.speakAssist(spoken)
     }
 
     /** Speaks active junction lane guidance without mutating lane state. */

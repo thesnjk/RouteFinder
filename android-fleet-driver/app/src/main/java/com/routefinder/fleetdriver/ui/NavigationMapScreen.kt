@@ -26,13 +26,19 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -42,6 +48,8 @@ import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.routefinder.fleetdriver.compliance.CanIDriveEvaluator
 import com.routefinder.fleetdriver.compliance.ParkingAvailabilityTier
+import com.routefinder.fleetdriver.compliance.ParkingBookCtaCopy
+import com.routefinder.fleetdriver.compliance.ParkingBookPartner
 import com.routefinder.fleetdriver.compliance.ParkingPartnerLinks
 import com.routefinder.fleetdriver.fleet.FleetPreferences
 import com.routefinder.fleetdriver.fleet.FleetConnectionGate
@@ -70,6 +78,16 @@ fun NavigationMapScreen(
         ActivityResultContracts.OpenDocument(),
     ) { uri ->
         if (uri != null) viewModel.importTacho(uri)
+    }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.evaluateParkingBookResumeOnForeground()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     LaunchedEffect(Unit) {
@@ -114,6 +132,89 @@ fun NavigationMapScreen(
                 .fillMaxWidth()
                 .padding(12.dp),
         ) {
+            if (viewModel.showParkingBookResumeBanner) {
+                viewModel.pendingParkingBookReturn?.let { pending ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                        ),
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(pending.resumeMessage, style = MaterialTheme.typography.bodyMedium)
+                            val pendingTier = pending.tier
+                            if (pendingTier != null) {
+                                Text(
+                                    pendingTier.displayLabel,
+                                    color = when (pendingTier) {
+                                        ParkingAvailabilityTier.AMPLE -> MaterialTheme.colorScheme.primary
+                                        ParkingAvailabilityTier.LIMITED -> MaterialTheme.colorScheme.tertiary
+                                        ParkingAvailabilityTier.FULL -> MaterialTheme.colorScheme.error
+                                    },
+                                )
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(onClick = { viewModel.keepNavigatingAfterParkingBook() }) {
+                                    Text("Keep nav")
+                                }
+                                OutlinedButton(onClick = { viewModel.dismissParkingBookReturn() }) {
+                                    Text("Dismiss")
+                                }
+                            }
+                            Text(
+                                "Partner booking stays on their site — RouteFinder does not take payment.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.tertiary,
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+
+            if (viewModel.parkingMapMarkers.isNotEmpty()) {
+                OutlinedButton(
+                    onClick = {
+                        viewModel.parkingMapMarkers.firstOrNull()?.let { viewModel.selectParkingBookStop(it) }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Book ahead parking")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            viewModel.selectedParkingBookStop?.let { stop ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                    ),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(stop.label, style = MaterialTheme.typography.bodyMedium)
+                        ParkingBookButtons(
+                            latitude = stop.latitude,
+                            longitude = stop.longitude,
+                            label = stop.label,
+                            stopId = stop.id,
+                            tier = stop.tier,
+                            viewModel = viewModel,
+                        )
+                        OutlinedButton(onClick = { viewModel.clearSelectedParkingBookStop() }) {
+                            Text("Close")
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
             viewModel.primaryRiskAdvisory?.let { risk ->
                 Card(
                     modifier = Modifier
@@ -438,36 +539,13 @@ fun NavigationMapScreen(
                                 Text("Spaces")
                             }
                         }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(
-                                onClick = {
-                                    val uri = ParkingPartnerLinks.travisUrl(
-                                        latitude = advisory.site.coordinate.latitude,
-                                        longitude = advisory.site.coordinate.longitude,
-                                        label = advisory.site.name,
-                                    )
-                                    context.startActivity(Intent(Intent.ACTION_VIEW, uri))
-                                },
-                            ) {
-                                Text("Book (TRAVIS)")
-                            }
-                            OutlinedButton(
-                                onClick = {
-                                    val uri = ParkingPartnerLinks.snapUrl(
-                                        latitude = advisory.site.coordinate.latitude,
-                                        longitude = advisory.site.coordinate.longitude,
-                                        label = advisory.site.name,
-                                    )
-                                    context.startActivity(Intent(Intent.ACTION_VIEW, uri))
-                                },
-                            ) {
-                                Text("Book (SNAP)")
-                            }
-                        }
-                        Text(
-                            "Opens partner site — booking and fees are between you and the operator.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.tertiary,
+                        ParkingBookButtons(
+                            latitude = advisory.site.coordinate.latitude,
+                            longitude = advisory.site.coordinate.longitude,
+                            label = advisory.site.name,
+                            stopId = advisory.site.id,
+                            tier = advisory.tier,
+                            viewModel = viewModel,
                         )
                         Text(
                             "crowd estimate — not live bay count",
@@ -600,6 +678,65 @@ fun NavigationMapScreen(
             )
         }
     }
+}
+
+@Composable
+private fun ParkingBookButtons(
+    latitude: Double,
+    longitude: Double,
+    label: String,
+    stopId: String,
+    tier: ParkingAvailabilityTier?,
+    viewModel: NavigationViewModel,
+) {
+    val context = LocalContext.current
+    val emphasizeTravis = ParkingBookCtaCopy.emphasizesTravis(tier)
+    val secondary = ParkingBookCtaCopy.usesSecondaryBookStyle(tier)
+    fun openPartner(partner: ParkingBookPartner) {
+        viewModel.noteParkingBookOpened(
+            id = stopId,
+            label = label,
+            latitude = latitude,
+            longitude = longitude,
+            partner = partner,
+            tier = tier,
+        )
+        val uri = when (partner) {
+            ParkingBookPartner.TRAVIS -> ParkingPartnerLinks.travisUrl(latitude, longitude, label)
+            ParkingBookPartner.SNAP -> ParkingPartnerLinks.snapUrl(latitude, longitude, label)
+        }
+        context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (emphasizeTravis && !secondary) {
+            Button(onClick = { openPartner(ParkingBookPartner.TRAVIS) }) {
+                Text("Book (TRAVIS)", fontWeight = FontWeight.SemiBold)
+            }
+        } else {
+            OutlinedButton(onClick = { openPartner(ParkingBookPartner.TRAVIS) }) {
+                Text("Book (TRAVIS)")
+            }
+        }
+        OutlinedButton(onClick = { openPartner(ParkingBookPartner.SNAP) }) {
+            Text("Book (SNAP)")
+        }
+    }
+    ParkingBookCtaCopy.caption(tier)?.let { caption ->
+        Text(
+            caption,
+            style = MaterialTheme.typography.bodySmall,
+            color = if (tier == ParkingAvailabilityTier.FULL) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.tertiary
+            },
+        )
+    }
+    Text(
+        "Opens partner site — booking and fees are between you and the operator.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.tertiary,
+    )
 }
 
 @SuppressLint("MissingPermission")

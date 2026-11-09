@@ -17,6 +17,9 @@ import com.routefinder.fleetdriver.compliance.LaybyOccupancyKind
 import com.routefinder.fleetdriver.compliance.LaybyOccupancyStore
 import com.routefinder.fleetdriver.compliance.LezAvoidPolicy
 import com.routefinder.fleetdriver.compliance.PartnerTachoAdvisory
+import com.routefinder.fleetdriver.compliance.ParkingAvailabilityTier
+import com.routefinder.fleetdriver.compliance.ParkingBookPartner
+import com.routefinder.fleetdriver.compliance.PendingParkingBookReturn
 import com.routefinder.fleetdriver.compliance.TachoCardSummary
 import com.routefinder.fleetdriver.compliance.TachoImportError
 import com.routefinder.fleetdriver.compliance.UkLezCatalog
@@ -156,6 +159,15 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     /** Colored parking / layby markers for the MapLibre canvas (crowd/prior — not live bays). */
     var parkingMapMarkers by mutableStateOf<List<ParkingMapMarker>>(emptyList())
         private set
+    /** Pending TRAVIS/SNAP book redirect for app-side return-to-nav. */
+    var pendingParkingBookReturn by mutableStateOf<PendingParkingBookReturn?>(null)
+        private set
+    /** When true, show the resume banner after returning from a partner book site. */
+    var showParkingBookResumeBanner by mutableStateOf(false)
+        private set
+    /** Selected ahead parking marker for the map book sheet. */
+    var selectedParkingBookStop by mutableStateOf<PendingParkingBookReturn?>(null)
+        private set
     var hosAdvisoryMessage by mutableStateOf<String?>(null)
     /** Fused Can-I-drive status (partner → imported card → clock when fresh). */
     var canIDriveStatus by mutableStateOf<CanIDriveStatus?>(null)
@@ -245,6 +257,65 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         tachoImportError = null
         removePersistedTachoSummary()
         refreshCanIDriveFromLocalSources()
+    }
+
+    /** Records that the driver opened a partner parking book link. */
+    fun noteParkingBookOpened(
+        id: String,
+        label: String,
+        latitude: Double,
+        longitude: Double,
+        partner: ParkingBookPartner,
+        tier: ParkingAvailabilityTier? = null,
+    ) {
+        pendingParkingBookReturn = PendingParkingBookReturn(
+            id = id,
+            label = label,
+            latitude = latitude,
+            longitude = longitude,
+            partner = partner,
+            tier = tier,
+        )
+        showParkingBookResumeBanner = false
+    }
+
+    /** Evaluates whether to show the resume banner after returning from a partner site. */
+    fun evaluateParkingBookResumeOnForeground() {
+        val pending = pendingParkingBookReturn
+        if (pending == null || !pending.isFresh()) {
+            pendingParkingBookReturn = null
+            showParkingBookResumeBanner = false
+            return
+        }
+        showParkingBookResumeBanner = true
+    }
+
+    /** Dismisses the parking book resume banner and clears pending return. */
+    fun dismissParkingBookReturn() {
+        pendingParkingBookReturn = null
+        showParkingBookResumeBanner = false
+        selectedParkingBookStop = null
+    }
+
+    /** Keeps navigating after a partner book bounce. */
+    fun keepNavigatingAfterParkingBook() {
+        dismissParkingBookReturn()
+    }
+
+    /** Opens the map book sheet for an ahead parking marker. */
+    fun selectParkingBookStop(marker: ParkingMapMarker) {
+        selectedParkingBookStop = PendingParkingBookReturn(
+            id = marker.id,
+            label = marker.title,
+            latitude = marker.latitude,
+            longitude = marker.longitude,
+            partner = ParkingBookPartner.TRAVIS,
+            tier = marker.tier,
+        )
+    }
+
+    fun clearSelectedParkingBookStop() {
+        selectedParkingBookStop = null
     }
 
     fun setVoiceEnabled(enabled: Boolean) {
@@ -597,6 +668,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             laybySkipCount = 0
             catalogLaybySites = emptyList()
             parkingMapMarkers = emptyList()
+            dismissParkingBookReturn()
             catalogRoadworkSites = emptyList()
             lastAnnouncedLaybyId = null
             lastRoadworksMessage = null

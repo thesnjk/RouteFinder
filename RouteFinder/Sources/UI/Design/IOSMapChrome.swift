@@ -755,11 +755,73 @@ private struct CompactAlertStack: View {
         return mapAlertHaversineMeters(origin, destination) > LEZAvoidPolicy.avoidPolygonsMaxHaversineMeters
     }
 
+    private var parkingPins: [RoutePin] {
+        viewModel.displayMapPins.filter {
+            switch $0.kind {
+            case .parkingAmple, .parkingLimited, .parkingFull: return true
+            default: return false
+            }
+        }
+    }
+
     var body: some View {
         let visible = alerts.prefix(2)
         let overflowCount = max(0, alerts.count - 2)
-        if !visible.isEmpty || overflowCount > 0 {
+        let showResume = viewModel.showParkingBookResumeBanner && viewModel.pendingParkingBookReturn != nil
+        let showParkingBook = !parkingPins.isEmpty || viewModel.selectedParkingBookStop != nil
+        if !visible.isEmpty || overflowCount > 0 || showResume || showParkingBook {
             VStack(spacing: RFSpacing.sm) {
+                if showResume, let pending = viewModel.pendingParkingBookReturn {
+                    ParkingBookResumeBanner(
+                        pending: pending,
+                        onKeepNavigating: { viewModel.keepNavigatingAfterParkingBook() },
+                        onDismiss: { viewModel.dismissParkingBookReturn() }
+                    )
+                }
+                if !parkingPins.isEmpty {
+                    Button {
+                        if let pin = parkingPins.first {
+                            let tier: ParkingAvailabilityTier? = switch pin.kind {
+                            case .parkingAmple: .ample
+                            case .parkingLimited: .limited
+                            case .parkingFull: .full
+                            default: nil
+                            }
+                            viewModel.selectParkingBookStop(
+                                id: pin.id,
+                                label: pin.title,
+                                latitude: pin.coordinate.latitude,
+                                longitude: pin.coordinate.longitude,
+                                tier: tier
+                            )
+                        }
+                    } label: {
+                        Text("Book ahead parking")
+                            .font(RFFont.caption.weight(.semibold))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, RFSpacing.md)
+                            .padding(.vertical, RFSpacing.sm)
+                            .glassPanel(cornerRadius: 12)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("parkingMapBookChip")
+                }
+                if let stop = viewModel.selectedParkingBookStop {
+                    ParkingMapBookSheet(
+                        stop: stop,
+                        onBookOpened: { partner in
+                            viewModel.noteParkingBookOpened(
+                                id: stop.id,
+                                label: stop.label,
+                                latitude: stop.latitude,
+                                longitude: stop.longitude,
+                                partner: partner,
+                                tier: stop.tier
+                            )
+                        },
+                        onClose: { viewModel.selectedParkingBookStop = nil }
+                    )
+                }
                 ForEach(Array(visible.enumerated()), id: \.offset) { _, item in
                     item.view(viewModel: viewModel)
                 }
@@ -819,7 +881,18 @@ private enum MapAlertItem {
             LaybyAdvisoryBanner(
                 advisory: advisory,
                 onLaybyFull: { viewModel.markCurrentLaybyFull() },
-                onLaybyHasSpaces: { viewModel.markCurrentLaybyHasSpaces() }
+                onLaybyHasSpaces: { viewModel.markCurrentLaybyHasSpaces() },
+                onBookOpened: { partner in
+                    let tier = ParkingAvailabilityTier(occupancyPrior: advisory.occupancyPrior)
+                    viewModel.noteParkingBookOpened(
+                        id: advisory.stop.id,
+                        label: advisory.stop.label,
+                        latitude: advisory.stop.coordinate.latitude,
+                        longitude: advisory.stop.coordinate.longitude,
+                        partner: partner,
+                        tier: tier
+                    )
+                }
             )
         case .hos(let snapshot):
             HosClockBanner(snapshot: snapshot)

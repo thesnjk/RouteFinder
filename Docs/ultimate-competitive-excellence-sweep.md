@@ -375,7 +375,8 @@ Always **print** push commands. Do **not** push unless the user asked to push (o
 | 4 | Agent | ~~`EPIC-ANDROID-HOS-DUTYLOG`~~ **Shipped (MVP)** 2026-11-09 — Drive/Break/Off + weekly clock path |
 | 5 | Agent | ~~`EPIC-ANDROID-HOS-EXTENSION`~~ **Shipped (MVP)** 2026-11-09 — once-per-week 10h daily extension |
 | 6 | Agent | ~~`EPIC-ANDROID-HOS-WTD`~~ **Shipped (MVP)** 2026-11-09 — fortnight 90h + WTD 60h heads-up (Android HOS **3**) |
-| 7 | Agent / Operator | Gated residuals (AA / CarPlay / VU / LEZ / live £ / HD / billing) or operator `EPIC-P0-DEVICE` — ungated HOS budget MVPs exhausted |
+| 7 | Agent | ~~`EPIC-LANE-DEPTH` Overpass parity~~ **Shipped** 2026-11-09 — cap 12 + STRAIGHT skip + 50 km arc iOS↔Android |
+| 8 | Agent / Operator | Gated residuals (AA / CarPlay / VU / LEZ / live £ / HD / billing) or operator `EPIC-P0-DEVICE` |
 
 Also see: [`phase1-device-checklist.md`](phase1-device-checklist.md), [`fleet-e2e-qa.md`](fleet-e2e-qa.md).
 

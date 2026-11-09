@@ -135,6 +135,35 @@ struct LaneGuidanceEnricherTests {
         #expect(client.callCount == 0)
     }
 
+    @Test func enrichWithOverpassSkipsStraightManeuvers() async {
+        let client = MockLaneGuidanceClient()
+        client.handler = { _, _ in
+            LaneGuidance(lanes: [.left, .straight], recommendedIndices: [0])
+        }
+        let instructions = [
+            TurnInstruction(maneuver: .depart, roadName: "A", distance: 500, bearing: 0),
+            TurnInstruction(maneuver: .straight, roadName: "B", distance: 500, bearing: 0),
+            TurnInstruction(maneuver: .left, roadName: "C", distance: 500, bearing: 90),
+            TurnInstruction(maneuver: .straight, roadName: "D", distance: 500, bearing: 90),
+            TurnInstruction(maneuver: .right, roadName: "E", distance: 500, bearing: 180),
+            TurnInstruction(maneuver: .arrive, roadName: "F", distance: 0, bearing: 0),
+        ]
+        let coordinates = [
+            Coordinate(latitude: 52.63, longitude: 1.29),
+            Coordinate(latitude: 52.64, longitude: 1.30),
+        ]
+
+        _ = await LaneGuidanceEnricher.enrichWithOverpass(
+            instructions: instructions,
+            coordinates: coordinates,
+            options: LaneGuidanceEnrichmentOptions(maxOverpassManeuvers: 8),
+            client: client
+        )
+
+        // Only .left and .right should query Overpass (not .straight / depart / arrive).
+        #expect(client.callCount == 2)
+    }
+
     @Test func enrichWithOverpassRespectsDistanceCap() async {
         let client = MockLaneGuidanceClient()
         client.handler = { _, _ in

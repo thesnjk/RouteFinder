@@ -68,6 +68,7 @@ SSE helpers: `waitForFleetServerReady`, `beginSSESubscription`, `awaitSSEEvent` 
 | Toll matcher | `swift test --filter tollMatcher` |
 | Parking partner links | `swift test --filter parkingPartnerLinks` |
 | Lane OSM vs heuristic | `swift test --filter laneGuidanceSource` / `overpassPrefers` |
+| Lane Overpass enrich policy | `LaneGuidanceEnricherTests` (skip straight / cap / arc); Android `OverpassLaneGuidanceClientTest` | `cd RouteFinder && swift test --filter LaneGuidanceEnricher` ; `cd android-fleet-driver && ./gradlew :app:testDebugUnitTest --tests '*OverpassLaneGuidance*'` |
 | Full suite file | `swift test --filter Phase8` (if named) or run filters above from `Phase8ParityTests.swift` |
 
 ---

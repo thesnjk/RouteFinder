@@ -4,8 +4,8 @@
 
 **ICP:** UK independents, **5–15 trucks**, iPhone-first dispatch + driver wedge.  
 **Scope:** Engineering only — no legal / compliance / licensing / GTM / pilot outreach.  
-**Engineering excellence track:** Phases **1–7 complete** (simulator/CI). Physical **C4 / C9 / Fleet Part B** = **Blocked** 2026-09-19 (iPhones Offline in agent session; Part A green).  
-**Last operator sign-off:** C4/C9/Part B **Blocked** 2026-09-19.
+**Engineering excellence track:** Phases **1–7 complete** (simulator/CI). Agent Phase 31+ ungated tracks **Done** 2026-11-09 (H1/H2, HOS, Lane Overpass). Physical **C4 / C9 / Fleet Part B** = **Blocked — operator** since 2026-09-19 (**Blocked ≠ code Fail**; Part A / CI green).  
+**Last operator sign-off:** C4/C9/Part B **Blocked** 2026-09-19. SSOT checklist: [`phase1-device-checklist.md`](phase1-device-checklist.md).
 
 | Doc | Role |
 |-----|------|
@@ -18,7 +18,7 @@
 | [`phase1-device-checklist.md`](phase1-device-checklist.md) | Operator physical C3–C9 / Part B |
 | [`demo-superiority-script.md`](demo-superiority-script.md) | 2-minute demo script |
 
-**Self-sustaining next prompt:** Unlock a physical iPhone (same Wi‑Fi as Mac), run [`phase1-device-checklist.md`](phase1-device-checklist.md) C4 / C9 / Fleet Part B, then paste: `Operator QA done. Update Docs/phase20-verification.md only: C4 = [Pass/Fail + note], C9 = [Pass/Fail + note], Fleet Part B = [Pass/Fail + note].` Replace **Blocked** rows with Pass/Fail. If Fail: add [`pilot-feedback-backlog.md`](pilot-feedback-backlog.md) + scoped fix loop.
+**Self-sustaining next prompt:** Unlock a physical iPhone (same Wi‑Fi as Mac), run [`phase1-device-checklist.md`](phase1-device-checklist.md) (SSOT for `EPIC-P0-DEVICE`), then paste: `Operator QA done. Update Docs/phase20-verification.md only: C4 = [Pass/Fail/Skip + note], C9 = [Pass/Fail/Skip + note], Fleet Part B = [Pass/Fail + note]. Screenshots: [attached / paths / none].` Replace **Blocked** rows with Pass/Fail/Skip. If Fail: add [`pilot-feedback-backlog.md`](pilot-feedback-backlog.md) + scoped fix loop. Do not invent gated product work while these rows stay Blocked.
 
 ---
   
@@ -269,7 +269,7 @@ Scope: Full quarterly competitor re-scrape (early vs Ph30+ 2026-11) + code-groun
 | web-dispatch / hosted-gateway | **Pass** |
 | Android C1 (`testDebugUnitTest` + `assembleDebug`) | **Pass** — CI Temurin 17; local `.java-version` 17 (OpenJDK 25 still fails if unpinned) |
 | CI `main` (historical `36718254358`) | Historical android-c1 red; **current** android-c1 Pass with JDK 17 (H2 Done 2026-11-09) |
-| Device C4 / C9 / Fleet Part B | **Blocked — operator** (unchanged) |
+| Device C4 / C9 / Fleet Part B | **Blocked — operator** since 2026-09-19 (**Blocked ≠ code Fail**); SSOT [`phase1-device-checklist.md`](phase1-device-checklist.md); agent ungated tracks Done 2026-11-09 |
 | Build recommendations (Oct 12) | P0 device next; H1 sim + H2 JDK **Done** 2026-11-09 |
 | Explicit deferrals (Oct 12) | **Superseded** — see driver-first reopen 2026-10-12b |
 

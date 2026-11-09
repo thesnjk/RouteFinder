@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -26,6 +27,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.ButtonDefaults
@@ -818,6 +820,23 @@ fun NavigationMapScreen(
             HazardReportSheet(
                 onSubmit = { type, note -> viewModel.submitCrowdHazardReport(type, note) },
                 onDismiss = { viewModel.dismissHazardReportSheet() },
+            )
+        }
+        viewModel.pendingStillTherePrompt?.let { prompt ->
+            AlertDialog(
+                onDismissRequest = { viewModel.resolveStillTherePrompt(stillPresent = false) },
+                title = { Text("Still there?") },
+                text = { Text(prompt.message) },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.resolveStillTherePrompt(stillPresent = true) }) {
+                        Text("Still there")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.resolveStillTherePrompt(stillPresent = false) }) {
+                        Text("Cleared")
+                    }
+                },
             )
         }
     }

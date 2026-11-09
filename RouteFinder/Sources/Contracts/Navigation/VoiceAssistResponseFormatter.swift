@@ -90,6 +90,35 @@ public enum VoiceAssistResponseFormatter: Sendable {
         return "About \(durationPhrase(seconds: remainingSeconds)) remaining."
     }
 
+    /// Spoken hazard / closure callout from the active ahead announcement.
+    public static func hazardAhead(announcement: HazardAheadAnnouncement?) -> String {
+        guard let announcement else {
+            return "No hazards flagged ahead."
+        }
+        return HazardAheadFormatter.spokenPrompt(for: announcement)
+    }
+
+    /// Spoken roadworks callout from the nearest ahead site.
+    public static func roadworksAhead(label: String?, remainingMeters: Double?) -> String {
+        let trimmed = label?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !trimmed.isEmpty else {
+            return "No roadworks flagged ahead."
+        }
+        if let remainingMeters, remainingMeters > 0 {
+            return "\(trimmed) \(distancePhrase(meters: remainingMeters))."
+        }
+        return "\(trimmed) ahead along route."
+    }
+
+    /// Spoken primary fused predictive-risk advisory.
+    public static func riskAhead(spokenPrompt: String?) -> String {
+        let trimmed = spokenPrompt?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !trimmed.isEmpty {
+            return trimmed
+        }
+        return "No predictive risks flagged ahead."
+    }
+
     /// Reply when speech was not recognized as a domain command.
     public static var unrecognized: String { "Sorry, I didn't catch that." }
 

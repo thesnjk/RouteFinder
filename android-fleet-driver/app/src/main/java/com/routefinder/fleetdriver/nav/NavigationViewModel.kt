@@ -439,6 +439,29 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                 toastMessage = spoken
                 voice.speakAssist(spoken)
             }
+            DriverVoiceCommand.HAZARD_AHEAD -> {
+                val spoken = VoiceAssistResponseFormatter.hazardAhead(
+                    message = lastHazardMessage,
+                    distanceMeters = lastHazardDistanceMeters,
+                )
+                toastMessage = spoken
+                voice.speakAssist(spoken)
+            }
+            DriverVoiceCommand.ROADWORKS_AHEAD -> {
+                val spoken = VoiceAssistResponseFormatter.roadworksAhead(
+                    message = lastRoadworksMessage,
+                    distanceMeters = lastRoadworksDistanceMeters,
+                )
+                toastMessage = spoken
+                voice.speakAssist(spoken)
+            }
+            DriverVoiceCommand.RISK_AHEAD -> {
+                val spoken = VoiceAssistResponseFormatter.riskAhead(
+                    primaryRiskAdvisory?.message,
+                )
+                toastMessage = spoken
+                voice.speakAssist(spoken)
+            }
         }
     }
 

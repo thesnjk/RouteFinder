@@ -81,6 +81,33 @@ object VoiceAssistResponseFormatter {
         return "About ${durationPhrase(remainingSeconds)} remaining."
     }
 
+    /** Spoken hazard / closure callout from the active ahead message. */
+    fun hazardAhead(message: String?, distanceMeters: Double?): String {
+        if (message.isNullOrBlank()) return "No hazards flagged ahead."
+        return if (distanceMeters != null && distanceMeters > 0) {
+            "$message ${distancePhrase(distanceMeters)}."
+        } else {
+            message
+        }
+    }
+
+    /** Spoken roadworks callout. */
+    fun roadworksAhead(message: String?, distanceMeters: Double?): String {
+        if (message.isNullOrBlank()) return "No roadworks flagged ahead."
+        return if (distanceMeters != null && distanceMeters > 0) {
+            "$message ${distancePhrase(distanceMeters)}."
+        } else {
+            message
+        }
+    }
+
+    /** Spoken primary fused predictive-risk advisory. */
+    fun riskAhead(message: String?): String {
+        val trimmed = message?.trim().orEmpty()
+        if (trimmed.isNotEmpty()) return trimmed
+        return "No predictive risks flagged ahead."
+    }
+
     /** Reply when speech was not recognized as a domain command. */
     const val UNRECOGNIZED = "Sorry, I didn't catch that."
 

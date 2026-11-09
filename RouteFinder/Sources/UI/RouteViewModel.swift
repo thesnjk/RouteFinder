@@ -1282,6 +1282,27 @@ public final class RouteViewModel {
                 ?? physicsPredictedDurationSeconds
                 ?? result?.metrics.totalTime
             speakVoiceAssist(VoiceAssistResponseFormatter.eta(remainingSeconds: remaining))
+        case .hazardAhead:
+            speakVoiceAssist(
+                VoiceAssistResponseFormatter.hazardAhead(announcement: activeHazardAheadAnnouncement)
+            )
+        case .roadworksAhead:
+            let site = activeRoadworksAhead
+            let remaining: Double?
+            if let arc = site?.arcLengthAlongRouteMeters {
+                remaining = max(0, arc - simulationEngine.currentArcLengthMeters)
+            } else {
+                remaining = nil
+            }
+            speakVoiceAssist(
+                VoiceAssistResponseFormatter.roadworksAhead(
+                    label: site.map { "Roadworks: \($0.label)" },
+                    remainingMeters: remaining
+                )
+            )
+        case .riskAhead:
+            let prompt = primaryRouteRiskAdvisory.map { RouteRiskFormatter.spokenPrompt(for: $0) }
+            speakVoiceAssist(VoiceAssistResponseFormatter.riskAhead(spokenPrompt: prompt))
         }
     }
 

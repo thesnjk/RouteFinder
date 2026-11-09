@@ -539,6 +539,7 @@ public final class RouteViewModel {
     private let laybyAdvisor = LaybyAdvisor()
     private var laybyLoadTask: Task<Void, Never>?
     private var truckPoiLoadTask: Task<Void, Never>?
+    private var offlineCorridorPrefetchTask: Task<Void, Never>?
     /// Pending traffic-aware alternate response when `trafficRerouteAvailable` is true.
     public var pendingTrafficAlternate: ExternalRouteResponse?
     private var lastExternalRouteRequest: ExternalRouteRequest?
@@ -1509,6 +1510,8 @@ public final class RouteViewModel {
 
     /// Downloads the selected offline region (Settings picker).
     public func downloadSelectedOfflineRegion() async {
+        offlineCorridorPrefetchTask?.cancel()
+        offlineCorridorPrefetchTask = nil
         let region = selectedOfflineDownloadRegion
         isDownloadingOfflineTiles = true
         offlineDownloadProgress = 0
@@ -1536,6 +1539,61 @@ public final class RouteViewModel {
             offlineTileStatus = "\(region.displayName) ready (\(count) tiles)."
         } catch {
             offlineTileStatus = error.localizedDescription
+        }
+    }
+
+    /// Background-prefetches H3 graph tiles for the committed route polyline (non-blocking).
+    ///
+    /// No-op unless offline routing is enabled and tiles/CDN are available. Skips corridors larger
+    /// than the East Anglia auto-prefetch cap so UK-mainland routes never pull automatically.
+    private func scheduleOfflineCorridorPrefetch(coordinates: [Coordinate]) {
+        offlineCorridorPrefetchTask?.cancel()
+        guard offlineRoutingEnabled else { return }
+        guard let box = OfflineCorridorPrefetch.paddedBoundingBox(from: coordinates) else { return }
+
+        offlineCorridorPrefetchTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let available = await self.offlineGraphStore.hasOfflineTilesAvailable()
+            guard available else { return }
+            guard !Task.isCancelled else { return }
+
+            guard OfflineCorridorPrefetch.isWithinAutoPrefetchCap(box) else {
+                self.offlineTileStatus =
+                    "Route corridor too large for auto-cache — download East Anglia or place tiles manually."
+                return
+            }
+
+            // Avoid clobbering an in-flight Settings region download.
+            guard !self.isDownloadingOfflineTiles else { return }
+
+            self.offlineDownloadProgress = 0
+            self.offlineTileStatus = "Caching corridor…"
+            do {
+                try await self.offlineGraphStore.ensureCorridor(
+                    minLat: box.minLat,
+                    maxLat: box.maxLat,
+                    minLon: box.minLon,
+                    maxLon: box.maxLon,
+                    onProgress: { [weak self] completed, total in
+                        Task { @MainActor in
+                            guard let self, !Task.isCancelled else { return }
+                            guard total > 0 else { return }
+                            self.offlineDownloadProgress = Double(completed) / Double(total)
+                            self.offlineTileStatus = "Caching corridor… \(completed)/\(total)"
+                        }
+                    }
+                )
+                guard !Task.isCancelled else { return }
+                let count = await self.offlineGraphStore.loadedTileCount()
+                self.offlineTileStatus = "Corridor cached (\(count) tiles)."
+                self.offlineDownloadProgress = nil
+            } catch is CancellationError {
+                return
+            } catch {
+                guard !Task.isCancelled else { return }
+                self.offlineTileStatus = "Corridor cache skipped: \(error.localizedDescription)"
+                self.offlineDownloadProgress = nil
+            }
         }
     }
 
@@ -2806,6 +2864,7 @@ public final class RouteViewModel {
             coordinates: coordinates,
             queryOverpass: false
         )
+        scheduleOfflineCorridorPrefetch(coordinates: coordinates)
     }
 
     private func calculateExternalRoute(preferences: RoutingPreferences) async throws {
@@ -2946,6 +3005,7 @@ public final class RouteViewModel {
             instructions: heuristicInstructions,
             coordinates: response.coordinates
         )
+        scheduleOfflineCorridorPrefetch(coordinates: response.coordinates)
     }
 
     private func scheduleLaneGuidanceEnrichment(
@@ -3563,6 +3623,8 @@ public final class RouteViewModel {
         activeTollAdvisoryDistanceMeters = nil
         laybyLoadTask?.cancel()
         truckPoiLoadTask?.cancel()
+        offlineCorridorPrefetchTask?.cancel()
+        offlineCorridorPrefetchTask = nil
         hazardNavigationCoordinator.resetRouteHazardState(state: hazardState)
         routeSimulationCoordinator.cancelPhysicsWork()
         tripBriefShareText = nil

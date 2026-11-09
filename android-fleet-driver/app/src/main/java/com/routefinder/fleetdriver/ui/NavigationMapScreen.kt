@@ -294,6 +294,16 @@ fun NavigationMapScreen(
                         },
                     )
                     OutlinedTextField(
+                        value = viewModel.dvlaApiKeyDraft,
+                        onValueChange = viewModel::updateDvlaApiKey,
+                        label = { Text("DVLA VES API key") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        supportingText = {
+                            Text("Optional operator key — weight/HGV fallback when RegCheck misses")
+                        },
+                    )
+                    OutlinedTextField(
                         value = viewModel.tomTomApiKeyDraft,
                         onValueChange = viewModel::updateTomTomApiKey,
                         label = { Text("TomTom key (optional fallback)") },

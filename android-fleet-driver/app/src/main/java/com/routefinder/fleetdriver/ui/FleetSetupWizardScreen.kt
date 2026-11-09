@@ -65,6 +65,7 @@ fun FleetSetupWizardScreen(
     var vehicleId by remember { mutableStateOf(prefs.vehicleId) }
     var connectionKind by remember { mutableStateOf(prefs.connectionKind) }
     var regCheckUsername by remember { mutableStateOf(prefs.regCheckUsername) }
+    var dvlaApiKey by remember { mutableStateOf(prefs.dvlaApiKey) }
     var status by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var connected by remember { mutableStateOf(false) }
@@ -82,6 +83,7 @@ fun FleetSetupWizardScreen(
         prefs.baseUrl = baseUrl
         prefs.apiKey = apiKey
         prefs.regCheckUsername = regCheckUsername
+        prefs.dvlaApiKey = dvlaApiKey
         step = WizardStep.Done
     }
 
@@ -201,6 +203,17 @@ fun FleetSetupWizardScreen(
                                 Text("Used on job intake when the fleet vehicle has a plate but no dims")
                             },
                         )
+                        OutlinedTextField(
+                            value = dvlaApiKey,
+                            onValueChange = { dvlaApiKey = it },
+                            label = { Text("DVLA VES API key (optional)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            supportingText = {
+                                Text("Operator-supplied — weight/HGV fallback when RegCheck misses")
+                            },
+                        )
                         Text(
                             if (isHosted) {
                                 "Example: https://fleet.yourdomain.com — never paste the operator ORS key."
@@ -288,6 +301,7 @@ fun FleetSetupWizardScreen(
                                 prefs.apiKey = apiKey
                                 prefs.connectionKind = connectionKind
                                 prefs.regCheckUsername = regCheckUsername
+                                prefs.dvlaApiKey = dvlaApiKey
                                 scope.launch {
                                     error = null
                                     try {

@@ -46,7 +46,7 @@ import com.routefinder.fleetdriver.fleet.FleetTrip
 import com.routefinder.fleetdriver.fleet.FleetVehicleProfile
 import com.routefinder.fleetdriver.fleet.InspectionMediaBudget
 import com.routefinder.fleetdriver.fleet.JobIntakeHandler
-import com.routefinder.fleetdriver.fleet.RegCheckClient
+import com.routefinder.fleetdriver.fleet.VehicleRegistrationResolver
 import com.routefinder.fleetdriver.fleet.SseConnectionState
 import com.routefinder.fleetdriver.fleet.formatTimeWindowLines
 import com.routefinder.fleetdriver.fleet.needsRegistrationLookup
@@ -153,6 +153,8 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     private var lastRiskRefreshMs: Long = 0L
     private var lastKnownBearingDegrees: Double? = null
     var regCheckUsernameDraft by mutableStateOf(prefs.regCheckUsername)
+    /** Operator-supplied GOV.UK DVLA VES key (optional RegCheck fallback). */
+    var dvlaApiKeyDraft by mutableStateOf(prefs.dvlaApiKey)
     var tomTomApiKeyDraft by mutableStateOf(prefs.tomTomApiKey)
     var openWeatherApiKeyDraft by mutableStateOf(prefs.openWeatherApiKey)
     var clearanceRadarEnabled by mutableStateOf(prefs.clearanceRadarEnabled)
@@ -513,6 +515,11 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     fun updateRegCheckUsername(value: String) {
         regCheckUsernameDraft = value
         prefs.regCheckUsername = value
+    }
+
+    fun updateDvlaApiKey(value: String) {
+        dvlaApiKeyDraft = value
+        prefs.dvlaApiKey = value
     }
 
     fun updateTomTomApiKey(value: String) {
@@ -914,7 +921,9 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             if (last != null) {
                 destination = WaypointState(last.label, last.latitude, last.longitude)
             }
-            if (needsRegistrationLookup(trip) && prefs.regCheckUsername.isNotBlank()) {
+            val canLookupPlate =
+                prefs.regCheckUsername.isNotBlank() || prefs.dvlaApiKey.isNotBlank()
+            if (needsRegistrationLookup(trip) && canLookupPlate) {
                 try {
                     val plate = withContext(Dispatchers.IO) {
                         val api = FleetApi(prefs.baseUrl, prefs.apiKey)
@@ -923,24 +932,31 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                             ?.registrationPlate
                     }
                     if (!plate.isNullOrBlank()) {
-                        val spec = withContext(Dispatchers.IO) {
-                            RegCheckClient(prefs.regCheckUsername).lookup(plate)
+                        val resolved = withContext(Dispatchers.IO) {
+                            VehicleRegistrationResolver.resolve(
+                                registration = plate,
+                                regCheckUsername = prefs.regCheckUsername,
+                                dvlaApiKey = prefs.dvlaApiKey,
+                            )
                         }
-                        if (spec != null) {
+                        if (resolved != null) {
                             intakeVehicleProfile = FleetVehicleProfile(
-                                height = spec.heightMeters ?: trip.vehicleProfile?.height,
-                                weight = spec.weightTonnes ?: trip.vehicleProfile?.weight,
-                                width = spec.widthMeters ?: trip.vehicleProfile?.width,
-                                length = spec.lengthMeters ?: trip.vehicleProfile?.length,
+                                height = resolved.heightMeters ?: trip.vehicleProfile?.height,
+                                weight = resolved.weightTonnes ?: trip.vehicleProfile?.weight,
+                                width = resolved.widthMeters ?: trip.vehicleProfile?.width,
+                                length = resolved.lengthMeters ?: trip.vehicleProfile?.length,
                                 trailerCount = trip.vehicleProfile?.trailerCount ?: trailerCountDraft,
                                 axleWeight = trip.vehicleProfile?.axleWeight,
                             )
                             intakeVehicleProfile?.length?.let { lengthMetersDraft = it }
-                            toastMessage = "RegCheck dims applied"
+                            toastMessage = when (resolved.source) {
+                                VehicleRegistrationResolver.Source.REG_CHECK -> "RegCheck dims applied"
+                                VehicleRegistrationResolver.Source.DVLA -> "DVLA weight applied"
+                            }
                         }
                     }
                 } catch (_: Exception) {
-                    // Never block intake on RegCheck failure.
+                    // Never block intake on RegCheck / DVLA failure.
                 }
             }
             try {

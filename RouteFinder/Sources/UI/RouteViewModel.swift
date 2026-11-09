@@ -969,7 +969,7 @@ public final class RouteViewModel {
             return
         }
 
-        guard hasRegCheckUsername else {
+        guard hasRegCheckUsername || hasDVLAAPIKey else {
             registrationLookupError = VehicleRegistryError.notConfigured.localizedDescription
             return
         }
@@ -1878,12 +1878,12 @@ public final class RouteViewModel {
             isHGVMode = true
         }
 
-        if JobIntakeMapper.needsRegistrationLookup(from: trip), hasRegCheckUsername {
+        if JobIntakeMapper.needsRegistrationLookup(from: trip), hasRegCheckUsername || hasDVLAAPIKey {
             if let vehicle = await fleetDispatchCoordinator.fleetVehicle(id: trip.vehicleId, orgId: trip.orgId),
                let plate = vehicle.registrationPlate?.trimmingCharacters(in: .whitespacesAndNewlines),
                !plate.isEmpty {
                 vehicleRegistration = plate
-                // Never block intake on RegCheck failure — toast via registrationLookupError.
+                // Never block intake on RegCheck / DVLA failure — toast via registrationLookupError.
                 await applyRegistrationLookup()
                 isHGVMode = true
             }

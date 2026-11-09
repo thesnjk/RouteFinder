@@ -77,7 +77,8 @@ public struct TripBriefContext: Sendable, Equatable {
     public static func from(
         fleetTrip: FleetTrip,
         vehicleLabel: String? = nil,
-        previewCoordinates: [Coordinate] = []
+        previewCoordinates: [Coordinate] = [],
+        tollAdvisories: [UKTollAdvisory] = []
     ) -> TripBriefContext {
         let routeCoordinates: [Coordinate]
         if previewCoordinates.count >= 2 {
@@ -104,7 +105,8 @@ public struct TripBriefContext: Sendable, Equatable {
             tripStatus: fleetTrip.status.rawValue.capitalized,
             routeCoordinates: routeCoordinates,
             latestInspectionSummary: fleetTrip.latestInspectionSummary,
-            dispatchTimeWindows: fleetTrip.jobBrief?.timeWindows ?? []
+            dispatchTimeWindows: fleetTrip.jobBrief?.timeWindows ?? [],
+            tollAdvisories: tollAdvisories
         )
     }
 }

@@ -13,6 +13,7 @@ class CanIDriveEvaluatorTest {
         val partner = TachoCardSummary(
             remainingContinuousDriveSeconds = 100.0,
             remainingDailyDriveSeconds = 200.0,
+            remainingWeeklyDriveSeconds = 1_000.0,
             importedAt = Instant.now(),
             sourceFileName = "partner-webhook (samsara)",
         )
@@ -25,8 +26,30 @@ class CanIDriveEvaluatorTest {
         assertTrue(status.usesPartnerAdvisory)
         assertFalse(status.usesImportedCard)
         assertEquals(100.0, status.remainingContinuousDriveSeconds, 0.01)
+        assertEquals(200.0, status.remainingDailyDriveSeconds, 0.01)
+        assertEquals(1_000.0, status.remainingWeeklyDriveSeconds, 0.01)
         assertTrue(status.reason.contains("partner"))
+        assertTrue(status.reason.contains("weekly"))
         assertTrue(status.reason.contains(CanIDriveEvaluator.LEGAL_DISCLAIMER))
+    }
+
+    @Test
+    fun weeklyExhaustedBlocksDriveEvenWithContinuousAndDaily() {
+        val imported = TachoCardSummary(
+            remainingContinuousDriveSeconds = 500.0,
+            remainingDailyDriveSeconds = 1_000.0,
+            remainingWeeklyDriveSeconds = 0.0,
+            importedAt = Instant.now(),
+            sourceFileName = "card.json",
+        )
+        val clock = HosAdvisoryClock.snapshot(
+            continuousDriveSeconds = 0.0,
+            dailyDriveSeconds = 0.0,
+        )
+        val status = CanIDriveEvaluator.evaluate(imported = imported, clock = clock)
+        assertFalse(status.canDrive)
+        assertTrue(status.usesImportedCard)
+        assertTrue(status.reason.contains("weekly"))
     }
 
     @Test

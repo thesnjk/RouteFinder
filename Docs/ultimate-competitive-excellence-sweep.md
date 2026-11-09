@@ -257,12 +257,12 @@ Update research appendix, scorecard `Last updated`, gap matrix backlog, `[phase2
 
 | Gate                              | Result                                                                                                                                                                                                                        |
 | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `swift test`                      | **Partial fail** — UITests `spineSpeedLimitAcceleratesToMotorwayLimit` (expect `activeLegalSpeedLimitKmh == 112`, `peakSpeedKmh >= 105`). Other suites green. Treat as **simulation WIP debt**, not competitive score change. |
+| `swift test`                      | **Pass** — `spineSpeedLimitAcceleratesToMotorwayLimit` green (2026-11-09; was Oct 12 sim WIP debt). Full suite otherwise green.                                                                                              |
 | Fleet E2E smoke                   | **Pass** — 14/14 filters                                                                                                                                                                                                      |
 | web-dispatch                      | **Pass** — smoke + production build                                                                                                                                                                                           |
 | hosted-gateway                    | **Pass** — 8 vitest + typecheck                                                                                                                                                                                               |
-| Android C1                        | **Pass** with `JAVA_HOME=…/jdk-22.jdk` — **Fail** on default Homebrew OpenJDK **25.0.2** (`IllegalArgumentException: 25.0.2`)                                                                                                 |
-| CI `main` (run `36718254358`)     | macos/ios/web/hosted **success**; **android-c1 failure** — investigate separately                                                                                                                                             |
+| Android C1                        | **Pass** — CI Temurin 17 + `setup-android@v4`; local pin `.java-version` 17 (OpenJDK 25 still breaks AGP locally if unpinned)                                                                                                  |
+| CI `main` (historical `36718254358`) | Historical: macos/ios/web/hosted success; **android-c1** was red. **Current:** android-c1 Pass with JDK 17 pin (H2 Done 2026-11-09).                                                                                       |
 | Device C4 / C9 / Part B / CarPlay | **Blocked — operator** (unchanged)                                                                                                                                                                                            |
 
 
@@ -296,8 +296,8 @@ Original Oct 12 “Defer” list is **void** under the driver-first scope rule. 
 
 | Rank | Epic / work | Why first | First slice |
 |------|-------------|-----------|-------------|
-| H1 | `EPIC-SIM-SPEEDLIMIT` | Physics Lead must stay CI-honest | Restore `spineSpeedLimitAcceleratesToMotorwayLimit` |
-| H2 | `EPIC-ANDROID-JDK-CI` | `android-c1` red on `main`; OpenJDK 25 breaks AGP; v3 SDK setup requests removed `tools` | Pin JDK 17–22; `setup-android@v4` + green assemble + unit tests |
+| H1 | `EPIC-SIM-SPEEDLIMIT` | **Done** (2026-11-09) — Physics Lead CI-honest | `swift test --filter spineSpeedLimitAcceleratesToMotorwayLimit` Pass |
+| H2 | `EPIC-ANDROID-JDK-CI` | **Done** (2026-11-09) — CI Temurin 17 + `setup-android@v4`; local `.java-version` 17 | OpenJDK 25 still a local footgun if unpinned |
 | H3 | `EPIC-P0-DEVICE` | Demo claims need hardware truth | Operator C4 / C9 / Fleet Part B |
 
 ### Ranked driver-first build backlog
@@ -326,7 +326,7 @@ Every agent completion under this programme ends with these four blocks, in orde
 
 ### 1. What’s next
 
-Ordered list of the next epic(s) (e.g. H1 sim fix → H2 Android JDK → H3 device P0 → `EPIC-VOICE-ASSIST`). State whether the agent can do it alone or needs the operator.
+Ordered list of the next epic(s) (e.g. H3 device P0 → gated AA/CarPlay/VU/LEZ/live £). H1/H2 Done 2026-11-09. State whether the agent can do it alone or needs the operator.
 
 ### 2. Your involvement (if any)
 
@@ -369,10 +369,10 @@ Always **print** push commands. Do **not** push unless the user asked to push (o
 
 | Order | Who | Work |
 |------:|-----|------|
-| 1 | Agent | `EPIC-SIM-SPEEDLIMIT` — fix `spineSpeedLimitAcceleratesToMotorwayLimit` |
-| 2 | Agent | `EPIC-ANDROID-JDK-CI` — JDK 17 + `setup-android@v4` (no legacy `tools`); clear CI `android-c1` |
+| 1 | Agent | ~~`EPIC-SIM-SPEEDLIMIT`~~ **Done** (2026-11-09) |
+| 2 | Agent | ~~`EPIC-ANDROID-JDK-CI`~~ **Done** (2026-11-09) |
 | 3 | **Operator** | `EPIC-P0-DEVICE` — physical C4 / C9 / Fleet Part B (playbook below) |
-| 4 | Agent | Start `EPIC-VOICE-ASSIST` after H1–H2 green (H3 can run in parallel if phone available) |
+| 4 | Agent | Gated product residuals only (AA / CarPlay / VU / LEZ / live £ / HD / billing / HOS) — ungated cab/desk MVPs exhausted |
 
 Also see: [`phase1-device-checklist.md`](phase1-device-checklist.md), [`fleet-e2e-qa.md`](fleet-e2e-qa.md).
 

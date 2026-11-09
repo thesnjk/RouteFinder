@@ -4,6 +4,7 @@ import Foundation
 /// Evaluates an advisory “Can I drive now?” answer from partner webhook, imported card, or HOS clock.
 ///
 /// Priority when fresh (< 24 h): partner advisory → imported card → ``HosClockSnapshot``.
+/// Gates on continuous, daily, and weekly remaining when the source provides weekly.
 /// Always appends the legal tachograph disclaimer.
 public enum CanIDriveEvaluator: Sendable {
     /// Maximum age for partner / imported summaries before the advisory clock is preferred.
@@ -18,6 +19,8 @@ public enum CanIDriveEvaluator: Sendable {
     ) -> CanIDriveStatus {
         let continuous: TimeInterval
         let daily: TimeInterval
+        let weekly: TimeInterval
+        let applyWeekly: Bool
         let sourceLabel: String
         let usesImported: Bool
         let usesPartner: Bool
@@ -26,6 +29,8 @@ public enum CanIDriveEvaluator: Sendable {
            now.timeIntervalSince(partner.importedAt) < importedCardFreshnessLimit {
             continuous = partner.remainingContinuousDriveSeconds
             daily = partner.remainingDailyDriveSeconds
+            weekly = partner.remainingWeeklyDriveSeconds
+            applyWeekly = true
             sourceLabel = "partner advisory (\(partner.sourceFileName))"
             usesImported = false
             usesPartner = true
@@ -33,28 +38,41 @@ public enum CanIDriveEvaluator: Sendable {
                   now.timeIntervalSince(imported.importedAt) < importedCardFreshnessLimit {
             continuous = imported.remainingContinuousDriveSeconds
             daily = imported.remainingDailyDriveSeconds
+            weekly = imported.remainingWeeklyDriveSeconds
+            applyWeekly = true
             sourceLabel = "imported card (\(imported.sourceFileName))"
             usesImported = true
             usesPartner = false
         } else {
             continuous = clockSnapshot.remainingContinuousDriveSeconds
             daily = clockSnapshot.remainingDailyDriveSeconds
+            weekly = clockSnapshot.remainingWeeklyDriveSeconds
+            applyWeekly = true
             sourceLabel = "advisory EU 561 clock"
             usesImported = false
             usesPartner = false
         }
 
-        let canDrive = continuous > 0 && daily > 0
+        let canDrive: Bool
+        if applyWeekly {
+            canDrive = continuous > 0 && daily > 0 && weekly > 0
+        } else {
+            canDrive = continuous > 0 && daily > 0
+        }
+
         let budgetReason: String
         if canDrive {
             budgetReason =
-                "Yes — remaining continuous \(format(continuous)), daily \(format(daily)) from \(sourceLabel)."
+                "Yes — remaining continuous \(format(continuous)), daily \(format(daily)), weekly \(format(weekly)) from \(sourceLabel)."
         } else if continuous <= 0 {
             budgetReason =
                 "No — continuous drive remaining is exhausted (\(sourceLabel)). Take a mandatory break."
-        } else {
+        } else if daily <= 0 {
             budgetReason =
                 "No — daily drive remaining is exhausted (\(sourceLabel)). End the driving day."
+        } else {
+            budgetReason =
+                "No — weekly drive remaining is exhausted (\(sourceLabel)). End the driving week."
         }
 
         let reason = "\(budgetReason) \(HosRestInsertionResult.legalDisclaimer)"
@@ -62,6 +80,8 @@ public enum CanIDriveEvaluator: Sendable {
             canDrive: canDrive,
             reason: reason,
             remainingContinuousDriveSeconds: continuous,
+            remainingDailyDriveSeconds: daily,
+            remainingWeeklyDriveSeconds: weekly,
             usesImportedCard: usesImported,
             usesPartnerAdvisory: usesPartner
         )

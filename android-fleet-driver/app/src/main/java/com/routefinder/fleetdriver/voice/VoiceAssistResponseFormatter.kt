@@ -73,12 +73,32 @@ object VoiceAssistResponseFormatter {
     /** Short spoken Can-I-drive answer (planning aid — not legal VU). */
     fun canIDrive(status: CanIDriveStatus?): String {
         if (status == null) return "Can I drive status is unavailable."
-        val remainingMinutes = max(0, (status.remainingContinuousDriveSeconds / 60.0).roundToInt())
-        return if (status.canDrive) {
-            "Yes. About $remainingMinutes minutes of continuous drive remaining. Planning aid only — check your tachograph."
-        } else {
-            "No. Do not drive until your tachograph allows. Planning aid only."
+        if (status.canDrive) {
+            val continuous = spokenBudgetMinutes(status.remainingContinuousDriveSeconds)
+            val daily = spokenBudgetMinutes(status.remainingDailyDriveSeconds)
+            val weekly = spokenBudgetMinutes(status.remainingWeeklyDriveSeconds)
+            return "Yes. About $continuous continuous, $daily daily, $weekly weekly remaining. Planning aid only — check your tachograph."
         }
+        if (status.remainingContinuousDriveSeconds <= 0) {
+            return "No. Continuous drive budget is exhausted. Planning aid only — check your tachograph."
+        }
+        if (status.remainingDailyDriveSeconds <= 0) {
+            return "No. Daily drive budget is exhausted. Planning aid only — check your tachograph."
+        }
+        if (status.remainingWeeklyDriveSeconds <= 0) {
+            return "No. Weekly drive budget is exhausted. Planning aid only — check your tachograph."
+        }
+        return "No. Do not drive until your tachograph allows. Planning aid only."
+    }
+
+    private fun spokenBudgetMinutes(seconds: Double): String {
+        val minutes = max(0, (seconds / 60.0).roundToInt())
+        if (minutes >= 120) {
+            val hours = minutes / 60
+            val rem = minutes % 60
+            return if (rem == 0) "$hours hours" else "$hours hours $rem minutes"
+        }
+        return "$minutes minutes"
     }
 
     /** Spoken toll callout from the near-horizon advisory or route summary line. */

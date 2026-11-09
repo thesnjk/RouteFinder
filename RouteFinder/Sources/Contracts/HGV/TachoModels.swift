@@ -35,12 +35,16 @@ public struct TachoCardSummary: Sendable, Hashable, Codable, Equatable {
 
 /// Advisory answer to “Can I drive now?” for planning only.
 public struct CanIDriveStatus: Sendable, Hashable, Codable, Equatable {
-    /// True when remaining continuous and daily drive budgets are both positive.
+    /// True when remaining continuous, daily, and (when known) weekly drive budgets are positive.
     public let canDrive: Bool
     /// Human-readable reason including the legal disclaimer.
     public let reason: String
     /// Remaining continuous driving seconds used for the decision.
     public let remainingContinuousDriveSeconds: TimeInterval
+    /// Remaining daily driving seconds used for the decision.
+    public let remainingDailyDriveSeconds: TimeInterval
+    /// Remaining weekly driving seconds used for the decision (0 when unknown on clock-only paths).
+    public let remainingWeeklyDriveSeconds: TimeInterval
     /// True when the decision used an imported card summary rather than the advisory clock.
     public let usesImportedCard: Bool
     /// True when the decision used a partner webhook advisory (not legal VU).
@@ -51,12 +55,16 @@ public struct CanIDriveStatus: Sendable, Hashable, Codable, Equatable {
         canDrive: Bool,
         reason: String,
         remainingContinuousDriveSeconds: TimeInterval,
+        remainingDailyDriveSeconds: TimeInterval = 0,
+        remainingWeeklyDriveSeconds: TimeInterval = 0,
         usesImportedCard: Bool,
         usesPartnerAdvisory: Bool = false
     ) {
         self.canDrive = canDrive
         self.reason = reason
         self.remainingContinuousDriveSeconds = remainingContinuousDriveSeconds
+        self.remainingDailyDriveSeconds = remainingDailyDriveSeconds
+        self.remainingWeeklyDriveSeconds = remainingWeeklyDriveSeconds
         self.usesImportedCard = usesImportedCard
         self.usesPartnerAdvisory = usesPartnerAdvisory
     }
@@ -88,12 +96,15 @@ public struct PartnerTachoAdvisory: Sendable, Hashable, Codable, Equatable {
     }
 
     /// Maps to ``TachoCardSummary`` for Can-I-drive evaluation.
+    ///
+    /// Omitted weekly budgets default to a full EU weekly planning allowance so
+    /// partners that only send continuous/daily do not falsely exhaust the week.
     public func asTachoCardSummary() -> TachoCardSummary {
         let label = (provider?.isEmpty == false ? provider! : "partner")
         return TachoCardSummary(
             remainingContinuousDriveSeconds: remainingContinuousDriveSeconds,
             remainingDailyDriveSeconds: remainingDailyDriveSeconds,
-            remainingWeeklyDriveSeconds: remainingWeeklyDriveSeconds ?? 0,
+            remainingWeeklyDriveSeconds: remainingWeeklyDriveSeconds ?? (56 * 3600),
             cardNumber: vehicleLabel,
             importedAt: recordedAt,
             sourceFileName: "partner-webhook (\(label))"

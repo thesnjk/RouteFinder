@@ -89,11 +89,32 @@ public enum VoiceAssistResponseFormatter: Sendable {
         guard let status else {
             return "Can I drive status is unavailable."
         }
-        let remainingMinutes = max(0, Int((status.remainingContinuousDriveSeconds / 60.0).rounded()))
         if status.canDrive {
-            return "Yes. About \(remainingMinutes) minutes of continuous drive remaining. Planning aid only — check your tachograph."
+            let continuous = spokenBudgetMinutes(status.remainingContinuousDriveSeconds)
+            let daily = spokenBudgetMinutes(status.remainingDailyDriveSeconds)
+            let weekly = spokenBudgetMinutes(status.remainingWeeklyDriveSeconds)
+            return "Yes. About \(continuous) continuous, \(daily) daily, \(weekly) weekly remaining. Planning aid only — check your tachograph."
+        }
+        if status.remainingContinuousDriveSeconds <= 0 {
+            return "No. Continuous drive budget is exhausted. Planning aid only — check your tachograph."
+        }
+        if status.remainingDailyDriveSeconds <= 0 {
+            return "No. Daily drive budget is exhausted. Planning aid only — check your tachograph."
+        }
+        if status.remainingWeeklyDriveSeconds <= 0 {
+            return "No. Weekly drive budget is exhausted. Planning aid only — check your tachograph."
         }
         return "No. Do not drive until your tachograph allows. Planning aid only."
+    }
+
+    private static func spokenBudgetMinutes(_ seconds: TimeInterval) -> String {
+        let minutes = max(0, Int((seconds / 60.0).rounded()))
+        if minutes >= 120 {
+            let hours = minutes / 60
+            let rem = minutes % 60
+            return rem == 0 ? "\(hours) hours" : "\(hours) hours \(rem) minutes"
+        }
+        return "\(minutes) minutes"
     }
 
     /// Spoken toll callout from the near-horizon advisory or route summary line.

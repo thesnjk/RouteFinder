@@ -116,18 +116,50 @@ struct VoiceAssistResponseFormatterTests {
             canDrive: true,
             reason: "Yes",
             remainingContinuousDriveSeconds: 2700,
+            remainingDailyDriveSeconds: 7200,
+            remainingWeeklyDriveSeconds: 36_000,
             usesImportedCard: false
         )
-        #expect(VoiceAssistResponseFormatter.canIDrive(status: yes).contains("Yes"))
-        #expect(VoiceAssistResponseFormatter.canIDrive(status: yes).contains("45 minutes"))
+        let spokenYes = VoiceAssistResponseFormatter.canIDrive(status: yes)
+        #expect(spokenYes.contains("Yes"))
+        #expect(spokenYes.contains("45 minutes"))
+        #expect(spokenYes.contains("continuous"))
+        #expect(spokenYes.contains("daily"))
+        #expect(spokenYes.contains("weekly"))
 
-        let no = CanIDriveStatus(
+        let noContinuous = CanIDriveStatus(
             canDrive: false,
             reason: "No",
             remainingContinuousDriveSeconds: 0,
+            remainingDailyDriveSeconds: 1000,
+            remainingWeeklyDriveSeconds: 1000,
             usesImportedCard: true
         )
-        #expect(VoiceAssistResponseFormatter.canIDrive(status: no).hasPrefix("No."))
+        #expect(VoiceAssistResponseFormatter.canIDrive(status: noContinuous).contains("Continuous"))
+        #expect(
+            VoiceAssistResponseFormatter.canIDrive(
+                status: CanIDriveStatus(
+                    canDrive: false,
+                    reason: "No",
+                    remainingContinuousDriveSeconds: 100,
+                    remainingDailyDriveSeconds: 0,
+                    remainingWeeklyDriveSeconds: 1000,
+                    usesImportedCard: false
+                )
+            ).contains("Daily")
+        )
+        #expect(
+            VoiceAssistResponseFormatter.canIDrive(
+                status: CanIDriveStatus(
+                    canDrive: false,
+                    reason: "No",
+                    remainingContinuousDriveSeconds: 100,
+                    remainingDailyDriveSeconds: 100,
+                    remainingWeeklyDriveSeconds: 0,
+                    usesImportedCard: false
+                )
+            ).contains("Weekly")
+        )
         #expect(VoiceAssistResponseFormatter.canIDrive(status: nil).contains("unavailable"))
     }
 

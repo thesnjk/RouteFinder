@@ -15,13 +15,17 @@ data class PartnerTachoAdvisory(
     val provider: String? = null,
     val vehicleLabel: String? = null,
 ) {
-    /** Maps to a card-like summary for Can-I-drive evaluation. */
+    /**
+     * Maps to a card-like summary for Can-I-drive evaluation.
+     * Omitted weekly defaults to a full EU weekly planning allowance so partners
+     * that only send continuous/daily do not falsely exhaust the week.
+     */
     fun asCardSummary(): TachoCardSummary {
         val label = provider?.takeIf { it.isNotBlank() } ?: "partner"
         return TachoCardSummary(
             remainingContinuousDriveSeconds = remainingContinuousDriveSeconds,
             remainingDailyDriveSeconds = remainingDailyDriveSeconds,
-            remainingWeeklyDriveSeconds = remainingWeeklyDriveSeconds ?: 0.0,
+            remainingWeeklyDriveSeconds = remainingWeeklyDriveSeconds ?: (56.0 * 3_600),
             cardNumber = vehicleLabel,
             importedAt = recordedAt,
             sourceFileName = "partner-webhook ($label)",

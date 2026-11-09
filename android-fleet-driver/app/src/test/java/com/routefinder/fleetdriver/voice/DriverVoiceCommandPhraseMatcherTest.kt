@@ -128,18 +128,47 @@ class VoiceAssistResponseFormatterTest {
             canDrive = true,
             reason = "Yes",
             remainingContinuousDriveSeconds = 2700.0,
+            remainingDailyDriveSeconds = 7200.0,
+            remainingWeeklyDriveSeconds = 36_000.0,
         )
         val spokenYes = VoiceAssistResponseFormatter.canIDrive(yes)
         assertTrue(spokenYes.contains("Yes"))
         assertTrue(spokenYes.contains("45 minutes"))
+        assertTrue(spokenYes.contains("continuous"))
+        assertTrue(spokenYes.contains("daily"))
+        assertTrue(spokenYes.contains("weekly"))
 
-        val no = CanIDriveStatus(
+        val noContinuous = CanIDriveStatus(
             canDrive = false,
             reason = "No",
             remainingContinuousDriveSeconds = 0.0,
+            remainingDailyDriveSeconds = 1000.0,
+            remainingWeeklyDriveSeconds = 1000.0,
             usesImportedCard = true,
         )
-        assertTrue(VoiceAssistResponseFormatter.canIDrive(no).startsWith("No."))
+        assertTrue(VoiceAssistResponseFormatter.canIDrive(noContinuous).contains("Continuous"))
+        assertTrue(
+            VoiceAssistResponseFormatter.canIDrive(
+                CanIDriveStatus(
+                    canDrive = false,
+                    reason = "No",
+                    remainingContinuousDriveSeconds = 100.0,
+                    remainingDailyDriveSeconds = 0.0,
+                    remainingWeeklyDriveSeconds = 1000.0,
+                ),
+            ).contains("Daily"),
+        )
+        assertTrue(
+            VoiceAssistResponseFormatter.canIDrive(
+                CanIDriveStatus(
+                    canDrive = false,
+                    reason = "No",
+                    remainingContinuousDriveSeconds = 100.0,
+                    remainingDailyDriveSeconds = 100.0,
+                    remainingWeeklyDriveSeconds = 0.0,
+                ),
+            ).contains("Weekly"),
+        )
         assertTrue(VoiceAssistResponseFormatter.canIDrive(null).contains("unavailable"))
     }
 

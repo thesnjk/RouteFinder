@@ -117,6 +117,48 @@ import Testing
     #expect(status.usesPartnerAdvisory == false)
 }
 
+@Test func canIDriveEvaluatorWeeklyExhaustedBlocksDrive() {
+    let imported = TachoCardSummary(
+        remainingContinuousDriveSeconds: 500,
+        remainingDailyDriveSeconds: 1_000,
+        remainingWeeklyDriveSeconds: 0,
+        importedAt: Date(),
+        sourceFileName: "card.json"
+    )
+    let clock = HosClockSnapshot(
+        mode: .driving,
+        remainingContinuousDriveSeconds: 0,
+        remainingDailyDriveSeconds: 0,
+        remainingWeeklyDriveSeconds: 0
+    )
+    let status = CanIDriveEvaluator.evaluate(imported: imported, clockSnapshot: clock)
+    #expect(status.canDrive == false)
+    #expect(status.usesImportedCard == true)
+    #expect(status.remainingWeeklyDriveSeconds == 0)
+    #expect(status.reason.contains("weekly"))
+}
+
+@Test func canIDriveEvaluatorYesIncludesWeeklyInReason() {
+    let imported = TachoCardSummary(
+        remainingContinuousDriveSeconds: 500,
+        remainingDailyDriveSeconds: 1_000,
+        remainingWeeklyDriveSeconds: 10_000,
+        importedAt: Date(),
+        sourceFileName: "card.json"
+    )
+    let clock = HosClockSnapshot(
+        mode: .driving,
+        remainingContinuousDriveSeconds: 0,
+        remainingDailyDriveSeconds: 0,
+        remainingWeeklyDriveSeconds: 0
+    )
+    let status = CanIDriveEvaluator.evaluate(imported: imported, clockSnapshot: clock)
+    #expect(status.canDrive == true)
+    #expect(status.remainingDailyDriveSeconds == 1_000)
+    #expect(status.remainingWeeklyDriveSeconds == 10_000)
+    #expect(status.reason.contains("weekly"))
+}
+
 @Test func canIDriveEvaluatorPrefersFreshPartnerOverImport() {
     let partner = TachoCardSummary(
         remainingContinuousDriveSeconds: 100,

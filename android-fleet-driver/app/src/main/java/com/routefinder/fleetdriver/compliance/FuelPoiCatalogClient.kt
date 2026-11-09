@@ -9,14 +9,14 @@ import java.net.URL
 import java.net.URLEncoder
 
 /**
- * Overpass-backed HGV / high-flow diesel fuel POIs along a route corridor.
- * Mirrors iOS ``OverpassTruckPoiRepository`` fuel subset for Ph32 fuel-card matching.
+ * Overpass-backed truck corridor POIs (HGV fuel, weighbridge, overnight parking).
+ * Mirrors iOS ``OverpassTruckPoiRepository``; fuel subset still feeds Ph32 card matching.
  */
 object FuelPoiCatalogClient {
     private const val PUBLIC_INTERPRETER = "https://overpass-api.de/api/interpreter"
 
     /**
-     * Parses Overpass JSON elements into high-flow diesel fuel POIs.
+     * Parses Overpass JSON elements into corridor truck POIs (fuel / weigh / parking).
      * Safe for fixtures — no network.
      */
     fun poisFromOverpassJson(json: String): List<TruckFuelPoi> {
@@ -42,29 +42,40 @@ object FuelPoiCatalogClient {
             }
             if (lat.isNaN() || lon.isNaN()) continue
             val tags = el.optJSONObject("tags") ?: continue
-            if (!isHgvFuel(tags)) continue
+            val kind = classify(tags) ?: continue
             val name = tags.optString("name").takeIf { it.isNotBlank() }
                 ?: tags.optString("brand").takeIf { it.isNotBlank() }
-                ?: "HGV fuel"
-            val poiId = "fuel-$type-$id"
+                ?: defaultLabel(kind)
+            val poiId = "${kindPrefix(kind)}-$type-$id"
             if (!seen.add(poiId)) continue
             out += TruckFuelPoi(
                 id = poiId,
                 label = name,
                 latitude = lat,
                 longitude = lon,
-                amenities = amenitiesFrom(tags),
-                kind = TruckFuelPoi.Kind.HIGH_FLOW_DIESEL,
+                amenities = amenitiesFrom(tags, kind),
+                kind = kind,
             )
         }
         return out
     }
 
     /**
-     * Fetches HGV fuel POIs along [route] via fleet Overpass proxy (or public interpreter).
-     * Reuses layby corridor bboxes; returns empty on miss / budget / error.
+     * Fetches HGV fuel POIs along [route] (fuel subset only) for fuel-card matching.
      */
     fun fuelPoisAlongRoute(
+        route: List<LatLon>,
+        fleetBaseUrl: String? = null,
+        fleetApiKey: String? = null,
+    ): List<TruckFuelPoi> =
+        truckPoisAlongRoute(route, fleetBaseUrl, fleetApiKey)
+            .filter { it.kind == TruckFuelPoi.Kind.HIGH_FLOW_DIESEL }
+
+    /**
+     * Fetches fuel + weigh + overnight parking POIs along [route] via fleet Overpass proxy
+     * (or public interpreter). Reuses layby corridor bboxes; empty on miss / budget / error.
+     */
+    fun truckPoisAlongRoute(
         route: List<LatLon>,
         fleetBaseUrl: String? = null,
         fleetApiKey: String? = null,
@@ -95,6 +106,39 @@ object FuelPoiCatalogClient {
         return projected.mapNotNull { byId[it.id] }.distinctBy { it.id }
     }
 
+    /**
+     * Classifies OSM tags into a corridor kind, or null when the element should be skipped
+     * (e.g. non-HGV fuel).
+     */
+    fun classify(tags: JSONObject): TruckFuelPoi.Kind? {
+        val manMade = tags.optString("man_made")
+        val highway = tags.optString("highway")
+        if (manMade == "weighbridge" || highway == "weigh_station") {
+            return TruckFuelPoi.Kind.WEIGH_STATION
+        }
+        if (tags.optString("amenity") == "fuel") {
+            return if (isHgvFuel(tags)) TruckFuelPoi.Kind.HIGH_FLOW_DIESEL else null
+        }
+        val amenity = tags.optString("amenity")
+        if (amenity == "parking") {
+            val access = tags.optString("access")
+            val supervised = tags.optString("supervised")
+            val hgv = tags.optString("hgv").lowercase()
+            val truck = tags.optString("truck").lowercase()
+            if (access == "customers" || supervised == "yes" ||
+                hgv == "yes" || hgv == "designated" || truck == "yes"
+            ) {
+                return TruckFuelPoi.Kind.OVERNIGHT_SECURE_PARKING
+            }
+            return TruckFuelPoi.Kind.OVERNIGHT_SECURE_PARKING
+        }
+        if (highway == "rest_area" || highway == "services") {
+            // Laybys are owned by LaybyCatalogClient; skip duplicate rest/services here.
+            return null
+        }
+        return null
+    }
+
     private fun isHgvFuel(tags: JSONObject): Boolean {
         if (tags.optString("amenity") != "fuel") return false
         val hgv = tags.optString("hgv").lowercase()
@@ -107,8 +151,14 @@ object FuelPoiCatalogClient {
             name.contains("lorry", ignoreCase = true)
     }
 
-    private fun amenitiesFrom(tags: JSONObject): Set<String> {
-        val out = mutableSetOf("fuel")
+    private fun amenitiesFrom(tags: JSONObject, kind: TruckFuelPoi.Kind): Set<String> {
+        val out = mutableSetOf<String>()
+        when (kind) {
+            TruckFuelPoi.Kind.HIGH_FLOW_DIESEL -> out += "fuel"
+            TruckFuelPoi.Kind.WEIGH_STATION -> out += "weigh"
+            TruckFuelPoi.Kind.OVERNIGHT_SECURE_PARKING -> out += "parking"
+            TruckFuelPoi.Kind.OTHER -> Unit
+        }
         val brand = tags.optString("brand").trim()
         if (brand.isNotEmpty()) {
             out += "brand:${brand.lowercase()}"
@@ -118,6 +168,20 @@ object FuelPoiCatalogClient {
             out += "hgv"
         }
         return out
+    }
+
+    private fun defaultLabel(kind: TruckFuelPoi.Kind): String = when (kind) {
+        TruckFuelPoi.Kind.HIGH_FLOW_DIESEL -> "HGV fuel"
+        TruckFuelPoi.Kind.WEIGH_STATION -> "Weighbridge"
+        TruckFuelPoi.Kind.OVERNIGHT_SECURE_PARKING -> "Truck parking"
+        TruckFuelPoi.Kind.OTHER -> "Truck stop"
+    }
+
+    private fun kindPrefix(kind: TruckFuelPoi.Kind): String = when (kind) {
+        TruckFuelPoi.Kind.HIGH_FLOW_DIESEL -> "fuel"
+        TruckFuelPoi.Kind.WEIGH_STATION -> "weigh"
+        TruckFuelPoi.Kind.OVERNIGHT_SECURE_PARKING -> "park"
+        TruckFuelPoi.Kind.OTHER -> "truck"
     }
 
     private fun fetchBbox(
@@ -134,6 +198,12 @@ object FuelPoiCatalogClient {
               node["amenity"="fuel"]["name"~"Truck|HGV|lorry",i]($bbox);
               way["amenity"="fuel"]["hgv"~"yes|designated"]($bbox);
               way["amenity"="fuel"]["fuel:hgv"="yes"]($bbox);
+              node["amenity"="parking"]["hgv"~"yes|designated"]($bbox);
+              node["amenity"="parking"]["truck"="yes"]($bbox);
+              node["man_made"="weighbridge"]($bbox);
+              node["highway"="weigh_station"]($bbox);
+              way["man_made"="weighbridge"]($bbox);
+              way["highway"="weigh_station"]($bbox);
             );
             out center tags;
         """.trimIndent()

@@ -20,7 +20,10 @@ enum class FuelCardProvider(val rawValue: String, val displayName: String) {
     }
 }
 
-/** Minimal truck fuel POI for card matching (Ph32 parity). */
+/**
+ * Corridor truck POI (fuel / weigh / overnight parking) from Overpass.
+ * Fuel subset feeds [FuelCardMatcher]; weigh feeds the ahead banner.
+ */
 data class TruckFuelPoi(
     val id: String,
     val label: String,
@@ -30,7 +33,28 @@ data class TruckFuelPoi(
     val amenities: Set<String> = emptySet(),
     val kind: Kind = Kind.HIGH_FLOW_DIESEL,
 ) {
-    enum class Kind { HIGH_FLOW_DIESEL, OTHER }
+    enum class Kind {
+        HIGH_FLOW_DIESEL,
+        WEIGH_STATION,
+        OVERNIGHT_SECURE_PARKING,
+        OTHER,
+    }
+}
+
+/** Ahead banner copy for OSM weighbridges along the corridor. */
+object WeighStationAhead {
+    /**
+     * Returns banner text when at least one weigh POI is on the corridor.
+     * Honesty: OSM tags only — not DVSA enforcement or PrePass bypass status.
+     */
+    fun bannerMessage(weighCount: Int): String? {
+        if (weighCount <= 0) return null
+        return if (weighCount == 1) {
+            "Weighbridge ahead on route"
+        } else {
+            "$weighCount weighbridges ahead on route"
+        }
+    }
 }
 
 /** Matches truck fuel POIs to the driver's selected fuel card network via name/brand substrings. */

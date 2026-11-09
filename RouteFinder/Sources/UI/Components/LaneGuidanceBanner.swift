@@ -59,9 +59,7 @@ public struct LaneGuidanceBanner: View {
     }
 
     private var roadCallout: String? {
-        guard let road = roadName?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !road.isEmpty else { return nil }
-        return road
+        ManeuverSpeechFormatter.streetCallout(roadName: roadName)
     }
 
     private var distanceLabel: String {

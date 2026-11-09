@@ -215,6 +215,13 @@ struct VoiceAssistResponseFormatterTests {
                 distanceMeters: 100
             ) == VoiceAssistResponseFormatter.whichLaneNone
         )
+        let junkRoad = VoiceAssistResponseFormatter.whichLane(
+            guidanceText: "Use the left lane",
+            roadName: "Keep right",
+            distanceMeters: nil
+        )
+        #expect(junkRoad == "Use the left lane")
+        #expect(!junkRoad.contains("onto"))
     }
 
     @Test func avoidTollsFormatsStartedAndAlreadyAvoiding() {

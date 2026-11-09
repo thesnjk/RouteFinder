@@ -313,3 +313,40 @@ import Testing
     #expect(prompt.contains("left two lanes"))
     #expect(prompt.contains("onto M6"))
 }
+
+@Test func streetCalloutKeepsRealRoadAndDropsORSJunkEchoes() {
+    #expect(ManeuverSpeechFormatter.streetCallout(roadName: "A1") == "A1")
+    #expect(ManeuverSpeechFormatter.streetCallout(roadName: "  A47 Dual  ") == "A47 Dual")
+    #expect(ManeuverSpeechFormatter.streetCallout(roadName: "Turn left") == nil)
+    #expect(ManeuverSpeechFormatter.streetCallout(roadName: "Keep right") == nil)
+    #expect(ManeuverSpeechFormatter.streetCallout(roadName: "Head north") == nil)
+    #expect(ManeuverSpeechFormatter.streetCallout(roadName: "A1", isArrive: true) == nil)
+    let long = String(repeating: "A", count: 50)
+    #expect(ManeuverSpeechFormatter.streetCallout(roadName: long)?.count == 40)
+}
+
+@Test func maneuverSpeechFormatterOmitsJunkRoadSuffixOnPrepareAndExecute() {
+    let junk = TurnInstruction(
+        id: UUID(),
+        maneuver: .right,
+        roadName: "Turn left",
+        distance: 400,
+        bearing: 90
+    )
+    let prepare = ManeuverSpeechFormatter.spokenPrompt(for: junk, tier: .prepare)
+    #expect(prepare == "In 400 metres, turn right")
+    #expect(!prepare.contains("onto"))
+    let execute = ManeuverSpeechFormatter.spokenPrompt(for: junk, tier: .execute)
+    #expect(execute == "Turn right")
+    #expect(!execute.contains("onto"))
+
+    let real = TurnInstruction(
+        id: UUID(),
+        maneuver: .left,
+        roadName: "A1",
+        distance: 400,
+        bearing: 270
+    )
+    let realPrepare = ManeuverSpeechFormatter.spokenPrompt(for: real, tier: .prepare)
+    #expect(realPrepare.contains("onto A1"))
+}

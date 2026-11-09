@@ -26,33 +26,58 @@ data class LaneGuidance(
     val recommendedIndices: List<Int>,
     val source: LaneGuidanceSource = LaneGuidanceSource.UNKNOWN,
 ) {
-    /** Human-readable guidance for voice and compact labels. */
+    /**
+     * Human-readable guidance for voice and compact labels.
+     * Mirrors iOS ``ManeuverSpeechFormatter.spokenLanePhrase``.
+     */
     val guidanceText: String
-        get() {
-            if (lanes.isEmpty()) return "Follow road"
-            if (recommendedIndices.size == 1) {
-                val index = recommendedIndices.first()
-                if (index !in lanes.indices) return "Follow road"
-                val laneNumber = index + 1
-                return when (lanes[index]) {
-                    LaneArrow.LEFT, LaneArrow.SLIGHT_LEFT ->
-                        if (laneNumber == 1) "Use the left lane" else "Use lane $laneNumber"
-                    LaneArrow.RIGHT, LaneArrow.SLIGHT_RIGHT ->
-                        if (laneNumber == lanes.size) "Use the right lane" else "Use lane $laneNumber"
-                    LaneArrow.MERGE -> "Merge"
-                    else -> when {
-                        laneNumber == 1 -> "Keep left"
-                        laneNumber == lanes.size -> "Keep right"
-                        else -> "Use lane $laneNumber"
-                    }
+        get() = spokenLanePhrase()
+
+    /** Spoken / display lane phrase (natural multi-lane wording). */
+    fun spokenLanePhrase(): String {
+        if (lanes.isEmpty()) return "Follow the road"
+        val indices = recommendedIndices.sorted()
+        if (indices.isEmpty()) return "Follow the road"
+
+        if (indices.size == 1) {
+            val index = indices.first()
+            if (index !in lanes.indices) return "Follow the road"
+            val laneCount = lanes.size
+            return when (lanes[index]) {
+                LaneArrow.LEFT, LaneArrow.SLIGHT_LEFT ->
+                    if (index == 0) "Use the left lane" else "Use lane ${index + 1}"
+                LaneArrow.RIGHT, LaneArrow.SLIGHT_RIGHT ->
+                    if (index == laneCount - 1) "Use the right lane" else "Use lane ${index + 1}"
+                LaneArrow.MERGE -> "Merge"
+                else -> when {
+                    index == 0 -> "Keep left"
+                    index == laneCount - 1 -> "Keep right"
+                    else -> "Use lane ${index + 1}"
                 }
             }
-            if (recommendedIndices.size > 1) {
-                val numbers = recommendedIndices.joinToString(" and ") { "${it + 1}" }
-                return "Use lanes $numbers"
-            }
-            return "Follow road"
         }
+
+        val laneCount = lanes.size
+        val isContiguousFromLeft = indices == (0 until indices.size).toList()
+        val isContiguousFromRight =
+            indices == ((laneCount - indices.size) until laneCount).toList()
+        if (isContiguousFromLeft) {
+            return if (indices.size == 2) {
+                "Use the left two lanes"
+            } else {
+                "Use the left ${indices.size} lanes"
+            }
+        }
+        if (isContiguousFromRight) {
+            return if (indices.size == 2) {
+                "Use the right two lanes"
+            } else {
+                "Use the right ${indices.size} lanes"
+            }
+        }
+        val numbers = indices.joinToString(" and ") { "${it + 1}" }
+        return "Use lanes $numbers"
+    }
 
     /** Short symbol for UI strip (Unicode arrows). */
     fun symbol(forArrow: LaneArrow): String = when (forArrow) {

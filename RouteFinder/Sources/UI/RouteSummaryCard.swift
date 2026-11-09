@@ -138,7 +138,8 @@ struct RouteSummaryCard: View {
                             LaneGuidanceBanner(
                                 guidance: lane,
                                 maneuver: maneuver,
-                                distanceMeters: distance
+                                distanceMeters: distance,
+                                roadName: viewModel.activeLaneRoadName
                             )
                         }
                         SimulationControlRow(

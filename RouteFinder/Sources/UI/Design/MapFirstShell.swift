@@ -323,7 +323,12 @@ struct MapFirstShell: View {
             if let lane = viewModel.activeLaneGuidance,
                let maneuver = viewModel.activeLaneManeuver,
                let distance = viewModel.activeLaneDistanceMeters {
-                LaneGuidanceBanner(guidance: lane, maneuver: maneuver, distanceMeters: distance)
+                LaneGuidanceBanner(
+                    guidance: lane,
+                    maneuver: maneuver,
+                    distanceMeters: distance,
+                    roadName: viewModel.activeLaneRoadName
+                )
             }
 
             if isSearchExpanded {

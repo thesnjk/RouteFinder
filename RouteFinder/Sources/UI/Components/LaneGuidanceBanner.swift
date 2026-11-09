@@ -1,17 +1,25 @@
 import Contracts
 import SwiftUI
 
-/// Map-top lane guidance banner with maneuver distance and lane strip.
+/// Map-top lane guidance banner with maneuver distance, optional street callout, and lane strip.
 public struct LaneGuidanceBanner: View {
     public let guidance: LaneGuidance
     public let maneuver: TurnManeuver
     public let distanceMeters: Double
+    /// Destination street for the upcoming maneuver (`onto {road}` under distance).
+    public let roadName: String?
 
     /// Creates a lane guidance banner.
-    public init(guidance: LaneGuidance, maneuver: TurnManeuver, distanceMeters: Double) {
+    public init(
+        guidance: LaneGuidance,
+        maneuver: TurnManeuver,
+        distanceMeters: Double,
+        roadName: String? = nil
+    ) {
         self.guidance = guidance
         self.maneuver = maneuver
         self.distanceMeters = distanceMeters
+        self.roadName = roadName
     }
 
     public var body: some View {
@@ -20,8 +28,15 @@ public struct LaneGuidanceBanner: View {
                 Image(systemName: maneuverSymbol)
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(RFColor.route)
-                Text(distanceLabel)
-                    .font(RFFont.caption.weight(.semibold))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(distanceLabel)
+                        .font(RFFont.caption.weight(.semibold))
+                    if let road = roadCallout {
+                        Text("onto \(road)")
+                            .font(RFFont.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 Spacer(minLength: 0)
                 Text(guidance.guidanceText)
                     .font(RFFont.caption)
@@ -41,6 +56,12 @@ public struct LaneGuidanceBanner: View {
         .padding(.horizontal, RFSpacing.md)
         .padding(.vertical, RFSpacing.sm)
         .glassPanel(cornerRadius: 14)
+    }
+
+    private var roadCallout: String? {
+        guard let road = roadName?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !road.isEmpty else { return nil }
+        return road
     }
 
     private var distanceLabel: String {

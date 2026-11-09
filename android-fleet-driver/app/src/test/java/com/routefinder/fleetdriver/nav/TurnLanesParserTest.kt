@@ -43,4 +43,35 @@ class TurnLanesParserTest {
         )
         assertEquals("Use the left lane", guidance.guidanceText)
     }
+
+    @Test
+    fun spokenLanePhraseUsesLeftTwoLanesWhenContiguous() {
+        val guidance = LaneGuidance(
+            lanes = listOf(LaneArrow.STRAIGHT, LaneArrow.STRAIGHT, LaneArrow.RIGHT),
+            recommendedIndices = listOf(0, 1),
+            source = LaneGuidanceSource.OSM,
+        )
+        assertEquals("Use the left two lanes", guidance.spokenLanePhrase())
+        assertEquals(guidance.spokenLanePhrase(), guidance.guidanceText)
+    }
+
+    @Test
+    fun spokenLanePhraseUsesRightTwoLanesWhenContiguous() {
+        val guidance = LaneGuidance(
+            lanes = listOf(LaneArrow.STRAIGHT, LaneArrow.RIGHT, LaneArrow.RIGHT),
+            recommendedIndices = listOf(1, 2),
+            source = LaneGuidanceSource.OSM,
+        )
+        assertEquals("Use the right two lanes", guidance.spokenLanePhrase())
+    }
+
+    @Test
+    fun spokenLanePhraseListsNonContiguousLanes() {
+        val guidance = LaneGuidance(
+            lanes = listOf(LaneArrow.LEFT, LaneArrow.STRAIGHT, LaneArrow.RIGHT),
+            recommendedIndices = listOf(0, 2),
+            source = LaneGuidanceSource.OSM,
+        )
+        assertEquals("Use lanes 1 and 3", guidance.spokenLanePhrase())
+    }
 }

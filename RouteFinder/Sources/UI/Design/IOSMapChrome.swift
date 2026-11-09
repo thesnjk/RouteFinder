@@ -742,7 +742,7 @@ private struct CompactAlertStack: View {
            let lane = viewModel.activeLaneGuidance,
            let maneuver = viewModel.activeLaneManeuver,
            let distance = viewModel.activeLaneDistanceMeters {
-            items.append(.lane(lane, maneuver, distance))
+            items.append(.lane(lane, maneuver, distance, viewModel.activeLaneRoadName))
         }
         return items
     }
@@ -860,7 +860,7 @@ private enum MapAlertItem {
     case layby(LaybyAdvisory)
     case hos(HosClockSnapshot)
     case kinetic(String)
-    case lane(LaneGuidance, TurnManeuver, Double)
+    case lane(LaneGuidance, TurnManeuver, Double, String?)
 
     @ViewBuilder
     func view(viewModel: RouteViewModel) -> some View {
@@ -898,8 +898,13 @@ private enum MapAlertItem {
             HosClockBanner(snapshot: snapshot)
         case .kinetic(let text):
             LiveKineticAdvisoryBanner(text: text)
-        case .lane(let guidance, let maneuver, let distance):
-            LaneGuidanceBanner(guidance: guidance, maneuver: maneuver, distanceMeters: distance)
+        case .lane(let guidance, let maneuver, let distance, let roadName):
+            LaneGuidanceBanner(
+                guidance: guidance,
+                maneuver: maneuver,
+                distanceMeters: distance,
+                roadName: roadName
+            )
         }
     }
 }
@@ -948,7 +953,7 @@ private struct MapAlertOverflowSheet: View {
            let lane = viewModel.activeLaneGuidance,
            let maneuver = viewModel.activeLaneManeuver,
            let distance = viewModel.activeLaneDistanceMeters {
-            items.append(.lane(lane, maneuver, distance))
+            items.append(.lane(lane, maneuver, distance, viewModel.activeLaneRoadName))
         }
         return items
     }

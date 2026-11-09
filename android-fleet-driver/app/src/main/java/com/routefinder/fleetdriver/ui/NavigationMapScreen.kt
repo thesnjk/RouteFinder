@@ -134,6 +134,7 @@ fun NavigationMapScreen(
             followLat = viewModel.followLat,
             followLon = viewModel.followLon,
             parkingMarkers = viewModel.parkingMapMarkers,
+            hazardOverlayGeoJson = viewModel.hazardOverlayGeoJson,
             modifier = Modifier.fillMaxSize(),
         )
 

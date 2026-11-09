@@ -48,4 +48,61 @@ public enum ParkingMapPinBuilder: Sendable {
             )
         }
     }
+
+    /// Builds colored parking pins from ranked layby advisories (Android `ParkingMapMarkerBuilder` parity).
+    ///
+    /// - Parameters:
+    ///   - advisories: Ranked ahead layby advisories (nearest-first).
+    ///   - maxPins: Maximum markers to return.
+    /// - Returns: Route pins with occupancy-prior availability tiers.
+    public static func pins(
+        from advisories: [LaybyAdvisory],
+        maxPins: Int = defaultMaxPins
+    ) -> [RoutePin] {
+        guard maxPins > 0 else { return [] }
+        return advisories.prefix(maxPins).map { advisory in
+            let tier = ParkingAvailabilityTier(occupancyPrior: advisory.occupancyPrior)
+            return RoutePin(
+                id: "parking-layby-\(advisory.stop.id)",
+                coordinate: CLLocationCoordinate2D(
+                    latitude: advisory.stop.coordinate.latitude,
+                    longitude: advisory.stop.coordinate.longitude
+                ),
+                kind: RoutePin.pinKind(for: tier),
+                title: "\(advisory.stop.label) · \(tier.displayLabel)"
+            )
+        }
+    }
+
+    /// Merges ranked-layby pins with truck-POI parking pins, preferring advisories on near-duplicate sites.
+    public static func mergedParkingPins(
+        advisories: [LaybyAdvisory],
+        pois: [TruckPoi],
+        reports: [CrowdReport] = [],
+        maxPins: Int = defaultMaxPins,
+        asOf date: Date = Date(),
+        dedupeMeters: Double = 75
+    ) -> [RoutePin] {
+        let advisoryPins = pins(from: advisories, maxPins: maxPins)
+        guard advisoryPins.count < maxPins else { return advisoryPins }
+        let poiPins = pins(from: pois, reports: reports, maxPins: maxPins, asOf: date)
+        var merged = advisoryPins
+        for poiPin in poiPins {
+            guard merged.count < maxPins else { break }
+            let nearAdvisory = advisoryPins.contains { advisoryPin in
+                distanceMeters(advisoryPin.coordinate, poiPin.coordinate) <= dedupeMeters
+            }
+            if nearAdvisory { continue }
+            merged.append(poiPin)
+        }
+        return merged
+    }
+
+    private static func distanceMeters(
+        _ lhs: CLLocationCoordinate2D,
+        _ rhs: CLLocationCoordinate2D
+    ) -> Double {
+        CLLocation(latitude: lhs.latitude, longitude: lhs.longitude)
+            .distance(from: CLLocation(latitude: rhs.latitude, longitude: rhs.longitude))
+    }
 }

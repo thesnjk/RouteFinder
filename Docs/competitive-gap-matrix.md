@@ -1,6 +1,6 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-11-09 (Shipped MVP honesty: VOICE / PARKING-BOOK / COMBO; desk Can-I-drive weekly; residual LANE/AA/CarPlay/VU)  
+Last updated: 2026-11-09 (PARKING-AVAIL ranked pins shipped MVP; VOICE / PARKING-BOOK / COMBO; residual LANE/AA/CarPlay/VU/live bays)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then driver-benefit gaps previously deferred (CarPlay/AA, parking book, VU, tolls, LEZ cadastre).
 
 > **Oct 12 Ultimate competitive excellence sweep:** Full quarterly re-scrape (Firecrawl + Apify). CoPilot **11.4** captured; **no RF scorecard integer changes**. Engineering gates: fleet/web/hosted/Android (JDK 22) Pass; Swift UITests speed-limit regression = WIP debt.
@@ -101,7 +101,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 ### Remaining gaps (not claiming parity yet — sequenced under driver-first)
 
 - **CarPlay / Android Auto** — `EPIC-CARPLAY-PROD` / `EPIC-ANDROID-AUTO` (code path exists; entitlements + AA surface gated)
-- **Parking availability icons** — `EPIC-PARKING-AVAIL` (occupancy taps + Break Now shipped; color-ahead icons residual). **Parking booking MVP shipped** (`EPIC-PARKING-BOOK` deep links + voice entry; native book API residual)
+- **Parking availability** — **Shipped (MVP)** ranked layby green/amber/red map pins (iOS + Android) + occupancy taps + Break Now; was `EPIC-PARKING-AVAIL` (live bay feed residual). **Parking booking MVP shipped** (`EPIC-PARKING-BOOK` deep links + voice entry; native book API residual)
 - **Combo length / trailer count** — **Shipped (MVP)** trailer→ORS ladder; was `EPIC-COMBO-LENGTH`
 - **Hands-free driver assistant** — **Shipped (MVP)** domain PTT (which-lane / avoid-tolls / layby / hazard / book parking / Can-I-drive day+week); was `EPIC-VOICE-ASSIST`
 - **Lane HD / street callouts** — `EPIC-LANE-DEPTH`
@@ -228,7 +228,7 @@ See [`ultimate-hgv-platform-spec.md`](ultimate-hgv-platform-spec.md).
 **Feature sequence (was “defer / intentional non-parity”):**
 
 4. **`EPIC-VOICE-ASSIST`** — **Shipped (MVP)** domain PTT (which-lane / avoid-tolls / layby / hazard / book parking / Can-I-drive day+week). Residual freer NLU via `EPIC-LANE-DEPTH`.
-5. **`EPIC-PARKING-AVAIL`** — color availability on ahead POIs + Break Now candidates (residual).
+5. **`EPIC-PARKING-AVAIL`** — **Shipped (MVP)** ranked layby color pins on map (iOS + Android) + Break Now. Residual: live bay counts / partner occupancy feed.
 6. **`EPIC-PARKING-BOOK`** — **Shipped (MVP)** TRAVIS/SNAP deep-link + voice “book parking”; native book API residual.
 7. **`EPIC-CARPLAY-PROD`** — paid-team entitlements + head-unit QA ([`carplay-weatherkit-restore.md`](carplay-weatherkit-restore.md)).
 8. **`EPIC-ANDROID-AUTO`** — Android Auto nav for fleet driver.

@@ -1,6 +1,6 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-11-09 (TOLL-DEPTH Mac+web desk corridor £; LANE/PARKING/VOICE/COMBO; residual live £ / AA / CarPlay / VU)  
+Last updated: 2026-11-09 (COMBO desk trailer→ORS; TOLL Mac+web; LANE/PARKING/VOICE; residual live £ / AA / CarPlay / VU)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then driver-benefit gaps previously deferred (CarPlay/AA, parking book, VU, tolls, LEZ cadastre).
 
 > **Oct 12 Ultimate competitive excellence sweep:** Full quarterly re-scrape (Firecrawl + Apify). CoPilot **11.4** captured; **no RF scorecard integer changes**. Engineering gates: fleet/web/hosted/Android (JDK 22) Pass; Swift UITests speed-limit regression = WIP debt.
@@ -102,7 +102,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 
 - **CarPlay / Android Auto** — `EPIC-CARPLAY-PROD` / `EPIC-ANDROID-AUTO` (code path exists; entitlements + AA surface gated)
 - **Parking availability** — **Shipped (MVP)** ranked layby green/amber/red map pins (iOS + Android) + occupancy taps + Break Now; was `EPIC-PARKING-AVAIL` (live bay feed residual). **Parking booking MVP shipped** (`EPIC-PARKING-BOOK` deep links + voice entry; native book API residual)
-- **Combo length / trailer count** — **Shipped (MVP)** trailer→ORS ladder; was `EPIC-COMBO-LENGTH`
+- **Combo length / trailer count** — **Shipped (MVP)** cab + Mac/web desk trailer→ORS ladder; was `EPIC-COMBO-LENGTH`
 - **Hands-free driver assistant** — **Shipped (MVP)** domain PTT (which-lane / avoid-tolls / layby / hazard / book parking / Can-I-drive day+week); was `EPIC-VOICE-ASSIST`
 - **Lane HD / street callouts** — street TTS/HUD sanitize **Shipped (MVP slice)** (iOS + Android drop turn/keep/head echoes); residual HD visuals / richer OSM — `EPIC-LANE-DEPTH`
 - Full **toll tariff** depth — Mac + web desk corridor indicative £ **Shipped (MVP slice)** + named advisories/avoid/HUD/PTT; residual live operator tariffs — `EPIC-TOLL-DEPTH`
@@ -232,7 +232,7 @@ See [`ultimate-hgv-platform-spec.md`](ultimate-hgv-platform-spec.md).
 6. **`EPIC-PARKING-BOOK`** — **Shipped (MVP)** TRAVIS/SNAP deep-link + voice “book parking”; native book API residual.
 7. **`EPIC-CARPLAY-PROD`** — paid-team entitlements + head-unit QA ([`carplay-weatherkit-restore.md`](carplay-weatherkit-restore.md)).
 8. **`EPIC-ANDROID-AUTO`** — Android Auto nav for fleet driver.
-9. **`EPIC-COMBO-LENGTH`** — **Shipped (MVP)** trailer count → ORS length ladder (12 / 16.5 / 18.75 / 25.25 m).
+9. **`EPIC-COMBO-LENGTH`** — **Shipped (MVP)** cab + desk trailer count → ORS length ladder (12 / 16.5 / 18.75 / 25.25 m).
 10. **`EPIC-LANE-DEPTH`** — street TTS sanitize **Shipped (MVP slice)** (iOS parity with Android `streetCallout`). Residual: HD lane visuals / richer OSM.
 11. **`EPIC-TOLL-DEPTH`** — Mac + web desk corridor indicative £ **Shipped (MVP slice)** (avoid/HUD/PTT + cab catalog). Residual: live operator tariffs.
 12. **`EPIC-VU-PARTNER`** — legal remote VU download (partner webhook + desk Can-I-drive week card shipped as advisory MVP).

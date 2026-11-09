@@ -333,14 +333,16 @@ public final class DispatchViewModel {
         defer { isPushing = false }
         do {
             let stops = try draft.fleetStops()
-            let profile = vehicles.first(where: { $0.id == vehicleId })?.profile
+            let brief = draft.jobBrief()
+            let baseProfile = vehicles.first(where: { $0.id == vehicleId })?.profile
+            let profile = brief.applyingWeight(to: baseProfile) ?? baseProfile
             let trip = try await store.createAndPushTrip(
                 orgId: orgId,
                 vehicleId: vehicleId,
                 stops: stops,
                 companyBreaks: draft.companyBreaks(),
                 vehicleProfile: profile,
-                jobBrief: draft.jobBrief()
+                jobBrief: brief
             )
             activeTrip = trip
             FleetWorkspaceSettings.saveFleetVehicleId(vehicleId)
@@ -732,17 +734,21 @@ public final class DispatchViewModel {
     }
 
     private func selectedVehicleProfile() -> VehicleProfile {
-        if let vehicleId = selectedVehicleId,
-           let profile = vehicles.first(where: { $0.id == vehicleId })?.profile {
-            return profile
-        }
-        return VehicleProfile(
-            height: 4.0,
-            weight: 44,
-            width: 2.55,
-            length: 16.5,
-            axleWeight: 11.5
-        )
+        let base: VehicleProfile = {
+            if let vehicleId = selectedVehicleId,
+               let profile = vehicles.first(where: { $0.id == vehicleId })?.profile {
+                return profile
+            }
+            return VehicleProfile(
+                height: 4.0,
+                weight: 44,
+                width: 2.55,
+                length: 16.5,
+                trailerCount: 1,
+                axleWeight: 11.5
+            )
+        }()
+        return draft.jobBrief().applyingWeight(to: base) ?? base
     }
 
     private func straightLinePreview() -> [CLLocationCoordinate2D] {

@@ -11,7 +11,36 @@ struct JobIntakePredictiveRiskTests {
         let profile = brief.applyingWeight(to: .ukArtic)
         #expect(profile?.weight == 40)
         #expect(profile?.hazmatClass == .class3)
+        #expect(profile?.trailerCount == 1)
+        #expect(profile?.length == 16.5)
         #expect(FleetJobBrief.hazmatClass(fromADR: "class2") == .class2)
+    }
+
+    @Test func jobBriefAppliesTrailerLadderAndPreservesWhenMergingWeight() {
+        let trailers = FleetJobBrief(trailerCount: 2, autoFindRoute: true)
+        let drawbar = trailers.applyingWeight(to: .ukArtic)
+        #expect(drawbar?.trailerCount == 2)
+        #expect(drawbar?.length == 18.75)
+
+        let rigid = FleetJobBrief(grossWeightKg: 26_000, trailerCount: 0)
+            .applyingWeight(to: .ukArtic)
+        #expect(rigid?.trailerCount == 0)
+        #expect(rigid?.length == 12.0)
+        #expect(rigid?.weight == 26)
+
+        let weightOnly = FleetJobBrief(grossWeightKg: 40_000)
+            .applyingWeight(to: .ukArtic)
+        #expect(weightOnly?.trailerCount == 1)
+        #expect(weightOnly?.length == 16.5)
+    }
+
+    @Test func dispatchDraftIncludesTrailerCountInJobBrief() {
+        var draft = DispatchTripDraft.norfolkDemoCorridor()
+        draft.trailerCount = 3
+        let brief = draft.jobBrief()
+        #expect(brief.trailerCount == 3)
+        let profile = brief.applyingWeight(to: nil)
+        #expect(profile?.length == 25.25)
     }
 
     @Test func jobIntakeMapperOrdersStopsAndPolicy() {

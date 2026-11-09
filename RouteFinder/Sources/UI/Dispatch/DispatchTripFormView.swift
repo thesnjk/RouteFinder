@@ -292,11 +292,16 @@ struct DispatchTripFormView: View {
         VStack(alignment: .leading, spacing: RFSpacing.sm) {
             Text("Job brief")
                 .font(RFFont.sectionTitle)
-            Text("Optional weight and ADR travel with the push so the driver profile and ORS request match the load.")
+            Text("Optional weight, trailers, and ADR travel with the push so the driver profile and ORS request match the load.")
                 .font(RFFont.caption)
                 .foregroundStyle(.secondary)
             TextField("Gross weight (kg)", text: $viewModel.draft.grossWeightKgText)
                 .textFieldStyle(GlassTextFieldStyle())
+            Stepper(
+                "Trailers: \(viewModel.draft.trailerCount) → \(VehicleProfile.suggestedOverallLengthMeters(trailerCount: viewModel.draft.trailerCount)) m",
+                value: $viewModel.draft.trailerCount,
+                in: 0...3
+            )
             TextField("ADR class (e.g. 3)", text: $viewModel.draft.adrClassText)
                 .textFieldStyle(GlassTextFieldStyle())
             Toggle("Auto find route on driver", isOn: $viewModel.draft.autoFindRoute)

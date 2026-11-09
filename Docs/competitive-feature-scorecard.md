@@ -1,6 +1,6 @@
 # Competitive Feature Scorecard — September 2026
 
-Last updated: 2026-11-09 (TOLL-DEPTH Mac+web desk corridor £; residual live tariffs / AA / CarPlay / VU)
+Last updated: 2026-11-09 (COMBO desk trailer→ORS; TOLL Mac+web; residual live £ / AA / CarPlay / VU)
 
 Scoring: **0** Absent · **1** Weak · **2** Parity · **3** Lead  
 Personas: **OO** = UK owner-operator · **SF** = small fleet (2–20 vehicles)
@@ -134,7 +134,7 @@ Policy: ship anything that benefits the driver; sequence by impact, not permanen
 | Parking booking | CoPilot + TRAVIS | Deep links + voice “book parking” entry | **Shipped (MVP)** — residual: native partner book API |
 | CarPlay production | Sygic / CoPilot | Code ready; entitlements inactive | **Gated** `EPIC-CARPLAY-PROD` |
 | Android Auto | CoPilot 11.4 | Not shipped | **Gated** `EPIC-ANDROID-AUTO` |
-| Combo / bumper length + trailer count | CoPilot 11.4 (NA maps) | Trailer→ORS length ladder (12 / 16.5 / 18.75 / 25.25 m); Constraint stays **3** | **Shipped (MVP)** |
+| Combo / bumper length + trailer count | CoPilot 11.4 (NA maps) | Cab + Mac/web desk trailer→ORS ladder (12 / 16.5 / 18.75 / 25.25 m); Constraint stays **3** | **Shipped (MVP)** |
 | Lane HD / street callouts | TomTom / Sygic / CoPilot 11.4 | OSM + sanitize street TTS/HUD/which-lane (drop turn/keep/head echoes); residual HD visuals | **Shipped (MVP slice)** — residual HD lane visuals / richer OSM (`EPIC-LANE-DEPTH`) |
 | Toll tariff depth | PTV / TomTom | Named UK advisories + avoid/HUD/PTT + Mac/web desk corridor indicative £ | **Shipped (MVP slice)** — residual live operator tariffs (`EPIC-TOLL-DEPTH`) |
 | Remote VU download | Samsara / Geotab | Advisory tacho + desk Can-I-drive week card; CSV stub | **Residual** `EPIC-VU-PARTNER` (legal VU download) |

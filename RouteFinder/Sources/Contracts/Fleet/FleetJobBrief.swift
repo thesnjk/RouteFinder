@@ -27,6 +27,8 @@ public struct FleetJobBrief: Sendable, Hashable, Codable, Equatable {
     public var grossWeightKg: Double?
     /// ADR / hazmat class label (e.g. `"3"`, `"2.1"`) when applicable.
     public var adrClass: String?
+    /// Trailer count (0…3) for ORS overall-length ladder when set by the desk.
+    public var trailerCount: Int?
     /// Per-stop time windows (planning aid).
     public var timeWindows: [StopTimeWindow]
     /// Preferred vehicle profile id when the desk selected a named profile.
@@ -40,6 +42,7 @@ public struct FleetJobBrief: Sendable, Hashable, Codable, Equatable {
     public static let fleetPilotDefault = FleetJobBrief(
         grossWeightKg: nil,
         adrClass: nil,
+        trailerCount: nil,
         timeWindows: [],
         requestedVehicleProfileId: nil,
         autoFindRoute: true,
@@ -50,6 +53,7 @@ public struct FleetJobBrief: Sendable, Hashable, Codable, Equatable {
     public init(
         grossWeightKg: Double? = nil,
         adrClass: String? = nil,
+        trailerCount: Int? = nil,
         timeWindows: [StopTimeWindow] = [],
         requestedVehicleProfileId: UUID? = nil,
         autoFindRoute: Bool = true,
@@ -57,33 +61,48 @@ public struct FleetJobBrief: Sendable, Hashable, Codable, Equatable {
     ) {
         self.grossWeightKg = grossWeightKg
         self.adrClass = adrClass
+        if let trailerCount {
+            self.trailerCount = min(max(trailerCount, 0), 3)
+        } else {
+            self.trailerCount = nil
+        }
         self.timeWindows = timeWindows
         self.requestedVehicleProfileId = requestedVehicleProfileId
         self.autoFindRoute = autoFindRoute
         self.autoRehearse = autoRehearse
     }
 
-    /// Merges weight (and ADR when mappable) into a vehicle profile.
+    /// Merges weight, ADR, and trailer count into a vehicle profile (preserves base trailers).
     public func applyingWeight(to profile: VehicleProfile?) -> VehicleProfile? {
         let tonnes: Double? = {
             guard let kg = grossWeightKg, kg > 0 else { return nil }
             return kg / 1_000
         }()
         let hazmat = Self.hazmatClass(fromADR: adrClass)
-        guard tonnes != nil || hazmat != nil else { return profile }
+        let trailers = trailerCount.map { min(max($0, 0), 3) }
+        guard tonnes != nil || hazmat != nil || trailers != nil else { return profile }
 
         let base = profile ?? VehicleProfile(
             height: 4.0,
             weight: tonnes ?? 44,
             width: 2.55,
             length: 16.5,
+            trailerCount: trailers ?? 1,
             axleWeight: 11.5
         )
+        let resolvedTrailers = trailers ?? base.trailerCount
+        let length: Double? = {
+            if let resolvedTrailers {
+                return VehicleProfile.suggestedOverallLengthMeters(trailerCount: resolvedTrailers)
+            }
+            return base.length
+        }()
         return VehicleProfile(
             height: base.height,
             weight: tonnes ?? base.weight,
             width: base.width,
-            length: base.length,
+            length: length,
+            trailerCount: resolvedTrailers,
             axleWeight: base.axleWeight,
             groundClearance: base.groundClearance,
             turningRadius: base.turningRadius,

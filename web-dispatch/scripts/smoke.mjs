@@ -906,4 +906,65 @@ assert.equal(severnOnly.length, 1)
 assert.equal(severnOnly[0].id, 'severn-crossings')
 assert.equal(indicativeRouteTotalGBP(severnOnly), null)
 
+/** Mirrors web-dispatch/src/vehicleComboLength.ts */
+function clampTrailerCount(trailerCount) {
+  if (!Number.isFinite(trailerCount)) return 0
+  return Math.min(3, Math.max(0, Math.trunc(trailerCount)))
+}
+
+function suggestedOverallLengthMeters(trailerCount) {
+  switch (clampTrailerCount(trailerCount)) {
+    case 0:
+      return 12.0
+    case 1:
+      return 16.5
+    case 2:
+      return 18.75
+    default:
+      return 25.25
+  }
+}
+
+assert.equal(suggestedOverallLengthMeters(0), 12)
+assert.equal(suggestedOverallLengthMeters(1), 16.5)
+assert.equal(suggestedOverallLengthMeters(2), 18.75)
+assert.equal(suggestedOverallLengthMeters(3), 25.25)
+assert.equal(suggestedOverallLengthMeters(-1), 12)
+assert.equal(suggestedOverallLengthMeters(99), 25.25)
+
+function buildOrsHgvDirectionsBody(stops, profile) {
+  const DEFAULT_HGV = {
+    lengthMeters: 16.5,
+    widthMeters: 2.55,
+    heightMeters: 4.0,
+    weightTonnes: 40.0,
+    axleLoadTonnes: 11.5,
+  }
+  const v = { ...DEFAULT_HGV, ...profile }
+  return {
+    coordinates: stops.map((s) => [s.longitude, s.latitude]),
+    options: {
+      profile_params: {
+        restrictions: {
+          length: v.lengthMeters,
+          width: v.widthMeters,
+          height: v.heightMeters,
+          weight: v.weightTonnes,
+          axleload: v.axleLoadTonnes,
+        },
+      },
+    },
+  }
+}
+
+const orsBody = buildOrsHgvDirectionsBody(
+  [
+    { longitude: 1.29, latitude: 52.63 },
+    { longitude: 0.39, latitude: 52.75 },
+  ],
+  { lengthMeters: suggestedOverallLengthMeters(2), weightTonnes: 44 },
+)
+assert.equal(orsBody.options.profile_params.restrictions.length, 18.75)
+assert.equal(orsBody.options.profile_params.restrictions.weight, 44)
+
 console.log('fleet types smoke ok')

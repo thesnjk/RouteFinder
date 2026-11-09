@@ -169,6 +169,54 @@ public actor HTTPFleetStore: FleetDispatchPort {
         return try decode(FleetTrip.self, from: data)
     }
 
+    /// Uploads a read-only partner telematics ping (`POST /v1/telematics/ingest`).
+    /// Desk pins only — not a legal VU.
+    public func ingestTelematics(_ request: TelematicsIngestRequest) async throws -> TelematicsVehiclePing {
+        try await post(path: "v1/telematics/ingest", body: request)
+    }
+
+    /// Uploads CSV-derived pings; returns how many succeeded.
+    /// Uses a deterministic UUID per vehicle label so re-uploads merge under the same id.
+    public func ingestTelematicsBatch(
+        _ pings: [TelematicsVehiclePing],
+        fallbackVehicleId: UUID? = nil
+    ) async throws -> Int {
+        var uploaded = 0
+        for ping in pings {
+            let vehicleId = fallbackVehicleId
+                ?? Self.deterministicVehicleId(forLabel: ping.vehicleLabel)
+            let request = TelematicsIngestRequest(
+                vehicleId: vehicleId,
+                latitude: ping.latitude,
+                longitude: ping.longitude,
+                recordedAt: ping.recordedAt,
+                provider: ping.provider.rawValue,
+                vehicleLabel: ping.vehicleLabel
+            )
+            _ = try await ingestTelematics(request)
+            uploaded += 1
+        }
+        return uploaded
+    }
+
+    /// Stable UUID derived from a vehicle label (parity with Android `nameUUIDFromBytes`).
+    public static func deterministicVehicleId(forLabel label: String) -> UUID {
+        let normalized = label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        var digest = [UInt8](repeating: 0, count: 16)
+        let bytes = Array(normalized.utf8)
+        for (index, byte) in bytes.enumerated() {
+            digest[index % 16] ^= byte &+ UInt8(index % 251)
+        }
+        digest[6] = (digest[6] & 0x0F) | 0x40 // version 4-ish
+        digest[8] = (digest[8] & 0x3F) | 0x80 // RFC 4122 variant
+        return UUID(uuid: (
+            digest[0], digest[1], digest[2], digest[3],
+            digest[4], digest[5], digest[6], digest[7],
+            digest[8], digest[9], digest[10], digest[11],
+            digest[12], digest[13], digest[14], digest[15]
+        ))
+    }
+
     private func get<T: Decodable>(path: String) async throws -> T {
         let (data, response) = try await rawRequest(path: path, method: "GET")
         guard (200 ... 299).contains(response.statusCode) else {

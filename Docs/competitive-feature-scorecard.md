@@ -14,7 +14,7 @@ RouteFinder scores from code inventory + Phase 20/26/27/30–44 + **Phase 8** + 
 | Capability | Before | After | Notes |
 |---|---:|---:|---|
 | Toll awareness | **0** | **2** | Named UK advisories + ORS avoid/replan; **not** live tariffs |
-| Telematics display | **0** | **1** | CSV + webhook stub; **not** remote VU |
+| Telematics display | **0** | **2** | CSV + fleet ingest → desk pins; **not** remote VU |
 | Parking partners | **1** | **2** | TRAVIS/SNAP deep links; **not** booking |
 | Offline UX | **2** | **2** | Same capability; region picker + progress |
 | Lane guidance | **2** | **2**† | OSM tag expansion + nav refresh; still below TomTom HD |
@@ -36,7 +36,7 @@ RouteFinder scores from code inventory + Phase 20/26/27/30–44 + **Phase 8** + 
 | Plate → profile (UK) | 8% | **3** | 0 | 0 | 0 | 0 | RF RegCheck + DVLA |
 | Crowd hazard / closure ahead | 5% | **2** | 1 | 1 | 0 | 0 | RF Ph33 + Ph36 TomTom live |
 | UK toll awareness | 5% | **2** | 2 | 3 | 2 | 2 | RF named hints + avoid-before-commit; TomTom live tariffs still lead |
-| Telematics / tacho display | 5% | **1** | 1 | 1 | 2 | 1 | RF CSV stub (Ph8); Samsara VU elsewhere |
+| Telematics / tacho display | 5% | **2** | 1 | 1 | 2 | 1 | RF CSV + fleet ingest → desk pins; Samsara VU still leads |
 | Price ($0 baseline) | 5% | **3** | 1 | 1 | 0 | 1 | Pilot £0 / post-pilot API-included desk subscription ([`pilot-fleet-pack.md`](pilot-fleet-pack.md)); not per-seat cloud portal; CoPilot quote-only |
 
 **Weighted OO score (approx.):** RouteFinder **~2.56** · Sygic **~2.00** · TomTom **~2.20** · CoPilot **~1.80**  
@@ -55,7 +55,7 @@ RouteFinder scores from code inventory + Phase 20/26/27/30–44 + **Phase 8** + 
 | Layby on trip | 10% | **3** | 2 | 1 | 0 | RF prediction + partner links |
 | Constraint routing | 10% | **3** | 3 | 3 | 2 | Parity |
 | Auth/TLS fleet server | 8% | **2** | 3 | 3 | 3 | RF API key + optional TLS; pilot-default `--api-key` + actionable 401 (not SSO/mTLS) |
-| Telematics ingest (read-only) | 4% | **1** | 2 | 2 | 3 | CSV + POST stub (Ph8) |
+| Telematics ingest (read-only) | 4% | **2** | 2 | 2 | 3 | CSV → POST ingest on iOS/Android; desk pins; not VU |
 | Price | 10% | **3** | 0 | 0 | 0 | Pilot £0 / post-pilot API-included desk subscription ([`pilot-fleet-pack.md`](pilot-fleet-pack.md)); not per-seat cloud portal |
 
 **Weighted SF score (approx.):** RouteFinder **~2.78** · CoPilot AM **~1.55** · PTV **~1.80** · Samsara **~1.70** (nav slice only)

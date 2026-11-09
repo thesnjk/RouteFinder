@@ -161,6 +161,40 @@ class FleetApi(
         }
     }
 
+    /**
+     * Uploads a read-only partner telematics ping to `POST /v1/telematics/ingest`.
+     * Planning / desk pins only — not a legal VU.
+     */
+    fun ingestTelematics(ping: TelematicsVehiclePing): JSONObject {
+        val media = "application/json; charset=utf-8".toMediaType()
+        val payload = JSONObject()
+            .put("vehicleId", ping.ingestVehicleId().toString())
+            .put("latitude", ping.latitude)
+            .put("longitude", ping.longitude)
+            .put("recordedAt", ping.recordedAt.toString())
+            .put("provider", ping.provider.raw)
+            .put("vehicleLabel", ping.vehicleLabel)
+        val request = Request.Builder()
+            .url(url("/v1/telematics/ingest"))
+            .auth()
+            .post(payload.toString().toRequestBody(media))
+            .build()
+        client.newCall(request).execute().use { response ->
+            val body = response.body?.string().orEmpty()
+            if (!response.isSuccessful) error("telematics ingest ${response.code}: $body")
+            return if (body.isBlank()) JSONObject() else JSONObject(body)
+        }
+    }
+
+    /** Uploads each ping; returns count successfully ingested. */
+    fun ingestTelematicsBatch(pings: List<TelematicsVehiclePing>): Int {
+        var ok = 0
+        for (ping in pings) {
+            runCatching { ingestTelematics(ping) }.onSuccess { ok += 1 }
+        }
+        return ok
+    }
+
     fun authorizedRequest(url: String): Request =
         Request.Builder().url(url).auth().get().build()
 }

@@ -85,6 +85,11 @@ fun NavigationMapScreen(
     ) { uri ->
         if (uri != null) viewModel.importTacho(uri)
     }
+    val telematicsImportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) viewModel.importTelematicsCSV(uri)
+    }
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -677,6 +682,42 @@ fun NavigationMapScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.tertiary,
                         )
+                    }
+                    Text("Telematics (read-only)", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Import Geotab/Samsara CSV then upload to fleet for desk pins — not a legal VU.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.tertiary,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            onClick = {
+                                telematicsImportLauncher.launch(
+                                    arrayOf(
+                                        "text/csv",
+                                        "text/comma-separated-values",
+                                        "text/plain",
+                                        "*/*",
+                                    ),
+                                )
+                            },
+                        ) {
+                            Text("Import CSV")
+                        }
+                        OutlinedButton(
+                            onClick = { viewModel.uploadTelematicsToFleet() },
+                            enabled = viewModel.telematicsImportBatch != null,
+                        ) {
+                            Text("Upload to fleet")
+                        }
+                        if (viewModel.telematicsImportBatch != null) {
+                            OutlinedButton(onClick = { viewModel.clearTelematicsImport() }) {
+                                Text("Clear")
+                            }
+                        }
+                    }
+                    viewModel.telematicsStatusMessage?.let {
+                        Text(it, style = MaterialTheme.typography.bodySmall)
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = { viewModel.resetHosBreak() }) { Text("Record break") }

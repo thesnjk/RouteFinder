@@ -28,6 +28,10 @@ import {
   indicativeCostLabel,
   indicativeRouteTotalLabel,
 } from './ukTollAdvisoryCatalog'
+import {
+  clampTrailerCount,
+  suggestedOverallLengthMeters,
+} from './vehicleComboLength'
 import { VehicleQR } from './VehicleQR'
 import { filterVehicles } from './vehicleFilter'
 import {
@@ -99,6 +103,7 @@ export default function App() {
     () => loadNorfolkDemoStops().destination,
   )
   const [grossWeightKg, setGrossWeightKg] = useState('')
+  const [trailerCount, setTrailerCount] = useState(1)
   const [adrClass, setAdrClass] = useState('')
   const [originEarliest, setOriginEarliest] = useState('')
   const [originLatest, setOriginLatest] = useState('')
@@ -393,6 +398,27 @@ export default function App() {
   }, [client, healthOk, rosterVehicles])
 
   const snapshotTrip = liveTrip ?? lastTrip
+
+  const deskHgvPreviewProfile = useMemo(() => {
+    const fromTrip = snapshotTrip?.vehicleProfile
+    const brief = snapshotTrip?.jobBrief
+    const trailers = clampTrailerCount(
+      fromTrip?.trailerCount ?? brief?.trailerCount ?? trailerCount,
+    )
+    const lengthMeters = fromTrip?.length ?? suggestedOverallLengthMeters(trailers)
+    const weightTonnes =
+      fromTrip?.weight ??
+      (brief?.grossWeightKg != null && brief.grossWeightKg > 0
+        ? brief.grossWeightKg / 1000
+        : undefined)
+    return {
+      lengthMeters,
+      weightTonnes,
+      widthMeters: fromTrip?.width ?? 2.55,
+      heightMeters: fromTrip?.height ?? 4.0,
+      axleLoadTonnes: fromTrip?.axleWeight ?? 11.5,
+    }
+  }, [snapshotTrip, trailerCount])
 
   const finishOnboarding = () => {
     localStorage.setItem(ONBOARDING_KEY, '1')
@@ -802,6 +828,23 @@ export default function App() {
           />
         </label>
         <label>
+          Trailers (0–3)
+          <input
+            type="number"
+            min={0}
+            max={3}
+            step={1}
+            value={trailerCount}
+            onChange={(e) =>
+              setTrailerCount(clampTrailerCount(Number.parseInt(e.target.value, 10)))
+            }
+            disabled={busy}
+          />
+        </label>
+        <p className="muted">
+          Overall length for ORS: {suggestedOverallLengthMeters(trailerCount)} m
+        </p>
+        <label>
           ADR class
           <input
             value={adrClass}
@@ -883,12 +926,25 @@ export default function App() {
                     ]
                   : []),
               ]
+              const trailers = clampTrailerCount(trailerCount)
+              const lengthMeters = suggestedOverallLengthMeters(trailers)
+              const weightTonnes =
+                Number.isFinite(kg) && kg > 0 ? kg / 1000 : null
               const brief = {
                 grossWeightKg: Number.isFinite(kg) && kg > 0 ? kg : null,
                 adrClass: adrClass.trim() || null,
+                trailerCount: trailers,
                 autoFindRoute: true,
                 autoRehearse: false,
                 ...(timeWindows.length > 0 ? { timeWindows } : {}),
+              }
+              const vehicleProfile = {
+                height: 4.0,
+                width: 2.55,
+                length: lengthMeters,
+                trailerCount: trailers,
+                weight: weightTonnes,
+                axleWeight: 11.5,
               }
               const trip = client.buildTripFromStops(
                 orgId,
@@ -896,6 +952,7 @@ export default function App() {
                 { ...originStop, id: originId },
                 { ...destStop, id: destId },
                 brief,
+                vehicleProfile,
               )
               const pushed = await client.pushTrip(trip)
               setLastTrip(pushed)
@@ -1056,11 +1113,7 @@ export default function App() {
         <TripMapPreview
           trip={snapshotTrip}
           client={healthOk ? client : null}
-          vehicleProfile={
-            snapshotTrip?.jobBrief?.grossWeightKg != null
-              ? { weightTonnes: snapshotTrip.jobBrief.grossWeightKg / 1000 }
-              : null
-          }
+          vehicleProfile={deskHgvPreviewProfile}
           onRoutePreviewError={(msg) => setError(msg)}
           onTollAdvisories={setCorridorTollAdvisories}
           fleetPins={rosterDriverPins(rosterRows)}

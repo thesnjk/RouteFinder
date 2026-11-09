@@ -39,10 +39,22 @@ export interface StopTimeWindow {
 export interface FleetJobBrief {
   grossWeightKg?: number | null
   adrClass?: string | null
+  /** Trailer count 0…3 for ORS overall-length ladder. */
+  trailerCount?: number | null
   /** Optional per-stop time windows (ISO timestamps). */
   timeWindows?: StopTimeWindow[]
   autoFindRoute?: boolean
   autoRehearse?: boolean
+}
+
+/** HGV dimensional profile on a pushed trip (mirrors Swift VehicleProfile subset). */
+export interface FleetVehicleProfile {
+  height?: number | null
+  weight?: number | null
+  width?: number | null
+  length?: number | null
+  trailerCount?: number | null
+  axleWeight?: number | null
 }
 
 /** Compact walkaround summary from driver snapshot (mirrors Swift TripBriefInspectionSummary). */
@@ -67,6 +79,8 @@ export interface FleetTrip {
   inspectionReportPDFBase64?: string | null
   /** Optional dispatch job brief (weight / ADR / auto-intake). */
   jobBrief?: FleetJobBrief | null
+  /** Optional HGV profile for ORS / driver intake. */
+  vehicleProfile?: FleetVehicleProfile | null
   /** Latest driver latitude from snapshot (WGS84). */
   driverLatitude?: number | null
   /** Latest driver longitude from snapshot (WGS84). */

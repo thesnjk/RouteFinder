@@ -35,11 +35,16 @@ export function tripMapFetchFingerprint(parts: {
   selectedVehicleId?: string | null
   orsReady: boolean
   weightTonnes?: number | null
+  lengthMeters?: number | null
 }): string {
   const readiness = parts.orsReady ? 'ors-ready' : 'ors-pending'
   const weight =
     parts.weightTonnes != null && Number.isFinite(parts.weightTonnes)
       ? `w${parts.weightTonnes.toFixed(2)}`
       : 'w-'
-  return `${parts.tripFp}#${parts.pinsFp}#${parts.selectedVehicleId ?? ''}#${readiness}#${weight}`
+  const length =
+    parts.lengthMeters != null && Number.isFinite(parts.lengthMeters)
+      ? `l${parts.lengthMeters.toFixed(2)}`
+      : 'l-'
+  return `${parts.tripFp}#${parts.pinsFp}#${parts.selectedVehicleId ?? ''}#${readiness}#${weight}#${length}`
 }

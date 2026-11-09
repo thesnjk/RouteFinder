@@ -67,6 +67,8 @@ public struct DispatchTripDraft: Sendable, Equatable {
     public var grossWeightKgText: String
     /// Optional ADR class string for ``FleetJobBrief``.
     public var adrClassText: String
+    /// Trailer count (0…3) for ORS overall-length ladder.
+    public var trailerCount: Int
     /// When true, driver auto-finds route after push.
     public var autoFindRoute: Bool
 
@@ -82,6 +84,7 @@ public struct DispatchTripDraft: Sendable, Equatable {
         breakLabel: String = "Afternoon break",
         grossWeightKgText: String = "",
         adrClassText: String = "",
+        trailerCount: Int = 1,
         autoFindRoute: Bool = true
     ) {
         self.stops = stops
@@ -91,6 +94,7 @@ public struct DispatchTripDraft: Sendable, Equatable {
         self.breakLabel = breakLabel
         self.grossWeightKgText = grossWeightKgText
         self.adrClassText = adrClassText
+        self.trailerCount = min(max(trailerCount, 0), 3)
         self.autoFindRoute = autoFindRoute
     }
 
@@ -109,6 +113,7 @@ public struct DispatchTripDraft: Sendable, Equatable {
             breakLabel: demoBreak.label ?? "Afternoon break",
             grossWeightKgText: "44000",
             adrClassText: "",
+            trailerCount: 1,
             autoFindRoute: true
         )
     }
@@ -127,6 +132,7 @@ public struct DispatchTripDraft: Sendable, Equatable {
             breakLabel: demoBreak.label ?? "Afternoon break",
             grossWeightKgText: "44000",
             adrClassText: "",
+            trailerCount: 1,
             autoFindRoute: true
         )
     }
@@ -172,6 +178,7 @@ public struct DispatchTripDraft: Sendable, Equatable {
         return FleetJobBrief(
             grossWeightKg: hasWeight ? kg : nil,
             adrClass: adr.isEmpty ? nil : adr,
+            trailerCount: trailerCount,
             timeWindows: windows,
             autoFindRoute: autoFindRoute,
             autoRehearse: false

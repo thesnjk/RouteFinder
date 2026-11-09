@@ -119,6 +119,7 @@ export function TripMapPreview({
     selectedVehicleId,
     orsReady: client != null,
     weightTonnes: vehicleProfile?.weightTonnes ?? null,
+    lengthMeters: vehicleProfile?.lengthMeters ?? null,
   })
 
   const hasTripCorridor = trip != null && trip.stops.length >= 2

@@ -10,6 +10,7 @@ import {
   type FleetTrip,
   type FleetTripStop,
   type FleetVehicle,
+  type FleetVehicleProfile,
   type GeocodeSuggestion,
   type PartnerTachoAdvisory,
   type TelematicsVehiclePing,
@@ -197,6 +198,7 @@ export class FleetApiClient {
     origin: { label: string; latitude: number; longitude: number; id?: string },
     destination: { label: string; latitude: number; longitude: number; id?: string },
     jobBrief?: FleetJobBrief | null,
+    vehicleProfile?: FleetVehicleProfile | null,
   ): FleetTrip {
     const originStop: FleetTripStop = {
       id: origin.id ?? crypto.randomUUID(),
@@ -222,6 +224,7 @@ export class FleetApiClient {
       stops: [originStop, destStop],
       updatedAt: new Date().toISOString(),
       ...(jobBrief ? { jobBrief } : {}),
+      ...(vehicleProfile ? { vehicleProfile } : {}),
     }
   }
 

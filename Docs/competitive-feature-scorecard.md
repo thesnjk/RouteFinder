@@ -101,7 +101,7 @@ Weighted OO/SF tables above are **unchanged** by Phase 6 (performance / honesty,
 |---|---:|---:|---|
 | Unified `RouteRiskAdvisory` fuse (kinetic / weather / hazard / roadworks / traffic) | **3** Lead | **3** (U11 + 2026-11 roadworks) | Primary HUD + voice dedup on Apple; Android fused banner + schedule/forecast/clearance + OSM `highway=construction` via fleet Overpass (`RoadworksAlongRouteClient`) |
 | `FleetJobBrief` weight / ADR / auto-find on SSE push | **3** | **3** | Android ORS includes ADR→hazmat; time windows on status card (U11) |
-| RegCheck on job intake (plate → dims) | **3** | **2** (U10) | Android RegCheck when username set (wizard + nav field) |
+| RegCheck on job intake (plate → dims) | **3** | **3** | Android RegCheck + optional DVLA VES fallback (operator key; weight/HGV class) |
 | DVSA walkaround + defect photos + PDF | **3** | **3** (U12) | Android gallery attach + local PDF + richer snapshot handoff |
 | 1–3h traffic/weather forecast advisories | **3** (U8 + U14 proxy) | **3** (U11 + U14) | Fleet TomTom/OpenWeather proxy — zero driver forecast keys on iOS + Android |
 | Off-route / corridor clearance radar | **3** (U9 + U11-B2) | **3** (U14b) | Android: on-route Overpass + heading corridor when off-spine |

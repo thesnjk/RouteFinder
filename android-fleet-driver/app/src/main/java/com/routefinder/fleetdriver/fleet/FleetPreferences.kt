@@ -46,6 +46,11 @@ class FleetPreferences(context: Context) {
         get() = prefs.getString(KEY_REGCHECK, "") ?: ""
         set(value) = prefs.edit().putString(KEY_REGCHECK, value.trim()).apply()
 
+    /** Optional GOV.UK DVLA VES API key (operator-supplied) for plate → weight fallback. */
+    var dvlaApiKey: String
+        get() = prefs.getString(KEY_DVLA, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_DVLA, value.trim()).apply()
+
     /** Optional TomTom API key for 1–3h forecast traffic samples. */
     var tomTomApiKey: String
         get() = prefs.getString(KEY_TOMTOM, "") ?: ""
@@ -113,6 +118,7 @@ class FleetPreferences(context: Context) {
         const val KEY_VOICE = "voice_guidance_enabled"
         const val KEY_LAYBY_VOICE = "layby_voice_alerts_enabled"
         const val KEY_REGCHECK = "regcheck_username"
+        const val KEY_DVLA = "dvla_api_key"
         const val KEY_TOMTOM = "tomtom_api_key"
         const val KEY_OPENWEATHER = "openweather_api_key"
         const val KEY_CLEARANCE = "clearance_radar_enabled"

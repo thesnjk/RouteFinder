@@ -45,7 +45,7 @@ To disable reroute evaluation: **Settings → Navigation → Avoid traffic delay
 
 ## Lane guidance banner
 
-When OSM `turn:lanes` data is available (or a maneuver heuristic applies), a banner shows which lane to use, for example **Use lane 2**. The strip shows lanes left-to-right; highlighted lanes are recommended.
+When OSM `turn:lanes` data is available (or a maneuver heuristic applies), a banner shows which lane to use (for example **Use the left two lanes**) plus **onto {street}** when the next road name is known. Voice prepare/execute prompts use the same lane-first wording. This is OSM strip guidance, not HD lane geometry. The strip shows lanes left-to-right; highlighted lanes are recommended.
 
 Lane guidance appears:
 

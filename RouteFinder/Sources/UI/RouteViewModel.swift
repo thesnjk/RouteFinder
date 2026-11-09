@@ -364,6 +364,8 @@ public final class RouteViewModel {
     public var activeLaneManeuver: TurnManeuver?
     /// Distance to the maneuver for ``activeLaneGuidance``.
     public var activeLaneDistanceMeters: Double?
+    /// Street name for ``activeLaneGuidance`` banner callout (`onto {road}`).
+    public var activeLaneRoadName: String?
     /// Presents the Waze-style hazard report sheet.
     public var presentHazardReportSheet = false
     /// Pending “still there?” prompt for a recent crowd report.
@@ -3471,9 +3473,7 @@ public final class RouteViewModel {
         simulationEngine.stop()
         navigationCoordinator.clearRoute()
         routePlanningCoordinator.cancelPendingWork()
-        activeLaneGuidance = nil
-        activeLaneManeuver = nil
-        activeLaneDistanceMeters = nil
+        clearActiveLaneGuidance()
         routeTollAdvisories = []
         activeTollAdvisory = nil
         activeTollAdvisoryDistanceMeters = nil
@@ -3730,9 +3730,7 @@ public final class RouteViewModel {
     /// Updates the lane-keep popup from the upcoming turn instruction.
     public func refreshActiveLaneGuidance() {
         guard let result else {
-            activeLaneGuidance = nil
-            activeLaneManeuver = nil
-            activeLaneDistanceMeters = nil
+            clearActiveLaneGuidance()
             return
         }
         let arcLength = navigationMetrics.snapshot?.arcLengthMeters
@@ -3784,14 +3782,13 @@ public final class RouteViewModel {
                     allInstructions: result.turnInstructions
                 )
             }
-            activeLaneGuidance = nil
-            activeLaneManeuver = nil
-            activeLaneDistanceMeters = nil
+            clearActiveLaneGuidance()
             return
         }
 
         activeLaneManeuver = instruction.maneuver
         activeLaneDistanceMeters = remainingToManeuver
+        activeLaneRoadName = instruction.roadName
 
         if let lane = instruction.laneGuidance {
             activeLaneGuidance = lane
@@ -3818,9 +3815,15 @@ public final class RouteViewModel {
             return
         }
 
+        clearActiveLaneGuidance()
+    }
+
+    /// Clears map-top lane guidance state.
+    private func clearActiveLaneGuidance() {
         activeLaneGuidance = nil
         activeLaneManeuver = nil
         activeLaneDistanceMeters = nil
+        activeLaneRoadName = nil
     }
 
     /// Submits a local crowd hazard report and optionally schedules a “still there?” prompt.

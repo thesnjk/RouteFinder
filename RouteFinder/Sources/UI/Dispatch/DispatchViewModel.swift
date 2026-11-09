@@ -52,6 +52,8 @@ public final class DispatchViewModel {
     public private(set) var telematicsImportBatch: TelematicsImportBatch?
     /// Partner remaining-drive Can-I-drive status for the desk (advisory — not legal VU).
     public private(set) var canIDriveStatus: CanIDriveStatus?
+    /// Indicative UK tolls matched on the ORS / straight-line preview corridor (not live tariffs).
+    public private(set) var corridorTollAdvisories: [UKTollAdvisory] = []
 
     public var searchSuggestions: [UUID: [GeocodeSuggestion]] = [:]
     public var searchFeedback: [UUID: String] = [:]
@@ -662,7 +664,7 @@ public final class DispatchViewModel {
     private func loadRoutePreview() async {
         let fallback = straightLinePreview()
         guard fallback.count >= 2 else {
-            previewCoordinates = fallback
+            applyPreviewCoordinates(fallback)
             return
         }
 
@@ -671,7 +673,7 @@ public final class DispatchViewModel {
         let fleetURL = FleetWorkspaceSettings.loadFleetServerURL()
         let canRoute = !localKey.isEmpty || FleetORSRoutingFactory.usesFleetProxy(useRemoteFleetServer: useRemote, fleetServerURL: fleetURL)
         guard canRoute, let request = buildPreviewRequest(from: fallback) else {
-            previewCoordinates = fallback
+            applyPreviewCoordinates(fallback)
             return
         }
 
@@ -691,10 +693,23 @@ public final class DispatchViewModel {
             let coords = response.coordinates.map {
                 CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
             }
-            previewCoordinates = coords.count >= 2 ? coords : fallback
+            applyPreviewCoordinates(coords.count >= 2 ? coords : fallback)
         } catch {
-            previewCoordinates = fallback
+            applyPreviewCoordinates(fallback)
         }
+    }
+
+    /// Updates preview polyline and refreshes indicative toll advisories (web desk parity).
+    private func applyPreviewCoordinates(_ coordinates: [CLLocationCoordinate2D]) {
+        previewCoordinates = coordinates
+        guard coordinates.count >= 2 else {
+            corridorTollAdvisories = []
+            return
+        }
+        let route = coordinates.map {
+            Coordinate(latitude: $0.latitude, longitude: $0.longitude)
+        }
+        corridorTollAdvisories = TollAdvisoryAlongRouteMatcher.advisories(along: route)
     }
 
     private func buildPreviewRequest(from coordinates: [CLLocationCoordinate2D]) -> ExternalRouteRequest? {

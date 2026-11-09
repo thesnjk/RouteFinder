@@ -10,6 +10,7 @@ struct DispatchStatusPanel: View {
     let previewCoordinates: [CLLocationCoordinate2D]
     var telematicsImportBatch: TelematicsImportBatch? = nil
     var canIDriveStatus: CanIDriveStatus? = nil
+    var corridorTollAdvisories: [UKTollAdvisory] = []
     var rosterRows: [DispatchRosterRow] = []
     var selectedVehicleId: UUID?
     /// When true, sidebar draft stops do not match this active trip.
@@ -22,6 +23,7 @@ struct DispatchStatusPanel: View {
         previewCoordinates: [CLLocationCoordinate2D] = [],
         telematicsImportBatch: TelematicsImportBatch? = nil,
         canIDriveStatus: CanIDriveStatus? = nil,
+        corridorTollAdvisories: [UKTollAdvisory] = [],
         rosterRows: [DispatchRosterRow] = [],
         selectedVehicleId: UUID? = nil,
         draftDiffersFromActiveTrip: Bool = false,
@@ -32,6 +34,7 @@ struct DispatchStatusPanel: View {
         self.previewCoordinates = previewCoordinates
         self.telematicsImportBatch = telematicsImportBatch
         self.canIDriveStatus = canIDriveStatus
+        self.corridorTollAdvisories = corridorTollAdvisories
         self.rosterRows = rosterRows
         self.selectedVehicleId = selectedVehicleId
         self.draftDiffersFromActiveTrip = draftDiffersFromActiveTrip
@@ -45,7 +48,8 @@ struct DispatchStatusPanel: View {
         return TripBriefContext.from(
             fleetTrip: trip,
             vehicleLabel: vehicleLabel,
-            previewCoordinates: preview
+            previewCoordinates: preview,
+            tollAdvisories: corridorTollAdvisories
         )
     }
 
@@ -57,6 +61,9 @@ struct DispatchStatusPanel: View {
                 }
                 if let status = canIDriveStatus {
                     canIDriveCard(status)
+                }
+                if !corridorTollAdvisories.isEmpty {
+                    tollCorridorCard(corridorTollAdvisories)
                 }
                 fleetRosterSection
                 if let trip {
@@ -358,6 +365,33 @@ struct DispatchStatusPanel: View {
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
+        }
+        .controlSheetStyle()
+    }
+
+    private func tollCorridorCard(_ advisories: [UKTollAdvisory]) -> some View {
+        VStack(alignment: .leading, spacing: RFSpacing.xs) {
+            Text("UK tolls (indicative)")
+                .font(RFFont.sectionTitle)
+            ForEach(advisories) { advisory in
+                if let cost = advisory.indicativeCostLabel {
+                    Text("\(advisory.name) — \(cost)")
+                        .font(RFFont.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(advisory.name)
+                        .font(RFFont.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if let total = UKTollAdvisory.indicativeRouteTotalLabel(advisories: advisories) {
+                Text(total)
+                    .font(RFFont.caption.weight(.semibold))
+            }
+            Text("Check operator — indicative only; not a live tariff.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .controlSheetStyle()
     }

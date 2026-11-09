@@ -48,6 +48,26 @@ import Testing
     #expect(hits.contains(where: { $0.id == "dartford-crossing" }))
 }
 
+/// Desk preview parity: Dartford + M6 corridor yields both hits and ~£19 indicative total.
+@Test func tollMatcherHitsDartfordAndM6WithIndicativeTotal() {
+    guard let dartford = UKTollAdvisoryCatalog.advisory(id: "dartford-crossing"),
+          let m6 = UKTollAdvisoryCatalog.advisory(id: "m6-toll") else {
+        Issue.record("Missing Dartford or M6 catalog entry")
+        return
+    }
+    let polyline = [
+        Coordinate(latitude: dartford.latitude, longitude: dartford.longitude),
+        Coordinate(latitude: 52.0, longitude: -0.5),
+        Coordinate(latitude: m6.latitude, longitude: m6.longitude),
+    ]
+    let hits = TollAdvisoryAlongRouteMatcher.advisories(along: polyline)
+    #expect(hits.map(\.id).contains("dartford-crossing"))
+    #expect(hits.map(\.id).contains("m6-toll"))
+    #expect(hits.first?.id == "dartford-crossing")
+    #expect(UKTollAdvisory.indicativeRouteTotalGBP(advisories: hits) == 19)
+    #expect(TollAdvisoryAlongRouteMatcher.advisories(along: []).isEmpty)
+}
+
 @Test func tollMatcherIgnoresDistantRoute() {
     let scotland = [
         Coordinate(latitude: 57.15, longitude: -2.10),

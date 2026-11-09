@@ -154,7 +154,17 @@ struct RouteSummaryCard: View {
                             pois: viewModel.upcomingTruckPois,
                             isLoading: viewModel.isLoadingTruckPois,
                             fuelCardProvider: viewModel.fuelCardProvider,
-                            crowdReports: viewModel.parkingOccupancyCrowdReports
+                            crowdReports: viewModel.parkingOccupancyCrowdReports,
+                            onBookOpened: { poi, partner, tier in
+                                viewModel.noteParkingBookOpened(
+                                    id: poi.id,
+                                    label: poi.label,
+                                    latitude: poi.latitude,
+                                    longitude: poi.longitude,
+                                    partner: partner,
+                                    tier: tier
+                                )
+                            }
                         )
                     }
 

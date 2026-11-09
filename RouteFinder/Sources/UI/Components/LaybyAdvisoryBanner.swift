@@ -6,6 +6,8 @@ struct LaybyAdvisoryBanner: View {
     let advisory: LaybyAdvisory
     var onLaybyFull: () -> Void
     var onLaybyHasSpaces: () -> Void = {}
+    /// Stashes pending book return when the driver opens TRAVIS / SNAP.
+    var onBookOpened: ((ParkingBookPartner) -> Void)? = nil
 
     private var availabilityTier: ParkingAvailabilityTier {
         ParkingAvailabilityTier(occupancyPrior: advisory.occupancyPrior)
@@ -59,8 +61,11 @@ struct LaybyAdvisoryBanner: View {
                     latitude: advisory.stop.coordinate.latitude,
                     longitude: advisory.stop.coordinate.longitude,
                     label: advisory.stop.label,
+                    tier: availabilityTier,
+                    stopId: advisory.stop.id,
                     showsDisclaimer: true,
-                    compact: false
+                    compact: false,
+                    onBookOpened: onBookOpened
                 )
             }
 

@@ -51,6 +51,7 @@ import com.routefinder.fleetdriver.fleet.TelematicsCSVImporterError
 import com.routefinder.fleetdriver.fleet.TelematicsImportBatch
 import com.routefinder.fleetdriver.fleet.TelematicsProvider
 import com.routefinder.fleetdriver.fleet.VehicleRegistrationResolver
+import com.routefinder.fleetdriver.physics.KineticGradientAnalyzer
 import com.routefinder.fleetdriver.fleet.SseConnectionState
 import com.routefinder.fleetdriver.fleet.formatTimeWindowLines
 import com.routefinder.fleetdriver.fleet.needsRegistrationLookup
@@ -1280,12 +1281,19 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             hosForecastSummary = null
             return
         }
+        val weightTons = intakeVehicleProfile?.weight?.takeIf { it > 0 }
+            ?: 40.0
+        val stress = KineticGradientAnalyzer.alignToSegmentCount(
+            KineticGradientAnalyzer.analyzeTopology(route, weightTons),
+            durations.size,
+        )
         val result = HosRestInserter.forecast(
             remainingContinuousDriveSeconds = continuousLeft,
             remainingDailyDriveSeconds = dailyLeft,
             pathDurationsSeconds = durations,
             pathArcLengthsMeters = arcs,
             upcomingCandidates = hosRestCandidates(route),
+            kineticStress = stress,
         )
         hosForecast = result
         hosForecastSummary = if (result.insertions.isEmpty()) null else result.summary

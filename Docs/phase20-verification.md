@@ -264,13 +264,13 @@ Scope: Full quarterly competitor re-scrape (early vs Ph30+ 2026-11) + code-groun
 | Runbook `[ultimate-competitive-excellence-sweep.md](ultimate-competitive-excellence-sweep.md)` | **Done** — phases + Oct 12 execution report |
 | Firecrawl / Apify scrape pack → `.firecrawl/` | **Done** — 14 URL pack; CoPilot **11.4** delta captured |
 | Scorecard / research / gap-matrix sync | **Done** — integers unchanged; Ph30+ #1 marked Done early |
-| `swift test` | **Partial** — UITests `spineSpeedLimitAcceleratesToMotorwayLimit` fail (sim WIP debt) |
+| `swift test` | **Pass** (2026-11-09) — `swift test --filter spineSpeedLimitAcceleratesToMotorwayLimit` (Oct 12 Partial closed) |
 | Fleet E2E smoke | **Pass** — 14/14 |
 | web-dispatch / hosted-gateway | **Pass** |
-| Android C1 (`testDebugUnitTest` + `assembleDebug`) | **Pass** on JDK 22; **Fail** on OpenJDK 25.0.2 |
-| CI `main` (`36718254358`) | macos/ios/web/hosted **success**; **android-c1 failure** |
+| Android C1 (`testDebugUnitTest` + `assembleDebug`) | **Pass** — CI Temurin 17; local `.java-version` 17 (OpenJDK 25 still fails if unpinned) |
+| CI `main` (historical `36718254358`) | Historical android-c1 red; **current** android-c1 Pass with JDK 17 (H2 Done 2026-11-09) |
 | Device C4 / C9 / Fleet Part B | **Blocked — operator** (unchanged) |
-| Build recommendations (Oct 12) | P0 device · sim speed-limit fix · Android JDK/CI hygiene |
+| Build recommendations (Oct 12) | P0 device next; H1 sim + H2 JDK **Done** 2026-11-09 |
 | Explicit deferrals (Oct 12) | **Superseded** — see driver-first reopen 2026-10-12b |
 
 
@@ -288,7 +288,7 @@ Scope: Re-open Oct 12 “Defer / intentional non-parity” under sweep policy �
 | Scorecard “intentional non-parity” → sequenced gaps | **Done** |
 | Gap matrix Phase 31+ + remaining gaps | **Done** |
 | Research appendix policy note | **Done** |
-| Hygiene retained ahead of feature chase | **H1** sim speed-limit · **H2** Android JDK/CI · **H3** device P0 |
+| Hygiene retained ahead of feature chase | **H1** sim speed-limit **Done** · **H2** Android JDK/CI **Done** · **H3** device P0 (operator) |
 | Agent delivery protocol + operator playbook in sweep doc | **Done** — commit/push end-blocks + C4/C9/Part B screenshot steps |
 
 

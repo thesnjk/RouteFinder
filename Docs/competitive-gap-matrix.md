@@ -1,9 +1,9 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-11-09 (COMBO desk trailer→ORS; TOLL Mac+web; LANE/PARKING/VOICE; residual live £ / AA / CarPlay / VU)  
+Last updated: 2026-11-09 (H1 sim speed-limit + H2 Android JDK Docs honesty; COMBO/TOLL/LANE/PARKING/VOICE shipped; residual live £ / AA / CarPlay / VU)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then driver-benefit gaps previously deferred (CarPlay/AA, parking book, VU, tolls, LEZ cadastre).
 
-> **Oct 12 Ultimate competitive excellence sweep:** Full quarterly re-scrape (Firecrawl + Apify). CoPilot **11.4** captured; **no RF scorecard integer changes**. Engineering gates: fleet/web/hosted/Android (JDK 22) Pass; Swift UITests speed-limit regression = WIP debt.
+> **Oct 12 Ultimate competitive excellence sweep:** Full quarterly re-scrape (Firecrawl + Apify). CoPilot **11.4** captured; **no RF scorecard integer changes**. Engineering gates: fleet/web/hosted/Android Pass. Sim speed-limit UITest debt closed 2026-11-09 (`spineSpeedLimitAcceleratesToMotorwayLimit` Pass).
 
 > **Oct 12b Driver-first reopen:** Sweep scope rule now: nothing out of scope if it benefits the driver. Former “Defer / intentional non-parity” items re-ranked as sequenced epics (voice → parking → CarPlay/AA → combo length → lane/toll → VU → LEZ cadastre → hosted desk). Hygiene H1–H3 first. See [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md#driver-first-reopen--2026-10-12b).
 
@@ -221,8 +221,8 @@ See [`ultimate-hgv-platform-spec.md`](ultimate-hgv-platform-spec.md).
 
 **Hygiene (immediate):**
 
-1. **`EPIC-SIM-SPEEDLIMIT`** — restore `spineSpeedLimitAcceleratesToMotorwayLimit` (Oct 12 sweep debt).
-2. **`EPIC-ANDROID-JDK-CI`** — pin JDK 17–22; clear red `android-c1` on `main`.
+1. **`EPIC-SIM-SPEEDLIMIT`** — **Done** (2026-11-09) — `swift test --filter spineSpeedLimitAcceleratesToMotorwayLimit` Pass.
+2. **`EPIC-ANDROID-JDK-CI`** — **Done** (2026-11-09) — CI Temurin 17 + `setup-android@v4`; local pin `android-fleet-driver/.java-version` = 17.
 3. **`EPIC-P0-DEVICE`** — C4 / C9 / Fleet Part B physical (operator).
 
 **Feature sequence (was “defer / intentional non-parity”):**

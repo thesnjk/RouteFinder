@@ -1,6 +1,6 @@
 # Competitive Feature Scorecard — September 2026
 
-Last updated: 2026-11-09 (COMBO desk trailer→ORS; TOLL Mac+web; residual live £ / AA / CarPlay / VU)
+Last updated: 2026-11-09 (H1/H2 Docs honesty; COMBO/TOLL; residual live £ / AA / CarPlay / VU)
 
 Scoring: **0** Absent · **1** Weak · **2** Parity · **3** Lead  
 Personas: **OO** = UK owner-operator · **SF** = small fleet (2–20 vehicles)
@@ -29,7 +29,7 @@ RouteFinder scores from code inventory + Phase 20/26/27/30–44 + **Phase 8** + 
 |---|---:|---:|---:|---:|---:|---:|---|
 | Constraint routing (L/W/H/hazmat) | 18% | **3** | 2 | 3 | 3 | 3 | RF ORS + offline hybrid |
 | Offline UK maps | 12% | **2** | 3 | 3 | 2 | 3 | RF corridor packs + post-find polyline prefetch (≤ East Anglia); residual = country-pack depth; Android offline gated |
-| Physics rehearsal | 14% | **3**‡ | 0 | 0 | 0 | 0 | RF wedge; Oct 12: `spineSpeedLimitAcceleratesToMotorwayLimit` UITest fail under sim WIP — fix before claiming CI-green Lead |
+| Physics rehearsal | 14% | **3**‡ | 0 | 0 | 0 | 0 | RF wedge; `spineSpeedLimitAcceleratesToMotorwayLimit` Pass (2026-11-09) |
 | Layby / break intel | 12% | **3** | 1 | 2 | 2 | 2 | RF fused ranker + Break Now + TRAVIS/SNAP links (Ph8); CoPilot 11.4 parking icons — still **2** (booking ≠ RF $0) |
 | LEZ compliance | 8% | **3** | 3 | 3 | 2 | 2 | RF 11 zones + ORS avoid (iOS rings; Android U15) |
 | Lane guidance | 8% | **2** | 3 | 3 | 2 | 2 | RF OSM + nav refresh + prepare TTS + which-lane PTT (iOS + Android C2); residual = HD lane visuals |
@@ -119,7 +119,7 @@ Full re-scrape: [`ultimate-competitive-excellence-sweep.md`](ultimate-competitiv
 **Scrape decision:** no OO/SF integer changes (~2.56 OO / ~2.78 SF).  
 **Driver-first reopen (2026-10-12b):** previously “won’t chase” rows become **sequenced gaps** — see backlog in the sweep doc.
 
-‡ Physics Lead is product-true; restore failing sim speed-limit UITest for CI honesty (`EPIC-SIM-SPEEDLIMIT`).
+‡ Physics Lead is CI-honest; `spineSpeedLimitAcceleratesToMotorwayLimit` Pass (`EPIC-SIM-SPEEDLIMIT` Done 2026-11-09).
 
 ---
 

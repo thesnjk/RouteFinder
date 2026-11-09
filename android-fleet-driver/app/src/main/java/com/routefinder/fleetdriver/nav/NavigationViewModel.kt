@@ -20,6 +20,8 @@ import com.routefinder.fleetdriver.compliance.PartnerTachoAdvisory
 import com.routefinder.fleetdriver.compliance.TachoCardSummary
 import com.routefinder.fleetdriver.compliance.TachoImportError
 import com.routefinder.fleetdriver.compliance.UkLezCatalog
+import com.routefinder.fleetdriver.map.ParkingMapMarker
+import com.routefinder.fleetdriver.map.ParkingMapMarkerBuilder
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -151,6 +153,9 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     var laybyAdvisoryMessage by mutableStateOf<String?>(null)
     /** Structured layby ahead with parking availability tier. */
     var laybyAdvisory by mutableStateOf<LaybyAdvisoryEngine.Advisory?>(null)
+    /** Colored parking / layby markers for the MapLibre canvas (crowd/prior — not live bays). */
+    var parkingMapMarkers by mutableStateOf<List<ParkingMapMarker>>(emptyList())
+        private set
     var hosAdvisoryMessage by mutableStateOf<String?>(null)
     /** Fused Can-I-drive status (partner → imported card → clock when fresh). */
     var canIDriveStatus by mutableStateOf<CanIDriveStatus?>(null)
@@ -591,6 +596,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             routeCoordinates = result.coordinates
             laybySkipCount = 0
             catalogLaybySites = emptyList()
+            parkingMapMarkers = emptyList()
             catalogRoadworkSites = emptyList()
             lastAnnouncedLaybyId = null
             lastRoadworksMessage = null
@@ -857,6 +863,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                 sites = activeLaybySites(),
             ),
         )
+        refreshParkingMapMarkers(route, currentArcLengthMeters)
         val clock = HosAdvisoryClock.snapshot(
             continuousDriveSeconds = continuousDriveSeconds,
             dailyDriveSeconds = dailyDriveSeconds,
@@ -934,6 +941,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                 sites = activeLaybySites(),
             ),
         )
+        refreshParkingMapMarkers(routeCoordinates, currentArcLengthMeters)
         refreshRoadworksForProgress(currentArcLengthMeters)
     }
 
@@ -980,6 +988,24 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         laybyAdvisory = advisory
         laybyAdvisoryMessage = advisory?.message
         processLaybyVoiceAlertIfNeeded(advisory)
+    }
+
+    /** Rebuilds CoPilot-style colored parking markers for ahead laybys. */
+    private fun refreshParkingMapMarkers(
+        route: List<LatLon> = routeCoordinates,
+        currentArcLengthMeters: Double = progress?.traveledDistanceMeters ?: 0.0,
+    ) {
+        if (route.size < 2) {
+            parkingMapMarkers = emptyList()
+            return
+        }
+        val ranked = LaybyAdvisoryEngine.rankedAhead(
+            route = route,
+            currentArcLengthMeters = currentArcLengthMeters,
+            occupancyStore = laybyOccupancyStore,
+            sites = activeLaybySites(),
+        )
+        parkingMapMarkers = ParkingMapMarkerBuilder.markers(ranked)
     }
 
     /** Speaks once when a layby enters the ~5 km window (uses speakAssist — works while TBT muted). */

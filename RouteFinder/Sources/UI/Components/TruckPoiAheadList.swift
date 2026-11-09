@@ -9,6 +9,8 @@ struct TruckPoiAheadList: View {
     let fuelCardProvider: FuelCardProvider
     /// Crowd occupancy taps used for availability badges on parking / layby rows.
     var crowdReports: [CrowdReport] = []
+    /// Stashes pending book return when the driver opens TRAVIS / SNAP from a POI row.
+    var onBookOpened: ((TruckPoi, ParkingBookPartner, ParkingAvailabilityTier?) -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: RFSpacing.sm) {
@@ -62,12 +64,21 @@ struct TruckPoiAheadList: View {
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                             if showsParkingPartnerLink(poi) {
+                                let tier = ParkingOccupancyPrior.availabilityTier(
+                                    for: poi,
+                                    reports: crowdReports
+                                )
                                 ParkingPartnerBookLinks(
                                     latitude: poi.latitude,
                                     longitude: poi.longitude,
                                     label: poi.label,
+                                    tier: tier,
+                                    stopId: poi.id,
                                     showsDisclaimer: false,
-                                    compact: true
+                                    compact: true,
+                                    onBookOpened: { partner in
+                                        onBookOpened?(poi, partner, tier)
+                                    }
                                 )
                             }
                         }

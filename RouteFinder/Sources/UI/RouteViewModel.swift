@@ -251,6 +251,12 @@ public final class RouteViewModel {
     public var canIDriveStatus: CanIDriveStatus?
     /// Error from the most recent tachograph file import, if any.
     public var tachoImportError: String?
+    /// Pending TRAVIS/SNAP book redirect — used for app-side return-to-nav resume.
+    public var pendingParkingBookReturn: PendingParkingBookReturn?
+    /// When true, show the resume banner after returning from a partner book site.
+    public var showParkingBookResumeBanner = false
+    /// Selected ahead parking stop for the map book sheet (marker id without `parking-` prefix when from POI).
+    public var selectedParkingBookStop: PendingParkingBookReturn?
 
     public var isCalculating = false
     public var result: SearchResult?
@@ -1611,6 +1617,69 @@ public final class RouteViewModel {
     /// Clears the imported tachograph summary.
     public func clearImportedTachoSummary() {
         Task { await hosAdvisoryCoordinator.clearImportedTachoSummary() }
+    }
+
+    /// Records that the driver opened a partner parking book link (app-side return-to-nav).
+    public func noteParkingBookOpened(
+        id: String,
+        label: String,
+        latitude: Double,
+        longitude: Double,
+        partner: ParkingBookPartner,
+        tier: ParkingAvailabilityTier? = nil
+    ) {
+        pendingParkingBookReturn = PendingParkingBookReturn(
+            id: id,
+            label: label,
+            latitude: latitude,
+            longitude: longitude,
+            partner: partner,
+            openedAt: Date(),
+            tier: tier
+        )
+        showParkingBookResumeBanner = false
+    }
+
+    /// Evaluates whether to show the resume banner after returning from a partner site.
+    public func evaluateParkingBookResumeOnForeground() {
+        guard let pending = pendingParkingBookReturn, pending.isFresh() else {
+            if pendingParkingBookReturn != nil {
+                pendingParkingBookReturn = nil
+            }
+            showParkingBookResumeBanner = false
+            return
+        }
+        showParkingBookResumeBanner = true
+    }
+
+    /// Dismisses the parking book resume banner and clears the pending return.
+    public func dismissParkingBookReturn() {
+        pendingParkingBookReturn = nil
+        showParkingBookResumeBanner = false
+        selectedParkingBookStop = nil
+    }
+
+    /// Keeps navigating after a partner book bounce (clears pending return).
+    public func keepNavigatingAfterParkingBook() {
+        dismissParkingBookReturn()
+    }
+
+    /// Opens the map book sheet for an ahead parking POI / marker.
+    public func selectParkingBookStop(
+        id: String,
+        label: String,
+        latitude: Double,
+        longitude: Double,
+        tier: ParkingAvailabilityTier?
+    ) {
+        selectedParkingBookStop = PendingParkingBookReturn(
+            id: id,
+            label: label,
+            latitude: latitude,
+            longitude: longitude,
+            partner: .travis,
+            tier: tier
+        )
     }
 
     /// Starts a new DVSA-style walkaround checklist for the current vehicle.

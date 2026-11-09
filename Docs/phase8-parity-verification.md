@@ -24,6 +24,9 @@ Manual QA for toll hints, telematics stub, parking deep links, offline UX, and l
 
 - [ ] Layby banner → **Book (TRAVIS)** and **Book (SNAP)** open HTTPS partner map/locator with lat/lng
 - [ ] Truck POI overnight / layby / ADR parking rows show the same **Book (TRAVIS)** + **Book (SNAP)** links
+- [ ] Tier-aware captions: limited “may fill soon”; full “site may be full” (redirect never hidden)
+- [ ] After Book → partner browser → return to app: resume banner “Back from TRAVIS/SNAP…” with Keep nav / Dismiss (app-side; not partner return_url)
+- [ ] **Book ahead parking** chip opens sheet for nearest parking map marker
 - [ ] Copy clarifies booking/fees are with the operator
 
 ## Offline pack UX

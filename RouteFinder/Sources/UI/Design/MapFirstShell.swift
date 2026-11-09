@@ -13,6 +13,7 @@ struct MapFirstShell: View {
     var onOpenProfile: () -> Void = {}
     var onOpenSettings: () -> Void = {}
     var hideRouteSheet: Bool = false
+    @Environment(\.scenePhase) private var scenePhase
 
     #if os(iOS)
     @State private var presentedModal: IOSModal?
@@ -74,8 +75,18 @@ struct MapFirstShell: View {
             Button("Still there") { viewModel.resolveStillTherePrompt(stillPresent: true) }
             Button("Cleared", role: .cancel) { viewModel.resolveStillTherePrompt(stillPresent: false) }
         }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                viewModel.evaluateParkingBookResumeOnForeground()
+            }
+        }
         #else
         macOSMapChrome
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active {
+                    viewModel.evaluateParkingBookResumeOnForeground()
+                }
+            }
         #endif
     }
 
@@ -197,11 +208,82 @@ struct MapFirstShell: View {
                 )
             }
 
+            if viewModel.showParkingBookResumeBanner,
+               let pending = viewModel.pendingParkingBookReturn {
+                ParkingBookResumeBanner(
+                    pending: pending,
+                    onKeepNavigating: { viewModel.keepNavigatingAfterParkingBook() },
+                    onDismiss: { viewModel.dismissParkingBookReturn() }
+                )
+            }
+
             if let advisory = viewModel.laybyAdvisory {
                 LaybyAdvisoryBanner(
                     advisory: advisory,
                     onLaybyFull: { viewModel.markCurrentLaybyFull() },
-                    onLaybyHasSpaces: { viewModel.markCurrentLaybyHasSpaces() }
+                    onLaybyHasSpaces: { viewModel.markCurrentLaybyHasSpaces() },
+                    onBookOpened: { partner in
+                        let tier = ParkingAvailabilityTier(occupancyPrior: advisory.occupancyPrior)
+                        viewModel.noteParkingBookOpened(
+                            id: advisory.stop.id,
+                            label: advisory.stop.label,
+                            latitude: advisory.stop.coordinate.latitude,
+                            longitude: advisory.stop.coordinate.longitude,
+                            partner: partner,
+                            tier: tier
+                        )
+                    }
+                )
+            }
+
+            if let parkingPins = Optional(viewModel.displayMapPins.filter {
+                switch $0.kind {
+                case .parkingAmple, .parkingLimited, .parkingFull: return true
+                default: return false
+                }
+            }), !parkingPins.isEmpty {
+                Button {
+                    if let pin = parkingPins.first {
+                        let tier: ParkingAvailabilityTier? = switch pin.kind {
+                        case .parkingAmple: .ample
+                        case .parkingLimited: .limited
+                        case .parkingFull: .full
+                        default: nil
+                        }
+                        viewModel.selectParkingBookStop(
+                            id: pin.id,
+                            label: pin.title,
+                            latitude: pin.coordinate.latitude,
+                            longitude: pin.coordinate.longitude,
+                            tier: tier
+                        )
+                    }
+                } label: {
+                    Text("Book ahead parking")
+                        .font(RFFont.caption.weight(.semibold))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, RFSpacing.md)
+                        .padding(.vertical, RFSpacing.sm)
+                        .controlSheetStyle()
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("parkingMapBookChip")
+            }
+
+            if let stop = viewModel.selectedParkingBookStop {
+                ParkingMapBookSheet(
+                    stop: stop,
+                    onBookOpened: { partner in
+                        viewModel.noteParkingBookOpened(
+                            id: stop.id,
+                            label: stop.label,
+                            latitude: stop.latitude,
+                            longitude: stop.longitude,
+                            partner: partner,
+                            tier: stop.tier
+                        )
+                    },
+                    onClose: { viewModel.selectedParkingBookStop = nil }
                 )
             }
 

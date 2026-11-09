@@ -114,6 +114,49 @@ class HosRestInserterTest {
     }
 
     @Test
+    fun highGradeBeforeDeadlineSetsPhysicsPreferred() {
+        val result = HosRestInserter.insertions(
+            remainingContinuousDriveSeconds = 3_600.0,
+            remainingDailyDriveSeconds = 20_000.0,
+            pathDurationsSeconds = listOf(3_600.0, 3_600.0, 3_600.0),
+            pathArcLengthsMeters = listOf(10_000.0, 20_000.0, 30_000.0),
+            upcomingCandidates = listOf(
+                HosRestCandidate("pre", "Pre-grade", HosRestCandidateKind.LAYBY, 4_000.0),
+                HosRestCandidate("post", "After", HosRestCandidateKind.LAYBY, 18_000.0),
+            ),
+            kineticStress = listOf(
+                HosRestInserter.SegmentKineticStress(thermalStressScore = 0.0, gradePercentage = 1.0),
+                HosRestInserter.SegmentKineticStress(thermalStressScore = 0.0, gradePercentage = 8.0),
+                HosRestInserter.SegmentKineticStress(thermalStressScore = 0.0, gradePercentage = 0.0),
+            ),
+        )
+        assertEquals(1, result.size)
+        assertTrue(result.first().physicsPreferred)
+        assertTrue(result.first().reason.contains("upstream"))
+        // Prefer POI before high-stress segment (index 1) → arc cap ~10 km → "pre".
+        assertEquals("pre", result.first().poiId)
+    }
+
+    @Test
+    fun highThermalBeforeDeadlineSetsPhysicsPreferred() {
+        val result = HosRestInserter.insertions(
+            remainingContinuousDriveSeconds = 3_600.0,
+            pathDurationsSeconds = listOf(3_600.0, 3_600.0),
+            pathArcLengthsMeters = listOf(10_000.0, 20_000.0),
+            upcomingCandidates = listOf(
+                HosRestCandidate("safe", "Safe", HosRestCandidateKind.OVERNIGHT_SECURE_PARKING, 3_000.0),
+            ),
+            kineticStress = listOf(
+                HosRestInserter.SegmentKineticStress(thermalStressScore = 0.8, gradePercentage = -12.0),
+                HosRestInserter.SegmentKineticStress(thermalStressScore = 0.0, gradePercentage = 0.0),
+            ),
+        )
+        assertEquals(1, result.size)
+        assertTrue(result.first().physicsPreferred)
+        assertTrue(result.first().reason.contains("upstream of high grade/thermal"))
+    }
+
+    @Test
     fun advisoryForSiteReturnsMatchingAhead() {
         val route = listOf(
             com.routefinder.fleetdriver.routing.LatLon(52.0, 0.0),

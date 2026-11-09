@@ -1,4 +1,3 @@
-#if os(iOS)
 import Contracts
 import Foundation
 
@@ -77,6 +76,34 @@ public final class ManeuverAnnouncementController {
         }
     }
 
+    /// Clears a spoken prepare so OSM-upgraded lane guidance can re-speak inside the prepare window.
+    ///
+    /// No-ops when execute was already spoken for this maneuver. Does not reopen approach.
+    public func invalidatePrepareForLaneUpgrade(instructionID: UUID) {
+        let spoken = spokenTiers[instructionID, default: []]
+        guard spoken.contains(.prepare) else { return }
+        guard !spoken.contains(.execute) else { return }
+
+        spokenTiers[instructionID]?.remove(.prepare)
+        if let key = refireKey(instructionID: instructionID, tier: .prepare) {
+            lastTierSpokenAt.removeValue(forKey: key)
+        }
+    }
+
+    /// Instruction IDs whose lane guidance upgraded from non-OSM (or nil) to OSM.
+    public nonisolated static func instructionIDsUpgradedToOSM(
+        previous: [TurnInstruction],
+        updated: [TurnInstruction]
+    ) -> [UUID] {
+        let previousByID = Dictionary(uniqueKeysWithValues: previous.map { ($0.id, $0) })
+        return updated.compactMap { instruction in
+            guard instruction.laneGuidance?.source == .osm else { return nil }
+            let priorSource = previousByID[instruction.id]?.laneGuidance?.source
+            guard priorSource != .osm else { return nil }
+            return instruction.id
+        }
+    }
+
     /// Resets tier flags when advancing to a new maneuver.
     public func advanceToManeuver(instructionID: UUID) {
         pendingExecuteForManeuverID = nil
@@ -122,4 +149,3 @@ public final class ManeuverAnnouncementController {
         "\(instructionID.uuidString)-\(tier.rawValue)"
     }
 }
-#endif

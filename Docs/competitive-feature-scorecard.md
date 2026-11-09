@@ -17,7 +17,7 @@ RouteFinder scores from code inventory + Phase 20/26/27/30–44 + **Phase 8** + 
 | Telematics display | **0** | **2** | CSV + fleet ingest → desk pins; **not** remote VU |
 | Parking partners | **1** | **2** | TRAVIS/SNAP deep links; **not** booking |
 | Offline UX | **2** | **2** | Same capability; region picker + progress |
-| Lane guidance | **2** | **2**† | OSM tag expansion + nav refresh; still below TomTom HD |
+| Lane guidance | **2** | **2**† | OSM tag expansion + nav refresh + late-OSM prepare TTS; still below TomTom HD |
 
 † Documented as ~2.5 internally for OSM refresh depth; scorecard stays integer **2** vs TomTom/Sygic **3**.
 
@@ -32,7 +32,7 @@ RouteFinder scores from code inventory + Phase 20/26/27/30–44 + **Phase 8** + 
 | Physics rehearsal | 14% | **3**‡ | 0 | 0 | 0 | 0 | RF wedge; Oct 12: `spineSpeedLimitAcceleratesToMotorwayLimit` UITest fail under sim WIP — fix before claiming CI-green Lead |
 | Layby / break intel | 12% | **3** | 1 | 2 | 2 | 2 | RF fused ranker + Break Now + TRAVIS/SNAP links (Ph8); CoPilot 11.4 parking icons — still **2** (booking ≠ RF $0) |
 | LEZ compliance | 8% | **3** | 3 | 3 | 2 | 2 | RF 11 zones + ORS avoid (iOS rings; Android U15) |
-| Lane guidance | 8% | **2** | 3 | 3 | 2 | 2 | RF OSM + nav refresh (Ph8) |
+| Lane guidance | 8% | **2** | 3 | 3 | 2 | 2 | RF OSM + nav refresh + prepare TTS refire on late OSM; residual = HD lane visuals |
 | Plate → profile (UK) | 8% | **3** | 0 | 0 | 0 | 0 | RF RegCheck + DVLA |
 | Crowd hazard / closure ahead | 5% | **2** | 1 | 1 | 0 | 0 | RF Ph33 + Ph36 TomTom live |
 | UK toll awareness | 5% | **2** | 2 | 3 | 2 | 2 | RF named hints + avoid-before-commit; TomTom live tariffs still lead |

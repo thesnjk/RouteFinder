@@ -36,7 +36,7 @@ Product showcase captures (see [`Docs/screenshots/`](Docs/screenshots/) for capt
 - **Offline routing & maps** — H3 graph tiles + hybrid ORS/offline policy; after Find, proactive corridor prefetch along the committed polyline (capped ≤ East Anglia); Settings download regions: Norfolk demo, East Anglia (A14–M11) mid-corridor, or UK mainland (large); optional local MapLibre map pack via on-device HTTP — not Sygic-class country packs; Android offline remains product-gated
 - **Live traffic reroute** — TomTom flow sampling can trigger an ORS `avoid_polygons` recalculation
 - **Walkaround checks** — local DVSA-style inspection checklist
-- **Sim UX** — Touch ID session restore, vehicle workspace snapshot, traffic cruise toggle (default off), center-anchored cab/trailer map model, OSM `turn:lanes` strip + street/lane TTS (not HD lanes; Overpass ≤12/route)
+- **Sim UX** — Touch ID session restore, vehicle workspace snapshot, traffic cruise toggle (default off), center-anchored cab/trailer map model, OSM `turn:lanes` strip + street/lane TTS with prepare re-speak when Overpass upgrades heuristic→OSM inside the 400 m window (not HD lanes; Overpass ≤12/route)
 
 ## Legal notice (hours & tachograph)
 

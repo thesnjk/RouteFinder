@@ -157,6 +157,39 @@ class CanIDriveEvaluatorTest {
     }
 
     @Test
+    fun clockPathGatesWeeklyBudget() {
+        val clock = HosAdvisoryClock.snapshot(
+            continuousDriveSeconds = 0.0,
+            dailyDriveSeconds = 0.0,
+            weeklyDriveSeconds = HosAdvisoryClock.WEEKLY_DRIVE_LIMIT_SECONDS,
+        )
+        val status = CanIDriveEvaluator.evaluate(partner = null, clock = clock)
+        assertFalse(status.canDrive)
+        assertFalse(status.usesPartnerAdvisory)
+        assertFalse(status.usesImportedCard)
+        assertTrue(status.reason.contains("weekly"))
+        assertEquals(0.0, status.remainingWeeklyDriveSeconds, 0.01)
+        assertTrue(status.reason.contains(CanIDriveEvaluator.LEGAL_DISCLAIMER))
+    }
+
+    @Test
+    fun clockPathReportsWeeklyRemainingWhenFresh() {
+        val clock = HosAdvisoryClock.snapshot(
+            continuousDriveSeconds = 0.0,
+            dailyDriveSeconds = 0.0,
+            weeklyDriveSeconds = 0.0,
+        )
+        val status = CanIDriveEvaluator.evaluate(partner = null, clock = clock)
+        assertTrue(status.canDrive)
+        assertTrue(status.reason.contains("weekly"))
+        assertEquals(
+            HosAdvisoryClock.WEEKLY_DRIVE_LIMIT_SECONDS,
+            status.remainingWeeklyDriveSeconds,
+            0.01,
+        )
+    }
+
+    @Test
     fun partnerAdvisoryMapsToCardSummaryAndParsesJson() {
         val advisory = PartnerTachoAdvisory(
             remainingContinuousDriveSeconds = 1_200.0,

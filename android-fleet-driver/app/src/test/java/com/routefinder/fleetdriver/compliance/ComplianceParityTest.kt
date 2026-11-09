@@ -164,6 +164,18 @@ class ComplianceParityTest {
         val snap = HosAdvisoryClock.snapshot(0.0, 0.0)
         assertTrue(snap.canDriveNow)
         assertTrue(snap.message.contains("Can drive"))
+        assertTrue(snap.message.contains("weekly", ignoreCase = true))
+    }
+
+    @Test
+    fun hosClockBlocksAfterWeeklyLimit() {
+        val snap = HosAdvisoryClock.snapshot(
+            continuousDriveSeconds = 0.0,
+            dailyDriveSeconds = 0.0,
+            weeklyDriveSeconds = HosAdvisoryClock.WEEKLY_DRIVE_LIMIT_SECONDS + 1,
+        )
+        assertFalse(snap.canDriveNow)
+        assertTrue(snap.message.contains("weekly", ignoreCase = true))
     }
 
     @Test

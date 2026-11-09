@@ -260,6 +260,11 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     var voiceListening by mutableStateOf(false)
     private var continuousDriveSeconds = prefs.continuousDriveSeconds
     private var dailyDriveSeconds = prefs.dailyDriveSeconds
+    private var weeklyDriveSeconds = prefs.weeklyDriveSeconds
+    /** Advisory EU 561 duty mode (Drive / Break / Off duty). */
+    var hosDutyMode by mutableStateOf(HosAdvisoryClock.parseDutyMode(prefs.hosDutyMode))
+        private set
+    private var hosLastTransitionAtMillis = prefs.hosLastTransitionAtMillis
     private var lastDriveTickMs: Long = 0L
     /** ORS total duration for the active route (seconds) — used for HOS path split. */
     private var lastRouteDurationSeconds: Double = 0.0
@@ -833,20 +838,54 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun recordDrivingSeconds(deltaSeconds: Double) {
-        continuousDriveSeconds += deltaSeconds
-        dailyDriveSeconds += deltaSeconds
-        prefs.continuousDriveSeconds = continuousDriveSeconds
-        prefs.dailyDriveSeconds = dailyDriveSeconds
+        val next = HosAdvisoryClock.accrue(currentHosState(), deltaSeconds)
+        applyHosState(next)
         refreshComplianceAdvisories()
         refreshPartnerTachoAdvisoryAsync()
     }
 
-    fun resetHosBreak() {
-        continuousDriveSeconds = 0.0
-        prefs.continuousDriveSeconds = 0.0
+    /** Transitions advisory duty mode (Drive / Break / Off duty). */
+    fun transitionHosDuty(mode: HosAdvisoryClock.DutyMode) {
+        val next = HosAdvisoryClock.transition(
+            state = currentHosState(),
+            mode = mode,
+            atMillis = System.currentTimeMillis(),
+        )
+        applyHosState(next)
         refreshComplianceAdvisories()
         refreshPartnerTachoAdvisoryAsync()
-        toastMessage = "Break recorded — continuous clock reset"
+        toastMessage = when (mode) {
+            HosAdvisoryClock.DutyMode.DRIVING -> "Duty: driving — clock accruing"
+            HosAdvisoryClock.DutyMode.BREAK_REST -> "Duty: break — continuous clock reset"
+            HosAdvisoryClock.DutyMode.OFF_DUTY -> "Duty: off duty — continuous + daily reset"
+        }
+    }
+
+    /** @deprecated Prefer [transitionHosDuty] with [HosAdvisoryClock.DutyMode.BREAK_REST]. */
+    fun resetHosBreak() {
+        transitionHosDuty(HosAdvisoryClock.DutyMode.BREAK_REST)
+    }
+
+    private fun currentHosState(): HosAdvisoryClock.State =
+        HosAdvisoryClock.State(
+            mode = hosDutyMode,
+            continuousDriveSeconds = continuousDriveSeconds,
+            dailyDriveSeconds = dailyDriveSeconds,
+            weeklyDriveSeconds = weeklyDriveSeconds,
+            lastTransitionAtMillis = hosLastTransitionAtMillis,
+        )
+
+    private fun applyHosState(state: HosAdvisoryClock.State) {
+        hosDutyMode = state.mode
+        continuousDriveSeconds = state.continuousDriveSeconds
+        dailyDriveSeconds = state.dailyDriveSeconds
+        weeklyDriveSeconds = state.weeklyDriveSeconds
+        hosLastTransitionAtMillis = state.lastTransitionAtMillis
+        prefs.hosDutyMode = state.mode.name
+        prefs.continuousDriveSeconds = continuousDriveSeconds
+        prefs.dailyDriveSeconds = dailyDriveSeconds
+        prefs.weeklyDriveSeconds = weeklyDriveSeconds
+        prefs.hosLastTransitionAtMillis = hosLastTransitionAtMillis
     }
 
     fun startFleetLoops() {
@@ -1311,10 +1350,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             ),
         )
         refreshParkingMapMarkers(route, currentArcLengthMeters)
-        val clock = HosAdvisoryClock.snapshot(
-            continuousDriveSeconds = continuousDriveSeconds,
-            dailyDriveSeconds = dailyDriveSeconds,
-        )
+        val clock = HosAdvisoryClock.snapshot(currentHosState())
         hosAdvisoryMessage = clock.message
         canIDriveStatus = CanIDriveEvaluator.evaluate(
             partner = partnerTachoAdvisory?.asCardSummary(),
@@ -1346,7 +1382,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         val continuousLeft =
             HosAdvisoryClock.CONTINUOUS_DRIVE_LIMIT_SECONDS - continuousDriveSeconds
         val dailyLeft = HosAdvisoryClock.DAILY_DRIVE_LIMIT_SECONDS - dailyDriveSeconds
-        return continuousLeft to dailyLeft
+        return continuousLeft.coerceAtLeast(0.0) to dailyLeft.coerceAtLeast(0.0)
     }
 
     /**
@@ -1636,10 +1672,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     private fun refreshCanIDriveFromLocalSources() {
-        val clock = HosAdvisoryClock.snapshot(
-            continuousDriveSeconds = continuousDriveSeconds,
-            dailyDriveSeconds = dailyDriveSeconds,
-        )
+        val clock = HosAdvisoryClock.snapshot(currentHosState())
         hosAdvisoryMessage = clock.message
         canIDriveStatus = CanIDriveEvaluator.evaluate(
             partner = partnerTachoAdvisory?.asCardSummary(),

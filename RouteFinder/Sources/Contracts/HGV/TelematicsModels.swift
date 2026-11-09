@@ -76,6 +76,8 @@ public struct TelematicsIngestRequest: Sendable, Hashable, Codable, Equatable {
 /// Offline graph download region presets for Settings UX.
 public enum OfflineDownloadRegion: String, Sendable, Codable, CaseIterable, Identifiable {
     case demoNorfolk
+    /// Mid-size East Anglia / A14–M11 band (Norwich–Cambridge–Ipswich pilots).
+    case eastAnglia
     case ukCorridor
 
     public var id: String { rawValue }
@@ -83,6 +85,7 @@ public enum OfflineDownloadRegion: String, Sendable, Codable, CaseIterable, Iden
     public var displayName: String {
         switch self {
         case .demoNorfolk: return "Norfolk demo corridor"
+        case .eastAnglia: return "East Anglia (A14–M11)"
         case .ukCorridor: return "UK mainland (large)"
         }
     }
@@ -90,6 +93,7 @@ public enum OfflineDownloadRegion: String, Sendable, Codable, CaseIterable, Iden
     public var sizeWarning: String {
         switch self {
         case .demoNorfolk: return "Small — suitable for first install."
+        case .eastAnglia: return "Medium — covers Norwich–Cambridge–Ipswich; larger than Norfolk demo, far smaller than UK mainland."
         case .ukCorridor: return "Large download — prefer pre-placed *.graphjson when possible."
         }
     }
@@ -98,9 +102,28 @@ public enum OfflineDownloadRegion: String, Sendable, Codable, CaseIterable, Iden
         switch self {
         case .demoNorfolk:
             return (minLat: 52.55, maxLat: 52.70, minLon: 1.20, maxLon: 1.40)
+        case .eastAnglia:
+            // Includes Norfolk demo bbox plus Cambridge / Ipswich approach (A14–M11 band).
+            return (minLat: 51.70, maxLat: 52.90, minLon: 0.00, maxLon: 1.80)
         case .ukCorridor:
             return (minLat: 49.8, maxLat: 58.7, minLon: -8.2, maxLon: 1.8)
         }
+    }
+
+    /// Approximate bbox area in square degrees (for tests / size honesty).
+    public var approximateAreaSquareDegrees: Double {
+        let box = boundingBox
+        return max(0, box.maxLat - box.minLat) * max(0, box.maxLon - box.minLon)
+    }
+
+    /// Whether this region's bbox fully contains another region's bbox.
+    public func contains(_ other: OfflineDownloadRegion) -> Bool {
+        let a = boundingBox
+        let b = other.boundingBox
+        return a.minLat <= b.minLat
+            && a.maxLat >= b.maxLat
+            && a.minLon <= b.minLon
+            && a.maxLon >= b.maxLon
     }
 }
 

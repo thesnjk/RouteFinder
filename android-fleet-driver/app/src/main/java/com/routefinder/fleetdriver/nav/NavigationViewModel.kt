@@ -264,6 +264,9 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     /** Advisory EU 561 duty mode (Drive / Break / Off duty). */
     var hosDutyMode by mutableStateOf(HosAdvisoryClock.parseDutyMode(prefs.hosDutyMode))
         private set
+    /** True after once-per-week 10 h daily extension is activated. */
+    var hosUsedDailyExtensionThisWeek by mutableStateOf(prefs.hosUsedDailyExtensionThisWeek)
+        private set
     private var hosLastTransitionAtMillis = prefs.hosLastTransitionAtMillis
     private var lastDriveTickMs: Long = 0L
     /** ORS total duration for the active route (seconds) — used for HOS path split. */
@@ -866,6 +869,20 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         transitionHosDuty(HosAdvisoryClock.DutyMode.BREAK_REST)
     }
 
+    /** Activates once-per-week advisory 9→10 h daily extension (no-op if already used). */
+    fun activateHosDailyExtension() {
+        val before = currentHosState()
+        val next = HosAdvisoryClock.activateDailyExtension(before)
+        if (next.usedDailyExtensionThisWeek == before.usedDailyExtensionThisWeek) {
+            toastMessage = "Daily 10h extension already used this week"
+            return
+        }
+        applyHosState(next)
+        refreshComplianceAdvisories()
+        refreshPartnerTachoAdvisoryAsync()
+        toastMessage = "Daily extension on — advisory limit 10h"
+    }
+
     private fun currentHosState(): HosAdvisoryClock.State =
         HosAdvisoryClock.State(
             mode = hosDutyMode,
@@ -873,6 +890,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             dailyDriveSeconds = dailyDriveSeconds,
             weeklyDriveSeconds = weeklyDriveSeconds,
             lastTransitionAtMillis = hosLastTransitionAtMillis,
+            usedDailyExtensionThisWeek = hosUsedDailyExtensionThisWeek,
         )
 
     private fun applyHosState(state: HosAdvisoryClock.State) {
@@ -881,11 +899,13 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         dailyDriveSeconds = state.dailyDriveSeconds
         weeklyDriveSeconds = state.weeklyDriveSeconds
         hosLastTransitionAtMillis = state.lastTransitionAtMillis
+        hosUsedDailyExtensionThisWeek = state.usedDailyExtensionThisWeek
         prefs.hosDutyMode = state.mode.name
         prefs.continuousDriveSeconds = continuousDriveSeconds
         prefs.dailyDriveSeconds = dailyDriveSeconds
         prefs.weeklyDriveSeconds = weeklyDriveSeconds
         prefs.hosLastTransitionAtMillis = hosLastTransitionAtMillis
+        prefs.hosUsedDailyExtensionThisWeek = hosUsedDailyExtensionThisWeek
     }
 
     fun startFleetLoops() {

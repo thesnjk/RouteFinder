@@ -290,6 +290,7 @@ Scope: Re-open Oct 12 “Defer / intentional non-parity” under sweep policy �
 | Research appendix policy note | **Done** |
 | Hygiene retained ahead of feature chase | **H1** sim speed-limit **Done** · **H2** Android JDK/CI **Done** · **H3** device P0 (operator) |
 | Android HOS duty-log MVP (`EPIC-ANDROID-HOS-DUTYLOG`) | **Pass** (2026-11-09) — `./gradlew :app:testDebugUnitTest --tests 'com.routefinder.fleetdriver.compliance.*'` (Drive/Break/Off + weekly clock path) |
+| Android HOS 10h daily extension (`EPIC-ANDROID-HOS-EXTENSION`) | **Pass** (2026-11-09) — same compliance filter; `activateDailyExtension` once-per-week + clock-path 9→10h |
 | Agent delivery protocol + operator playbook in sweep doc | **Done** — commit/push end-blocks + C4/C9/Part B screenshot steps |
 
 

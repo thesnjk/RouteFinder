@@ -190,6 +190,32 @@ class CanIDriveEvaluatorTest {
     }
 
     @Test
+    fun clockPathAllowsBetweenNineAndTenHoursOnlyAfterExtension() {
+        val pastNine = HosAdvisoryClock.DAILY_DRIVE_LIMIT_SECONDS + 30 * 60
+        val without = HosAdvisoryClock.snapshot(
+            continuousDriveSeconds = 0.0,
+            dailyDriveSeconds = pastNine,
+            weeklyDriveSeconds = 0.0,
+            usedDailyExtensionThisWeek = false,
+        )
+        assertFalse(CanIDriveEvaluator.evaluate(partner = null, clock = without).canDrive)
+
+        val withExt = HosAdvisoryClock.snapshot(
+            continuousDriveSeconds = 0.0,
+            dailyDriveSeconds = pastNine,
+            weeklyDriveSeconds = 0.0,
+            usedDailyExtensionThisWeek = true,
+        )
+        val status = CanIDriveEvaluator.evaluate(partner = null, clock = withExt)
+        assertTrue(status.canDrive)
+        assertEquals(
+            HosAdvisoryClock.DAILY_DRIVE_EXTENDED_LIMIT_SECONDS - pastNine,
+            status.remainingDailyDriveSeconds,
+            0.01,
+        )
+    }
+
+    @Test
     fun partnerAdvisoryMapsToCardSummaryAndParsesJson() {
         val advisory = PartnerTachoAdvisory(
             remainingContinuousDriveSeconds = 1_200.0,

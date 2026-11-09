@@ -56,7 +56,8 @@ object CanIDriveEvaluator {
             usesImported = true
         } else {
             continuous = HosAdvisoryClock.CONTINUOUS_DRIVE_LIMIT_SECONDS - clock.continuousDriveSeconds
-            daily = HosAdvisoryClock.DAILY_DRIVE_LIMIT_SECONDS - clock.dailyDriveSeconds
+            daily = HosAdvisoryClock.effectiveDailyLimitSeconds(clock.usedDailyExtensionThisWeek) -
+                clock.dailyDriveSeconds
             weekly = HosAdvisoryClock.WEEKLY_DRIVE_LIMIT_SECONDS - clock.weeklyDriveSeconds
             sourceLabel = "advisory EU 561 clock"
             usesPartner = false

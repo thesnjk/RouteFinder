@@ -746,4 +746,75 @@ assert.equal(migrated.profile.name, 'Default depot')
 assert.equal(migrated.profile.baseUrl, '/fleet')
 assert.equal(migrated.apiKey, 'tok')
 
+/** Mirrors web-dispatch/src/canIDriveDesk.ts (partner Can-I-drive desk card). */
+const DEFAULT_WEEKLY_DRIVE_SECONDS = 56 * 3600
+const LEGAL_DISCLAIMER =
+  'The digital tachograph is the legal record. This clock is a planning aid only.'
+
+function formatBudget(seconds) {
+  const totalMinutes = Math.max(0, Math.round(seconds / 60))
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`
+  if (hours > 0) return `${hours}h`
+  return `${minutes}m`
+}
+
+function evaluatePartnerAdvisory(advisory) {
+  const continuous = advisory.remainingContinuousDriveSeconds
+  const daily = advisory.remainingDailyDriveSeconds
+  const weekly =
+    advisory.remainingWeeklyDriveSeconds == null
+      ? DEFAULT_WEEKLY_DRIVE_SECONDS
+      : advisory.remainingWeeklyDriveSeconds
+  const provider =
+    advisory.provider && String(advisory.provider).trim().length > 0
+      ? String(advisory.provider).trim()
+      : 'partner'
+  const sourceLabel = `partner advisory (${provider})`
+  const canDrive = continuous > 0 && daily > 0 && weekly > 0
+  let budgetReason
+  if (canDrive) {
+    budgetReason = `Yes — remaining continuous ${formatBudget(continuous)}, daily ${formatBudget(daily)}, weekly ${formatBudget(weekly)} from ${sourceLabel}.`
+  } else if (continuous <= 0) {
+    budgetReason = `No — continuous drive remaining is exhausted (${sourceLabel}). Take a mandatory break.`
+  } else if (daily <= 0) {
+    budgetReason = `No — daily drive remaining is exhausted (${sourceLabel}). End the driving day.`
+  } else {
+    budgetReason = `No — weekly drive remaining is exhausted (${sourceLabel}). End the driving week.`
+  }
+  return {
+    canDrive,
+    reason: `${budgetReason} ${LEGAL_DISCLAIMER}`,
+    weeklySeconds: weekly,
+  }
+}
+
+const yesDrive = evaluatePartnerAdvisory({
+  remainingContinuousDriveSeconds: 3600,
+  remainingDailyDriveSeconds: 7200,
+  remainingWeeklyDriveSeconds: 100_000,
+  provider: 'demo',
+})
+assert.equal(yesDrive.canDrive, true)
+assert.ok(yesDrive.reason.startsWith('Yes —'))
+assert.ok(yesDrive.reason.includes(LEGAL_DISCLAIMER))
+
+const noWeekly = evaluatePartnerAdvisory({
+  remainingContinuousDriveSeconds: 3600,
+  remainingDailyDriveSeconds: 7200,
+  remainingWeeklyDriveSeconds: 0,
+  provider: 'demo',
+})
+assert.equal(noWeekly.canDrive, false)
+assert.ok(noWeekly.reason.includes('weekly drive remaining is exhausted'))
+
+const omittedWeekly = evaluatePartnerAdvisory({
+  remainingContinuousDriveSeconds: 3600,
+  remainingDailyDriveSeconds: 7200,
+  provider: 'demo',
+})
+assert.equal(omittedWeekly.canDrive, true)
+assert.equal(omittedWeekly.weeklySeconds, DEFAULT_WEEKLY_DRIVE_SECONDS)
+
 console.log('fleet types smoke ok')

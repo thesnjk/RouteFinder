@@ -144,7 +144,7 @@ extension RoutePlanner {
         let origin = Coordinate(latitude: request.origin.latitude, longitude: request.origin.longitude)
         let destination = Coordinate(latitude: request.destination.latitude, longitude: request.destination.longitude)
 
-        let pad = 0.15
+        let pad = OfflineCorridorPrefetch.corridorPadDegrees
         try await offlineStore.ensureCorridor(
             minLat: min(origin.latitude, destination.latitude) - pad,
             maxLat: max(origin.latitude, destination.latitude) + pad,

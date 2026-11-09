@@ -628,6 +628,10 @@ struct SettingsSheet: View {
                 }
                 .help("Only used when local *.graphjson tiles exist or a tile server URL is set. Otherwise ORS is used when keyed.")
 
+            Text("When on, RouteFinder caches H3 tiles for the committed route corridor after Find (≤ East Anglia size) — smaller than Sygic country packs.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
             Toggle("Prefer offline routing", isOn: $viewModel.preferOfflineRouting)
                 .onChange(of: viewModel.preferOfflineRouting) { _, _ in
                     viewModel.persistPreferOfflineRouting()

@@ -28,7 +28,7 @@ RouteFinder scores from code inventory + Phase 20/26/27/30–44 + **Phase 8** + 
 | Capability | Weight | RF | Sygic | TomTom HW | CoPilot 11 | Garmin | Notes |
 |---|---:|---:|---:|---:|---:|---:|---|
 | Constraint routing (L/W/H/hazmat) | 18% | **3** | 2 | 3 | 3 | 3 | RF ORS + offline hybrid |
-| Offline UK maps | 12% | **2** | 3 | 3 | 2 | 3 | RF corridor packs + download UX (Ph8) |
+| Offline UK maps | 12% | **2** | 3 | 3 | 2 | 3 | RF corridor packs + post-find polyline prefetch (≤ East Anglia); residual = country-pack depth; Android offline gated |
 | Physics rehearsal | 14% | **3**‡ | 0 | 0 | 0 | 0 | RF wedge; Oct 12: `spineSpeedLimitAcceleratesToMotorwayLimit` UITest fail under sim WIP — fix before claiming CI-green Lead |
 | Layby / break intel | 12% | **3** | 1 | 2 | 2 | 2 | RF fused ranker + Break Now + TRAVIS/SNAP links (Ph8); CoPilot 11.4 parking icons — still **2** (booking ≠ RF $0) |
 | LEZ compliance | 8% | **3** | 3 | 3 | 2 | 2 | RF 11 zones + ORS avoid (iOS rings; Android U15) |

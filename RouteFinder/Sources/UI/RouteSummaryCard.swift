@@ -259,6 +259,18 @@ struct RouteSummaryCard: View {
                 Text("Named tolls are advisory only — check operator; not live tariffs.")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
+                if !viewModel.avoidTolls {
+                    Button {
+                        viewModel.avoidTolls = true
+                        Task { await viewModel.recalculateIfReady() }
+                    } label: {
+                        Label("Avoid tolls & replan", systemImage: "road.lanes")
+                            .font(RFFont.caption.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSheetStyle()
+                }
             }
         }
     }

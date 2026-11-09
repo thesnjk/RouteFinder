@@ -10,6 +10,11 @@ import Testing
     #expect(UKTollAdvisoryCatalog.advisory(id: "m6-toll") != nil)
 }
 
+@Test func routingPreferencesAvoidTollsDefaultsOffForCommitHonesty() {
+    let prefs = RoutingPreferences()
+    #expect(prefs.avoidTolls == false)
+}
+
 @Test func ukTollCatalogSeedsIndicativeGBPForTolledCrossings() {
     let dartford = UKTollAdvisoryCatalog.advisory(id: "dartford-crossing")
     let m6 = UKTollAdvisoryCatalog.advisory(id: "m6-toll")

@@ -23,6 +23,7 @@ class OrsRoutingClient(
         destinationLat: Double,
         via: List<Pair<Double, Double>> = emptyList(),
         vehicle: HgvVehicleProfile = HgvVehicleProfile(),
+        avoidTolls: Boolean = false,
         avoidPolygons: List<List<DoubleArray>> = emptyList(),
     ): OrsRouteResult {
         val body = OrsDirectionsRequest.buildJson(
@@ -32,6 +33,7 @@ class OrsRoutingClient(
             destinationLat = destinationLat,
             via = via,
             vehicle = vehicle,
+            avoidTolls = avoidTolls,
             avoidPolygons = avoidPolygons,
         )
         val media = "application/json; charset=utf-8".toMediaType()

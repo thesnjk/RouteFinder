@@ -147,6 +147,8 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     var openWeatherApiKeyDraft by mutableStateOf(prefs.openWeatherApiKey)
     var clearanceRadarEnabled by mutableStateOf(prefs.clearanceRadarEnabled)
     var lezAvoidEnabled by mutableStateOf(prefs.lezAvoidEnabled)
+    /** When true, ORS directions request avoids tollways. */
+    var avoidTolls by mutableStateOf(prefs.avoidTolls)
     var emissionClassDraft by mutableStateOf(prefs.emissionClass)
     /** Trailer count draft for solo / override routing (0…3). */
     var trailerCountDraft by mutableStateOf(1)
@@ -439,6 +441,20 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         refreshComplianceAdvisories()
     }
 
+    /** Enables or disables ORS tollway avoidance and optionally replans. */
+    fun updateAvoidTolls(enabled: Boolean, replan: Boolean = false) {
+        avoidTolls = enabled
+        prefs.avoidTolls = enabled
+        if (replan) {
+            findRoute()
+        }
+    }
+
+    /** Turns on toll avoidance and recalculates the active route. */
+    fun avoidTollsAndReplan() {
+        updateAvoidTolls(enabled = true, replan = true)
+    }
+
     fun updateEmissionClass(value: String) {
         emissionClassDraft = value
         prefs.emissionClass = value
@@ -655,6 +671,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                     destinationLon = dLon,
                     destinationLat = dLat,
                     vehicle = resolveHgvProfile(),
+                    avoidTolls = avoidTolls,
                     avoidPolygons = avoidRings,
                 )
             }

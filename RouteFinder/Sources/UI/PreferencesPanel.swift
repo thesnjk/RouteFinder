@@ -23,8 +23,17 @@ public struct PreferencesPanel: View {
             .pickerStyle(.menu)
 
             Toggle("Avoid Tolls", isOn: $viewModel.avoidTolls)
+                .onChange(of: viewModel.avoidTolls) { _, _ in
+                    Task { await viewModel.recalculateIfReady() }
+                }
             Toggle("Avoid Ferries", isOn: $viewModel.avoidFerries)
+                .onChange(of: viewModel.avoidFerries) { _, _ in
+                    Task { await viewModel.recalculateIfReady() }
+                }
             Toggle("Avoid Tunnels", isOn: $viewModel.avoidTunnels)
+                .onChange(of: viewModel.avoidTunnels) { _, _ in
+                    Task { await viewModel.recalculateIfReady() }
+                }
             Toggle("Avoid non-compliant LEZ / CAZ", isOn: $viewModel.avoidNonCompliantLEZ)
                 .onChange(of: viewModel.avoidNonCompliantLEZ) { _, _ in
                     viewModel.scheduleVehicleWorkspacePersist()

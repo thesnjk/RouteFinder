@@ -127,11 +127,29 @@ public enum ManeuverSpeechFormatter {
         }
     }
 
-    /// ` onto {road}` when a street name is known (all announcement tiers).
+    /// Sanitized street name for TTS / HUD (Android `streetCallout` parity).
+    ///
+    /// Drops empty names, arrive, and ORS maneuver echoes that start with turn/keep/head.
+    /// Truncates to 40 characters when kept.
+    public static func streetCallout(roadName: String?, isArrive: Bool = false) -> String? {
+        if isArrive { return nil }
+        let road = roadName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !road.isEmpty else { return nil }
+        let lower = road.lowercased()
+        if lower.hasPrefix("turn") || lower.hasPrefix("keep") || lower.hasPrefix("head") {
+            return nil
+        }
+        return String(road.prefix(40))
+    }
+
+    /// Sanitized street name from a turn instruction.
+    public static func streetCallout(for instruction: TurnInstruction) -> String? {
+        streetCallout(roadName: instruction.roadName, isArrive: instruction.maneuver == .arrive)
+    }
+
+    /// ` onto {road}` when a sanitized street name is known (all announcement tiers).
     private static func roadSuffix(for instruction: TurnInstruction) -> String {
-        guard instruction.maneuver != .arrive,
-              let road = instruction.roadName,
-              !road.isEmpty else { return "" }
+        guard let road = streetCallout(for: instruction) else { return "" }
         return " onto \(road)"
     }
 }

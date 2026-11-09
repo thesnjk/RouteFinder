@@ -41,7 +41,7 @@ public enum VoiceAssistResponseFormatter: Sendable {
             return whichLaneNone
         }
         var spoken = guidance
-        if let road = roadName?.trimmingCharacters(in: .whitespacesAndNewlines), !road.isEmpty {
+        if let road = ManeuverSpeechFormatter.streetCallout(roadName: roadName) {
             spoken += " onto \(road)"
         }
         if let distanceMeters, distanceMeters > 0 {

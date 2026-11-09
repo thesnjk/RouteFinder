@@ -26,6 +26,15 @@ struct DriverVoiceCommandPhraseMatcherTests {
         #expect(DriverVoiceCommandPhraseMatcher.match("Next stop") == .whereStopping)
     }
 
+    @Test func matchesDomainV2Intents() {
+        #expect(DriverVoiceCommandPhraseMatcher.match("Can I drive now?") == .canIDrive)
+        #expect(DriverVoiceCommandPhraseMatcher.match("Am I legal to drive") == .canIDrive)
+        #expect(DriverVoiceCommandPhraseMatcher.match("Any tolls ahead") == .tollAhead)
+        #expect(DriverVoiceCommandPhraseMatcher.match("Low emission zone") == .nextLez)
+        #expect(DriverVoiceCommandPhraseMatcher.match("What's my ETA") == .eta)
+        #expect(DriverVoiceCommandPhraseMatcher.match("How long left") == .eta)
+    }
+
     @Test func unrecognizedReturnsNil() {
         #expect(DriverVoiceCommandPhraseMatcher.match("") == nil)
         #expect(DriverVoiceCommandPhraseMatcher.match("what's the weather") == nil)
@@ -67,5 +76,49 @@ struct VoiceAssistResponseFormatterTests {
                 destinationLabel: nil
             ) == "No layby planned on this route."
         )
+    }
+
+    @Test func canIDriveFormatsYesAndNo() {
+        let yes = CanIDriveStatus(
+            canDrive: true,
+            reason: "Yes",
+            remainingContinuousDriveSeconds: 2700,
+            usesImportedCard: false
+        )
+        #expect(VoiceAssistResponseFormatter.canIDrive(status: yes).contains("Yes"))
+        #expect(VoiceAssistResponseFormatter.canIDrive(status: yes).contains("45 minutes"))
+
+        let no = CanIDriveStatus(
+            canDrive: false,
+            reason: "No",
+            remainingContinuousDriveSeconds: 0,
+            usesImportedCard: true
+        )
+        #expect(VoiceAssistResponseFormatter.canIDrive(status: no).hasPrefix("No."))
+        #expect(VoiceAssistResponseFormatter.canIDrive(status: nil).contains("unavailable"))
+    }
+
+    @Test func tollAheadAndNextLezAndEta() {
+        let toll = VoiceAssistResponseFormatter.tollAhead(
+            tollName: "Dartford Crossing",
+            distanceMeters: 4200,
+            costLabel: "~£6.00",
+            routeSummary: nil
+        )
+        #expect(toll.contains("Dartford"))
+        #expect(toll.contains("kilometres") || toll.contains("metres"))
+        #expect(VoiceAssistResponseFormatter.tollAhead(
+            tollName: nil,
+            distanceMeters: nil,
+            costLabel: nil,
+            routeSummary: nil
+        ) == "No named tolls on this route.")
+
+        #expect(
+            VoiceAssistResponseFormatter.nextLez(label: "London ULEZ", message: nil)
+                .contains("London ULEZ")
+        )
+        #expect(VoiceAssistResponseFormatter.eta(remainingSeconds: 3720).contains("hours"))
+        #expect(VoiceAssistResponseFormatter.eta(remainingSeconds: nil) == "ETA is unavailable.")
     }
 }

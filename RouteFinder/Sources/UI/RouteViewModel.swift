@@ -1256,6 +1256,32 @@ public final class RouteViewModel {
                 destinationLabel: destination.isEmpty ? nil : destination
             )
             speakVoiceAssist(spoken)
+        case .canIDrive:
+            await refreshCanIDriveStatus()
+            speakVoiceAssist(VoiceAssistResponseFormatter.canIDrive(status: canIDriveStatus))
+        case .tollAhead:
+            let summary = UKTollAdvisory.indicativeRouteTotalLabel(advisories: routeTollAdvisories)
+                ?? routeTollAdvisories.map(\.name).joined(separator: ", ")
+            let spoken = VoiceAssistResponseFormatter.tollAhead(
+                tollName: activeTollAdvisory?.name,
+                distanceMeters: activeTollAdvisoryDistanceMeters,
+                costLabel: activeTollAdvisory?.indicativeCostLabel,
+                routeSummary: summary.isEmpty ? nil : summary
+            )
+            speakVoiceAssist(spoken)
+        case .nextLez:
+            let announcement = activeRestrictionAnnouncement
+            speakVoiceAssist(
+                VoiceAssistResponseFormatter.nextLez(
+                    label: announcement?.label,
+                    message: announcement?.message
+                )
+            )
+        case .eta:
+            let remaining = journeyPhysicsETASeconds
+                ?? physicsPredictedDurationSeconds
+                ?? result?.metrics.totalTime
+            speakVoiceAssist(VoiceAssistResponseFormatter.eta(remainingSeconds: remaining))
         }
     }
 

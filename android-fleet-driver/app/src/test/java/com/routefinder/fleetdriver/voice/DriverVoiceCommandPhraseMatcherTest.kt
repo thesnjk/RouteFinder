@@ -1,5 +1,6 @@
 package com.routefinder.fleetdriver.voice
 
+import com.routefinder.fleetdriver.compliance.CanIDriveStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -7,14 +8,14 @@ import org.junit.Test
 
 class DriverVoiceCommandPhraseMatcherTest {
     @Test
-    fun matchesBreakNowPhrases() {
+    fun matchesBreakNow() {
         assertEquals(DriverVoiceCommand.BREAK_NOW, DriverVoiceCommandPhraseMatcher.match("Break now"))
         assertEquals(DriverVoiceCommand.BREAK_NOW, DriverVoiceCommandPhraseMatcher.match("Please find a layby"))
         assertEquals(DriverVoiceCommand.BREAK_NOW, DriverVoiceCommandPhraseMatcher.match("I need a break"))
     }
 
     @Test
-    fun matchesNextLaybyPhrases() {
+    fun matchesNextLayby() {
         assertEquals(DriverVoiceCommand.NEXT_LAYBY, DriverVoiceCommandPhraseMatcher.match("Next layby"))
         assertEquals(DriverVoiceCommand.NEXT_LAYBY, DriverVoiceCommandPhraseMatcher.match("Skip this layby"))
         assertEquals(DriverVoiceCommand.NEXT_LAYBY, DriverVoiceCommandPhraseMatcher.match("Looks full"))
@@ -38,6 +39,16 @@ class DriverVoiceCommandPhraseMatcherTest {
     }
 
     @Test
+    fun matchesDomainV2Intents() {
+        assertEquals(DriverVoiceCommand.CAN_I_DRIVE, DriverVoiceCommandPhraseMatcher.match("Can I drive now?"))
+        assertEquals(DriverVoiceCommand.CAN_I_DRIVE, DriverVoiceCommandPhraseMatcher.match("Am I legal to drive"))
+        assertEquals(DriverVoiceCommand.TOLL_AHEAD, DriverVoiceCommandPhraseMatcher.match("Any tolls ahead"))
+        assertEquals(DriverVoiceCommand.NEXT_LEZ, DriverVoiceCommandPhraseMatcher.match("Low emission zone"))
+        assertEquals(DriverVoiceCommand.ETA, DriverVoiceCommandPhraseMatcher.match("What's my ETA"))
+        assertEquals(DriverVoiceCommand.ETA, DriverVoiceCommandPhraseMatcher.match("How long left"))
+    }
+
+    @Test
     fun unrecognizedReturnsNull() {
         assertNull(DriverVoiceCommandPhraseMatcher.match(""))
         assertNull(DriverVoiceCommandPhraseMatcher.match("what's the weather"))
@@ -48,19 +59,48 @@ class DriverVoiceCommandPhraseMatcherTest {
     fun unmuteWinsOverMuteSubstring() {
         assertEquals(DriverVoiceCommand.UNMUTE, DriverVoiceCommandPhraseMatcher.match("please unmute"))
     }
+}
+
+class VoiceAssistResponseFormatterTest {
+    @Test
+    fun canIDriveFormatsYesAndNo() {
+        val yes = CanIDriveStatus(
+            canDrive = true,
+            reason = "Yes",
+            remainingContinuousDriveSeconds = 2700.0,
+        )
+        val spokenYes = VoiceAssistResponseFormatter.canIDrive(yes)
+        assertTrue(spokenYes.contains("Yes"))
+        assertTrue(spokenYes.contains("45 minutes"))
+
+        val no = CanIDriveStatus(
+            canDrive = false,
+            reason = "No",
+            remainingContinuousDriveSeconds = 0.0,
+            usesImportedCard = true,
+        )
+        assertTrue(VoiceAssistResponseFormatter.canIDrive(no).startsWith("No."))
+        assertTrue(VoiceAssistResponseFormatter.canIDrive(null).contains("unavailable"))
+    }
 
     @Test
-    fun responseFormatterBreakNowAndWhereStopping() {
-        assertTrue(VoiceAssistResponseFormatter.breakNow(null).contains("No laybys"))
-        assertTrue(
-            VoiceAssistResponseFormatter.breakNow("Layby ahead: A11 (~3 km)").contains("A11"),
+    fun tollAheadNextLezAndEta() {
+        val toll = VoiceAssistResponseFormatter.tollAhead(
+            tollName = "Dartford Crossing",
+            distanceMeters = 4200.0,
+            costLabel = "~£6.00",
+            routeSummary = null,
         )
-        assertTrue(
-            VoiceAssistResponseFormatter.whereStopping(null, "Norwich Depot").contains("Norwich Depot"),
-        )
+        assertTrue(toll.contains("Dartford"))
+        assertTrue(toll.contains("kilometres") || toll.contains("metres"))
         assertEquals(
-            "No layby planned on this route.",
-            VoiceAssistResponseFormatter.whereStopping(null, null),
+            "No named tolls on this route.",
+            VoiceAssistResponseFormatter.tollAhead(null, null, null, null),
         )
+        assertTrue(
+            VoiceAssistResponseFormatter.nextLez("London ULEZ", null).contains("London ULEZ"),
+        )
+        assertTrue(VoiceAssistResponseFormatter.eta(3720.0).contains("hours"))
+        assertEquals("ETA is unavailable.", VoiceAssistResponseFormatter.eta(null))
     }
 }

@@ -12,9 +12,7 @@ class VoiceGuidanceService(context: Context) : TextToSpeech.OnInitListener {
     private var ready = false
     var enabled: Boolean = true
 
-    private var lastApproachIndex: Int? = null
-    private var lastPrepareIndex: Int? = null
-    private var lastExecuteIndex: Int? = null
+    private val announcementGate = ManeuverAnnouncementGate()
 
     override fun onInit(status: Int) {
         ready = status == TextToSpeech.SUCCESS
@@ -24,9 +22,15 @@ class VoiceGuidanceService(context: Context) : TextToSpeech.OnInitListener {
     }
 
     fun resetAnnouncements() {
-        lastApproachIndex = null
-        lastPrepareIndex = null
-        lastExecuteIndex = null
+        announcementGate.reset()
+    }
+
+    /**
+     * Clears prepare for [maneuverIndex] after heuristic→OSM lane upgrade (iOS parity).
+     * No-ops if execute already spoken for that index.
+     */
+    fun invalidatePrepareForLaneUpgrade(maneuverIndex: Int) {
+        announcementGate.invalidatePrepareForLaneUpgrade(maneuverIndex)
     }
 
     fun onProgress(
@@ -41,23 +45,23 @@ class VoiceGuidanceService(context: Context) : TextToSpeech.OnInitListener {
             return
         }
         when {
-            distanceToNextMeters <= 40.0 && lastExecuteIndex != maneuverIndex -> {
+            distanceToNextMeters <= 40.0 && announcementGate.shouldAnnounceExecute(maneuverIndex) -> {
                 if (!ManeuverSpeechFormatter.shouldSuppressVoice(instruction.maneuver, AnnouncementTier.EXECUTE)) {
                     speak(ManeuverSpeechFormatter.spokenPrompt(instruction, AnnouncementTier.EXECUTE))
                 }
-                lastExecuteIndex = maneuverIndex
+                announcementGate.markExecute(maneuverIndex)
             }
-            distanceToNextMeters in 40.0..450.0 && lastPrepareIndex != maneuverIndex -> {
+            distanceToNextMeters in 40.0..450.0 && announcementGate.shouldAnnouncePrepare(maneuverIndex) -> {
                 if (!ManeuverSpeechFormatter.shouldSuppressVoice(instruction.maneuver, AnnouncementTier.PREPARE)) {
                     speak(ManeuverSpeechFormatter.spokenPrompt(instruction, AnnouncementTier.PREPARE))
                 }
-                lastPrepareIndex = maneuverIndex
+                announcementGate.markPrepare(maneuverIndex)
             }
-            distanceToNextMeters in 450.0..1700.0 && lastApproachIndex != maneuverIndex -> {
+            distanceToNextMeters in 450.0..1700.0 && announcementGate.shouldAnnounceApproach(maneuverIndex) -> {
                 if (!ManeuverSpeechFormatter.shouldSuppressVoice(instruction.maneuver, AnnouncementTier.APPROACH)) {
                     speak(ManeuverSpeechFormatter.spokenPrompt(instruction, AnnouncementTier.APPROACH))
                 }
-                lastApproachIndex = maneuverIndex
+                announcementGate.markApproach(maneuverIndex)
             }
         }
     }

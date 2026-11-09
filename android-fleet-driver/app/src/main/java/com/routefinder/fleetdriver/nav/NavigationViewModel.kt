@@ -1679,6 +1679,10 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                 )
             }
             if (enriched !== instructions && enriched != instructions) {
+                val upgraded = LaneOsmUpgrade.upgradedManeuverIndices(instructions, enriched)
+                for (index in upgraded) {
+                    voice.invalidatePrepareForLaneUpgrade(index)
+                }
                 session.updateInstructions(enriched)
                 currentInstruction = session.currentInstruction()
             }

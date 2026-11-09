@@ -298,7 +298,7 @@ Original Oct 12 “Defer” list is **void** under the driver-first scope rule. 
 |------|-------------|-----------|-------------|
 | H1 | `EPIC-SIM-SPEEDLIMIT` | **Done** (2026-11-09) — Physics Lead CI-honest | `swift test --filter spineSpeedLimitAcceleratesToMotorwayLimit` Pass |
 | H2 | `EPIC-ANDROID-JDK-CI` | **Done** (2026-11-09) — CI Temurin 17 + `setup-android@v4`; local `.java-version` 17 | OpenJDK 25 still a local footgun if unpinned |
-| H3 | `EPIC-P0-DEVICE` | Demo claims need hardware truth | Operator C4 / C9 / Fleet Part B |
+| H3 | `EPIC-P0-DEVICE` | Demo claims need hardware truth | Operator C4 / C9 / Fleet Part B — SSOT [`phase1-device-checklist.md`](phase1-device-checklist.md) |
 
 ### Ranked driver-first build backlog
 
@@ -326,7 +326,7 @@ Every agent completion under this programme ends with these four blocks, in orde
 
 ### 1. What’s next
 
-Ordered list of the next epic(s) (e.g. H3 device P0 → gated AA/CarPlay/VU/LEZ/live £). H1/H2 Done 2026-11-09. State whether the agent can do it alone or needs the operator.
+Ordered list of the next epic(s) (e.g. operator H3 via phase1 SSOT → gated AA/CarPlay/VU/LEZ/live £). Agent ungated tracks Done 2026-11-09. State whether the agent can do it alone or needs the operator.
 
 ### 2. Your involvement (if any)
 

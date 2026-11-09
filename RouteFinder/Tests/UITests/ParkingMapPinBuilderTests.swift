@@ -94,4 +94,104 @@ struct ParkingMapPinBuilderTests {
         #expect(pins.count == 1)
         #expect(pins[0].kind == RoutePin.PinKind.parkingAmple)
     }
+
+    @Test func buildsPinsFromRankedAdvisoriesByOccupancyPrior() {
+        let advisories = [
+            LaybyAdvisory(
+                stop: LaybyStop(
+                    id: "a",
+                    coordinate: Coordinate(latitude: 52.63, longitude: 1.29),
+                    label: "Ample Layby"
+                ),
+                distanceRemainingMeters: 1_000,
+                occupancyPrior: .low
+            ),
+            LaybyAdvisory(
+                stop: LaybyStop(
+                    id: "b",
+                    coordinate: Coordinate(latitude: 52.64, longitude: 1.30),
+                    label: "Limited Layby"
+                ),
+                distanceRemainingMeters: 2_000,
+                occupancyPrior: .moderate
+            ),
+            LaybyAdvisory(
+                stop: LaybyStop(
+                    id: "c",
+                    coordinate: Coordinate(latitude: 52.65, longitude: 1.31),
+                    label: "Full Layby"
+                ),
+                distanceRemainingMeters: 3_000,
+                occupancyPrior: .high
+            ),
+        ]
+        let pins = ParkingMapPinBuilder.pins(from: advisories, maxPins: 8)
+        #expect(pins.count == 3)
+        #expect(pins[0].id == "parking-layby-a")
+        #expect(pins[0].kind == .parkingAmple)
+        #expect(pins[0].title.contains("Spaces"))
+        #expect(pins[1].kind == .parkingLimited)
+        #expect(pins[2].kind == .parkingFull)
+    }
+
+    @Test func rankedAdvisoryPinsRespectMaxCap() {
+        let advisories = (0..<12).map { index in
+            LaybyAdvisory(
+                stop: LaybyStop(
+                    id: "r-\(index)",
+                    coordinate: Coordinate(latitude: 52.0 + Double(index) * 0.01, longitude: 1.0),
+                    label: "Ranked \(index)"
+                ),
+                distanceRemainingMeters: Double(index + 1) * 500,
+                occupancyPrior: .moderate
+            )
+        }
+        let pins = ParkingMapPinBuilder.pins(from: advisories, maxPins: 8)
+        #expect(pins.count == 8)
+        #expect(pins.first?.id == "parking-layby-r-0")
+        #expect(pins.last?.id == "parking-layby-r-7")
+    }
+
+    @Test func emptyAdvisoriesYieldNoPins() {
+        #expect(ParkingMapPinBuilder.pins(from: [LaybyAdvisory]()).isEmpty)
+    }
+
+    @Test func mergedPinsPreferAdvisoryOverNearbyPoi() {
+        let advisory = LaybyAdvisory(
+            stop: LaybyStop(
+                id: "same",
+                coordinate: Coordinate(latitude: 52.6309, longitude: 1.2974),
+                label: "Ranked Same"
+            ),
+            distanceRemainingMeters: 800,
+            occupancyPrior: .low
+        )
+        let nearbyPoi = TruckPoi(
+            id: "poi-same",
+            kind: .layby,
+            latitude: 52.63091,
+            longitude: 1.29741,
+            label: "POI Same",
+            arcLengthAlongRouteMeters: 800,
+            confidence: 0.5
+        )
+        let farPoi = TruckPoi(
+            id: "poi-far",
+            kind: .overnightSecureParking,
+            latitude: 52.70,
+            longitude: 1.40,
+            label: "Far Yard",
+            arcLengthAlongRouteMeters: 8_000,
+            confidence: 0.9
+        )
+        let pins = ParkingMapPinBuilder.mergedParkingPins(
+            advisories: [advisory],
+            pois: [nearbyPoi, farPoi],
+            maxPins: 8
+        )
+        #expect(pins.count == 2)
+        #expect(pins[0].id == "parking-layby-same")
+        #expect(pins[0].kind == .parkingAmple)
+        #expect(pins[1].id == "parking-poi-far")
+    }
 }

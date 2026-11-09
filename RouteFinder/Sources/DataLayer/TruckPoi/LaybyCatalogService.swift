@@ -286,6 +286,20 @@ public actor LaybyAdvisor {
         return LaybyPredictionEngine.predict(input).primary
     }
 
+    /// Ranked ahead layby / Break-Now candidates for CoPilot-style availability map pins.
+    public func upcomingRankedAdvisories(
+        currentArcLengthMeters: Double,
+        speedMps: Double,
+        predictionInput: LaybyPredictionInput? = nil
+    ) -> [LaybyAdvisory] {
+        let input = resolvedInput(
+            currentArcLengthMeters: currentArcLengthMeters,
+            speedMps: speedMps,
+            predictionInput: predictionInput
+        )
+        return LaybyPredictionEngine.predict(input).ranked
+    }
+
     /// Nearest truck-safe layby ahead for Break Now quick action.
     public func breakNowAdvisory(
         currentArcLengthMeters: Double,

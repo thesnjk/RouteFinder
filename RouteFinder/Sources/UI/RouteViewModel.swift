@@ -325,6 +325,8 @@ public final class RouteViewModel {
 
     /// Upcoming layby advisory for the active route, when within alert range.
     public var laybyAdvisory: LaybyAdvisory?
+    /// Ranked ahead layby advisories for CoPilot-style availability map pins.
+    public var rankedLaybyAdvisories: [LaybyAdvisory] = []
     /// All layby candidates discovered along the current route.
     public var upcomingLaybys: [LaybyStop] = []
     /// Whether layby POIs are being fetched for the current route.
@@ -464,14 +466,15 @@ public final class RouteViewModel {
     }
 
     /// Map pins with the start marker hidden during live simulation so the vehicle footprint is visible.
-    /// Includes colored parking / layby availability markers from ahead truck POIs.
+    /// Includes colored parking / layby availability markers from ranked advisories + ahead truck POIs.
     public var displayMapPins: [RoutePin] {
         var pins = mapPins
         if simulationEngine.isRunning {
             pins = pins.filter { $0.kind != .start }
         }
-        pins += ParkingMapPinBuilder.pins(
-            from: upcomingTruckPois,
+        pins += ParkingMapPinBuilder.mergedParkingPins(
+            advisories: rankedLaybyAdvisories,
+            pois: upcomingTruckPois,
             reports: crowdReports
         )
         return pins
@@ -3241,6 +3244,7 @@ public final class RouteViewModel {
     public func loadLaybysAlongRoute(_ coordinates: [Coordinate]) {
         laybyLoadTask?.cancel()
         laybyAdvisory = nil
+        rankedLaybyAdvisories = []
         routeSimulationCoordinator.clearLastAnnouncedLayby()
         hazardNavigationCoordinator.resetRouteHazardState(state: hazardState)
         upcomingLaybys = []
@@ -3258,6 +3262,7 @@ public final class RouteViewModel {
                 guard !Task.isCancelled else { return }
                 upcomingLaybys = []
                 laybyAdvisory = nil
+                rankedLaybyAdvisories = []
             }
         }
     }
@@ -3344,6 +3349,11 @@ public final class RouteViewModel {
         )
         await laybyAdvisor.updatePredictionContext(input)
         laybyAdvisory = await laybyAdvisor.upcomingAdvisory(
+            currentArcLengthMeters: arcLength,
+            speedMps: speedMps,
+            predictionInput: input
+        )
+        rankedLaybyAdvisories = await laybyAdvisor.upcomingRankedAdvisories(
             currentArcLengthMeters: arcLength,
             speedMps: speedMps,
             predictionInput: input
@@ -3738,6 +3748,7 @@ public final class RouteViewModel {
         routeSimulationCoordinator.cancelPhysicsWork()
         tripBriefShareText = nil
         laybyAdvisory = nil
+        rankedLaybyAdvisories = []
         upcomingLaybys = []
         isLoadingLaybys = false
         upcomingTruckPois = []

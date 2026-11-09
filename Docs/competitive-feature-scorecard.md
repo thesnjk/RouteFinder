@@ -1,6 +1,6 @@
 # Competitive Feature Scorecard — September 2026
 
-Last updated: 2026-11-09 (desk Can-I-drive weekly parity; mark VOICE / PARKING-BOOK / COMBO shipped MVP; residual LANE/AA/CarPlay/VU)
+Last updated: 2026-11-09 (iOS ranked layby availability pins; PARKING-AVAIL shipped MVP; residual LANE/AA/CarPlay/VU/live bays)
 
 Scoring: **0** Absent · **1** Weak · **2** Parity · **3** Lead  
 Personas: **OO** = UK owner-operator · **SF** = small fleet (2–20 vehicles)
@@ -130,7 +130,7 @@ Policy: ship anything that benefits the driver; sequence by impact, not permanen
 | Capability | Best-in-class | RouteFinder today | Status / residual epic |
 |---|---|---|---|
 | Hands-free driver assistant | CoPilot 11.4 | Domain PTT: which-lane / avoid-tolls / layby / hazard / book parking / Can-I-drive day+week | **Shipped (MVP)** — residual: freer NLU / street-name depth (`EPIC-LANE-DEPTH`) |
-| Parking availability UX | CoPilot 11.4 icons | Occupancy taps + Break Now | **Residual** `EPIC-PARKING-AVAIL` (color icons ahead) |
+| Parking availability UX | CoPilot 11.4 icons | Ranked layby green/amber/red map pins (iOS + Android) + occupancy taps + Break Now | **Shipped (MVP)** — residual: live bay counts / partner occupancy feed |
 | Parking booking | CoPilot + TRAVIS | Deep links + voice “book parking” entry | **Shipped (MVP)** — residual: native partner book API |
 | CarPlay production | Sygic / CoPilot | Code ready; entitlements inactive | **Gated** `EPIC-CARPLAY-PROD` |
 | Android Auto | CoPilot 11.4 | Not shipped | **Gated** `EPIC-ANDROID-AUTO` |

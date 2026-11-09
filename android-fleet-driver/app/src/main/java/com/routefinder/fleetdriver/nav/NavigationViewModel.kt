@@ -14,6 +14,10 @@ import com.routefinder.fleetdriver.compliance.FuelCardProvider
 import com.routefinder.fleetdriver.compliance.FuelPoiCatalogClient
 import com.routefinder.fleetdriver.compliance.WeighStationAhead
 import com.routefinder.fleetdriver.compliance.HosAdvisoryClock
+import com.routefinder.fleetdriver.compliance.HosRestCandidate
+import com.routefinder.fleetdriver.compliance.HosRestCandidateKind
+import com.routefinder.fleetdriver.compliance.HosRestInsertionResult
+import com.routefinder.fleetdriver.compliance.HosRestInserter
 import com.routefinder.fleetdriver.compliance.LaybyAdvisoryEngine
 import com.routefinder.fleetdriver.compliance.LaybyAlertFormatter
 import com.routefinder.fleetdriver.compliance.LaybyCatalogClient
@@ -56,6 +60,7 @@ import com.routefinder.fleetdriver.routing.FleetOrsConfig
 import com.routefinder.fleetdriver.routing.GeocodeSuggestion
 import com.routefinder.fleetdriver.routing.HgvVehicleProfile
 import com.routefinder.fleetdriver.routing.LatLon
+import com.routefinder.fleetdriver.routing.OrsResponseParser
 import com.routefinder.fleetdriver.routing.OrsRoutingClient
 import com.routefinder.fleetdriver.routing.PeliasGeocoder
 import com.routefinder.fleetdriver.routing.TollAdvisoryAlongRouteMatcher
@@ -189,6 +194,11 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     var selectedParkingBookStop by mutableStateOf<PendingParkingBookReturn?>(null)
         private set
     var hosAdvisoryMessage by mutableStateOf<String?>(null)
+    /** Advisory HOS rest forecast summary for the active route (planning aid — not legal VU). */
+    var hosForecastSummary by mutableStateOf<String?>(null)
+        private set
+    /** Last HOS rest forecast (for Break Now POI preference). */
+    private var hosForecast: HosRestInsertionResult? = null
     /** Fused Can-I-drive status (partner → imported card → clock when fresh). */
     var canIDriveStatus by mutableStateOf<CanIDriveStatus?>(null)
     private var partnerTachoAdvisory by mutableStateOf<PartnerTachoAdvisory?>(null)
@@ -216,6 +226,8 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     private var continuousDriveSeconds = prefs.continuousDriveSeconds
     private var dailyDriveSeconds = prefs.dailyDriveSeconds
     private var lastDriveTickMs: Long = 0L
+    /** ORS total duration for the active route (seconds) — used for HOS path split. */
+    private var lastRouteDurationSeconds: Double = 0.0
     /** Skip count for “next layby” voice advances on the current route. */
     private var laybySkipCount = 0
     /** Overpass corridor sites for the active route; empty → seed fallback. */
@@ -378,10 +390,25 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         voiceListening = false
     }
 
-    /** Ranks nearest layby ahead (Break Now) — shared by voice and HUD. */
+    /** Ranks HOS-preferred or nearest layby ahead (Break Now) — shared by voice and HUD. */
     fun breakNow() {
         laybySkipCount = 0
-        refreshComplianceAdvisories()
+        refreshHosForecast(routeCoordinates)
+        val preferredId = hosForecast?.insertions?.firstOrNull()?.poiId
+        val preferred = preferredId?.let { id ->
+            LaybyAdvisoryEngine.advisoryForSite(
+                siteId = id,
+                route = routeCoordinates,
+                currentArcLengthMeters = progress?.traveledDistanceMeters ?: 0.0,
+                occupancyStore = laybyOccupancyStore,
+                sites = activeLaybySites(),
+            )
+        }
+        if (preferred != null) {
+            applyLaybyAdvisory(preferred)
+        } else {
+            refreshComplianceAdvisories()
+        }
         val spoken = VoiceAssistResponseFormatter.breakNow(laybyAdvisoryMessage)
         toastMessage = spoken
         voice.speakAssist(spoken)
@@ -762,11 +789,14 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             )
             session.loadRoute(geometry, result.instructions)
             routeCoordinates = result.coordinates
+            lastRouteDurationSeconds = result.durationSeconds
             laybySkipCount = 0
             catalogLaybySites = emptyList()
             catalogTruckPois = emptyList()
             fuelCardBannerMessage = null
             weighStationBannerMessage = null
+            hosForecast = null
+            hosForecastSummary = null
             parkingMapMarkers = emptyList()
             dismissParkingBookReturn()
             catalogRoadworkSites = emptyList()
@@ -1047,11 +1077,128 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             imported = importedTachoSummary,
             clock = clock,
         )
+        refreshHosForecast(route)
         refreshRouteTollAdvisories(route)
     }
 
     private fun activeLaybySites(): List<LaybyAdvisoryEngine.Site> =
         catalogLaybySites.ifEmpty { LaybyAdvisoryEngine.seedSites }
+
+    /** Remaining continuous/daily drive: partner → imported card → advisory clock. */
+    private fun remainingDriveBudgets(): Pair<Double, Double> {
+        val partner = partnerTachoAdvisory?.asCardSummary()
+        val imported = importedTachoSummary
+        val now = java.time.Instant.now()
+        if (partner != null &&
+            now.epochSecond - partner.importedAt.epochSecond < CanIDriveEvaluator.FRESHNESS_LIMIT_SECONDS
+        ) {
+            return partner.remainingContinuousDriveSeconds to partner.remainingDailyDriveSeconds
+        }
+        if (imported != null &&
+            now.epochSecond - imported.importedAt.epochSecond < CanIDriveEvaluator.FRESHNESS_LIMIT_SECONDS
+        ) {
+            return imported.remainingContinuousDriveSeconds to imported.remainingDailyDriveSeconds
+        }
+        val continuousLeft =
+            HosAdvisoryClock.CONTINUOUS_DRIVE_LIMIT_SECONDS - continuousDriveSeconds
+        val dailyLeft = HosAdvisoryClock.DAILY_DRIVE_LIMIT_SECONDS - dailyDriveSeconds
+        return continuousLeft to dailyLeft
+    }
+
+    /**
+     * Builds coarse per-segment durations from ORS total, proportional to haversine lengths.
+     */
+    private fun pathDurationsAndArcs(
+        route: List<LatLon>,
+        totalDurationSeconds: Double,
+    ): Pair<List<Double>, List<Double>> {
+        if (route.size < 2 || totalDurationSeconds <= 0) {
+            return emptyList<Double>() to emptyList()
+        }
+        val segmentMeters = mutableListOf<Double>()
+        var totalMeters = 0.0
+        for (i in 0 until route.lastIndex) {
+            val meters = OrsResponseParser.haversineMeters(route[i], route[i + 1])
+            segmentMeters += meters
+            totalMeters += meters
+        }
+        if (totalMeters <= 0) {
+            val equal = totalDurationSeconds / segmentMeters.size.coerceAtLeast(1)
+            val durations = List(segmentMeters.size) { equal }
+            var cum = 0.0
+            val equalArcs = segmentMeters.indices.map {
+                cum += 1.0
+                cum
+            }
+            return durations to equalArcs
+        }
+        val durations = segmentMeters.map { totalDurationSeconds * (it / totalMeters) }
+        var cum = 0.0
+        val arcs = segmentMeters.map {
+            cum += it
+            cum
+        }
+        return durations to arcs
+    }
+
+    private fun hosRestCandidates(route: List<LatLon>): List<HosRestCandidate> {
+        val laybyProjected = LaybyCatalogClient.projectWithArcs(activeLaybySites(), route)
+        val fromLayby = laybyProjected.map { (site, arc) ->
+            HosRestCandidate(
+                id = site.id,
+                label = site.name,
+                kind = HosRestCandidateKind.LAYBY,
+                arcLengthAlongRouteMeters = arc,
+            )
+        }
+        val truckSites = catalogTruckPois.mapNotNull { poi ->
+            val kind = when (poi.kind) {
+                TruckFuelPoi.Kind.OVERNIGHT_SECURE_PARKING ->
+                    HosRestCandidateKind.OVERNIGHT_SECURE_PARKING
+                TruckFuelPoi.Kind.HIGH_FLOW_DIESEL -> HosRestCandidateKind.HIGH_FLOW_DIESEL
+                TruckFuelPoi.Kind.WEIGH_STATION, TruckFuelPoi.Kind.OTHER -> return@mapNotNull null
+            }
+            LaybyAdvisoryEngine.Site(poi.id, poi.label, LatLon(poi.latitude, poi.longitude)) to kind
+        }
+        val fromTruck = LaybyCatalogClient.projectWithArcs(
+            sites = truckSites.map { it.first },
+            route = route,
+        ).mapNotNull { (site, arc) ->
+            val kind = truckSites.firstOrNull { it.first.id == site.id }?.second
+                ?: return@mapNotNull null
+            HosRestCandidate(
+                id = site.id,
+                label = site.name,
+                kind = kind,
+                arcLengthAlongRouteMeters = arc,
+            )
+        }
+        return (fromLayby + fromTruck).distinctBy { it.id }
+    }
+
+    private fun refreshHosForecast(route: List<LatLon>) {
+        if (route.size < 2 || lastRouteDurationSeconds <= 0) {
+            hosForecast = null
+            hosForecastSummary = null
+            return
+        }
+        val (continuousLeft, dailyLeft) = remainingDriveBudgets()
+        val (durations, arcs) = pathDurationsAndArcs(route, lastRouteDurationSeconds)
+        if (durations.isEmpty()) {
+            hosForecast = null
+            hosForecastSummary = null
+            return
+        }
+        val result = HosRestInserter.forecast(
+            remainingContinuousDriveSeconds = continuousLeft,
+            remainingDailyDriveSeconds = dailyLeft,
+            pathDurationsSeconds = durations,
+            pathArcLengthsMeters = arcs,
+            upcomingCandidates = hosRestCandidates(route),
+        )
+        hosForecast = result
+        hosForecastSummary = if (result.insertions.isEmpty()) null else result.summary
+    }
 
     /** Async Overpass corridor laybys via fleet proxy (seed fallback kept). */
     private fun refreshLaybyCatalogAsync(route: List<LatLon>) {
@@ -1066,6 +1213,8 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             if (sites.isNotEmpty()) {
                 catalogLaybySites = sites
                 refreshComplianceAdvisories(route)
+            } else {
+                refreshHosForecast(route)
             }
         }
     }
@@ -1083,6 +1232,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             catalogTruckPois = pois
             refreshFuelCardBanner()
             refreshWeighStationBanner()
+            refreshHosForecast(route)
         }
     }
 

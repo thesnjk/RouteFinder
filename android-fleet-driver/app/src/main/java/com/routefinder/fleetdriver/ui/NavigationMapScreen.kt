@@ -660,6 +660,14 @@ fun NavigationMapScreen(
                     viewModel.hosAdvisoryMessage?.let {
                         Text(it, style = MaterialTheme.typography.bodySmall)
                     }
+                    viewModel.hosForecastSummary?.let { forecast ->
+                        Text(forecast, style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            "Advisory EU 561 rest plan — not a tachograph or legal VU.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.tertiary,
+                        )
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = { viewModel.resetHosBreak() }) { Text("Record break") }
                         OutlinedButton(

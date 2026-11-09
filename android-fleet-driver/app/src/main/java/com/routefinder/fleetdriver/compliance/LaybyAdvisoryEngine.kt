@@ -57,6 +57,27 @@ object LaybyAdvisoryEngine {
     }
 
     /**
+     * Builds an advisory for a specific [siteId] when it projects onto [route] ahead.
+     * Used when HOS rest forecast prefers a catalog POI for Break Now.
+     */
+    fun advisoryForSite(
+        siteId: String,
+        route: List<LatLon>,
+        currentArcLengthMeters: Double = 0.0,
+        occupancyStore: LaybyOccupancyStore? = null,
+        hourOfDay: Int = Calendar.getInstance().get(Calendar.HOUR_OF_DAY),
+        sites: List<Site> = seedSites,
+    ): Advisory? =
+        rankedAhead(
+            route = route,
+            currentArcLengthMeters = currentArcLengthMeters,
+            maxAheadMeters = Double.MAX_VALUE,
+            occupancyStore = occupancyStore,
+            hourOfDay = hourOfDay,
+            sites = sites,
+        ).firstOrNull { it.site.id == siteId }
+
+    /**
      * Advisories sorted nearest-first along the route.
      * Used by voice “next layby” to skip the current candidate.
      * Pass Overpass [sites] when available; falls back to [seedSites].

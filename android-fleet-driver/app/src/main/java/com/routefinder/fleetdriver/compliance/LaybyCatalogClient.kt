@@ -73,16 +73,25 @@ object LaybyCatalogClient {
         sites: List<LaybyAdvisoryEngine.Site>,
         route: List<LatLon>,
         maxCrossTrackMeters: Double = DEFAULT_CORRIDOR_HALF_WIDTH_METERS,
-    ): List<LaybyAdvisoryEngine.Site> {
+    ): List<LaybyAdvisoryEngine.Site> =
+        projectWithArcs(sites, route, maxCrossTrackMeters).map { it.first }
+
+    /**
+     * Projects [sites] onto [route], returning (site, arcMeters) pairs within corridor.
+     * Sorted by arc length along the route.
+     */
+    fun projectWithArcs(
+        sites: List<LaybyAdvisoryEngine.Site>,
+        route: List<LatLon>,
+        maxCrossTrackMeters: Double = DEFAULT_CORRIDOR_HALF_WIDTH_METERS,
+    ): List<Pair<LaybyAdvisoryEngine.Site, Double>> {
         if (route.size < 2 || sites.isEmpty()) return emptyList()
         val cumulative = cumulative(route)
         return sites.mapNotNull { site ->
             val proj = project(site.coordinate, route, cumulative) ?: return@mapNotNull null
             if (proj.second > maxCrossTrackMeters) return@mapNotNull null
             site to proj.first
-        }
-            .sortedBy { it.second }
-            .map { it.first }
+        }.sortedBy { it.second }
     }
 
     /** Builds Overpass bbox strings (south,west,north,east) along the route. */

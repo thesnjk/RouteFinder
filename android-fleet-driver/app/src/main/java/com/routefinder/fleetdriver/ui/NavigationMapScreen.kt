@@ -464,6 +464,14 @@ fun NavigationMapScreen(
                             color = MaterialTheme.colorScheme.tertiary,
                         )
                     }
+                    viewModel.weighStationBannerMessage?.let { banner ->
+                        Text(banner, style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            "OSM Overpass weigh/parking — not DVSA enforcement or PrePass status.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.tertiary,
+                        )
+                    }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),

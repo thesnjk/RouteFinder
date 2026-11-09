@@ -12,6 +12,7 @@ import com.routefinder.fleetdriver.compliance.DddImporter
 import com.routefinder.fleetdriver.compliance.FuelCardMatcher
 import com.routefinder.fleetdriver.compliance.FuelCardProvider
 import com.routefinder.fleetdriver.compliance.FuelPoiCatalogClient
+import com.routefinder.fleetdriver.compliance.WeighStationAhead
 import com.routefinder.fleetdriver.compliance.HosAdvisoryClock
 import com.routefinder.fleetdriver.compliance.LaybyAdvisoryEngine
 import com.routefinder.fleetdriver.compliance.LaybyAlertFormatter
@@ -155,10 +156,16 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     var avoidTolls by mutableStateOf(prefs.avoidTolls)
     /** Selected UK fuel card for OSM brand ahead matching (Ph32 parity). */
     var fuelCardProvider by mutableStateOf(FuelCardProvider.fromRaw(prefs.fuelCardProvider))
-    /** Corridor HGV fuel POIs for the active route (OSM; empty when none / offline). */
-    private var catalogFuelPois: List<TruckFuelPoi> = emptyList()
+    /** Corridor truck POIs (fuel / weigh / parking) for the active route (OSM). */
+    private var catalogTruckPois: List<TruckFuelPoi> = emptyList()
+    /** Fuel subset of [catalogTruckPois] for card matching. */
+    private val catalogFuelPois: List<TruckFuelPoi>
+        get() = catalogTruckPois.filter { it.kind == TruckFuelPoi.Kind.HIGH_FLOW_DIESEL }
     /** Banner when ahead fuel stops match the selected card (OSM brand — not live prices). */
     var fuelCardBannerMessage by mutableStateOf<String?>(null)
+        private set
+    /** Banner when weighbridges are on the corridor (OSM — not DVSA / PrePass). */
+    var weighStationBannerMessage by mutableStateOf<String?>(null)
         private set
     var emissionClassDraft by mutableStateOf(prefs.emissionClass)
     /** Trailer count draft for solo / override routing (0…3). */
@@ -757,8 +764,9 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             routeCoordinates = result.coordinates
             laybySkipCount = 0
             catalogLaybySites = emptyList()
-            catalogFuelPois = emptyList()
+            catalogTruckPois = emptyList()
             fuelCardBannerMessage = null
+            weighStationBannerMessage = null
             parkingMapMarkers = emptyList()
             dismissParkingBookReturn()
             catalogRoadworkSites = emptyList()
@@ -1062,24 +1070,30 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    /** Async Overpass corridor HGV fuel POIs for fuel-card ahead matching. */
+    /** Async Overpass corridor truck POIs (fuel + weigh + overnight parking). */
     private fun refreshFuelPoiCatalogAsync(route: List<LatLon>) {
         viewModelScope.launch {
             val pois = withContext(Dispatchers.IO) {
-                FuelPoiCatalogClient.fuelPoisAlongRoute(
+                FuelPoiCatalogClient.truckPoisAlongRoute(
                     route = route,
                     fleetBaseUrl = prefs.baseUrl,
                     fleetApiKey = prefs.apiKey,
                 )
             }
-            catalogFuelPois = pois
+            catalogTruckPois = pois
             refreshFuelCardBanner()
+            refreshWeighStationBanner()
         }
     }
 
     private fun refreshFuelCardBanner() {
         val matching = catalogFuelPois.count { FuelCardMatcher.accepts(fuelCardProvider, it) }
         fuelCardBannerMessage = FuelCardMatcher.aheadBannerMessage(fuelCardProvider, matching)
+    }
+
+    private fun refreshWeighStationBanner() {
+        val weighCount = catalogTruckPois.count { it.kind == TruckFuelPoi.Kind.WEIGH_STATION }
+        weighStationBannerMessage = WeighStationAhead.bannerMessage(weighCount)
     }
 
     /** Records “Looks full” and advances to the next layby candidate. */

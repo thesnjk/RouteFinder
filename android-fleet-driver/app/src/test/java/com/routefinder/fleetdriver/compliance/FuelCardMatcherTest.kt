@@ -101,4 +101,69 @@ class FuelPoiCatalogClientTest {
         """.trimIndent()
         assertTrue(FuelPoiCatalogClient.poisFromOverpassJson(json).isEmpty())
     }
+
+    @Test
+    fun parsesWeighbridgeAndOvernightParking() {
+        val json = """
+            {
+              "elements": [
+                {
+                  "type": "node",
+                  "id": 10,
+                  "lat": 52.2,
+                  "lon": 0.3,
+                  "tags": { "man_made": "weighbridge", "name": "DVSA weigh" }
+                },
+                {
+                  "type": "node",
+                  "id": 11,
+                  "lat": 52.25,
+                  "lon": 0.35,
+                  "tags": { "highway": "weigh_station" }
+                },
+                {
+                  "type": "node",
+                  "id": 12,
+                  "lat": 52.3,
+                  "lon": 0.4,
+                  "tags": {
+                    "amenity": "parking",
+                    "hgv": "yes",
+                    "name": "Secure truck park",
+                    "supervised": "yes"
+                  }
+                },
+                {
+                  "type": "node",
+                  "id": 13,
+                  "lat": 52.35,
+                  "lon": 0.45,
+                  "tags": {
+                    "amenity": "fuel",
+                    "hgv": "yes",
+                    "name": "Keyfuels stop",
+                    "brand": "Keyfuels"
+                  }
+                }
+              ]
+            }
+        """.trimIndent()
+        val pois = FuelPoiCatalogClient.poisFromOverpassJson(json)
+        assertEquals(4, pois.size)
+        assertEquals(TruckFuelPoi.Kind.WEIGH_STATION, pois[0].kind)
+        assertEquals("DVSA weigh", pois[0].label)
+        assertEquals(TruckFuelPoi.Kind.WEIGH_STATION, pois[1].kind)
+        assertEquals("Weighbridge", pois[1].label)
+        assertEquals(TruckFuelPoi.Kind.OVERNIGHT_SECURE_PARKING, pois[2].kind)
+        assertEquals(TruckFuelPoi.Kind.HIGH_FLOW_DIESEL, pois[3].kind)
+        assertTrue(FuelCardMatcher.accepts(FuelCardProvider.KEYFUELS, pois[3]))
+        assertFalse(FuelCardMatcher.accepts(FuelCardProvider.KEYFUELS, pois[0]))
+    }
+
+    @Test
+    fun weighBannerReflectsCount() {
+        assertNull(WeighStationAhead.bannerMessage(0))
+        assertEquals("Weighbridge ahead on route", WeighStationAhead.bannerMessage(1))
+        assertEquals("3 weighbridges ahead on route", WeighStationAhead.bannerMessage(3))
+    }
 }

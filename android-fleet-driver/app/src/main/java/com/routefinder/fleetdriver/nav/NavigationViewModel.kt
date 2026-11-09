@@ -53,8 +53,10 @@ import com.routefinder.fleetdriver.fleet.TelematicsImportBatch
 import com.routefinder.fleetdriver.fleet.TelematicsProvider
 import com.routefinder.fleetdriver.fleet.VehicleRegistrationResolver
 import com.routefinder.fleetdriver.hazard.CrowdReport
+import com.routefinder.fleetdriver.hazard.CrowdReportStillTherePrompt
 import com.routefinder.fleetdriver.hazard.HazardAheadAnnouncement
 import com.routefinder.fleetdriver.hazard.HazardAheadFormatter
+import com.routefinder.fleetdriver.hazard.HazardEvent
 import com.routefinder.fleetdriver.hazard.HazardEventType
 import com.routefinder.fleetdriver.hazard.LocalCrowdEventStore
 import com.routefinder.fleetdriver.physics.KineticGradientAnalyzer
@@ -143,6 +145,8 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     var lastInspectionSummary by mutableStateOf<InspectionSummary?>(null)
     /** When true, Compose shows the local crowd hazard report sheet. */
     var presentHazardReportSheet by mutableStateOf(false)
+    /** Waze-style still-there prompt ~45s after a crowd report (iOS parity). */
+    var pendingStillTherePrompt by mutableStateOf<CrowdReportStillTherePrompt?>(null)
     /** GeoJSON FeatureCollection for MapLibre crowd hazard pins. */
     var hazardOverlayGeoJson by mutableStateOf(HazardOverlayBuilder.EMPTY_FEATURE_COLLECTION)
     private var lastKineticMessage: String? = null
@@ -160,6 +164,9 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     private var crowdHazardSevere: Boolean = false
     private var lastAnnouncedCrowdHazardId: String? = null
     private var crowdReports: List<CrowdReport> = emptyList()
+    /** In-memory confirm pins from still-there answers (merged into overlay). */
+    private var confirmedCrowdHazards: List<HazardEvent> = emptyList()
+    private var stillTherePromptJob: Job? = null
     private var lastRoadworksMessage: String? = null
     private var lastRoadworksDistanceMeters: Double? = null
     /** Overpass construction sites projected onto the active route. */
@@ -319,6 +326,47 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         val arc = progress?.traveledDistanceMeters ?: 0.0
         refreshCrowdHazardAhead(arc)
         refreshPredictiveRisk()
+        scheduleStillTherePrompt(report)
+    }
+
+    /**
+     * Confirms or dismisses a still-there crowd prompt.
+     * Cleared only dismisses the dialog (does not delete the original report).
+     */
+    fun resolveStillTherePrompt(stillPresent: Boolean) {
+        val prompt = pendingStillTherePrompt
+        pendingStillTherePrompt = null
+        if (!stillPresent || prompt == null) return
+        val lat = followLat ?: routeCoordinates.firstOrNull()?.latitude ?: return
+        val lon = followLon ?: routeCoordinates.firstOrNull()?.longitude ?: return
+        val confirm = CrowdReportStillTherePrompt.confirmHazard(
+            prompt = prompt,
+            latitude = lat,
+            longitude = lon,
+        )
+        confirmedCrowdHazards = confirmedCrowdHazards + confirm
+        rebuildHazardOverlay()
+    }
+
+    private fun scheduleStillTherePrompt(report: CrowdReport) {
+        stillTherePromptJob?.cancel()
+        stillTherePromptJob = viewModelScope.launch {
+            delay(CrowdReportStillTherePrompt.PROMPT_DELAY_MS)
+            if (!isActive) return@launch
+            if (routeCoordinates.size < 2) return@launch
+            pendingStillTherePrompt = CrowdReportStillTherePrompt(
+                id = report.id,
+                reportType = report.type,
+                message = CrowdReportStillTherePrompt.message(report.note, report.type),
+            )
+        }
+    }
+
+    private fun cancelStillTherePrompt() {
+        stillTherePromptJob?.cancel()
+        stillTherePromptJob = null
+        pendingStillTherePrompt = null
+        confirmedCrowdHazards = emptyList()
     }
 
     /** Imports a driver-card JSON / DDD file (sidecar JSON preferred for opaque binaries). */
@@ -898,6 +946,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         }
         isCalculating = true
         lastAnnouncedTollRouteSignature = null
+        cancelStillTherePrompt()
         try {
             val emission = runCatching {
                 UkLezCatalog.EmissionClass.valueOf(emissionClassDraft.trim().uppercase())
@@ -1718,7 +1767,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
 
     private fun rebuildHazardOverlay() {
         val promoted = HazardAheadFormatter.promotedHazards(crowdReports)
-        hazardOverlayGeoJson = HazardOverlayBuilder.geoJSON(promoted)
+        hazardOverlayGeoJson = HazardOverlayBuilder.geoJSON(promoted + confirmedCrowdHazards)
     }
 
     private fun refreshCrowdHazardAhead(currentArcLengthMeters: Double) {

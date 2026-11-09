@@ -21,6 +21,8 @@ import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.Style
+import org.maplibre.android.style.expressions.Expression
+import org.maplibre.android.style.layers.CircleLayer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.PropertyFactory
 import org.maplibre.android.style.sources.GeoJsonSource
@@ -31,16 +33,19 @@ import org.maplibre.geojson.Point
 
 private const val ROUTE_SOURCE = "rf-route-source"
 private const val ROUTE_LAYER = "rf-route-layer"
+private const val PARKING_SOURCE = "rf-parking-source"
+private const val PARKING_LAYER = "rf-parking-layer"
 private const val DEMO_STYLE = "https://demotiles.maplibre.org/style.json"
 
 /**
- * Compose MapLibre map with optional route polyline.
+ * Compose MapLibre map with optional route polyline and parking availability markers.
  */
 @Composable
 fun MapLibreMapView(
     routeCoordinates: List<LatLon>,
     followLat: Double? = null,
     followLon: Double? = null,
+    parkingMarkers: List<ParkingMapMarker> = emptyList(),
     modifier: Modifier = Modifier.fillMaxSize(),
 ) {
     val context = LocalContext.current
@@ -77,7 +82,9 @@ fun MapLibreMapView(
                 mapState.value = map
                 map.setStyle(Style.Builder().fromUri(DEMO_STYLE)) { style ->
                     ensureRouteLayers(style)
+                    ensureParkingLayers(style)
                     RouteLineController.setRoute(style, routeCoordinates)
+                    ParkingMarkerController.setMarkers(style, parkingMarkers)
                     if (routeCoordinates.size >= 2) {
                         fitRoute(map, routeCoordinates)
                     }
@@ -89,6 +96,7 @@ fun MapLibreMapView(
         update = {
             mapState.value?.getStyle { style ->
                 RouteLineController.setRoute(style, routeCoordinates)
+                ParkingMarkerController.setMarkers(style, parkingMarkers)
             }
         },
     )
@@ -100,6 +108,13 @@ fun MapLibreMapView(
             if (routeCoordinates.size >= 2) {
                 fitRoute(map, routeCoordinates)
             }
+        }
+    }
+
+    LaunchedEffect(parkingMarkers, mapState.value) {
+        val map = mapState.value ?: return@LaunchedEffect
+        map.getStyle { style ->
+            ParkingMarkerController.setMarkers(style, parkingMarkers)
         }
     }
 
@@ -125,6 +140,14 @@ object RouteLineController {
     }
 }
 
+object ParkingMarkerController {
+    fun setMarkers(style: Style, markers: List<ParkingMapMarker>) {
+        ensureParkingLayers(style)
+        val source = style.getSourceAs<GeoJsonSource>(PARKING_SOURCE) ?: return
+        source.setGeoJson(ParkingMapMarkerBuilder.toFeatureCollection(markers))
+    }
+}
+
 private fun ensureRouteLayers(style: Style) {
     if (style.getSource(ROUTE_SOURCE) == null) {
         style.addSource(GeoJsonSource(ROUTE_SOURCE))
@@ -135,6 +158,34 @@ private fun ensureRouteLayers(style: Style) {
                 PropertyFactory.lineColor(Color.parseColor("#1565C0")),
                 PropertyFactory.lineWidth(5f),
                 PropertyFactory.lineOpacity(0.9f),
+            ),
+        )
+    }
+}
+
+private fun ensureParkingLayers(style: Style) {
+    if (style.getSource(PARKING_SOURCE) == null) {
+        style.addSource(GeoJsonSource(PARKING_SOURCE))
+    }
+    if (style.getLayer(PARKING_LAYER) == null) {
+        style.addLayer(
+            CircleLayer(PARKING_LAYER, PARKING_SOURCE).withProperties(
+                PropertyFactory.circleRadius(8f),
+                PropertyFactory.circleStrokeWidth(1.5f),
+                PropertyFactory.circleStrokeColor(Color.WHITE),
+                PropertyFactory.circleOpacity(0.92f),
+                PropertyFactory.circleColor(
+                    Expression.match(
+                        Expression.get("tier"),
+                        Expression.literal("AMPLE"),
+                        Expression.color(Color.parseColor(ParkingMapMarkerBuilder.COLOR_AMPLE)),
+                        Expression.literal("LIMITED"),
+                        Expression.color(Color.parseColor(ParkingMapMarkerBuilder.COLOR_LIMITED)),
+                        Expression.literal("FULL"),
+                        Expression.color(Color.parseColor(ParkingMapMarkerBuilder.COLOR_FULL)),
+                        Expression.color(Color.parseColor(ParkingMapMarkerBuilder.COLOR_LIMITED)),
+                    ),
+                ),
             ),
         )
     }

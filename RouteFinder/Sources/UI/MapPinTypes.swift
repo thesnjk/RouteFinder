@@ -25,6 +25,12 @@ public struct RoutePin: Identifiable, Sendable {
         case start
         case end
         case waypoint
+        /// Truck parking / layby — spaces likely (CoPilot-style green).
+        case parkingAmple
+        /// Truck parking / layby — mixed availability (amber).
+        case parkingLimited
+        /// Truck parking / layby — likely full (red).
+        case parkingFull
     }
 
     public init(id: String, coordinate: CLLocationCoordinate2D, kind: PinKind, title: String) {
@@ -32,6 +38,15 @@ public struct RoutePin: Identifiable, Sendable {
         self.coordinate = coordinate
         self.kind = kind
         self.title = title
+    }
+
+    /// Maps a driver-facing availability tier to a map pin kind.
+    public static func pinKind(for tier: ParkingAvailabilityTier) -> PinKind {
+        switch tier {
+        case .ample: return .parkingAmple
+        case .limited: return .parkingLimited
+        case .full: return .parkingFull
+        }
     }
 }
 

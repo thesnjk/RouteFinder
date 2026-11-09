@@ -516,6 +516,12 @@ fun NavigationMapScreen(
                         ) {
                             Text("Break Now")
                         }
+                        OutlinedButton(
+                            onClick = { viewModel.openHazardReportSheet() },
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text("Report")
+                        }
                     }
 
                     viewModel.distanceLabel?.let {
@@ -805,6 +811,12 @@ fun NavigationMapScreen(
                 onUpdate = { index, item -> viewModel.updateWalkaroundItem(index, item) },
                 onComplete = { viewModel.completeWalkaround() },
                 onDismiss = { viewModel.dismissWalkaround() },
+            )
+        }
+        if (viewModel.presentHazardReportSheet) {
+            HazardReportSheet(
+                onSubmit = { type, note -> viewModel.submitCrowdHazardReport(type, note) },
+                onDismiss = { viewModel.dismissHazardReportSheet() },
             )
         }
     }

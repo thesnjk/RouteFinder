@@ -51,6 +51,11 @@ import com.routefinder.fleetdriver.fleet.TelematicsCSVImporterError
 import com.routefinder.fleetdriver.fleet.TelematicsImportBatch
 import com.routefinder.fleetdriver.fleet.TelematicsProvider
 import com.routefinder.fleetdriver.fleet.VehicleRegistrationResolver
+import com.routefinder.fleetdriver.hazard.CrowdReport
+import com.routefinder.fleetdriver.hazard.HazardAheadAnnouncement
+import com.routefinder.fleetdriver.hazard.HazardAheadFormatter
+import com.routefinder.fleetdriver.hazard.HazardEventType
+import com.routefinder.fleetdriver.hazard.LocalCrowdEventStore
 import com.routefinder.fleetdriver.physics.KineticGradientAnalyzer
 import com.routefinder.fleetdriver.fleet.SseConnectionState
 import com.routefinder.fleetdriver.fleet.formatTimeWindowLines
@@ -135,6 +140,8 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     var showWalkaround by mutableStateOf(false)
     var walkaroundItems by mutableStateOf(InspectionChecklistFactory.defaultItems())
     var lastInspectionSummary by mutableStateOf<InspectionSummary?>(null)
+    /** When true, Compose shows the local crowd hazard report sheet. */
+    var presentHazardReportSheet by mutableStateOf(false)
     private var lastKineticMessage: String? = null
     private var lastTrafficMessage: String? = null
     private var lastHazardMessage: String? = null
@@ -145,6 +152,11 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     private var liveTomTomHazardActive: Boolean = false
     private var lastTomTomHazardSampleMs: Long? = null
     private var liveTomTomHazardArcMeters: Double? = null
+    private var crowdHazardMessage: String? = null
+    private var crowdHazardDistanceMeters: Double? = null
+    private var crowdHazardSevere: Boolean = false
+    private var lastAnnouncedCrowdHazardId: String? = null
+    private var crowdReports: List<CrowdReport> = emptyList()
     private var lastRoadworksMessage: String? = null
     private var lastRoadworksDistanceMeters: Double? = null
     /** Overpass construction sites projected onto the active route. */
@@ -255,6 +267,9 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     private val laybyOccupancyStore = LaybyOccupancyStore(
         application.getSharedPreferences("rf_layby_occupancy", Context.MODE_PRIVATE),
     )
+    private val crowdEventStore = LocalCrowdEventStore(
+        File(application.filesDir, "crowd-reports/reports.json"),
+    )
     private var sseJob: Job? = null
     private var healthJob: Job? = null
     private var gpsJob: Job? = null
@@ -264,11 +279,41 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     init {
         voice.enabled = prefs.voiceGuidanceEnabled
         voiceGuidanceMuted = !prefs.voiceGuidanceEnabled
+        crowdReports = crowdEventStore.allReports()
         loadPersistedTachoSummary()
         refreshCanIDriveFromLocalSources()
         if (prefs.isPaired()) {
             startFleetLoops()
         }
+    }
+
+    /** Opens the on-device crowd hazard report sheet. */
+    fun openHazardReportSheet() {
+        presentHazardReportSheet = true
+    }
+
+    fun dismissHazardReportSheet() {
+        presentHazardReportSheet = false
+    }
+
+    /** Submits a local crowd hazard at follow/route position (on-device only). */
+    fun submitCrowdHazardReport(type: HazardEventType, note: String?) {
+        val lat = followLat ?: routeCoordinates.firstOrNull()?.latitude ?: return
+        val lon = followLon ?: routeCoordinates.firstOrNull()?.longitude ?: return
+        val report = CrowdReport(
+            latitude = lat,
+            longitude = lon,
+            type = type,
+            reporterId = "local-driver",
+            note = note,
+        )
+        crowdEventStore.submit(report)
+        crowdReports = crowdEventStore.allReports()
+        presentHazardReportSheet = false
+        toastMessage = "Hazard reported on-device"
+        val arc = progress?.traveledDistanceMeters ?: 0.0
+        refreshCrowdHazardAhead(arc)
+        refreshPredictiveRisk()
     }
 
     /** Imports a driver-card JSON / DDD file (sidecar JSON preferred for opaque binaries). */
@@ -565,9 +610,10 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                 voice.speakAssist(spoken)
             }
             DriverVoiceCommand.HAZARD_AHEAD -> {
+                val (fusedHazard, fusedDist, _) = effectiveHazardForFuse()
                 val spoken = VoiceAssistResponseFormatter.hazardAhead(
-                    message = lastHazardMessage,
-                    distanceMeters = lastHazardDistanceMeters,
+                    message = fusedHazard,
+                    distanceMeters = fusedDist,
                 )
                 toastMessage = spoken
                 voice.speakAssist(spoken)
@@ -1628,16 +1674,17 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         } else {
             null
         }
+        val (hazardMessage, hazardDistance, hazardSevere) = effectiveHazardForFuse()
         val fused = PredictiveRiskEngine.fuse(
             PredictiveRiskEngine.Snapshot(
                 kineticMessage = lastKineticMessage,
                 kineticDistanceMeters = 1_500.0,
                 weatherMessage = lastWeatherMessage,
                 weatherDistanceMeters = if (lastWeatherMessage != null) 3_000.0 else null,
-                hazardMessage = lastHazardMessage,
-                hazardDistanceMeters = lastHazardDistanceMeters
-                    ?: if (lastHazardMessage != null) 1_200.0 else null,
-                hazardSevere = lastHazardSevere,
+                hazardMessage = hazardMessage,
+                hazardDistanceMeters = hazardDistance
+                    ?: if (hazardMessage != null) 1_200.0 else null,
+                hazardSevere = hazardSevere,
                 roadworksMessage = lastRoadworksMessage,
                 roadworksDistanceMeters = lastRoadworksDistanceMeters,
                 trafficMessage = lastTrafficMessage,
@@ -1649,6 +1696,52 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             ),
         )
         primaryRiskAdvisory = PredictiveRiskEngine.primaryAhead(fused)
+    }
+
+    /** Nearest-wins between on-device crowd promote and TomTom/crawl hazard. */
+    private fun effectiveHazardForFuse(): Triple<String?, Double?, Boolean> {
+        val crowdMsg = crowdHazardMessage
+        val crowdDist = crowdHazardDistanceMeters
+        if (crowdMsg != null && crowdDist != null) {
+            val baseDist = lastHazardDistanceMeters
+            if (baseDist == null || crowdDist < baseDist) {
+                return Triple(crowdMsg, crowdDist, crowdHazardSevere)
+            }
+        }
+        return Triple(lastHazardMessage, lastHazardDistanceMeters, lastHazardSevere)
+    }
+
+    private fun refreshCrowdHazardAhead(currentArcLengthMeters: Double) {
+        if (routeCoordinates.size < 2 || crowdReports.isEmpty()) {
+            crowdHazardMessage = null
+            crowdHazardDistanceMeters = null
+            crowdHazardSevere = false
+            return
+        }
+        val promoted = HazardAheadFormatter.promotedHazards(crowdReports)
+        val ahead = HazardAheadFormatter.nearestAhead(
+            hazards = promoted,
+            crowdReports = crowdReports,
+            route = routeCoordinates,
+            currentArcLengthMeters = currentArcLengthMeters,
+        )
+        if (ahead == null) {
+            crowdHazardMessage = null
+            crowdHazardDistanceMeters = null
+            crowdHazardSevere = false
+            return
+        }
+        crowdHazardMessage = ahead.message
+        crowdHazardDistanceMeters = ahead.distanceRemainingMeters
+        crowdHazardSevere = ahead.type == HazardEventType.CLOSURE
+        maybeAnnounceCrowdHazard(ahead)
+    }
+
+    private fun maybeAnnounceCrowdHazard(ahead: HazardAheadAnnouncement? = null) {
+        val announcement = ahead ?: return
+        if (!HazardAheadFormatter.shouldAnnounce(announcement, lastAnnouncedCrowdHazardId)) return
+        lastAnnouncedCrowdHazardId = announcement.id
+        voice.speakAssist(HazardAheadFormatter.spokenPrompt(announcement))
     }
 
     private suspend fun refreshClearanceAndForecastRisk(route: List<LatLon>) {
@@ -1784,6 +1877,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             lastTrafficMessage = null
         }
         clearLiveTomTomHazardIfPassed(progress.traveledDistanceMeters)
+        refreshCrowdHazardAhead(progress.traveledDistanceMeters)
         if (!liveTomTomHazardActive) {
             // Near-maneuver crawl: localized hazard when barely moving toward the turn.
             if (toManeuver in 80.0..1_500.0 && remainingM > 0 && remainingEta > 0) {
@@ -1896,6 +1990,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                     updateRiskFromProgress(it)
                     viewModelScope.launch {
                         refreshLiveTomTomHazardIfNeeded(it.traveledDistanceMeters)
+                        refreshCrowdHazardAhead(it.traveledDistanceMeters)
                         refreshForecastRiskIfNeeded()
                         refreshOffRouteClearanceIfNeeded(lat, lon, bearingDegrees ?: lastKnownBearingDegrees)
                         refreshPredictiveRisk()

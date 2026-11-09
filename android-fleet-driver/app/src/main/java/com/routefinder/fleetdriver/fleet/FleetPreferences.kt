@@ -107,6 +107,11 @@ class FleetPreferences(context: Context) {
         get() = prefs.getLong(KEY_HOS_LAST_TRANSITION, 0L)
         set(value) = prefs.edit().putLong(KEY_HOS_LAST_TRANSITION, value).apply()
 
+    /** Once-per-week advisory 9→10 h daily extension used this week. */
+    var hosUsedDailyExtensionThisWeek: Boolean
+        get() = prefs.getBoolean(KEY_HOS_DAILY_EXT, false)
+        set(value) = prefs.edit().putBoolean(KEY_HOS_DAILY_EXT, value).apply()
+
     /** `lan` or `hosted` — UX preference for wizard copy. */
     var connectionKind: String
         get() {
@@ -144,6 +149,7 @@ class FleetPreferences(context: Context) {
         const val KEY_HOS_WEEKLY = "hos_weekly_drive_seconds"
         const val KEY_HOS_MODE = "hos_duty_mode"
         const val KEY_HOS_LAST_TRANSITION = "hos_last_transition_at_millis"
+        const val KEY_HOS_DAILY_EXT = "hos_used_daily_extension_this_week"
         const val KEY_CONN_KIND = "connection_kind"
         const val DEFAULT_BASE = "http://10.0.2.2:8080"
         const val VEHICLE_QR_PREFIX = "routefinder-vehicle:"

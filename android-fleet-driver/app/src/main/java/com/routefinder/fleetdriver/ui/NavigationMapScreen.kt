@@ -744,6 +744,18 @@ fun NavigationMapScreen(
                             onClick = { viewModel.transitionHosDuty(HosAdvisoryClock.DutyMode.OFF_DUTY) },
                         ) { Text("Off duty") }
                     }
+                    OutlinedButton(
+                        onClick = { viewModel.activateHosDailyExtension() },
+                        enabled = !viewModel.hosUsedDailyExtensionThisWeek,
+                    ) {
+                        Text(
+                            if (viewModel.hosUsedDailyExtensionThisWeek) {
+                                "Daily 10h used"
+                            } else {
+                                "Extend daily (10h)"
+                            },
+                        )
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(
                             onClick = {

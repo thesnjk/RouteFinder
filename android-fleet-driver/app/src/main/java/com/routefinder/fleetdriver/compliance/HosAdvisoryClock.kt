@@ -3,13 +3,15 @@ package com.routefinder.fleetdriver.compliance
 /**
  * Advisory EU 561 / UK WTD remaining-drive clock (not a legal tachograph).
  *
- * Mini duty-log MVP: Drive / Break / Off duty with continuous, daily, and weekly
- * budgets. Mirrors the spirit of iOS ``EU561HosClock`` without fortnight, WTD
- * extension, or a full coordinator port.
+ * Duty-log MVP: Drive / Break / Off duty with continuous, daily, and weekly
+ * budgets, plus once-per-week 10 h daily extension (mirrors iOS
+ * ``EU561HosClock.activateDailyExtension``). No fortnight / WTD heads-up /
+ * full coordinator port.
  */
 object HosAdvisoryClock {
     const val CONTINUOUS_DRIVE_LIMIT_SECONDS = 4.5 * 3_600
     const val DAILY_DRIVE_LIMIT_SECONDS = 9.0 * 3_600
+    const val DAILY_DRIVE_EXTENDED_LIMIT_SECONDS = 10.0 * 3_600
     const val WEEKLY_DRIVE_LIMIT_SECONDS = 56.0 * 3_600
     const val REQUIRED_BREAK_SECONDS = 45 * 60
 
@@ -26,6 +28,7 @@ object HosAdvisoryClock {
         val dailyDriveSeconds: Double = 0.0,
         val weeklyDriveSeconds: Double = 0.0,
         val lastTransitionAtMillis: Long = 0L,
+        val usedDailyExtensionThisWeek: Boolean = false,
     )
 
     data class Snapshot(
@@ -33,9 +36,18 @@ object HosAdvisoryClock {
         val dailyDriveSeconds: Double,
         val weeklyDriveSeconds: Double = 0.0,
         val mode: DutyMode = DutyMode.OFF_DUTY,
+        val usedDailyExtensionThisWeek: Boolean = false,
+        val effectiveDailyLimitSeconds: Double = DAILY_DRIVE_LIMIT_SECONDS,
         val canDriveNow: Boolean,
         val message: String,
     )
+
+    fun effectiveDailyLimitSeconds(usedDailyExtensionThisWeek: Boolean): Double =
+        if (usedDailyExtensionThisWeek) {
+            DAILY_DRIVE_EXTENDED_LIMIT_SECONDS
+        } else {
+            DAILY_DRIVE_LIMIT_SECONDS
+        }
 
     /** Accrues elapsed drive time only while [State.mode] is [DutyMode.DRIVING]. */
     fun accrue(state: State, deltaSeconds: Double): State {
@@ -52,6 +64,7 @@ object HosAdvisoryClock {
      * and [atMillis] when leaving [DutyMode.DRIVING].
      *
      * Break resets continuous; off-duty resets continuous + daily (advisory).
+     * Extension flag is not cleared (once-per-week advisory).
      */
     fun transition(state: State, mode: DutyMode, atMillis: Long): State {
         var next = state
@@ -70,12 +83,22 @@ object HosAdvisoryClock {
         }
     }
 
+    /**
+     * Activates the once-per-week advisory daily extension to 10 h.
+     * Used-seconds model: sets the flag so the effective daily limit becomes 10 h.
+     */
+    fun activateDailyExtension(state: State): State {
+        if (state.usedDailyExtensionThisWeek) return state
+        return state.copy(usedDailyExtensionThisWeek = true)
+    }
+
     fun snapshot(state: State): Snapshot =
         snapshot(
             continuousDriveSeconds = state.continuousDriveSeconds,
             dailyDriveSeconds = state.dailyDriveSeconds,
             weeklyDriveSeconds = state.weeklyDriveSeconds,
             mode = state.mode,
+            usedDailyExtensionThisWeek = state.usedDailyExtensionThisWeek,
         )
 
     fun snapshot(
@@ -83,29 +106,39 @@ object HosAdvisoryClock {
         dailyDriveSeconds: Double,
         weeklyDriveSeconds: Double = 0.0,
         mode: DutyMode = DutyMode.OFF_DUTY,
+        usedDailyExtensionThisWeek: Boolean = false,
     ): Snapshot {
+        val dailyLimit = effectiveDailyLimitSeconds(usedDailyExtensionThisWeek)
         val continuousLeft = CONTINUOUS_DRIVE_LIMIT_SECONDS - continuousDriveSeconds
-        val dailyLeft = DAILY_DRIVE_LIMIT_SECONDS - dailyDriveSeconds
+        val dailyLeft = dailyLimit - dailyDriveSeconds
         val weeklyLeft = WEEKLY_DRIVE_LIMIT_SECONDS - weeklyDriveSeconds
         val canDrive = continuousLeft > 0 && dailyLeft > 0 && weeklyLeft > 0
         val message = when {
             !canDrive && continuousLeft <= 0 ->
                 "Can I drive? No — take ${REQUIRED_BREAK_SECONDS.toInt() / 60} min break (4.5h continuous)"
             !canDrive && dailyLeft <= 0 ->
-                "Can I drive? No — daily drive limit reached"
+                if (usedDailyExtensionThisWeek) {
+                    "Can I drive? No — extended daily drive limit reached (10h)"
+                } else {
+                    "Can I drive? No — daily drive limit reached"
+                }
             !canDrive ->
                 "Can I drive? No — weekly drive limit reached (56h)"
             continuousLeft < 30 * 60 ->
                 "Break soon — ~${(continuousLeft / 60).toInt()} min continuous remaining"
-            else ->
+            else -> {
+                val dailyNote = if (usedDailyExtensionThisWeek) " (10h ext)" else ""
                 "Can drive — ${(continuousLeft / 60).toInt()} min continuous / " +
-                    "${(dailyLeft / 60).toInt()} min daily / ${(weeklyLeft / 60).toInt()} min weekly left"
+                    "${(dailyLeft / 60).toInt()} min daily$dailyNote / ${(weeklyLeft / 60).toInt()} min weekly left"
+            }
         }
         return Snapshot(
             continuousDriveSeconds = continuousDriveSeconds,
             dailyDriveSeconds = dailyDriveSeconds,
             weeklyDriveSeconds = weeklyDriveSeconds,
             mode = mode,
+            usedDailyExtensionThisWeek = usedDailyExtensionThisWeek,
+            effectiveDailyLimitSeconds = dailyLimit,
             canDriveNow = canDrive,
             message = message,
         )

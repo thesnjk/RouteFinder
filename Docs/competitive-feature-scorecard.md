@@ -1,6 +1,6 @@
 # Competitive Feature Scorecard — September 2026
 
-Last updated: 2026-11-09 (Android HOS duty-log MVP; H1/H2 Done; residual live £ / AA / CarPlay / VU / WTD)
+Last updated: 2026-11-09 (Android HOS 10h daily extension; duty-log MVP; residual live £ / AA / CarPlay / VU / WTD)
 
 Scoring: **0** Absent · **1** Weak · **2** Parity · **3** Lead  
 Personas: **OO** = UK owner-operator · **SF** = small fleet (2–20 vehicles)
@@ -106,9 +106,9 @@ Weighted OO/SF tables above are **unchanged** by Phase 6 (performance / honesty,
 | 1–3h traffic/weather forecast advisories | **3** (U8 + U14 proxy) | **3** (U11 + U14) | Fleet TomTom/OpenWeather proxy — zero driver forecast keys on iOS + Android |
 | Off-route / corridor clearance radar | **3** (U9 + U11-B2) | **3** (U14b) | Android: on-route Overpass + heading corridor when off-spine |
 | LEZ / CAZ ORS `avoid_polygons` | **3** | **3** (U15) | Android `LezAvoidPolicy` mirrors iOS area + long-haul caps |
-| HOS clock + layby ahead | **3** | **2** (duty-log MVP) | Android Drive/Break/Off duty + weekly 56h persist + Can-I-drive clock-path weekly; still shy of iOS **3** (no 10h extension / WTD / full coordinator / DDD depth) |
+| HOS clock + layby ahead | **3** | **2** (duty-log + 10h ext) | Android Drive/Break/Off + weekly 56h + once-per-week 10h daily extension; still shy of iOS **3** (no WTD / fortnight / full coordinator / DDD depth) |
 
-† U12–U15 closed Android walkaround PDF, LEZ/HOS/layby advisory, fleet forecast/clearance proxy, off-route clearance, and ORS LEZ avoid. 2026-11: Android roadworks-in-fuse + corridor layby Overpass + ~5 km layby voice + Can-I-drive day/week spoken budgets + **duty-log MVP** (`HosAdvisoryClock` modes + weekly). Residual: Android HOS stays **2** until extension/WTD/full coordinator polish; LEZ geometry is circle envelopes (iOS rings); optional U16 shared boundary asset.
+† U12–U15 closed Android walkaround PDF, LEZ/HOS/layby advisory, fleet forecast/clearance proxy, off-route clearance, and ORS LEZ avoid. 2026-11: Android roadworks-in-fuse + corridor layby Overpass + ~5 km layby voice + Can-I-drive day/week spoken budgets + **duty-log MVP** + **10h daily extension**. Residual: Android HOS stays **2** until WTD/fortnight/full coordinator polish; LEZ geometry is circle envelopes (iOS rings); optional U16 shared boundary asset.
 
 ---
 

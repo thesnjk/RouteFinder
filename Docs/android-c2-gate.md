@@ -35,7 +35,7 @@ Related mid-market items (also pilot-gated for *priority*):
 | Time windows on job brief + late-ETA fuse | `StopTimeWindow` parse + `TimeWindowRiskEvaluator` → fuse banner | **Shipped** (U11) |
 | Predictive risk primary banner (kinetic / traffic / hazard / roadworks / schedule / forecast / clearance) | `PredictiveRiskEngine` + `ForecastRiskSampler` + `LiveTrafficHazardSampler` (TomTom live closure/standstill via fleet proxy; crawl heuristic fallback) + `ClearanceCorridorProbe` + `RoadworksAlongRouteClient` (OSM construction via fleet Overpass) | **Shipped** (U10 + U11 + 2026-11 roadworks + live TomTom hazard) |
 | DVSA walkaround → snapshot + PDF / photos | `InspectionWalkaroundDialog` + `InspectionReportPdfRenderer` | **Shipped** (U12) |
-| LEZ / HOS / layby advisory | `UkLezCatalog` + `HosAdvisoryClock` (Drive/Break/Off + weekly persist) + `LaybyAdvisoryEngine` + map parking availability circles (`ParkingMapMarkerBuilder`; crowd/prior — not live bays) | **Shipped** (U13 + EPIC-PARKING-AVAIL + EPIC-ANDROID-HOS-DUTYLOG MVP) |
+| LEZ / HOS / layby advisory | `UkLezCatalog` + `HosAdvisoryClock` (Drive/Break/Off + weekly + 10h daily extension) + `LaybyAdvisoryEngine` + map parking availability circles (`ParkingMapMarkerBuilder`; crowd/prior — not live bays) | **Shipped** (U13 + EPIC-PARKING-AVAIL + HOS-DUTYLOG + HOS-EXTENSION MVP) |
 | Fleet TomTom / OpenWeather / Overpass proxy | `FleetForecastProxy` + Android clients via `FleetOrsConfig` | **Shipped** (U14) |
 | Off-route heading clearance | `ClearanceCorridorProbe.isOffRoute` + heading corridor | **Shipped** (U14b) |
 | ORS LEZ `avoid_polygons` when avoid toggle on | `LezAvoidPolicy` + `OrsDirectionsRequest` | **Shipped** (U15) |

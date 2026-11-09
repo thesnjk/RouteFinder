@@ -106,4 +106,55 @@ class HosAdvisoryClockTest {
         assertEquals(HosAdvisoryClock.DutyMode.BREAK_REST, HosAdvisoryClock.parseDutyMode("BREAK"))
         assertEquals(HosAdvisoryClock.DutyMode.OFF_DUTY, HosAdvisoryClock.parseDutyMode(null))
     }
+
+    @Test
+    fun activateDailyExtensionOncePerWeek() {
+        val base = HosAdvisoryClock.State(
+            dailyDriveSeconds = HosAdvisoryClock.DAILY_DRIVE_LIMIT_SECONDS + 60,
+        )
+        assertFalse(HosAdvisoryClock.snapshot(base).canDriveNow)
+
+        val extended = HosAdvisoryClock.activateDailyExtension(base)
+        assertTrue(extended.usedDailyExtensionThisWeek)
+        val snap = HosAdvisoryClock.snapshot(extended)
+        assertTrue(snap.canDriveNow)
+        assertEquals(
+            HosAdvisoryClock.DAILY_DRIVE_EXTENDED_LIMIT_SECONDS,
+            snap.effectiveDailyLimitSeconds,
+            0.01,
+        )
+        assertTrue(snap.message.contains("10h", ignoreCase = true))
+
+        val again = HosAdvisoryClock.activateDailyExtension(extended)
+        assertTrue(again.usedDailyExtensionThisWeek)
+        assertEquals(extended, again)
+    }
+
+    @Test
+    fun extensionExhaustedAtTenHours() {
+        val state = HosAdvisoryClock.State(
+            dailyDriveSeconds = HosAdvisoryClock.DAILY_DRIVE_EXTENDED_LIMIT_SECONDS,
+            usedDailyExtensionThisWeek = true,
+        )
+        val snap = HosAdvisoryClock.snapshot(state)
+        assertFalse(snap.canDriveNow)
+        assertTrue(snap.message.contains("10h", ignoreCase = true))
+    }
+
+    @Test
+    fun offDutyKeepsExtensionFlag() {
+        val state = HosAdvisoryClock.State(
+            mode = HosAdvisoryClock.DutyMode.DRIVING,
+            dailyDriveSeconds = 1_000.0,
+            usedDailyExtensionThisWeek = true,
+            lastTransitionAtMillis = 1_000L,
+        )
+        val next = HosAdvisoryClock.transition(
+            state = state,
+            mode = HosAdvisoryClock.DutyMode.OFF_DUTY,
+            atMillis = 1_000L,
+        )
+        assertEquals(0.0, next.dailyDriveSeconds, 0.01)
+        assertTrue(next.usedDailyExtensionThisWeek)
+    }
 }

@@ -20,6 +20,12 @@ public enum DriverVoiceCommand: String, Sendable, Equatable, CaseIterable {
     case nextLez
     /// Ask for remaining ETA.
     case eta
+    /// Ask about hazards / closures ahead on the route.
+    case hazardAhead
+    /// Ask about roadworks / construction ahead.
+    case roadworksAhead
+    /// Ask about the primary fused predictive-risk advisory.
+    case riskAhead
 }
 
 /// Matches normalized speech transcripts to ``DriverVoiceCommand`` values.
@@ -102,6 +108,33 @@ public enum DriverVoiceCommandPhraseMatcher: Sendable {
                 "how long until i arrive",
                 "arrival time",
                 "eta",
+            ]),
+            (.roadworksAhead, [
+                "any roadworks",
+                "roadworks ahead",
+                "any roadworks ahead",
+                "construction ahead",
+                "any construction",
+                "road works ahead",
+            ]),
+            (.hazardAhead, [
+                "any hazards",
+                "hazard ahead",
+                "any hazards ahead",
+                "any closures",
+                "closure ahead",
+                "road closed ahead",
+                "what's ahead",
+                "whats ahead",
+            ]),
+            (.riskAhead, [
+                "any risks",
+                "what's the risk",
+                "whats the risk",
+                "what is the risk",
+                "traffic risk",
+                "risk ahead",
+                "any risk ahead",
             ]),
         ]
 

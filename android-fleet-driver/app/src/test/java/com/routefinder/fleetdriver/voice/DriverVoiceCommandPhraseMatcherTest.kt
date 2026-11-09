@@ -49,6 +49,16 @@ class DriverVoiceCommandPhraseMatcherTest {
     }
 
     @Test
+    fun matchesHazardRoadworksRiskIntents() {
+        assertEquals(DriverVoiceCommand.HAZARD_AHEAD, DriverVoiceCommandPhraseMatcher.match("Any hazards ahead"))
+        assertEquals(DriverVoiceCommand.HAZARD_AHEAD, DriverVoiceCommandPhraseMatcher.match("What's ahead"))
+        assertEquals(DriverVoiceCommand.ROADWORKS_AHEAD, DriverVoiceCommandPhraseMatcher.match("Any roadworks"))
+        assertEquals(DriverVoiceCommand.ROADWORKS_AHEAD, DriverVoiceCommandPhraseMatcher.match("Construction ahead"))
+        assertEquals(DriverVoiceCommand.RISK_AHEAD, DriverVoiceCommandPhraseMatcher.match("What's the risk"))
+        assertEquals(DriverVoiceCommand.RISK_AHEAD, DriverVoiceCommandPhraseMatcher.match("Traffic risk"))
+    }
+
+    @Test
     fun unrecognizedReturnsNull() {
         assertNull(DriverVoiceCommandPhraseMatcher.match(""))
         assertNull(DriverVoiceCommandPhraseMatcher.match("what's the weather"))
@@ -102,5 +112,27 @@ class VoiceAssistResponseFormatterTest {
         )
         assertTrue(VoiceAssistResponseFormatter.eta(3720.0).contains("hours"))
         assertEquals("ETA is unavailable.", VoiceAssistResponseFormatter.eta(null))
+    }
+
+    @Test
+    fun hazardRoadworksRiskEmptyHonesty() {
+        assertEquals(
+            "No hazards flagged ahead.",
+            VoiceAssistResponseFormatter.hazardAhead(null, null),
+        )
+        assertEquals(
+            "No roadworks flagged ahead.",
+            VoiceAssistResponseFormatter.roadworksAhead(null, null),
+        )
+        assertTrue(
+            VoiceAssistResponseFormatter.roadworksAhead("Roadworks on A11", 2500.0).contains("A11"),
+        )
+        assertEquals(
+            "No predictive risks flagged ahead.",
+            VoiceAssistResponseFormatter.riskAhead(null),
+        )
+        assertTrue(
+            VoiceAssistResponseFormatter.riskAhead("Slow traffic ahead").contains("Slow traffic"),
+        )
     }
 }

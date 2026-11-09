@@ -35,6 +35,15 @@ struct DriverVoiceCommandPhraseMatcherTests {
         #expect(DriverVoiceCommandPhraseMatcher.match("How long left") == .eta)
     }
 
+    @Test func matchesHazardRoadworksRiskIntents() {
+        #expect(DriverVoiceCommandPhraseMatcher.match("Any hazards ahead") == .hazardAhead)
+        #expect(DriverVoiceCommandPhraseMatcher.match("What's ahead") == .hazardAhead)
+        #expect(DriverVoiceCommandPhraseMatcher.match("Any roadworks") == .roadworksAhead)
+        #expect(DriverVoiceCommandPhraseMatcher.match("Construction ahead") == .roadworksAhead)
+        #expect(DriverVoiceCommandPhraseMatcher.match("What's the risk") == .riskAhead)
+        #expect(DriverVoiceCommandPhraseMatcher.match("Traffic risk") == .riskAhead)
+    }
+
     @Test func unrecognizedReturnsNil() {
         #expect(DriverVoiceCommandPhraseMatcher.match("") == nil)
         #expect(DriverVoiceCommandPhraseMatcher.match("what's the weather") == nil)
@@ -120,5 +129,21 @@ struct VoiceAssistResponseFormatterTests {
         )
         #expect(VoiceAssistResponseFormatter.eta(remainingSeconds: 3720).contains("hours"))
         #expect(VoiceAssistResponseFormatter.eta(remainingSeconds: nil) == "ETA is unavailable.")
+    }
+
+    @Test func hazardRoadworksRiskEmptyHonesty() {
+        #expect(VoiceAssistResponseFormatter.hazardAhead(announcement: nil) == "No hazards flagged ahead.")
+        #expect(
+            VoiceAssistResponseFormatter.roadworksAhead(label: nil, remainingMeters: nil)
+                == "No roadworks flagged ahead."
+        )
+        #expect(
+            VoiceAssistResponseFormatter.roadworksAhead(
+                label: "Roadworks: A11 works",
+                remainingMeters: 2500
+            ).contains("A11")
+        )
+        #expect(VoiceAssistResponseFormatter.riskAhead(spokenPrompt: nil) == "No predictive risks flagged ahead.")
+        #expect(VoiceAssistResponseFormatter.riskAhead(spokenPrompt: "Slow traffic ahead").contains("Slow traffic"))
     }
 }

@@ -28,6 +28,15 @@ enum class DriverVoiceCommand {
 
     /** Ask for remaining ETA. */
     ETA,
+
+    /** Ask about hazards / closures ahead on the route. */
+    HAZARD_AHEAD,
+
+    /** Ask about roadworks / construction ahead. */
+    ROADWORKS_AHEAD,
+
+    /** Ask about the primary fused predictive-risk advisory. */
+    RISK_AHEAD,
 }
 
 /** Matches normalized speech transcripts to [DriverVoiceCommand] values. */
@@ -105,6 +114,33 @@ object DriverVoiceCommandPhraseMatcher {
             "how long until i arrive",
             "arrival time",
             "eta",
+        ),
+        DriverVoiceCommand.ROADWORKS_AHEAD to listOf(
+            "any roadworks",
+            "roadworks ahead",
+            "any roadworks ahead",
+            "construction ahead",
+            "any construction",
+            "road works ahead",
+        ),
+        DriverVoiceCommand.HAZARD_AHEAD to listOf(
+            "any hazards",
+            "hazard ahead",
+            "any hazards ahead",
+            "any closures",
+            "closure ahead",
+            "road closed ahead",
+            "what's ahead",
+            "whats ahead",
+        ),
+        DriverVoiceCommand.RISK_AHEAD to listOf(
+            "any risks",
+            "what's the risk",
+            "whats the risk",
+            "what is the risk",
+            "traffic risk",
+            "risk ahead",
+            "any risk ahead",
         ),
     )
 

@@ -735,6 +735,12 @@ private struct CompactAlertStack: View {
         if let advisory = viewModel.laybyAdvisory {
             items.append(.layby(advisory))
         }
+        if let summary = viewModel.committedRouteTollSummaryMessage {
+            items.append(.tollSummary(summary, viewModel.avoidTolls))
+        }
+        if let toll = viewModel.activeTollAdvisory {
+            items.append(.tollAhead(toll, viewModel.activeTollAdvisoryDistanceMeters))
+        }
         if viewModel.hosEnabled, let hos = viewModel.hosSnapshot {
             items.append(.hos(hos))
         }
@@ -858,6 +864,8 @@ private enum MapAlertItem {
     case trafficReroute(Bool)
     case restriction(RestrictionZoneAnnouncement)
     case layby(LaybyAdvisory)
+    case tollSummary(String, Bool)
+    case tollAhead(UKTollAdvisory, Double?)
     case hos(HosClockSnapshot)
     case kinetic(String)
     case lane(LaneGuidance, TurnManeuver, Double, String?)
@@ -894,6 +902,14 @@ private enum MapAlertItem {
                     )
                 }
             )
+        case .tollSummary(let summary, let avoidTollsEnabled):
+            CommittedRouteTollSummaryBanner(
+                summary: summary,
+                avoidTollsEnabled: avoidTollsEnabled,
+                onAvoidTolls: { viewModel.avoidTollsAndReplan() }
+            )
+        case .tollAhead(let advisory, let distanceMeters):
+            TollAdvisoryBanner(advisory: advisory, distanceMeters: distanceMeters)
         case .hos(let snapshot):
             HosClockBanner(snapshot: snapshot)
         case .kinetic(let text):
@@ -906,6 +922,37 @@ private enum MapAlertItem {
                 roadName: roadName
             )
         }
+    }
+}
+
+/// Compact committed-route toll summary with optional avoid/replan CTA (Android parity).
+private struct CommittedRouteTollSummaryBanner: View {
+    let summary: String
+    let avoidTollsEnabled: Bool
+    let onAvoidTolls: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: RFSpacing.xs) {
+            Text(summary)
+                .font(RFFont.caption.weight(.semibold))
+                .foregroundStyle(.orange)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Check operator — indicative only; not a live tariff.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+            if !avoidTollsEnabled {
+                Button(action: onAvoidTolls) {
+                    Label("Avoid tolls & replan", systemImage: "road.lanes")
+                        .font(RFFont.caption.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+        .padding(.horizontal, RFSpacing.md)
+        .padding(.vertical, RFSpacing.sm)
+        .controlSheetStyle()
+        .accessibilityLabel(summary)
     }
 }
 
@@ -945,6 +992,12 @@ private struct MapAlertOverflowSheet: View {
         }
         if let advisory = viewModel.laybyAdvisory {
             items.append(.layby(advisory))
+        }
+        if let summary = viewModel.committedRouteTollSummaryMessage {
+            items.append(.tollSummary(summary, viewModel.avoidTolls))
+        }
+        if let toll = viewModel.activeTollAdvisory {
+            items.append(.tollAhead(toll, viewModel.activeTollAdvisoryDistanceMeters))
         }
         if viewModel.hosEnabled, let hos = viewModel.hosSnapshot {
             items.append(.hos(hos))

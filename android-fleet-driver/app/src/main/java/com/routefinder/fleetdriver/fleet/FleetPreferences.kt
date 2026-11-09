@@ -71,6 +71,11 @@ class FleetPreferences(context: Context) {
         get() = prefs.getBoolean(KEY_AVOID_TOLLS, false)
         set(value) = prefs.edit().putBoolean(KEY_AVOID_TOLLS, value).apply()
 
+    /** Selected UK fuel card network for ahead OSM brand matching (default none). */
+    var fuelCardProvider: String
+        get() = prefs.getString(KEY_FUEL_CARD, "none") ?: "none"
+        set(value) = prefs.edit().putString(KEY_FUEL_CARD, value.trim()).apply()
+
     /** Euro emission class label (`EURO6`, `EURO5`, …). */
     var emissionClass: String
         get() = prefs.getString(KEY_EMISSION, "EURO6") ?: "EURO6"
@@ -113,6 +118,7 @@ class FleetPreferences(context: Context) {
         const val KEY_CLEARANCE = "clearance_radar_enabled"
         const val KEY_LEZ = "lez_avoid_enabled"
         const val KEY_AVOID_TOLLS = "avoid_tolls"
+        const val KEY_FUEL_CARD = "fuel_card_provider"
         const val KEY_EMISSION = "emission_class"
         const val KEY_HOS_CONT = "hos_continuous_drive_seconds"
         const val KEY_HOS_DAILY = "hos_daily_drive_seconds"

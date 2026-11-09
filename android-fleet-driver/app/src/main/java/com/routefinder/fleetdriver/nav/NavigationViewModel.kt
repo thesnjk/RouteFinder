@@ -9,6 +9,9 @@ import androidx.lifecycle.viewModelScope
 import com.routefinder.fleetdriver.compliance.CanIDriveEvaluator
 import com.routefinder.fleetdriver.compliance.CanIDriveStatus
 import com.routefinder.fleetdriver.compliance.DddImporter
+import com.routefinder.fleetdriver.compliance.FuelCardMatcher
+import com.routefinder.fleetdriver.compliance.FuelCardProvider
+import com.routefinder.fleetdriver.compliance.FuelPoiCatalogClient
 import com.routefinder.fleetdriver.compliance.HosAdvisoryClock
 import com.routefinder.fleetdriver.compliance.LaybyAdvisoryEngine
 import com.routefinder.fleetdriver.compliance.LaybyAlertFormatter
@@ -22,6 +25,7 @@ import com.routefinder.fleetdriver.compliance.ParkingBookPartner
 import com.routefinder.fleetdriver.compliance.PendingParkingBookReturn
 import com.routefinder.fleetdriver.compliance.TachoCardSummary
 import com.routefinder.fleetdriver.compliance.TachoImportError
+import com.routefinder.fleetdriver.compliance.TruckFuelPoi
 import com.routefinder.fleetdriver.compliance.UkLezCatalog
 import com.routefinder.fleetdriver.map.ParkingMapMarker
 import com.routefinder.fleetdriver.map.ParkingMapMarkerBuilder
@@ -149,6 +153,13 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     var lezAvoidEnabled by mutableStateOf(prefs.lezAvoidEnabled)
     /** When true, ORS directions request avoids tollways. */
     var avoidTolls by mutableStateOf(prefs.avoidTolls)
+    /** Selected UK fuel card for OSM brand ahead matching (Ph32 parity). */
+    var fuelCardProvider by mutableStateOf(FuelCardProvider.fromRaw(prefs.fuelCardProvider))
+    /** Corridor HGV fuel POIs for the active route (OSM; empty when none / offline). */
+    private var catalogFuelPois: List<TruckFuelPoi> = emptyList()
+    /** Banner when ahead fuel stops match the selected card (OSM brand — not live prices). */
+    var fuelCardBannerMessage by mutableStateOf<String?>(null)
+        private set
     var emissionClassDraft by mutableStateOf(prefs.emissionClass)
     /** Trailer count draft for solo / override routing (0…3). */
     var trailerCountDraft by mutableStateOf(1)
@@ -505,6 +516,13 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    /** Updates the fuel card network used for ahead OSM brand matching. */
+    fun updateFuelCardProvider(provider: FuelCardProvider) {
+        fuelCardProvider = provider
+        prefs.fuelCardProvider = provider.rawValue
+        refreshFuelCardBanner()
+    }
+
     /** Turns on toll avoidance and recalculates the active route. */
     fun avoidTollsAndReplan() {
         updateAvoidTolls(enabled = true, replan = true)
@@ -739,6 +757,8 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             routeCoordinates = result.coordinates
             laybySkipCount = 0
             catalogLaybySites = emptyList()
+            catalogFuelPois = emptyList()
+            fuelCardBannerMessage = null
             parkingMapMarkers = emptyList()
             dismissParkingBookReturn()
             catalogRoadworkSites = emptyList()
@@ -757,6 +777,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             refreshClearanceAndForecastRisk(result.coordinates)
             enrichLaneGuidanceAsync(result.instructions, result.coordinates)
             refreshLaybyCatalogAsync(result.coordinates)
+            refreshFuelPoiCatalogAsync(result.coordinates)
             refreshRoadworksCatalogAsync(result.coordinates)
             val tripForEta = activeTrip
             if (tripForEta != null) {
@@ -1039,6 +1060,26 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                 refreshComplianceAdvisories(route)
             }
         }
+    }
+
+    /** Async Overpass corridor HGV fuel POIs for fuel-card ahead matching. */
+    private fun refreshFuelPoiCatalogAsync(route: List<LatLon>) {
+        viewModelScope.launch {
+            val pois = withContext(Dispatchers.IO) {
+                FuelPoiCatalogClient.fuelPoisAlongRoute(
+                    route = route,
+                    fleetBaseUrl = prefs.baseUrl,
+                    fleetApiKey = prefs.apiKey,
+                )
+            }
+            catalogFuelPois = pois
+            refreshFuelCardBanner()
+        }
+    }
+
+    private fun refreshFuelCardBanner() {
+        val matching = catalogFuelPois.count { FuelCardMatcher.accepts(fuelCardProvider, it) }
+        fuelCardBannerMessage = FuelCardMatcher.aheadBannerMessage(fuelCardProvider, matching)
     }
 
     /** Records “Looks full” and advances to the next layby candidate. */

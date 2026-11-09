@@ -1,6 +1,6 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-11-09 (Android HOS WTD+fortnight; H1/H2 Done; residual live £ / AA / CarPlay / VU / DDD)  
+Last updated: 2026-11-09 (Lane Overpass parity; Android HOS WTD+fortnight; residual HD / live £ / AA / CarPlay / VU)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then driver-benefit gaps previously deferred (CarPlay/AA, parking book, VU, tolls, LEZ cadastre).
 
 > **Oct 12 Ultimate competitive excellence sweep:** Full quarterly re-scrape (Firecrawl + Apify). CoPilot **11.4** captured; **no RF scorecard integer changes**. Engineering gates: fleet/web/hosted/Android Pass. Sim speed-limit UITest debt closed 2026-11-09 (`spineSpeedLimitAcceleratesToMotorwayLimit` Pass).
@@ -236,7 +236,7 @@ See [`ultimate-hgv-platform-spec.md`](ultimate-hgv-platform-spec.md).
 7. **`EPIC-CARPLAY-PROD`** — paid-team entitlements + head-unit QA ([`carplay-weatherkit-restore.md`](carplay-weatherkit-restore.md)).
 8. **`EPIC-ANDROID-AUTO`** — Android Auto nav for fleet driver.
 9. **`EPIC-COMBO-LENGTH`** — **Shipped (MVP)** cab + desk trailer count → ORS length ladder (12 / 16.5 / 18.75 / 25.25 m).
-10. **`EPIC-LANE-DEPTH`** — street TTS sanitize **Shipped (MVP slice)** (iOS parity with Android `streetCallout`). Residual: HD lane visuals / richer OSM.
+10. **`EPIC-LANE-DEPTH`** — street TTS sanitize + Overpass iOS↔Android parity **Shipped (MVP slice)** (cap 12 / STRAIGHT skip / 50 km arc). Residual: HD lane visuals.
 11. **`EPIC-TOLL-DEPTH`** — Mac + web desk corridor indicative £ **Shipped (MVP slice)** (avoid/HUD/PTT + cab catalog). Residual: live operator tariffs.
 12. **`EPIC-VU-PARTNER`** — legal remote VU download (partner webhook + desk Can-I-drive week card shipped as advisory MVP).
 13. **`EPIC-LEZ-CADASTRE`** — cadastral-grade UK LEZ rings.

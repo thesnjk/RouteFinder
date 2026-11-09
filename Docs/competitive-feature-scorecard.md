@@ -1,6 +1,6 @@
 # Competitive Feature Scorecard — September 2026
 
-Last updated: 2026-11-09 (Android HOS WTD+fortnight →3; residual live £ / AA / CarPlay / VU / DDD)
+Last updated: 2026-11-09 (Lane Overpass iOS↔Android parity; HOS →3; residual HD / live £ / AA / CarPlay / VU)
 
 Scoring: **0** Absent · **1** Weak · **2** Parity · **3** Lead  
 Personas: **OO** = UK owner-operator · **SF** = small fleet (2–20 vehicles)
@@ -32,7 +32,7 @@ RouteFinder scores from code inventory + Phase 20/26/27/30–44 + **Phase 8** + 
 | Physics rehearsal | 14% | **3**‡ | 0 | 0 | 0 | 0 | RF wedge; `spineSpeedLimitAcceleratesToMotorwayLimit` Pass (2026-11-09) |
 | Layby / break intel | 12% | **3** | 1 | 2 | 2 | 2 | RF fused ranker + Break Now + TRAVIS/SNAP links (Ph8); CoPilot 11.4 parking icons — still **2** (booking ≠ RF $0) |
 | LEZ compliance | 8% | **3** | 3 | 3 | 2 | 2 | RF 11 zones + ORS avoid (iOS rings; Android U15) |
-| Lane guidance | 8% | **2** | 3 | 3 | 2 | 2 | RF OSM + nav refresh + prepare TTS + which-lane PTT (iOS + Android C2); residual = HD lane visuals |
+| Lane guidance | 8% | **2** | 3 | 3 | 2 | 2 | RF OSM Overpass parity (cap 12 + STRAIGHT skip + 50 km arc iOS↔Android) + prepare TTS + which-lane PTT; residual = HD lane visuals |
 | Plate → profile (UK) | 8% | **3** | 0 | 0 | 0 | 0 | RF RegCheck + DVLA |
 | Crowd hazard / closure ahead | 5% | **2** | 1 | 1 | 0 | 0 | RF Ph33 + Ph36 TomTom live + Android report fuse + map pins + still-there confirm |
 | UK toll awareness | 5% | **2** | 2 | 3 | 2 | 2 | RF named hints + avoid-before-commit + commit TTS + in-nav HUD + avoid-tolls PTT; TomTom live tariffs still lead |
@@ -106,9 +106,9 @@ Weighted OO/SF tables above are **unchanged** by Phase 6 (performance / honesty,
 | 1–3h traffic/weather forecast advisories | **3** (U8 + U14 proxy) | **3** (U11 + U14) | Fleet TomTom/OpenWeather proxy — zero driver forecast keys on iOS + Android |
 | Off-route / corridor clearance radar | **3** (U9 + U11-B2) | **3** (U14b) | Android: on-route Overpass + heading corridor when off-spine |
 | LEZ / CAZ ORS `avoid_polygons` | **3** | **3** (U15) | Android `LezAvoidPolicy` mirrors iOS area + long-haul caps |
-| HOS clock + layby ahead | **3** | **3** (WTD+fortnight) | Android Drive/Break/Off + weekly 56h + 10h ext + fortnight 90h gate + WTD ≥60h heads-up; DDD/JSON import depth still Apple-led |
+| HOS clock + layby ahead | **3** | **3** (WTD+fortnight) | Android Drive/Break/Off + weekly 56h + 10h ext + fortnight 90h gate + WTD ≥60h heads-up; both platforms have best-effort DDD/JSON importers (opaque binary DDD residual) |
 
-† U12–U15 closed Android walkaround PDF, LEZ/HOS/layby advisory, fleet forecast/clearance proxy, off-route clearance, and ORS LEZ avoid. 2026-11: Android roadworks-in-fuse + corridor layby Overpass + ~5 km layby voice + Can-I-drive day/week + **duty-log** + **10h extension** + **WTD/fortnight** (`EPIC-ANDROID-HOS-WTD`). Residual: DDD/JSON import depth Apple-led; LEZ geometry circle envelopes (iOS rings); optional U16 shared boundary asset.
+† U12–U15 closed Android walkaround PDF, LEZ/HOS/layby advisory, fleet forecast/clearance proxy, off-route clearance, and ORS LEZ avoid. 2026-11: Android roadworks-in-fuse + corridor layby Overpass + ~5 km layby voice + Can-I-drive day/week + **duty-log** + **10h extension** + **WTD/fortnight** + **Lane Overpass parity** (cap 12 / STRAIGHT skip / 50 km). Residual: HD lane visuals; opaque binary DDD; LEZ circle envelopes; optional U16 shared boundary asset.
 
 ---
 
@@ -135,7 +135,7 @@ Policy: ship anything that benefits the driver; sequence by impact, not permanen
 | CarPlay production | Sygic / CoPilot | Code ready; entitlements inactive | **Gated** `EPIC-CARPLAY-PROD` |
 | Android Auto | CoPilot 11.4 | Not shipped | **Gated** `EPIC-ANDROID-AUTO` |
 | Combo / bumper length + trailer count | CoPilot 11.4 (NA maps) | Cab + Mac/web desk trailer→ORS ladder (12 / 16.5 / 18.75 / 25.25 m); Constraint stays **3** | **Shipped (MVP)** |
-| Lane HD / street callouts | TomTom / Sygic / CoPilot 11.4 | OSM + sanitize street TTS/HUD/which-lane (drop turn/keep/head echoes); residual HD visuals | **Shipped (MVP slice)** — residual HD lane visuals / richer OSM (`EPIC-LANE-DEPTH`) |
+| Lane HD / street callouts | TomTom / Sygic / CoPilot 11.4 | OSM Overpass parity (12 / STRAIGHT skip / 50 km) + sanitize street TTS/HUD/which-lane; residual HD visuals | **Shipped (MVP slice)** — Overpass parity Done; residual HD lane visuals (`EPIC-LANE-DEPTH`) |
 | Toll tariff depth | PTV / TomTom | Named UK advisories + avoid/HUD/PTT + Mac/web desk corridor indicative £ | **Shipped (MVP slice)** — residual live operator tariffs (`EPIC-TOLL-DEPTH`) |
 | Remote VU download | Samsara / Geotab | Advisory tacho + desk Can-I-drive week card; CSV stub | **Residual** `EPIC-VU-PARTNER` (legal VU download) |
 | Legal LEZ cadastre | Sygic / TomTom | Simplified authored rings | **Residual** `EPIC-LEZ-CADASTRE` |

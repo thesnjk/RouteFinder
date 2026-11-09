@@ -15,8 +15,10 @@ import java.net.URLEncoder
 object OverpassLaneGuidanceClient {
     private const val PUBLIC_INTERPRETER = "https://overpass-api.de/api/interpreter"
     private const val DEFAULT_RADIUS_METERS = 35
-    /** Cap Overpass fetches per route load (session soft budget still applies). */
-    const val MAX_MANEUVERS_PER_ROUTE = 5
+    /** Cap Overpass fetches per route load (parity with iOS ``LaneGuidanceEnrichmentOptions``). */
+    const val MAX_MANEUVERS_PER_ROUTE = 12
+    /** Maximum arc-length from route start for Overpass queries (meters). */
+    const val MAX_OVERPASS_DISTANCE_METERS = 50_000.0
 
     private val tagPriority = listOf(
         "turn:lanes",
@@ -129,8 +131,24 @@ object OverpassLaneGuidanceClient {
     }
 
     /**
-     * Enriches up to [MAX_MANEUVERS_PER_ROUTE] turn / roundabout instructions with OSM tags.
-     * Keeps heuristic lane guidance when Overpass misses.
+     * Shared Overpass selection policy (iOS parity): cap, arc gate, skip arrive/depart/straight.
+     */
+    fun shouldQueryOverpass(
+        fetchesSoFar: Int,
+        arcMeters: Double,
+        maneuver: TurnManeuver,
+        maxManeuvers: Int = MAX_MANEUVERS_PER_ROUTE,
+        maxDistanceMeters: Double = MAX_OVERPASS_DISTANCE_METERS,
+    ): Boolean =
+        fetchesSoFar < maxManeuvers &&
+            arcMeters <= maxDistanceMeters &&
+            maneuver != TurnManeuver.ARRIVE &&
+            maneuver != TurnManeuver.DEPART &&
+            maneuver != TurnManeuver.STRAIGHT
+
+    /**
+     * Enriches up to [MAX_MANEUVERS_PER_ROUTE] turn / roundabout instructions with OSM tags
+     * within [MAX_OVERPASS_DISTANCE_METERS]. Keeps heuristic lane guidance when Overpass misses.
      */
     fun enrichInstructions(
         instructions: List<TurnInstruction>,
@@ -143,12 +161,13 @@ object OverpassLaneGuidanceClient {
         var fetches = 0
         return instructions.map { instruction ->
             val point = pointAlong(route, arc)
+            val shouldFetch = point != null &&
+                shouldQueryOverpass(
+                    fetchesSoFar = fetches,
+                    arcMeters = arc,
+                    maneuver = instruction.maneuver,
+                )
             arc += instruction.distanceMeters
-            val shouldFetch = fetches < MAX_MANEUVERS_PER_ROUTE &&
-                point != null &&
-                instruction.maneuver != TurnManeuver.ARRIVE &&
-                instruction.maneuver != TurnManeuver.DEPART &&
-                instruction.maneuver != TurnManeuver.STRAIGHT
             if (!shouldFetch) {
                 return@map instruction
             }

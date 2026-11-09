@@ -292,6 +292,7 @@ Scope: Re-open Oct 12 “Defer / intentional non-parity” under sweep policy �
 | Android HOS duty-log MVP (`EPIC-ANDROID-HOS-DUTYLOG`) | **Pass** (2026-11-09) — `./gradlew :app:testDebugUnitTest --tests 'com.routefinder.fleetdriver.compliance.*'` (Drive/Break/Off + weekly clock path) |
 | Android HOS 10h daily extension (`EPIC-ANDROID-HOS-EXTENSION`) | **Pass** (2026-11-09) — same compliance filter; `activateDailyExtension` once-per-week + clock-path 9→10h |
 | Android HOS WTD + fortnight (`EPIC-ANDROID-HOS-WTD`) | **Pass** (2026-11-09) — same compliance filter; fortnight 90h gate + WTD ≥60h heads-up (Android HOS scorecard **3**) |
+| Lane Overpass iOS↔Android parity (`EPIC-LANE-DEPTH`) | **Pass** (2026-11-09) — `swift test --filter LaneGuidanceEnricher`; `./gradlew … --tests '*OverpassLaneGuidance*'` (cap 12 / STRAIGHT skip / 50 km) |
 | Agent delivery protocol + operator playbook in sweep doc | **Done** — commit/push end-blocks + C4/C9/Part B screenshot steps |
 
 

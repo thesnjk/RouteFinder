@@ -80,4 +80,63 @@ class OverpassLaneGuidanceClientTest {
         )
         assertEquals("left|through|right", tag)
     }
+
+    @Test
+    fun shouldQueryOverpassSkipsStraightArriveDepart() {
+        assertTrue(
+            OverpassLaneGuidanceClient.shouldQueryOverpass(
+                fetchesSoFar = 0,
+                arcMeters = 0.0,
+                maneuver = TurnManeuver.LEFT,
+            ),
+        )
+        assertTrue(
+            !OverpassLaneGuidanceClient.shouldQueryOverpass(
+                fetchesSoFar = 0,
+                arcMeters = 0.0,
+                maneuver = TurnManeuver.STRAIGHT,
+            ),
+        )
+        assertTrue(
+            !OverpassLaneGuidanceClient.shouldQueryOverpass(
+                fetchesSoFar = 0,
+                arcMeters = 0.0,
+                maneuver = TurnManeuver.ARRIVE,
+            ),
+        )
+        assertTrue(
+            !OverpassLaneGuidanceClient.shouldQueryOverpass(
+                fetchesSoFar = 0,
+                arcMeters = 0.0,
+                maneuver = TurnManeuver.DEPART,
+            ),
+        )
+    }
+
+    @Test
+    fun shouldQueryOverpassRespectsCapAndArc() {
+        assertEquals(12, OverpassLaneGuidanceClient.MAX_MANEUVERS_PER_ROUTE)
+        assertEquals(50_000.0, OverpassLaneGuidanceClient.MAX_OVERPASS_DISTANCE_METERS, 0.01)
+        assertTrue(
+            !OverpassLaneGuidanceClient.shouldQueryOverpass(
+                fetchesSoFar = 12,
+                arcMeters = 0.0,
+                maneuver = TurnManeuver.RIGHT,
+            ),
+        )
+        assertTrue(
+            OverpassLaneGuidanceClient.shouldQueryOverpass(
+                fetchesSoFar = 11,
+                arcMeters = 50_000.0,
+                maneuver = TurnManeuver.RIGHT,
+            ),
+        )
+        assertTrue(
+            !OverpassLaneGuidanceClient.shouldQueryOverpass(
+                fetchesSoFar = 0,
+                arcMeters = 50_000.1,
+                maneuver = TurnManeuver.RIGHT,
+            ),
+        )
+    }
 }

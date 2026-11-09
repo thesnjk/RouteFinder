@@ -89,8 +89,10 @@ public enum LaneGuidanceEnricher: Sendable {
     var overpassQueries = 0
 
     for (index, instruction) in instructions.enumerated() {
+      // Skip straight (cost discipline; heuristics still fill) — Android Overpass parity.
       let shouldQueryOverpass = instruction.maneuver != .arrive
         && instruction.maneuver != .depart
+        && instruction.maneuver != .straight
         && overpassQueries < options.maxOverpassManeuvers
         && cumulativeDistance <= options.maxOverpassDistanceMeters
 

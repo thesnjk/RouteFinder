@@ -407,6 +407,38 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                 toastMessage = spoken
                 voice.speakAssist(spoken)
             }
+            DriverVoiceCommand.CAN_I_DRIVE -> {
+                refreshCanIDriveFromLocalSources()
+                val spoken = VoiceAssistResponseFormatter.canIDrive(canIDriveStatus)
+                toastMessage = spoken
+                voice.speakAssist(spoken)
+            }
+            DriverVoiceCommand.TOLL_AHEAD -> {
+                val spoken = VoiceAssistResponseFormatter.tollAhead(
+                    tollName = activeTollAdvisory?.name,
+                    distanceMeters = activeTollDistanceMeters,
+                    costLabel = activeTollAdvisory?.indicativeCostLabel,
+                    routeSummary = tollSummaryMessage,
+                )
+                toastMessage = spoken
+                voice.speakAssist(spoken)
+            }
+            DriverVoiceCommand.NEXT_LEZ -> {
+                val spoken = VoiceAssistResponseFormatter.nextLez(
+                    label = null,
+                    message = lezAdvisoryMessage,
+                )
+                toastMessage = spoken
+                voice.speakAssist(spoken)
+            }
+            DriverVoiceCommand.ETA -> {
+                val remaining = progress?.remainingEtaSeconds
+                    ?: session.physicsEtaSeconds
+                    ?: session.geometry?.staticEtaSeconds
+                val spoken = VoiceAssistResponseFormatter.eta(remaining)
+                toastMessage = spoken
+                voice.speakAssist(spoken)
+            }
         }
     }
 

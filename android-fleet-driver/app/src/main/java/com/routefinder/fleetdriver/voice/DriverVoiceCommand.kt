@@ -16,6 +16,18 @@ enum class DriverVoiceCommand {
 
     /** Ask which layby / destination the driver is stopping at. */
     WHERE_STOPPING,
+
+    /** Ask whether the advisory HOS / card budget still allows driving. */
+    CAN_I_DRIVE,
+
+    /** Ask about named UK tolls on the active route. */
+    TOLL_AHEAD,
+
+    /** Ask about the next LEZ / CAZ restriction on the route. */
+    NEXT_LEZ,
+
+    /** Ask for remaining ETA. */
+    ETA,
 }
 
 /** Matches normalized speech transcripts to [DriverVoiceCommand] values. */
@@ -59,6 +71,40 @@ object DriverVoiceCommandPhraseMatcher {
             "whats my stop",
             "what's my stop",
             "where am i going",
+        ),
+        DriverVoiceCommand.CAN_I_DRIVE to listOf(
+            "can i drive",
+            "can i drive now",
+            "am i legal to drive",
+            "am i allowed to drive",
+            "can i keep driving",
+            "how much drive time left",
+        ),
+        DriverVoiceCommand.TOLL_AHEAD to listOf(
+            "any tolls",
+            "toll ahead",
+            "any tolls ahead",
+            "are there tolls",
+            "tolls on this route",
+            "what tolls",
+        ),
+        DriverVoiceCommand.NEXT_LEZ to listOf(
+            "next lez",
+            "low emission zone",
+            "clean air zone",
+            "any caz",
+            "any lez",
+            "emission zone ahead",
+            "ulez ahead",
+        ),
+        DriverVoiceCommand.ETA to listOf(
+            "what's my eta",
+            "whats my eta",
+            "what is my eta",
+            "how long left",
+            "how long until i arrive",
+            "arrival time",
+            "eta",
         ),
     )
 

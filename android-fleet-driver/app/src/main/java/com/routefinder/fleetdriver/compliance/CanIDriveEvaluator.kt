@@ -11,6 +11,7 @@ data class CanIDriveStatus(
     val remainingContinuousDriveSeconds: Double,
     val remainingDailyDriveSeconds: Double = 0.0,
     val remainingWeeklyDriveSeconds: Double = 0.0,
+    val remainingFortnightDriveSeconds: Double = 0.0,
     val usesImportedCard: Boolean = false,
     val usesPartnerAdvisory: Boolean = false,
 )
@@ -18,7 +19,8 @@ data class CanIDriveStatus(
 /**
  * Evaluates Can-I-drive from partner webhook, imported card, and/or local HOS clock.
  * Priority when fresh (&lt; 24 h): partner → imported card → clock. Always appends legal-tacho disclaimer.
- * Gates continuous + daily + weekly for partner, import, and local duty-log clock.
+ * Partner/import gate continuous + daily + weekly.
+ * Clock path also gates fortnight (90 h). WTD ≥ 60 h is advisory on the clock message only.
  * Mirrors iOS ``CanIDriveEvaluator``.
  */
 object CanIDriveEvaluator {
@@ -36,6 +38,8 @@ object CanIDriveEvaluator {
         val continuous: Double
         val daily: Double
         val weekly: Double
+        val fortnight: Double
+        val applyFortnight: Boolean
         val sourceLabel: String
         val usesPartner: Boolean
         val usesImported: Boolean
@@ -44,6 +48,8 @@ object CanIDriveEvaluator {
             continuous = partner.remainingContinuousDriveSeconds
             daily = partner.remainingDailyDriveSeconds
             weekly = partner.remainingWeeklyDriveSeconds
+            fortnight = 0.0
+            applyFortnight = false
             sourceLabel = "partner advisory (${partner.sourceFileName})"
             usesPartner = true
             usesImported = false
@@ -51,6 +57,8 @@ object CanIDriveEvaluator {
             continuous = imported.remainingContinuousDriveSeconds
             daily = imported.remainingDailyDriveSeconds
             weekly = imported.remainingWeeklyDriveSeconds
+            fortnight = 0.0
+            applyFortnight = false
             sourceLabel = "imported card (${imported.sourceFileName})"
             usesPartner = false
             usesImported = true
@@ -59,22 +67,34 @@ object CanIDriveEvaluator {
             daily = HosAdvisoryClock.effectiveDailyLimitSeconds(clock.usedDailyExtensionThisWeek) -
                 clock.dailyDriveSeconds
             weekly = HosAdvisoryClock.WEEKLY_DRIVE_LIMIT_SECONDS - clock.weeklyDriveSeconds
+            fortnight = HosAdvisoryClock.FORTNIGHT_DRIVE_LIMIT_SECONDS - clock.fortnightDriveSeconds
+            applyFortnight = true
             sourceLabel = "advisory EU 561 clock"
             usesPartner = false
             usesImported = false
         }
 
-        val canDrive = continuous > 0 && daily > 0 && weekly > 0
+        val canDrive = if (applyFortnight) {
+            continuous > 0 && daily > 0 && weekly > 0 && fortnight > 0
+        } else {
+            continuous > 0 && daily > 0 && weekly > 0
+        }
 
         val budgetReason = when {
+            canDrive && applyFortnight ->
+                "Yes — remaining continuous ${format(continuous)}, daily ${format(daily)}, " +
+                    "weekly ${format(weekly)}, fortnight ${format(fortnight)} from $sourceLabel."
             canDrive ->
-                "Yes — remaining continuous ${format(continuous)}, daily ${format(daily)}, weekly ${format(weekly)} from $sourceLabel."
+                "Yes — remaining continuous ${format(continuous)}, daily ${format(daily)}, " +
+                    "weekly ${format(weekly)} from $sourceLabel."
             continuous <= 0 ->
                 "No — continuous drive remaining is exhausted ($sourceLabel). Take a mandatory break."
             daily <= 0 ->
                 "No — daily drive remaining is exhausted ($sourceLabel). End the driving day."
-            else ->
+            weekly <= 0 ->
                 "No — weekly drive remaining is exhausted ($sourceLabel). End the driving week."
+            else ->
+                "No — fortnight drive remaining is exhausted ($sourceLabel). End the driving fortnight."
         }
         return CanIDriveStatus(
             canDrive = canDrive,
@@ -82,6 +102,7 @@ object CanIDriveEvaluator {
             remainingContinuousDriveSeconds = continuous,
             remainingDailyDriveSeconds = daily,
             remainingWeeklyDriveSeconds = weekly,
+            remainingFortnightDriveSeconds = fortnight,
             usesImportedCard = usesImported,
             usesPartnerAdvisory = usesPartner,
         )

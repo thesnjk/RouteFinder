@@ -16,6 +16,8 @@ class HosAdvisoryClockTest {
         assertEquals(600.0, accrued.continuousDriveSeconds, 0.01)
         assertEquals(600.0, accrued.dailyDriveSeconds, 0.01)
         assertEquals(600.0, accrued.weeklyDriveSeconds, 0.01)
+        assertEquals(600.0, accrued.fortnightDriveSeconds, 0.01)
+        assertEquals(600.0, accrued.weekWorkedSeconds, 0.01)
     }
 
     @Test
@@ -156,5 +158,43 @@ class HosAdvisoryClockTest {
         )
         assertEquals(0.0, next.dailyDriveSeconds, 0.01)
         assertTrue(next.usedDailyExtensionThisWeek)
+    }
+
+    @Test
+    fun fortnightExhaustedBlocksDrive() {
+        val snap = HosAdvisoryClock.snapshot(
+            continuousDriveSeconds = 0.0,
+            dailyDriveSeconds = 0.0,
+            weeklyDriveSeconds = 0.0,
+            fortnightDriveSeconds = HosAdvisoryClock.FORTNIGHT_DRIVE_LIMIT_SECONDS,
+        )
+        assertFalse(snap.canDriveNow)
+        assertTrue(snap.message.contains("fortnight", ignoreCase = true))
+    }
+
+    @Test
+    fun wtdHeadsUpAtSixtyHoursWithoutBlocking() {
+        val snap = HosAdvisoryClock.snapshot(
+            continuousDriveSeconds = 0.0,
+            dailyDriveSeconds = 0.0,
+            weeklyDriveSeconds = 0.0,
+            fortnightDriveSeconds = 0.0,
+            weekWorkedSeconds = HosAdvisoryClock.WTD_WEEKLY_HEADS_UP_SECONDS,
+        )
+        assertTrue(snap.canDriveNow)
+        assertTrue(snap.wtdHeadsUp)
+        assertTrue(snap.message.contains("WTD", ignoreCase = true))
+        assertTrue(snap.message.contains("60"))
+    }
+
+    @Test
+    fun breakDoesNotAccrueWeekWorked() {
+        val breakMode = HosAdvisoryClock.State(
+            mode = HosAdvisoryClock.DutyMode.BREAK_REST,
+            weekWorkedSeconds = 100.0,
+        )
+        val next = HosAdvisoryClock.accrue(breakMode, 3_600.0)
+        assertEquals(100.0, next.weekWorkedSeconds, 0.01)
+        assertEquals(0.0, next.fortnightDriveSeconds, 0.01)
     }
 }

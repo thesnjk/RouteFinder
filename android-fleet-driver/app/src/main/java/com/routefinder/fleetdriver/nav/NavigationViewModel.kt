@@ -261,6 +261,8 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
     private var continuousDriveSeconds = prefs.continuousDriveSeconds
     private var dailyDriveSeconds = prefs.dailyDriveSeconds
     private var weeklyDriveSeconds = prefs.weeklyDriveSeconds
+    private var fortnightDriveSeconds = prefs.fortnightDriveSeconds
+    private var weekWorkedSeconds = prefs.hosWeekWorkedSeconds
     /** Advisory EU 561 duty mode (Drive / Break / Off duty). */
     var hosDutyMode by mutableStateOf(HosAdvisoryClock.parseDutyMode(prefs.hosDutyMode))
         private set
@@ -889,6 +891,8 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
             continuousDriveSeconds = continuousDriveSeconds,
             dailyDriveSeconds = dailyDriveSeconds,
             weeklyDriveSeconds = weeklyDriveSeconds,
+            fortnightDriveSeconds = fortnightDriveSeconds,
+            weekWorkedSeconds = weekWorkedSeconds,
             lastTransitionAtMillis = hosLastTransitionAtMillis,
             usedDailyExtensionThisWeek = hosUsedDailyExtensionThisWeek,
         )
@@ -898,12 +902,16 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
         continuousDriveSeconds = state.continuousDriveSeconds
         dailyDriveSeconds = state.dailyDriveSeconds
         weeklyDriveSeconds = state.weeklyDriveSeconds
+        fortnightDriveSeconds = state.fortnightDriveSeconds
+        weekWorkedSeconds = state.weekWorkedSeconds
         hosLastTransitionAtMillis = state.lastTransitionAtMillis
         hosUsedDailyExtensionThisWeek = state.usedDailyExtensionThisWeek
         prefs.hosDutyMode = state.mode.name
         prefs.continuousDriveSeconds = continuousDriveSeconds
         prefs.dailyDriveSeconds = dailyDriveSeconds
         prefs.weeklyDriveSeconds = weeklyDriveSeconds
+        prefs.fortnightDriveSeconds = fortnightDriveSeconds
+        prefs.hosWeekWorkedSeconds = weekWorkedSeconds
         prefs.hosLastTransitionAtMillis = hosLastTransitionAtMillis
         prefs.hosUsedDailyExtensionThisWeek = hosUsedDailyExtensionThisWeek
     }

@@ -644,7 +644,7 @@ struct SettingsSheet: View {
                 .textFieldStyle(GlassTextFieldStyle())
                 .onSubmit { viewModel.persistTileServerURL() }
 
-            Text("Pre-place `*.graphjson` under Application Support/RouteFinder/tiles/, or point at a CDN base. Full UK bbox is large — MVP uses a Norfolk demo corridor.")
+            Text("Pre-place `*.graphjson` under Application Support/RouteFinder/tiles/, or point at a CDN base. Prefer Norfolk demo or East Anglia mid-corridor before UK mainland. H3 tiles — not Sygic-class country packs; Android offline remains product-gated.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 

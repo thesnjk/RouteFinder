@@ -1543,6 +1543,12 @@ public final class RouteViewModel {
         await downloadSelectedOfflineRegion()
     }
 
+    /// Downloads the East Anglia mid-corridor (A14–M11) between Norfolk demo and UK mainland.
+    public func downloadEastAngliaOfflineCorridor() async {
+        selectedOfflineDownloadRegion = .eastAnglia
+        await downloadSelectedOfflineRegion()
+    }
+
     /// Attempts to ensure a UK-wide corridor (may request many tiles — prefer pre-placed packs).
     public func downloadUKOfflineCorridor() async {
         selectedOfflineDownloadRegion = .ukCorridor

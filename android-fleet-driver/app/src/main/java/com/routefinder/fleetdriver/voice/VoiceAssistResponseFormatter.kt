@@ -1,6 +1,7 @@
 package com.routefinder.fleetdriver.voice
 
 import com.routefinder.fleetdriver.compliance.CanIDriveStatus
+import com.routefinder.fleetdriver.routing.UKTollAdvisory
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -63,6 +64,29 @@ object VoiceAssistResponseFormatter {
         }
         return "No named tolls on this route."
     }
+
+    /** Route-summary line for UI / commit TTS. Null when no advisories. */
+    fun committedRouteTollSummary(advisories: List<UKTollAdvisory>): String? {
+        if (advisories.isEmpty()) return null
+        val names = advisories.joinToString(" · ") { it.name }
+        val total = UKTollAdvisory.indicativeRouteTotalLabel(advisories)
+        return if (total != null) "$names — $total" else names
+    }
+
+    /** One-shot commit announcement; null when silent (no named tolls). */
+    fun committedRouteTollAnnouncement(advisories: List<UKTollAdvisory>): String? {
+        val summary = committedRouteTollSummary(advisories) ?: return null
+        return tollAhead(
+            tollName = null,
+            distanceMeters = null,
+            costLabel = null,
+            routeSummary = summary,
+        )
+    }
+
+    /** Stable signature for deduping commit-time toll TTS. */
+    fun tollRouteSignature(advisories: List<UKTollAdvisory>): String =
+        advisories.map { it.id }.sorted().joinToString("|")
 
     /** Spoken next LEZ / CAZ restriction. */
     fun nextLez(label: String?, message: String?): String {

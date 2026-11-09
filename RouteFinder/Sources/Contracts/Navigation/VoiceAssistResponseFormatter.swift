@@ -71,6 +71,32 @@ public enum VoiceAssistResponseFormatter: Sendable {
         return "No named tolls on this route."
     }
 
+    /// Route-summary line for UI / commit TTS (names + optional indicative total). Returns `nil` when empty.
+    public static func committedRouteTollSummary(advisories: [UKTollAdvisory]) -> String? {
+        guard !advisories.isEmpty else { return nil }
+        let names = advisories.map(\.name).joined(separator: " · ")
+        if let total = UKTollAdvisory.indicativeRouteTotalLabel(advisories: advisories) {
+            return "\(names) — \(total)"
+        }
+        return names
+    }
+
+    /// One-shot commit announcement when named tolls match; `nil` when silent (no advisories).
+    public static func committedRouteTollAnnouncement(advisories: [UKTollAdvisory]) -> String? {
+        guard let summary = committedRouteTollSummary(advisories: advisories) else { return nil }
+        return tollAhead(
+            tollName: nil,
+            distanceMeters: nil,
+            costLabel: nil,
+            routeSummary: summary
+        )
+    }
+
+    /// Stable signature for deduping commit-time toll TTS across refreshes of the same route.
+    public static func tollRouteSignature(advisories: [UKTollAdvisory]) -> String {
+        advisories.map(\.id).sorted().joined(separator: "|")
+    }
+
     /// Spoken next LEZ / CAZ restriction.
     public static func nextLez(label: String?, message: String?) -> String {
         if let message, !message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {

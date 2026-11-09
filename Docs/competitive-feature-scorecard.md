@@ -35,7 +35,7 @@ RouteFinder scores from code inventory + Phase 20/26/27/30–44 + **Phase 8** + 
 | Lane guidance | 8% | **2** | 3 | 3 | 2 | 2 | RF OSM + nav refresh + prepare TTS refire on late OSM (iOS + Android C2); residual = HD lane visuals |
 | Plate → profile (UK) | 8% | **3** | 0 | 0 | 0 | 0 | RF RegCheck + DVLA |
 | Crowd hazard / closure ahead | 5% | **2** | 1 | 1 | 0 | 0 | RF Ph33 + Ph36 TomTom live |
-| UK toll awareness | 5% | **2** | 2 | 3 | 2 | 2 | RF named hints + avoid-before-commit; TomTom live tariffs still lead |
+| UK toll awareness | 5% | **2** | 2 | 3 | 2 | 2 | RF named hints + avoid-before-commit + commit-time indicative TTS; TomTom live tariffs still lead |
 | Telematics / tacho display | 5% | **2** | 1 | 1 | 2 | 1 | RF CSV + fleet ingest → desk pins; Samsara VU still leads |
 | Price ($0 baseline) | 5% | **3** | 1 | 1 | 0 | 1 | Pilot £0 / post-pilot API-included desk subscription ([`pilot-fleet-pack.md`](pilot-fleet-pack.md)); not per-seat cloud portal; CoPilot quote-only |
 

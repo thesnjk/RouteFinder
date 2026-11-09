@@ -20,31 +20,38 @@ object ManeuverSpeechFormatter {
         TurnManeuver.ARRIVE -> "You have arrived"
     }
 
+    /**
+     * Spoken prompt for a given tier and instruction.
+     * Prepare/execute prefer lane-first phrasing when OSM/heuristic lanes are present (iOS parity).
+     */
     fun spokenPrompt(instruction: TurnInstruction, tier: AnnouncementTier): String {
         val phrase = shortPhrase(instruction.maneuver)
-        val street = streetCallout(instruction)
-        val lane = laneCallout(instruction)
+        val laneText = laneCallout(instruction)
+        val suffix = roadSuffix(instruction)
+
         return when (tier) {
             AnnouncementTier.APPROACH -> {
-                val suffix = roadSuffix(instruction, tier)
-                buildString {
-                    append("In 1.6 kilometres, ${phrase.lowercase()}$suffix")
-                    if (lane != null) append(". $lane")
+                if (laneText != null) {
+                    "In 1.6 kilometres, ${laneText.lowercase()}$suffix"
+                } else {
+                    "In 1.6 kilometres, ${phrase.lowercase()}$suffix"
                 }
             }
             AnnouncementTier.PREPARE -> {
-                buildString {
-                    append("In 400 metres, ${phrase.lowercase()}")
-                    if (street != null) append(" onto $street")
-                    if (lane != null) append(". $lane")
+                if (laneText != null) {
+                    "In 400 metres, ${laneText.lowercase()}$suffix"
+                } else {
+                    "In 400 metres, ${phrase.lowercase()}$suffix"
                 }
             }
             AnnouncementTier.EXECUTE -> {
                 if (instruction.maneuver == TurnManeuver.ARRIVE) return phrase
-                buildString {
-                    append(phrase)
-                    if (street != null) append(" onto $street")
-                    if (lane != null) append(". $lane")
+                if (laneText != null) {
+                    "$laneText, then ${phrase.lowercase()}$suffix"
+                } else if (suffix.isNotEmpty()) {
+                    "$phrase$suffix"
+                } else {
+                    phrase
                 }
             }
         }
@@ -60,9 +67,8 @@ object ManeuverSpeechFormatter {
         if (instruction.maneuver == TurnManeuver.ARRIVE) return null
         val road = instruction.roadName?.trim().orEmpty()
         if (road.isEmpty()) return null
-        if (road.lowercase().startsWith("turn") || road.lowercase().startsWith("keep") ||
-            road.lowercase().startsWith("head")
-        ) {
+        val lower = road.lowercase()
+        if (lower.startsWith("turn") || lower.startsWith("keep") || lower.startsWith("head")) {
             return null
         }
         return road.take(40)
@@ -70,12 +76,12 @@ object ManeuverSpeechFormatter {
 
     private fun laneCallout(instruction: TurnInstruction): String? {
         val guidance = instruction.laneGuidance ?: return null
-        val text = guidance.guidanceText
-        return text.takeUnless { it == "Follow road" }
+        val text = guidance.spokenLanePhrase()
+        return text.takeUnless { it == "Follow the road" || it == "Follow road" }
     }
 
-    private fun roadSuffix(instruction: TurnInstruction, tier: AnnouncementTier): String {
-        if (tier != AnnouncementTier.APPROACH) return ""
+    /** ` onto {road}` when a street name is known (all announcement tiers — iOS parity). */
+    private fun roadSuffix(instruction: TurnInstruction): String {
         if (instruction.maneuver == TurnManeuver.ARRIVE) return ""
         val road = streetCallout(instruction) ?: return ""
         return " onto $road"

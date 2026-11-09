@@ -36,7 +36,7 @@ Product showcase captures (see [`Docs/screenshots/`](Docs/screenshots/) for capt
 - **Offline routing & maps** — H3 graph tiles + hybrid ORS/offline policy; optional local MapLibre map pack via on-device HTTP
 - **Live traffic reroute** — TomTom flow sampling can trigger an ORS `avoid_polygons` recalculation
 - **Walkaround checks** — local DVSA-style inspection checklist
-- **Sim UX** — Touch ID session restore, vehicle workspace snapshot, traffic cruise toggle (default off), center-anchored cab/trailer map model, OSM lane guidance banner
+- **Sim UX** — Touch ID session restore, vehicle workspace snapshot, traffic cruise toggle (default off), center-anchored cab/trailer map model, OSM `turn:lanes` strip + street/lane TTS (not HD lanes; Overpass ≤12/route)
 
 ## Legal notice (hours & tachograph)
 

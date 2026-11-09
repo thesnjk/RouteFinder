@@ -457,6 +457,18 @@ fun NavigationMapScreen(
                         )
                     }
                     viewModel.currentInstruction?.laneGuidance?.let { lanes ->
+                        // Hierarchy matches iOS LaneGuidanceBanner: phrase + onto street, then strip.
+                        Text(
+                            lanes.guidanceText,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        viewModel.currentInstruction?.roadName?.takeIf { it.isNotBlank() }?.let { road ->
+                            Text(
+                                "onto ${road.take(48)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.tertiary,
+                            )
+                        }
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             lanes.lanes.forEachIndexed { index, arrow ->
                                 val recommended = index in lanes.recommendedIndices
@@ -470,17 +482,6 @@ fun NavigationMapScreen(
                                     },
                                 )
                             }
-                        }
-                        Text(
-                            lanes.guidanceText,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                        viewModel.currentInstruction?.roadName?.takeIf { it.isNotBlank() }?.let { road ->
-                            Text(
-                                road.take(48),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.tertiary,
-                            )
                         }
                     }
                     viewModel.activeTrip?.let {

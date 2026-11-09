@@ -261,6 +261,14 @@ import Testing
     #expect(ManeuverSpeechFormatter.spokenLanePhrase(for: guidance) == "Use the left two lanes")
 }
 
+@Test func maneuverSpeechFormatterSpokenLanePhraseUsesRightTwoLanes() {
+    let guidance = LaneGuidance(
+        lanes: [.straight, .right, .right],
+        recommendedIndices: [1, 2]
+    )
+    #expect(ManeuverSpeechFormatter.spokenLanePhrase(for: guidance) == "Use the right two lanes")
+}
+
 @Test func maneuverSpeechFormatterPrepareTierIncludesLaneHint() {
     let instruction = TurnInstruction(
         id: UUID(),
@@ -271,5 +279,37 @@ import Testing
         laneGuidance: LaneGuidance(lanes: [.straight, .right], recommendedIndices: [1])
     )
     let prompt = ManeuverSpeechFormatter.spokenPrompt(for: instruction, tier: .prepare)
-    #expect(prompt.contains("right lane"))
+    #expect(prompt.hasPrefix("In 400 metres, use the right lane"))
+    #expect(prompt.contains("onto A1"))
+}
+
+@Test func maneuverSpeechFormatterExecuteUsesLaneThenManeuverOntoStreet() {
+    let instruction = TurnInstruction(
+        id: UUID(),
+        maneuver: .right,
+        roadName: "A47",
+        distance: 120,
+        bearing: 90,
+        laneGuidance: LaneGuidance(lanes: [.straight, .right], recommendedIndices: [1])
+    )
+    let prompt = ManeuverSpeechFormatter.spokenPrompt(for: instruction, tier: .execute)
+    #expect(prompt.hasPrefix("Use the right lane, then turn right"))
+    #expect(prompt.contains("onto A47"))
+}
+
+@Test func maneuverSpeechFormatterPrepareUsesContiguousMultiLaneOntoStreet() {
+    let instruction = TurnInstruction(
+        id: UUID(),
+        maneuver: .left,
+        roadName: "M6",
+        distance: 400,
+        bearing: 270,
+        laneGuidance: LaneGuidance(
+            lanes: [.straight, .straight, .right],
+            recommendedIndices: [0, 1]
+        )
+    )
+    let prompt = ManeuverSpeechFormatter.spokenPrompt(for: instruction, tier: .prepare)
+    #expect(prompt.contains("left two lanes"))
+    #expect(prompt.contains("onto M6"))
 }

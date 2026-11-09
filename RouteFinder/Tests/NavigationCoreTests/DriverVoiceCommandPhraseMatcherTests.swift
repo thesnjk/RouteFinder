@@ -70,6 +70,14 @@ struct DriverVoiceCommandPhraseMatcherTests {
         #expect(DriverVoiceCommandPhraseMatcher.match("Lane guidance") == .whichLane)
         #expect(DriverVoiceCommandPhraseMatcher.match("What lane am I in") == .whichLane)
     }
+
+    @Test func matchesAvoidTollsDistinctFromTollAhead() {
+        #expect(DriverVoiceCommandPhraseMatcher.match("Avoid tolls") == .avoidTolls)
+        #expect(DriverVoiceCommandPhraseMatcher.match("Avoid tolls and replan") == .avoidTolls)
+        #expect(DriverVoiceCommandPhraseMatcher.match("Skip tolls") == .avoidTolls)
+        #expect(DriverVoiceCommandPhraseMatcher.match("Reroute without tolls") == .avoidTolls)
+        #expect(DriverVoiceCommandPhraseMatcher.match("Any tolls ahead") == .tollAhead)
+    }
 }
 
 struct VoiceAssistResponseFormatterTests {
@@ -174,6 +182,16 @@ struct VoiceAssistResponseFormatterTests {
                 roadName: "A14",
                 distanceMeters: 100
             ) == VoiceAssistResponseFormatter.whichLaneNone
+        )
+    }
+
+    @Test func avoidTollsFormatsStartedAndAlreadyAvoiding() {
+        let started = VoiceAssistResponseFormatter.avoidTolls(started: true)
+        #expect(started.contains("Avoiding tolls"))
+        #expect(started.contains("Indicative only"))
+        #expect(
+            VoiceAssistResponseFormatter.avoidTolls(started: false)
+                .contains("Already avoiding tolls")
         )
     }
 

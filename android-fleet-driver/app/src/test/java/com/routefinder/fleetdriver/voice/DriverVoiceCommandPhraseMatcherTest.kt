@@ -104,6 +104,21 @@ class DriverVoiceCommandPhraseMatcherTest {
             DriverVoiceCommandPhraseMatcher.match("What lane am I in"),
         )
     }
+
+    @Test
+    fun matchesAvoidTollsDistinctFromTollAhead() {
+        assertEquals(DriverVoiceCommand.AVOID_TOLLS, DriverVoiceCommandPhraseMatcher.match("Avoid tolls"))
+        assertEquals(
+            DriverVoiceCommand.AVOID_TOLLS,
+            DriverVoiceCommandPhraseMatcher.match("Avoid tolls and replan"),
+        )
+        assertEquals(DriverVoiceCommand.AVOID_TOLLS, DriverVoiceCommandPhraseMatcher.match("Skip tolls"))
+        assertEquals(
+            DriverVoiceCommand.AVOID_TOLLS,
+            DriverVoiceCommandPhraseMatcher.match("Reroute without tolls"),
+        )
+        assertEquals(DriverVoiceCommand.TOLL_AHEAD, DriverVoiceCommandPhraseMatcher.match("Any tolls ahead"))
+    }
 }
 
 class VoiceAssistResponseFormatterTest {
@@ -169,6 +184,16 @@ class VoiceAssistResponseFormatterTest {
         assertEquals(
             VoiceAssistResponseFormatter.WHICH_LANE_NONE,
             VoiceAssistResponseFormatter.whichLane(null, "A14", 100.0),
+        )
+    }
+
+    @Test
+    fun avoidTollsFormatsStartedAndAlreadyAvoiding() {
+        val started = VoiceAssistResponseFormatter.avoidTolls(started = true)
+        assertTrue(started.contains("Avoiding tolls"))
+        assertTrue(started.contains("Indicative only"))
+        assertTrue(
+            VoiceAssistResponseFormatter.avoidTolls(started = false).contains("Already avoiding tolls"),
         )
     }
 

@@ -55,6 +55,14 @@ public enum VoiceAssistResponseFormatter: Sendable {
         "No lane guidance right now."
     }
 
+    /// Reply after starting avoid-tolls replan, or when already avoiding.
+    public static func avoidTolls(started: Bool) -> String {
+        if started {
+            return "Avoiding tolls and replanning. Indicative only — check the operator."
+        }
+        return "Already avoiding tolls on this route."
+    }
+
     /// Reply when voice guidance is muted (prefer toast; keep short if spoken).
     public static var muted: String { "Voice guidance muted." }
 

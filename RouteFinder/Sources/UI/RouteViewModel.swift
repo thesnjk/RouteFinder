@@ -1309,7 +1309,25 @@ public final class RouteViewModel {
             speakVoiceAssist(VoiceAssistResponseFormatter.riskAhead(spokenPrompt: prompt))
         case .bookParking:
             await handleBookParkingVoiceCommand()
+        case .whichLane:
+            handleWhichLaneVoiceCommand()
         }
+    }
+
+    /// Speaks active junction lane guidance without mutating lane state.
+    private func handleWhichLaneVoiceCommand() {
+        guard let guidance = activeLaneGuidance else {
+            speakVoiceAssist(VoiceAssistResponseFormatter.whichLaneNone)
+            return
+        }
+        let text = ManeuverSpeechFormatter.spokenLanePhrase(for: guidance)
+        speakVoiceAssist(
+            VoiceAssistResponseFormatter.whichLane(
+                guidanceText: text,
+                roadName: activeLaneRoadName,
+                distanceMeters: activeLaneDistanceMeters
+            )
+        )
     }
 
     /// Selects the first ahead parking pin / truck parking POI and speaks confirmation.

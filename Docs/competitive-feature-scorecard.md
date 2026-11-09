@@ -32,7 +32,7 @@ RouteFinder scores from code inventory + Phase 20/26/27/30–44 + **Phase 8** + 
 | Physics rehearsal | 14% | **3**‡ | 0 | 0 | 0 | 0 | RF wedge; Oct 12: `spineSpeedLimitAcceleratesToMotorwayLimit` UITest fail under sim WIP — fix before claiming CI-green Lead |
 | Layby / break intel | 12% | **3** | 1 | 2 | 2 | 2 | RF fused ranker + Break Now + TRAVIS/SNAP links (Ph8); CoPilot 11.4 parking icons — still **2** (booking ≠ RF $0) |
 | LEZ compliance | 8% | **3** | 3 | 3 | 2 | 2 | RF 11 zones + ORS avoid (iOS rings; Android U15) |
-| Lane guidance | 8% | **2** | 3 | 3 | 2 | 2 | RF OSM + nav refresh + prepare TTS refire on late OSM (iOS + Android C2); residual = HD lane visuals |
+| Lane guidance | 8% | **2** | 3 | 3 | 2 | 2 | RF OSM + nav refresh + prepare TTS + which-lane PTT (iOS + Android C2); residual = HD lane visuals |
 | Plate → profile (UK) | 8% | **3** | 0 | 0 | 0 | 0 | RF RegCheck + DVLA |
 | Crowd hazard / closure ahead | 5% | **2** | 1 | 1 | 0 | 0 | RF Ph33 + Ph36 TomTom live + Android report fuse + map pins + still-there confirm |
 | UK toll awareness | 5% | **2** | 2 | 3 | 2 | 2 | RF named hints + avoid-before-commit + commit TTS + iOS/Android in-nav HUD; TomTom live tariffs still lead |
@@ -129,13 +129,13 @@ Policy: ship anything that benefits the driver; sequence by impact, not permanen
 
 | Capability | Best-in-class | RouteFinder today | Sequenced epic |
 |---|---|---|---|
-| Hands-free driver assistant | CoPilot 11.4 | Domain voice (lane / layby / hazard / book parking) | `EPIC-VOICE-ASSIST` |
+| Hands-free driver assistant | CoPilot 11.4 | Domain voice (which-lane / layby / hazard / book parking) | `EPIC-VOICE-ASSIST` |
 | Parking availability UX | CoPilot 11.4 icons | Occupancy taps + Break Now | `EPIC-PARKING-AVAIL` |
 | Parking booking | CoPilot + TRAVIS | Deep links + voice “book parking” entry (Ph8) | `EPIC-PARKING-BOOK` |
 | CarPlay production | Sygic / CoPilot | Code ready; entitlements inactive | `EPIC-CARPLAY-PROD` |
 | Android Auto | CoPilot 11.4 | Not shipped | `EPIC-ANDROID-AUTO` |
 | Combo / bumper length + trailer count | CoPilot 11.4 (NA maps) | Trailer→ORS length ladder (12 / 16.5 / 18.75 / 25.25 m); Constraint stays **3** | `EPIC-COMBO-LENGTH` |
-| Lane HD / street callouts | TomTom / Sygic / CoPilot 11.4 | OSM + voice phrase | `EPIC-LANE-DEPTH` |
+| Lane HD / street callouts | TomTom / Sygic / CoPilot 11.4 | OSM + voice phrase + which-lane PTT; residual HD visuals | `EPIC-LANE-DEPTH` |
 | Toll tariff depth | PTV / TomTom | Named UK advisories (Ph8) | `EPIC-TOLL-DEPTH` |
 | Remote VU download | Samsara / Geotab | Advisory tacho + CSV stub | `EPIC-VU-PARTNER` |
 | Legal LEZ cadastre | Sygic / TomTom | Simplified authored rings | `EPIC-LEZ-CADASTRE` |

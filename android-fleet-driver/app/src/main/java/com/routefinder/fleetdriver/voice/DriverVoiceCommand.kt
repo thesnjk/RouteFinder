@@ -40,11 +40,21 @@ enum class DriverVoiceCommand {
 
     /** Open the ahead parking book sheet (TRAVIS-first deep link). */
     BOOK_PARKING,
+
+    /** Ask which lane to use for the upcoming junction. */
+    WHICH_LANE,
 }
 
 /** Matches normalized speech transcripts to [DriverVoiceCommand] values. */
 object DriverVoiceCommandPhraseMatcher {
     private val ranked: List<Pair<DriverVoiceCommand, List<String>>> = listOf(
+        DriverVoiceCommand.WHICH_LANE to listOf(
+            "which lane should i take",
+            "what lane am i in",
+            "which lane",
+            "what lane",
+            "lane guidance",
+        ),
         DriverVoiceCommand.BOOK_PARKING to listOf(
             "book parking",
             "reserve parking",

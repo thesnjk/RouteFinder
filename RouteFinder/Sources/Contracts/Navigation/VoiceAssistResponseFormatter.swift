@@ -30,6 +30,31 @@ public enum VoiceAssistResponseFormatter: Sendable {
         "No ahead parking to book on this route."
     }
 
+    /// Reply for “which lane?” using active junction lane guidance.
+    public static func whichLane(
+        guidanceText: String?,
+        roadName: String?,
+        distanceMeters: Double?
+    ) -> String {
+        let guidance = guidanceText?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !guidance.isEmpty else {
+            return whichLaneNone
+        }
+        var spoken = guidance
+        if let road = roadName?.trimmingCharacters(in: .whitespacesAndNewlines), !road.isEmpty {
+            spoken += " onto \(road)"
+        }
+        if let distanceMeters, distanceMeters > 0 {
+            spoken += " \(distancePhrase(meters: distanceMeters))"
+        }
+        return spoken
+    }
+
+    /// Reply when no active lane guidance is available.
+    public static var whichLaneNone: String {
+        "No lane guidance right now."
+    }
+
     /// Reply when voice guidance is muted (prefer toast; keep short if spoken).
     public static var muted: String { "Voice guidance muted." }
 

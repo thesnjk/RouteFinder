@@ -393,7 +393,7 @@ Always **print** push commands. Do **not** push unless the user asked to push (o
 | 14h | Agent | ~~`EPIC-DOCS` honesty SSOT after HOSTED-DESK Connection~~ **Done** 2026-11-11 — developer-map + README + android-c2-gate match greppable orgId/orgName / schema / deploy pointers |
 | 15 | Agent | **Stop inventing product epics** — next *product* implementation requires paid secrets/entitlements (AA / CarPlay / VU / further LEZ / live £ feed / HD / Stripe / Android offline / further country PBF). Do not invent multi-surface crowd LAN; do not ask-loop while agent-doable residuals remain. |
 | 16 | Agent | ~~`EPIC-DOCS-WRITEUP` NEA-style [`project-writeup.md`](project-writeup.md)~~ **Done** 2026-11-11 — Analysis→Evaluation + Appendices A–E complete (no clients); living Doc — update on surface change; product residuals remain secrets-gated |
-| 17 | Agent | **`EPIC-DOCS-WRITEUP-SENIOR`** senior full-stack monograph — **In progress** (pass 2 **Done** 2026-11-11: §3 Implementation depth — call graphs / invariants / CI map); **next = pass 3** Testing/Evaluation; product residuals remain secrets-gated |
+| 17 | Agent | **`EPIC-DOCS-WRITEUP-SENIOR`** senior full-stack monograph — **In progress** (pass 3 **Done** 2026-11-11: §§4–5 Testing/Evaluation — property claims / threat-coverage lite / S/T/C/D); **next = pass 4** Appendices; product residuals remain secrets-gated |
 | 14 | Operator | Optional Block 1b / Part B LAN smoke via [`phase1-device-checklist.md`](phase1-device-checklist.md) before first pilot / fleet demo |
 
 Also see: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B for optional physical walkaround → desk defect detail.

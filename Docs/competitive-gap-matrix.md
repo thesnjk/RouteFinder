@@ -1,6 +1,6 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-11-11 (Phase 7b P0 Pass CI; Midlands + DESK-LAYBY Done; Phase 58 waived; residual HD / live £ / AA / CarPlay / VU / country PBF)  
+Last updated: 2026-11-11 (Phase 7b P0 Pass CI; Midlands + North West + DESK-LAYBY Done; Phase 58 waived; residual HD / live £ / AA / CarPlay / VU / country PBF)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then driver-benefit gaps previously deferred (CarPlay/AA, parking book, VU, tolls, LEZ cadastre).
 
 > **Oct 12 Ultimate competitive excellence sweep:** Full quarterly re-scrape (Firecrawl + Apify). CoPilot **11.4** captured; **no RF scorecard integer changes**. Engineering gates: fleet/web/hosted/Android Pass. Sim speed-limit UITest debt closed 2026-11-09 (`spineSpeedLimitAcceleratesToMotorwayLimit` Pass).
@@ -100,7 +100,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 
 ### Remaining gaps (not claiming parity yet — sequenced under driver-first)
 
-- **Offline country-pack depth** — Midlands M1–M6 mid-corridor **Shipped** (`OfflineDownloadRegion.midlands`); residual = Sygic-style UK country pack / Android offline (gated) — still RF=2
+- **Offline country-pack depth** — Midlands M1–M6 + North West M6–M62 mid-corridors **Shipped** (`OfflineDownloadRegion.midlands` / `.northWest`); residual = Sygic-style UK country pack / Android offline (gated) — still RF=2
 - **Desk predicted layby** — **Shipped (MVP)** Mac `DispatchStatusPanel.laybyCard` + web-dispatch card/pin + Android `predictedLayby` snapshot publish (`EPIC-DESK-LAYBY` 2026-11-11); residual = live bay partner feed
 - **CarPlay / Android Auto** — `EPIC-CARPLAY-PROD` / `EPIC-ANDROID-AUTO` (code path exists; entitlements + AA surface gated)
 - **Parking availability** — **Shipped (MVP)** ranked layby green/amber/red map pins (iOS + Android) + occupancy taps + Break Now; was `EPIC-PARKING-AVAIL` (live bay feed residual). **Parking booking MVP shipped** (`EPIC-PARKING-BOOK` deep links + voice entry; native book API residual)
@@ -151,7 +151,7 @@ See [`ultimate-hgv-platform-spec.md`](ultimate-hgv-platform-spec.md).
 | Capability | RouteFinder | Typical truck GPS | Fleet telematics | Notes |
 |---|---|---|---|---|
 | Full constraint routing on live route | **Strong** (ORS L/W/H/length/axle/hazmat/ADR/avoids) | Strong | Strong | Phase 0–2 |
-| Offline maps | **UK region packs** (Norfolk / East Anglia / Midlands M1–M6 + H3 tiles + local map-pack HTTP); residual = country-pack depth | Strong | Hybrid | Phase 3–4 + EPIC-OFFLINE-UX Midlands 2026-11-11 |
+| Offline maps | **UK region packs** (Norfolk / East Anglia / Midlands M1–M6 / North West M6–M62 + H3 tiles + local map-pack HTTP); residual = country-pack depth | Strong | Hybrid | Phase 3–4 + EPIC-OFFLINE-UX Midlands + EPIC-OFFLINE-NORTHWEST 2026-11-11 |
 | Truck POI network | **Fuel / parking / weigh / layby along-route** (+ disk cache + occupancy prior) | Strong | Weak as nav | Living layer |
 | Physics pre-trip + kinetic risk | **Strong** (Rehearse + live HUD/voice + shareable brief) | Absent | Absent | Wedge |
 | Plate → auto vehicle profile (UK) | **Strong** (RegCheck + DVLA chain) | Manual | Asset registry | UK first |

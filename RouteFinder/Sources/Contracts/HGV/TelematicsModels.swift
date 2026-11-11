@@ -80,6 +80,8 @@ public enum OfflineDownloadRegion: String, Sendable, Codable, CaseIterable, Iden
     case eastAnglia
     /// Mid-size Midlands / M1–M6 band (Birmingham–Leicester–Northampton–Coventry).
     case midlands
+    /// Mid-size North West / M6–M62 band (Manchester–Liverpool–Preston–Warrington).
+    case northWest
     case ukCorridor
 
     public var id: String { rawValue }
@@ -89,6 +91,7 @@ public enum OfflineDownloadRegion: String, Sendable, Codable, CaseIterable, Iden
         case .demoNorfolk: return "Norfolk demo corridor"
         case .eastAnglia: return "East Anglia (A14–M11)"
         case .midlands: return "Midlands (M1–M6)"
+        case .northWest: return "North West (M6–M62)"
         case .ukCorridor: return "UK mainland (large)"
         }
     }
@@ -98,6 +101,7 @@ public enum OfflineDownloadRegion: String, Sendable, Codable, CaseIterable, Iden
         case .demoNorfolk: return "Small — suitable for first install."
         case .eastAnglia: return "Medium — covers Norwich–Cambridge–Ipswich; larger than Norfolk demo, far smaller than UK mainland."
         case .midlands: return "Medium — covers Birmingham–Leicester–Northampton–Coventry (M1–M6); larger than East Anglia, far smaller than UK mainland."
+        case .northWest: return "Medium — covers Manchester–Liverpool–Preston–Warrington (M6–M62); larger than East Anglia, far smaller than UK mainland."
         case .ukCorridor: return "Large download — prefer pre-placed *.graphjson when possible."
         }
     }
@@ -113,6 +117,11 @@ public enum OfflineDownloadRegion: String, Sendable, Codable, CaseIterable, Iden
             // Birmingham–Leicester–Nottingham–Northampton–Coventry approach (M1–M6 band).
             // Separate corridor from East Anglia (does not contain that bbox).
             return (minLat: 51.80, maxLat: 53.40, minLon: -2.80, maxLon: -0.40)
+        case .northWest:
+            // Manchester–Liverpool–Preston–Warrington approach (M6–M62 band).
+            // Separate corridor from Midlands (does not contain / contained by that bbox).
+            // Area sits between East Anglia and Midlands vs ukCorridor honesty caps.
+            return (minLat: 53.15, maxLat: 54.25, minLon: -3.60, maxLon: -1.40)
         case .ukCorridor:
             return (minLat: 49.8, maxLat: 58.7, minLon: -8.2, maxLon: 1.8)
         }

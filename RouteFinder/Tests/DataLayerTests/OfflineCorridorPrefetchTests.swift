@@ -41,6 +41,16 @@ import Testing
     )
     #expect(!OfflineCorridorPrefetch.isWithinAutoPrefetchCap(midlandsBox))
 
+    // North West mid-corridor is also a manual pack — outside auto-prefetch cap.
+    let northWest = OfflineDownloadRegion.northWest.boundingBox
+    let northWestBox = GeographicBoundingBox(
+        minLat: northWest.minLat,
+        maxLat: northWest.maxLat,
+        minLon: northWest.minLon,
+        maxLon: northWest.maxLon
+    )
+    #expect(!OfflineCorridorPrefetch.isWithinAutoPrefetchCap(northWestBox))
+
     let uk = OfflineDownloadRegion.ukCorridor.boundingBox
     let ukBox = GeographicBoundingBox(
         minLat: uk.minLat,

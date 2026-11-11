@@ -1691,6 +1691,12 @@ public final class RouteViewModel {
         await downloadSelectedOfflineRegion()
     }
 
+    /// Downloads the North West mid-corridor (M6–M62) between Midlands and UK mainland.
+    public func downloadNorthWestOfflineCorridor() async {
+        selectedOfflineDownloadRegion = .northWest
+        await downloadSelectedOfflineRegion()
+    }
+
     /// Attempts to ensure a UK-wide corridor (may request many tiles — prefer pre-placed packs).
     public func downloadUKOfflineCorridor() async {
         selectedOfflineDownloadRegion = .ukCorridor

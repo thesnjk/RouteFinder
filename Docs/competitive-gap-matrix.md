@@ -1,6 +1,6 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-11-09 (P0 Docs SSOT; Lane Overpass + HOS Done; residual HD / live £ / AA / CarPlay / VU)  
+Last updated: 2026-11-11 (Phase 7b P0 Pass CI; Midlands + DESK-LAYBY Done; residual HD / live £ / AA / CarPlay / VU / country PBF)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then driver-benefit gaps previously deferred (CarPlay/AA, parking book, VU, tolls, LEZ cadastre).
 
 > **Oct 12 Ultimate competitive excellence sweep:** Full quarterly re-scrape (Firecrawl + Apify). CoPilot **11.4** captured; **no RF scorecard integer changes**. Engineering gates: fleet/web/hosted/Android Pass. Sim speed-limit UITest debt closed 2026-11-09 (`spineSpeedLimitAcceleratesToMotorwayLimit` Pass).
@@ -85,7 +85,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **47** | Fleet + hazard coordinator extraction | **Done** — `FleetDispatchCoordinator`, `HazardNavigationCoordinator`, [`architecture.md`](architecture.md) |
 | **48** | Reliability SLO verification gate | **Done** — [`phase20-verification.md`](phase20-verification.md#phase-4548-reliability-economics-program-2026-08-29); C1–C9 unblocked |
 | **49a** | Fix MapKit/CLGeocoder Sendable macOS CI failure | **Done** — CI green on `8f4ff6ee` ([run 33253641183](https://github.com/thesnjk/RouteFinder/actions/runs/33253641183)) |
-| **49b** | iPhone C1–C9 + fleet Part B device gate | **Pending local** — Part A smoke Pass; C8 sim Pass; physical phone Offline 2026-08-29 |
+| **49b** | iPhone C1–C9 + fleet Part B device gate | **Pass (CI)** — Phase 7b 2026-11-11 (`testLaybyAheadBannerOnSeededRoute`, `testTomTomHazardBannerOnSeededRoute`, `fleetInspectionSummaryRoundTripsViaSnapshot`); physical TTS/GPS/LAN optional |
 | **49c** | Fleet SSE CI flake hardening | **Done** — `waitForFleetServerReady` health poll |
 | **50** | Route planning coordinator extraction | **Done** — `RoutePlanningCoordinator`, `RoutePlanningHost`, tests |
 | **51** | Route simulation coordinator extraction | **Done** — `RouteSimulationCoordinator`, `RouteSimulationHost`, tests |
@@ -225,7 +225,7 @@ See [`ultimate-hgv-platform-spec.md`](ultimate-hgv-platform-spec.md).
 
 1. **`EPIC-SIM-SPEEDLIMIT`** — **Done** (2026-11-09) — `swift test --filter spineSpeedLimitAcceleratesToMotorwayLimit` Pass.
 2. **`EPIC-ANDROID-JDK-CI`** — **Done** (2026-11-09) — CI Temurin 17 + `setup-android@v4`; local pin `android-fleet-driver/.java-version` = 17.
-3. **`EPIC-P0-DEVICE`** — C4 / C9 / Fleet Part B physical (**operator**; SSOT [`phase1-device-checklist.md`](phase1-device-checklist.md); still Blocked since 2026-09-19 — Blocked ≠ code Fail).
+3. **`EPIC-P0-DEVICE`** — **Done / Pass (CI)** (Phase 7b 2026-11-11) — C4 / C9 / Fleet Part B programme gate closed via CI-sim evidence; physical TTS / live TomTom GPS / Mac↔phone LAN optional via [`phase1-device-checklist.md`](phase1-device-checklist.md).
 3b. **`EPIC-ANDROID-HOS-DUTYLOG`** — **Shipped (MVP)** Drive/Break/Off duty + weekly 56h persist on Android clock path.
 3c. **`EPIC-ANDROID-HOS-EXTENSION`** — **Shipped (MVP)** once-per-week 10h daily extension (`activateDailyExtension`).
 3d. **`EPIC-ANDROID-HOS-WTD`** — **Shipped (MVP)** fortnight 90h gate + WTD ≥60h heads-up. Residual: DDD/JSON import depth / coordinator packaging.

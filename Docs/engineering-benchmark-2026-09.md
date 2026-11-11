@@ -3,7 +3,7 @@
 **Track:** Engineering excellence Phase 1 (no legal/GTM).  
 **ICP:** UK independents, **5–15 trucks**, iPhone-first dispatch + driver wedge.  
 **Sources:** [`competitive-gap-matrix.md`](competitive-gap-matrix.md), [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md), [`competitive-research-2026-08.md`](competitive-research-2026-08.md), [`competitor-pricing-2026.md`](competitor-pricing-2026.md) (pricing cited only for competitor capability context, not sales).  
-**Last updated:** 2026-09-18
+**Last updated:** 2026-11-11 (Phase 7b P0 Pass CI; Midlands + DESK-LAYBY Done)
 
 Scoring per row for **RouteFinder vs best of four phone/hardware nav peers:**
 
@@ -57,7 +57,7 @@ Scoring per row for **RouteFinder vs best of four phone/hardware nav peers:**
 | Android driver | `EPIC-ANDROID-C2` | Close `phase6b` + `android-c2-gate.md` before mixed-fleet demos |
 | Telematics live map | `EPIC-TELEMATICS-STUB` | **Intentional non-parity** — read-only CSV/ingest only; no VU SDK |
 | Toll tariffs | `EPIC-TOLL-HINTS` | **Intentional non-parity** — authored hints only (`UKTollAdvisoryCatalog`) |
-| Device P0 / regressions | `EPIC-P0-DEVICE` | `phase20-verification.md` C1–C9 + Part B — blocks “bug-free demo” claim |
+| Device P0 / regressions | `EPIC-P0-DEVICE` | **Pass (CI)** Phase 7b — C1–C9 + Part B programme gate green; physical TTS/GPS/LAN optional (`phase20-verification.md`) |
 | Stranger path polish | `EPIC-STRANGER-UX` | Role picker → fleet wizard → Start Navigation without driver ORS key |
 
 Every **Gap** row maps to exactly one row above — **pass**.
@@ -68,7 +68,7 @@ Every **Gap** row maps to exactly one row above — **pass**.
 
 | Rank | Epic | Why first | Competitive edge (one line) |
 |------|------|-----------|------------------------------|
-| **1** | `EPIC-P0-DEVICE` | No benchmark matters if C1–C9 / Part B fail on real hardware | vs CoPilot desk demos: **same push→nav→snapshot pin script works on operator LAN without cloud portal setup** — only if device gate is green (`phase20-verification.md`) |
+| **1** | `EPIC-P0-DEVICE` | **Done** — Phase 7b Pass (CI); optional physical smoke before first pilot | vs CoPilot desk demos: **same push→nav→snapshot pin script** with CI evidence ledger (`phase20-verification.md`); physical LAN optional |
 | **2** | `EPIC-STRANGER-UX` | Fleet proxy is shipped; friction is still onboarding clicks | vs Sygic: **driver never creates HeiGIT account** when desk runs `--ors-key`; vs CoPilot: **fewer portal steps** — role + QR vs Account Manager seat provisioning (`LaunchRole`, `FleetSetupWizardView`) |
 | **3** | `EPIC-CARPLAY-PROD` | In-cab is table stakes for some independents with newer tractors | vs Sygic CarPlay IAP: **included in app** once entitled — vs hardware TomTom: **no separate sat-nav box** for trip handoff (`CarPlayNavigationCoordinator`) |
 | **4** | `EPIC-ANDROID-C2` | Mixed fleets block deals without a credible Android driver | vs CoPilot-only Android: **same fleet SSE + ORS proxy contract** as iOS — one server, two clients (`android-fleet-driver/fleet/FleetApi.kt`) |
@@ -99,4 +99,4 @@ Lower priority (defer unless pilot signal): `EPIC-LANE-DEPTH` chase, telematics 
 - [x] Top 5 epics ordered for ICP with one competitive-edge line each
 - [x] No legal/pilot/GTM content in this doc
 
-**Next engineering phase:** Engineering excellence track **complete** through Phase 7 (P0 simulator consolidation). Remaining: operator-owned device QA (C4 layby voice, C9 TomTom, Fleet Part B LAN, CarPlay head unit, Android Norwich corridor); maintenance only.
+**Next engineering phase:** Engineering excellence track **complete** through Phase 7 / 7b (P0 **Pass (CI)**). Remaining: gated entitlements (CarPlay / AA) + optional operator smoke (hear TTS, live TomTom GPS, Part B LAN, Android Norwich corridor); ungated cab/desk product residuals exhausted (Midlands + DESK-LAYBY 2026-11-11).

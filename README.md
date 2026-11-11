@@ -18,7 +18,7 @@ Product showcase captures (see [`Docs/screenshots/`](Docs/screenshots/) for capt
 
 ## User guide
 
-- [Project writeup](Docs/project-writeup.md) — NEA-style professional technical writeup (Analysis + Design complete; Implementation→Evaluation iterative; no client interviews)
+- [Project writeup](Docs/project-writeup.md) — NEA-style professional technical writeup (Analysis–Implementation complete; Testing→Evaluation iterative; no client interviews)
 - [Route simulation and rehearsal](Docs/user-guide-simulation.md) — Rehearse Route vs Play, traffic banner, lane guidance, vehicle footprint, language settings
 - [Fleet E2E QA playbook](Docs/fleet-e2e-qa.md) — Automated fleet smoke script + Mac/iPhone LAN checklist
 - [CarPlay + WeatherKit restore](Docs/carplay-weatherkit-restore.md) — Paid-team entitlement restore (personal team: use OpenWeather instead)

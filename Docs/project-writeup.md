@@ -5,7 +5,7 @@
 **Document type:** Living professional technical writeup (AQA NEA–style structure; **no client interviews**)  
 **Repository:** proprietary — see root [`LICENSE`](../LICENSE)  
 **Last updated:** 2026-11-11  
-**Status:** **iterative** — Sections 1–2 (Analysis + Design) complete; Sections 3–5 and Appendices stubbed (next attach = §3 Implementation)
+**Status:** **iterative** — Sections 1–3 (Analysis + Design + Implementation) complete; Sections 4–5 and Appendices stubbed (next attach = §4 Testing)
 
 Integers, CI evidence, and phase verification remain authoritative in [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md), [`engineering-test-matrix.md`](engineering-test-matrix.md), and relevant `phase*` Docs. This document provides the formal analysis–design–implementation–testing–evaluation narrative and points at those SSOTs.
 
@@ -54,7 +54,17 @@ This writeup follows a professional NEA-style structure (Analysis → Design →
    - [2.5 Interface design](#25-interface-design)
    - [2.6 Data dictionary](#26-data-dictionary)
    - [2.7 Objective traceability matrix](#27-objective-traceability-matrix)
-3. [Implementation](#3-implementation) *(stub)*
+3. [Implementation](#3-implementation)
+   - [3.1 Implementation overview](#31-implementation-overview)
+   - [3.2 Graph / routing implementation](#32-graph--routing-implementation)
+   - [3.3 Route planning / coordinators](#33-route-planning--coordinators)
+   - [3.4 Pathfinding / offline engines](#34-pathfinding--offline-engines)
+   - [3.5 Cost model, preferences, vehicle constraints](#35-cost-model-preferences-vehicle-constraints)
+   - [3.6 Multi-stop / fleet dispatch](#36-multi-stop--fleet-dispatch)
+   - [3.7 UI implementation by surface](#37-ui-implementation-by-surface)
+   - [3.8 Error handling and robustness](#38-error-handling-and-robustness)
+   - [3.9 Automated testing integration](#39-automated-testing-integration)
+   - [3.10 Objective fulfilment confirmation](#310-objective-fulfilment-confirmation)
 4. [Testing](#4-testing) *(stub)*
 5. [Evaluation](#5-evaluation) *(stub)*
 6. [Appendices](#6-appendices) *(stub)*
@@ -475,43 +485,103 @@ Accessibility and operator clarity: mask secrets in UI and screenshots; prefer e
 
 ## 3. Implementation
 
-*(Stub — fill next attach.)*
+Implementation realises the Design (§2) across multiple repositories paths in one monorepo. Symbol names below are greppable entry points; deeper APIs remain in source and [`architecture.md`](architecture.md).
 
 ### 3.1 Implementation overview
-- File/module responsibility mapping across `RouteFinder/`, app project, `web-dispatch/`, `android-fleet-driver/`, `hosted-gateway/`.
+
+| Path | Responsibility |
+|------|----------------|
+| `RouteFinder/` | Swift 6 SPM: Contracts, GraphCore, CostModel, DataLayer, PathfindingEngine, RouteController, UI, NavigationCore, fleet/proxy types, catalogs, tests |
+| `RouteFinderApp.xcodeproj` | iOS / Mac application schemes hosting SwiftUI surfaces |
+| `web-dispatch/` | Vite + React office desk; Connection profiles; roster; corridor preview; smoke helpers |
+| `android-fleet-driver/` | Kotlin C2 fleet driver; ORS proxy client; MapLibre; wizard/home Connection parity |
+| `hosted-gateway/` | Optional Operator HTTPS gateway exposing the fleet `/v1/*` family |
+| `Docs/` | Specs, QA, scorecard/sweep, this writeup, fleet API schema |
+
+**Independence:** Cab (iOS/Android), desk (Mac/web), and edge (LAN server / hosted gateway) ship as separate binaries/services sharing contracts (`fleet-api-schema.json`, mirrored DTOs). A change to glass UI does not require Android rebuild; proxy-status fields must stay schema-aligned across surfaces.
 
 ### 3.2 Graph / routing implementation
-- ORS client; offline tiles policy; trailer length ladder.
+
+Live HGV plans are requested through the OpenRouteService client path used by `RoutePlanningCoordinator` (see architecture end-state: `OpenRouteServiceRoutingClient`). Vehicle constraint parameters (length / width / height / weight / axle / hazmat / ADR) are supplied from the active profile. Cab and desk apply a trailer→ORS length ladder (12 / 16.5 / 18.75 / 25.25 m) when trailer count is set on the job brief, without changing the documented baseline constraint profile.
+
+Hybrid offline uses downloaded H3 graph tiles with package `GraphCore` / `CostModel` / `PathfindingEngine` under the hybrid ORS/offline policy described in the README (region packs: Norfolk demo, East Anglia mid-corridor, UK mainland large; corridor prefetch after Find capped ≤ East Anglia). Android offline packs remain product-gated.
 
 ### 3.3 Route planning / coordinators
-- `RoutePlanningCoordinator`, search mapping, recalculate debounce.
+
+`RoutePlanningCoordinator` (hosted by `RouteViewModel` as `RoutePlanningHost`) owns search-result mapping, LEZ avoid-ring attachment, recalculate debounce, lane enrichment triggers, traffic-reroute evaluation, and route-failure presentation. Related coordinators implemented alongside it:
+
+- `FleetDispatchCoordinator` — poll/SSE, snapshots, Bonjour, store reload; exposes `fleetProxyStatus: FleetProxyDeskStatus?`
+- `HazardNavigationCoordinator` — TomTom flow, roadworks corridor, crowd hydrate
+- `PredictiveRiskCoordinator` — fuse → `RouteRiskAdvisory` primary HUD
+- `RouteSimulationCoordinator` — rehearse / physics ETA / Break Now / layby voice
+- `HosAdvisoryCoordinator` — duty transitions, can-I-drive, tacho import
+
+Observation state remains on `RouteViewModel` / dispatch view models; coordinators hold async orchestration (architecture ADR).
 
 ### 3.4 Pathfinding / offline engines
-- Where `PathfindingEngine` / cost model apply.
+
+When offline tiles are present, `PathfindingEngine` evaluates routes over `GraphCore` structures with `CostModel` edge costs aligned to vehicle constraints. This path complements—not replaces—ORS for live constrained HGV routing. Implementation complexity and test fixtures live under the Swift package modules named above; this writeup does not restate an educational CSV Dijkstra coursework engine as the production contract.
 
 ### 3.5 Cost model, preferences, vehicle constraints
-- Avoid toggles (LEZ, tolls); hazmat/ADR.
+
+| Concern | Implementation sketch |
+|---------|----------------------|
+| LEZ avoid | Authored rings (11 catalog zones); Settings toggle; ORS `avoid_polygons` when enabled; densify MVP for Sheffield / Birmingham / Bradford |
+| Tolls | `UKTollAdvisoryCatalog` (Swift) triple-synced with Android + web-dispatch; HUD/TTS/desk indicative £; ORS avoid-tolls replan |
+| Hazmat / ADR | Passed through ORS vehicle profile parameters |
+| Clearance | `ClearanceCorridorProbe` (Overpass maxheight/weight; off-route heading) |
+| Forecast risk | `ForecastRiskSampler` (TomTom + OpenWeather when proxy configured) |
+
+Catalog honesty rules: not legal cadastre; not live operator tariffs unless a feed is unlocked.
 
 ### 3.6 Multi-stop / fleet dispatch
-- Job brief, push, SSE, snapshots.
+
+Disk-backed org → trip → physics ETA on Mac dispatch; `web-dispatch` mirrors push and roster. Fleet server (LAN) or hosted gateway accepts Bearer auth, enforces fair-use caps, and delivers trips via SSE/REST. Drivers publish GPS/inspection snapshots; desks poll active-trip (capped) for roster rows and yard pins. Connection `/v1/proxy/status` decodes to `FleetProxyDeskStatus` (`orgId` / `orgName`, meters) with `maskApiKey` / `maskedTokenLine` for UI — parity on web, Mac Settings / FleetSetupWizard / dispatch panel, Android FleetSetupWizard + DriverHome (`FleetProxyStatusLabels`).
 
 ### 3.7 UI implementation by surface
-- iOS/Mac glass; web desk; Android Compose screens.
+
+| Surface | Implementation notes |
+|---------|---------------------|
+| iOS / Mac | SwiftUI + `GlassmorphicModifiers`; Settings Connection Test; FleetSetupWizard Test; dispatch glass panels (toll, roster, proxy) |
+| web-dispatch | React Connection depot profiles; proxy status; corridor preview; predicted layby card/pin |
+| Android C2 | Compose screens; MapLibre; metric TTS; wizard Test + home badge for depot/meters |
+
+Stranger-path role picker and first-run flows: [`getting-started.md`](getting-started.md). Screenshots policy: [`screenshots/README.md`](screenshots/README.md).
 
 ### 3.8 Error handling and robustness
-- Remote policy; user-visible banners; masked tokens.
+
+`RemoteRequestPolicy` (DataLayer networking) applies shared timeout, retry, exponential backoff with jitter, and HTTP 429 / `Retry-After` handling for ORS, TomTom, fleet HTTP, and DVLA/RegCheck. Missing ORS or fleet configuration surfaces as explicit banners. Tokens are masked in product UI and must not appear unmasked in Docs screenshots. Soft API budgets use the usage ledger; meters appear on proxy status when the gateway reports them. Structured logs use `RouteFinderLog` categories (`routing`, `geocode`, `fleet`, `metering`).
 
 ### 3.9 Automated testing integration
-- SPM tests; web smoke; Android unit tests; CI jobs.
+
+| Suite | Command / job | Role |
+|-------|---------------|------|
+| Swift package | `cd RouteFinder && swift test` | Unit/integration across modules (e.g. `FleetProxyDeskStatusTests`, toll catalog parity tests) |
+| web-dispatch | `cd web-dispatch && npm test` (+ smoke helpers) | Desk pure helpers / Connection behaviour |
+| Android | Gradle unit tests; CI job `android-c1` | C2 client regressions (JDK 17–22 on PATH) |
+| UI / phase | Optional `xcodebuild` UI tests; phase* Docs | Device/simulator evidence |
+
+Detailed strategy, edge cases, and objective–test cross-reference are reserved for §4 Testing.
 
 ### 3.10 Objective fulfilment confirmation
-- Table FO → symbol/path → Doc status.
+
+| ID | Implementation evidence (greppable) | Docs status |
+|----|-------------------------------------|-------------|
+| FO1 | ORS planning client + vehicle profile / trailer ladder | Shipped (MVP) |
+| FO2 | `FleetDispatchCoordinator`, fleet server, web/Mac push + roster | Shipped (MVP) |
+| FO3 | `RouteSimulationCoordinator` / physics rehearsal + trip brief | Shipped (MVP) |
+| FO4 | `HosAdvisoryCoordinator`; desk Can-I-drive cards; legal disclaimer | Shipped (MVP); VU download residual |
+| FO5 | LEZ/toll catalogs; hazard + predictive coordinators; layby pins | Shipped (MVP slices); live £ / full cadastre residual |
+| FO6 | `FleetProxyDeskStatus` + Connection UIs (web/Mac/Android) | Shipped (MVP); Stripe residual |
+| FO7 | `android-fleet-driver/` + [`android-c2-gate.md`](android-c2-gate.md) | Shipped (MVP); AA/offline gated |
+| FO8 | Overpass lane enrichment in planning path | Shipped (MVP slice); HD residual |
+| NFO1–NFO7 | Module rules, glass UI, masking, `RemoteRequestPolicy`, CI, Docs SSOT | Enforced in-repo / CI / Docs upkeep |
 
 ---
 
 ## 4. Testing
 
-*(Stub — fill after §3.)*
+*(Stub — fill next attach.)*
 
 ### 4.1 Testing strategy
 - Unit + integration + CI; optional physical smoke ([`phase1-device-checklist.md`](phase1-device-checklist.md)).
@@ -585,4 +655,5 @@ Accessibility and operator clarity: mask secrets in UI and screenshots; prefer e
 | 2026-11-11 | #125 / #126 | Initial living narrative Ch 1–3 |
 | 2026-11-11 | #127 / #128 | Narrative Ch 4 (routing / UK layer / compliance) |
 | 2026-11-11 | #129 / #130 | Restructure to NEA-style; **Section 1 Analysis complete**; §§2–5 + Appendices stubbed |
-| 2026-11-11 | #131 / (this PR) | **Section 2 Design complete** (2.1–2.7); next = §3 Implementation |
+| 2026-11-11 | #131 / #132 | **Section 2 Design complete** (2.1–2.7); next = §3 Implementation |
+| 2026-11-11 | #133 / (this PR) | **Section 3 Implementation complete** (3.1–3.10); next = §4 Testing |

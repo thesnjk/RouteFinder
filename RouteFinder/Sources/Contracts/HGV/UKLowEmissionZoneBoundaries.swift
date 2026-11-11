@@ -1,9 +1,11 @@
 import Foundation
 
-/// Hand-authored simplified UK LEZ / CAZ boundary rings for ORS `avoid_polygons`.
+/// Hand-authored / open-data-simplified UK LEZ / CAZ boundary rings for ORS `avoid_polygons`.
 ///
 /// Rings are closed GeoJSON-style `[lon, lat]` envelopes — **not** legal cadastral boundaries.
-/// They improve on circular approximations while staying static and $0.
+/// Sheffield + Birmingham densified from OGL / OSM-published outlines (Douglas–Peucker ≈28 verts),
+/// kept under HeiGIT ORS avoid-polygon area caps. London-wide ULEZ remains a coarse envelope
+/// (full TfL polygon exceeds ORS ~200 km² avoid limit — announcement/`contains` only).
 public enum UKLowEmissionZoneBoundaries: Sendable {
     /// Closed rings keyed by catalog zone id.
     public static let ringsByZoneId: [String: [[Double]]] = [
@@ -35,16 +37,38 @@ public enum UKLowEmissionZoneBoundaries: Sendable {
         [-0.48, 51.42],
     ])
 
-    /// Birmingham Clean Air Zone — city-centre / Ring Road envelope.
+    /// Birmingham Clean Air Zone — densified Middleway (A4540) outline from published CAZ boundary
+    /// (OSM Nominatim / council description: roads within the Middleway). OGL-compatible open outline;
+    /// simplified to ~28 verts; area stays under ORS avoid soft cap.
     public static let birminghamCAZ: [[Double]] = closed([
-        [-1.93, 52.470],
-        [-1.88, 52.470],
-        [-1.86, 52.482],
-        [-1.86, 52.498],
-        [-1.88, 52.505],
-        [-1.93, 52.505],
-        [-1.95, 52.492],
-        [-1.95, 52.478],
+        [-1.92649, 52.47859],
+        [-1.92557, 52.47701],
+        [-1.9213, 52.47451],
+        [-1.91805, 52.4734],
+        [-1.91754, 52.47264],
+        [-1.91337, 52.47181],
+        [-1.90438, 52.46805],
+        [-1.89746, 52.46693],
+        [-1.89398, 52.4654],
+        [-1.88773, 52.46362],
+        [-1.88641, 52.4639],
+        [-1.88196, 52.46721],
+        [-1.87785, 52.46952],
+        [-1.87548, 52.47233],
+        [-1.87513, 52.47486],
+        [-1.87653, 52.47931],
+        [-1.87778, 52.48112],
+        [-1.88034, 52.48318],
+        [-1.88752, 52.49153],
+        [-1.8899, 52.49228],
+        [-1.89497, 52.49215],
+        [-1.90841, 52.49388],
+        [-1.91467, 52.49238],
+        [-1.91628, 52.49039],
+        [-1.91745, 52.48723],
+        [-1.91912, 52.48464],
+        [-1.92247, 52.4828],
+        [-1.92599, 52.47974],
     ])
 
     /// Bristol Clean Air Zone — central / inner-city envelope.
@@ -59,16 +83,39 @@ public enum UKLowEmissionZoneBoundaries: Sendable {
         [-2.64, 51.448],
     ])
 
-    /// Sheffield Clean Air Zone — inner urban envelope.
+    /// Sheffield Clean Air Zone — densified from Sheffield City Council open GeoJSON (UK OGL),
+    /// Douglas–Peucker ≈30 verts; area ~2.4 km² (under ORS avoid soft cap).
     public static let sheffieldCAZ: [[Double]] = closed([
-        [-1.51, 53.365],
-        [-1.44, 53.365],
-        [-1.42, 53.378],
-        [-1.42, 53.395],
-        [-1.44, 53.402],
-        [-1.51, 53.402],
-        [-1.53, 53.390],
-        [-1.53, 53.372],
+        [-1.44754, 53.38447],
+        [-1.45413, 53.38541],
+        [-1.45855, 53.38677],
+        [-1.45821, 53.38766],
+        [-1.46091, 53.38698],
+        [-1.46105, 53.38827],
+        [-1.46203, 53.38761],
+        [-1.4636, 53.38908],
+        [-1.46916, 53.38993],
+        [-1.46833, 53.38915],
+        [-1.4703, 53.38723],
+        [-1.47456, 53.38753],
+        [-1.47658, 53.38879],
+        [-1.47987, 53.3874],
+        [-1.48407, 53.38364],
+        [-1.48341, 53.382],
+        [-1.48433, 53.38169],
+        [-1.48432, 53.37794],
+        [-1.47981, 53.37432],
+        [-1.47817, 53.37445],
+        [-1.47877, 53.3737],
+        [-1.47685, 53.37257],
+        [-1.47315, 53.37365],
+        [-1.46816, 53.3734],
+        [-1.4627, 53.37454],
+        [-1.46462, 53.37752],
+        [-1.46052, 53.38216],
+        [-1.45841, 53.38245],
+        [-1.45871, 53.38385],
+        [-1.45457, 53.38508],
     ])
 
     /// Bath Clean Air Zone — compact city-centre envelope.

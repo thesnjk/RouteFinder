@@ -313,7 +313,7 @@ Original Oct 12 “Defer” list is **void** under the driver-first scope rule. 
 | 7 | `EPIC-LANE-DEPTH` | Fewer missed exits at complex junctions | TomTom / Sygic HD lanes | OSM + Overpass depth; street-name callouts like CoPilot 11.4 | Callouts on prepare/execute + richer `turn:lanes` |
 | 8 | `EPIC-TOLL-DEPTH` | Know toll cost / avoid before committing | TomTom / PTV tariffs | Authored UK tariffs → live feed when affordable | Expand `UKTollAdvisoryCatalog` with £ hints |
 | 9 | `EPIC-VU-PARTNER` | True remaining drive time from the legal VU | Samsara / Geotab remote VU | Partner SDK / webhook; keep advisory honest | Read-only VU status card + Can-I-drive fuse |
-| 10 | `EPIC-LEZ-CADASTRE` | Fewer false LEZ hits / misses | Sygic / TomTom legal zones | Licensed polygons or OS-derived rings | Replace circle envelopes with cadastral-grade UK rings |
+| 10 | `EPIC-LEZ-CADASTRE` | Fewer false LEZ hits / misses | Sygic / TomTom legal zones | Sheffield + Birmingham open-data densify **Shipped (MVP slice)** 2026-11-11; residual = remaining zones + London ORS-blocked + licensed cadastre | Densify remaining coarse envelopes; do not claim legal Pass |
 | 11 | `EPIC-HOSTED-DESK` | Desk pushes trips without LAN when depot Wi‑Fi fails | CoPilot Account Manager | Hosted gateway already exists | Billing/token UX + multi-depot roster for remote desk |
 
 **Sequenced later ≠ won’t ship.** Hygiene H1–H3 land before epic rank 1+ unless a pilot forces otherwise.
@@ -376,8 +376,9 @@ Always **print** push commands. Do **not** push unless the user asked to push (o
 | 5 | Agent | ~~`EPIC-DOCS-P0-SSOT` retire stale P0 Blocked framing~~ **Done** 2026-11-11 — gap-matrix / benchmark / scorecard match Pass (CI) |
 | 6 | Agent | ~~`EPIC-DOCS-PHASE58-SSOT` waive Phase 58 Blocked~~ **Done** 2026-11-11 — ungated Docs nits exhausted |
 | 7 | Agent | ~~`EPIC-OFFLINE-NORTHWEST` M6–M62 mid-corridor~~ **Done** 2026-11-11 — country-pack depth slice; residual = more corridors / `ukCorridor` hosting / Android offline |
-| 8 | Agent | **Stop inventing product epics** — next implementation requires an **explicit user unlock by name** (AA / CarPlay / VU / LEZ / live £ / HD / billing / Android offline / further country PBF). Do not invent multi-surface crowd LAN. |
-| 9 | Operator | Optional Block 1b / Part B LAN smoke via [`phase1-device-checklist.md`](phase1-device-checklist.md) before first pilot / fleet demo |
+| 8 | Agent | ~~`EPIC-LEZ-CADASTRE` Sheffield + Birmingham open-data densify~~ **Done** 2026-11-11 — MVP slice; residual = remaining zones / London ORS-blocked / licensed cadastre |
+| 9 | Agent | **Stop inventing product epics** — next implementation requires an **explicit user unlock by name** (AA / CarPlay / VU / further LEZ / live £ / HD / billing / Android offline / further country PBF). Do not invent multi-surface crowd LAN. |
+| 10 | Operator | Optional Block 1b / Part B LAN smoke via [`phase1-device-checklist.md`](phase1-device-checklist.md) before first pilot / fleet demo |
 
 Also see: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B for optional physical walkaround → desk defect detail.
 

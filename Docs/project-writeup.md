@@ -764,7 +764,7 @@ Authored LEZ rings and named toll advisories must not be described as certified 
 
 **Product:** Resume gated epics only when unlocked by name (or when secrets/entitlements are provided). Do not invent mid-corridor / LEZ densify / toll-£ clones without a Mersey-class catalog hole or measurable scorecard gap. Prefer desk/cab parity checks after cab-only slices (master-prompt Surfaces guidance).
 
-**Documentation:** Next writeup attach polishes **§6 Appendices** (A–E): fold §2.7 / §3.10 / §4.8 into Appendix A traceability, expand Doc index, screenshots pointer, data sources, glossary. After Appendices, mark `EPIC-DOCS-WRITEUP` Done on the sweep and keep this file as living SSOT narrative (update changelog when surfaces move).
+**Documentation:** §6 Appendices A–E are polished; `EPIC-DOCS-WRITEUP` is structurally Done. Keep this file as living SSOT narrative (update changelog when surfaces move). Do not invent further writeup chapters without a surface change; product work resumes only on unlocked gates.
 
 **Process:** Continue issue → branch → PR → print-merge cadence; never commit `Docs/agent-master-prompt.md`; never merge unless asked.
 

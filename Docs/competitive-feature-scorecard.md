@@ -1,6 +1,6 @@
 # Competitive Feature Scorecard — September 2026
 
-Last updated: 2026-11-11 (Phase 7b P0 Pass CI; Midlands + North West + Scotland Central + LEZ densify + toll authored refresh + DESK-LAYBY Done; residual HD / live £ feed / AA / CarPlay / VU / country PBF)
+Last updated: 2026-11-11 (Phase 7b P0 Pass CI; Midlands + North West + Scotland Central + LEZ densify + toll refresh + Mersey Tunnels + DESK-LAYBY Done; residual HD / live £ feed / AA / CarPlay / VU / country PBF)
 
 Scoring: **0** Absent · **1** Weak · **2** Parity · **3** Lead  
 Personas: **OO** = UK owner-operator · **SF** = small fleet (2–20 vehicles)
@@ -136,7 +136,7 @@ Policy: ship anything that benefits the driver; sequence by impact, not permanen
 | Android Auto | CoPilot 11.4 | Not shipped | **Gated** `EPIC-ANDROID-AUTO` |
 | Combo / bumper length + trailer count | CoPilot 11.4 (NA maps) | Cab + Mac/web desk trailer→ORS ladder (12 / 16.5 / 18.75 / 25.25 m); Constraint stays **3** | **Shipped (MVP)** |
 | Lane HD / street callouts | TomTom / Sygic / CoPilot 11.4 | OSM Overpass parity (12 / STRAIGHT skip / 50 km) + sanitize street TTS/HUD/which-lane; residual HD visuals | **Shipped (MVP slice)** — Overpass parity Done; residual HD lane visuals (`EPIC-LANE-DEPTH`) |
-| Toll tariff depth | PTV / TomTom | Named UK advisories + avoid/HUD/PTT + Mac/web desk corridor indicative £ (M6 £20.20 / Dartford £8.40 / Tyne £5.20 authored refresh 2026-11-11) | **Shipped (MVP slice)** — residual live operator / class feed (`EPIC-TOLL-DEPTH`) |
+| Toll tariff depth | PTV / TomTom | Named UK advisories + avoid/HUD/PTT + Mac/web desk corridor indicative £ (M6/Dartford/Tyne refresh + Mersey Tunnels Queensway/Kingsway £4.80 2026-11-11) | **Shipped (MVP slice)** — residual live operator / class feed (`EPIC-TOLL-DEPTH`) |
 | Remote VU download | Samsara / Geotab | Advisory tacho + desk Can-I-drive week card; CSV stub | **Residual** `EPIC-VU-PARTNER` (legal VU download) |
 | Legal LEZ cadastre | Sygic / TomTom | Sheffield + Birmingham + Bradford open-data densified (MVP slice); other zones still coarse envelopes | **Residual** `EPIC-LEZ-CADASTRE` (remaining zones + London ORS-blocked) |
 | Hosted multi-depot desk | CoPilot Account Manager | Named depot profiles; no billing UI | **Residual** `EPIC-HOSTED-DESK` |

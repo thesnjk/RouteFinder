@@ -10,14 +10,18 @@ import org.junit.Test
 class TollAdvisoryAlongRouteMatcherTest {
     @Test
     fun catalogHasMajorCrossingsWithIndicativeGBP() {
-        assertTrue(UKTollAdvisoryCatalog.all.size >= 12)
+        assertTrue(UKTollAdvisoryCatalog.all.size >= 14)
         val dartford = UKTollAdvisoryCatalog.advisory("dartford-crossing")
         val m6 = UKTollAdvisoryCatalog.advisory("m6-toll")
         val tyne = UKTollAdvisoryCatalog.advisory("tyne-tunnel")
+        val queensway = UKTollAdvisoryCatalog.advisory("mersey-tunnels-queensway")
+        val kingsway = UKTollAdvisoryCatalog.advisory("mersey-tunnels-kingsway")
         val severn = UKTollAdvisoryCatalog.advisory("severn-crossings")
         assertEquals(8.40, dartford?.indicativeCostGBP!!, 0.001)
         assertEquals(20.20, m6?.indicativeCostGBP!!, 0.001)
         assertEquals(5.20, tyne?.indicativeCostGBP!!, 0.001)
+        assertEquals(4.80, queensway?.indicativeCostGBP!!, 0.001)
+        assertEquals(4.80, kingsway?.indicativeCostGBP!!, 0.001)
         assertNull(severn?.indicativeCostGBP)
     }
 

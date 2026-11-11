@@ -1,13 +1,14 @@
-# RouteFinder — Professional Technical Writeup
+# RouteFinder — Senior Full-Stack Technical Monograph
 
 **Title:** RouteFinder — A Constraint-Aware UK HGV Navigator and Fleet Desk  
+**Subtitle:** Senior Full-Stack Technical Monograph (living)  
 **Author / owner:** Jacob Hackett  
-**Document type:** Living professional technical writeup (AQA NEA–style structure; **no client interviews**)  
+**Document type:** Production engineering monograph — Analysis → Design → Implementation → Testing → Evaluation → Appendices; **no client interviews**  
 **Repository:** proprietary — see root [`LICENSE`](../LICENSE)  
 **Last updated:** 2026-11-11  
-**Status:** **complete** (living Doc — update changelog when surfaces move; product residuals remain secrets-gated)
+**Status:** **senior monograph — pass 1 shipped** (systems Design depth §§2.8–2.12); further passes deepen Impl / Test / Eval; product residuals remain secrets-gated
 
-Integers, CI evidence, and phase verification remain authoritative in [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md), [`engineering-test-matrix.md`](engineering-test-matrix.md), and relevant `phase*` Docs. This document provides the formal analysis–design–implementation–testing–evaluation narrative and points at those SSOTs.
+Integers, CI evidence, and phase verification remain authoritative in [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md), [`engineering-test-matrix.md`](engineering-test-matrix.md), and relevant `phase*` Docs. This monograph states invariants, trust boundaries, contracts, and failure modes, and points at those SSOTs for greppable proof.
 
 Gated product work (Android Auto / offline packs, CarPlay production entitlements, VU partner SDK, live toll £ feeds, HD lane assets, Stripe billing, further country PBF) resumes only when unlocked by name.
 
@@ -15,9 +16,13 @@ Gated product work (Android Auto / offline packs, CarPlay production entitlement
 
 ## Abstract
 
-RouteFinder is a native multi-surface system for UK heavy goods vehicle (HGV) operators. It plans constraint-aware routes (length, width, height, weight, axle, hazmat / ADR), rehearses kinetic risk before departure, overlays advisory hours-of-service (HOS) planning, and connects in-cab drivers to an office desk over LAN or hosted HTTPS. The vehicle unit (VU) / digital tachograph remains the legal record; RouteFinder’s clocks and “Can I drive now?” answers are planning aids only.
+**Problem.** UK HGV operators need constraint-faithful routing, pre-trip kinetic rehearsal, advisory HOS planning, and desk↔cab coupling over LAN or hosted HTTPS — without treating consumer maps or VU-less SaaS as substitutes for legal tachograph authority.
 
-This writeup follows a professional NEA-style structure (Analysis → Design → Implementation → Testing → Evaluation → Appendices) adapted to a production product rather than a single-client coursework brief. Stakeholder needs are derived from documented buyer personas and competitive research, not from fabricated client interviews.
+**Method.** Requirements are derived from documented buyer personas ([`buyer-personas-uk-hgv.md`](buyer-personas-uk-hgv.md)) and competitive scorecard gaps, not client interviews. Prioritisation uses `(competitor best − RF) × persona weight × driver_impact`, then a gate filter that excludes paid-entitlement work unless unlocked. Claims require greppable evidence graded as symbol / unit test / CI job / Doc SSOT.
+
+**Contribution.** A multi-surface native system: iOS/Mac Swift 6 package + Android C2 fleet driver + `web-dispatch` desk + LAN/`hosted-gateway` `/v1/*` fleet API, with Account-Manager-lite Connection identity (`orgId`/`orgName` + meters), UK living-layer advisories (open-data densified LEZ rings including Sheffield / Birmingham / Bradford / Bristol / Bath; named toll £), physics rehearsal, and advisory HOS — while labelling residuals honestly.
+
+**Limitations.** Production CarPlay/Android Auto, legal VU download, live operator tariffs, HD lane visuals, Stripe billing, and unbounded London ULEZ avoid remain gated or ORS-capped. Authored LEZ/toll data is **not** legal cadastre or live class tariffs.
 
 ---
 
@@ -26,10 +31,12 @@ This writeup follows a professional NEA-style structure (Analysis → Design →
 | Field | Value |
 |-------|--------|
 | Primary file | `Docs/project-writeup.md` |
+| Edition | Senior monograph pass 1 (systems Design) |
 | Related indexes | [`developer-map.md`](developer-map.md), root [`README.md`](../README.md) |
 | Architecture SSOT | [`architecture.md`](architecture.md) |
 | Competitive SSOT | [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md), [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md) |
 | Fleet API contract | [`fleet-api-schema.json`](fleet-api-schema.json) |
+| Evidence rule | No claim without greppable symbol, test, CI job, or Doc SSOT |
 
 ---
 
@@ -54,6 +61,11 @@ This writeup follows a professional NEA-style structure (Analysis → Design →
    - [2.5 Interface design](#25-interface-design)
    - [2.6 Data dictionary](#26-data-dictionary)
    - [2.7 Objective traceability matrix](#27-objective-traceability-matrix)
+   - [2.8 Threat model and trust boundaries](#28-threat-model-and-trust-boundaries)
+   - [2.9 Concurrency and consistency](#29-concurrency-and-consistency)
+   - [2.10 Cross-surface API contract](#210-cross-surface-api-contract)
+   - [2.11 Observability and fair-use](#211-observability-and-fair-use)
+   - [2.12 Failure and degradation matrix](#212-failure-and-degradation-matrix)
 3. [Implementation](#3-implementation)
    - [3.1 Implementation overview](#31-implementation-overview)
    - [3.2 Graph / routing implementation](#32-graph--routing-implementation)
@@ -139,19 +151,34 @@ No client interviews are used in this writeup. Needs are taken from the committe
 
 ### 1.4 Research into the problem
 
-Research is documentary and competitive, not interview-based.
+Research is documentary and competitive, not interview-based. The method is explicit so ranking can be audited.
 
-1. **Competitive feature scoring** — [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md) records Lead / Parity / Gap integers against Sygic, TomTom, CoPilot, and telematics peers, with residuals tagged to epics (`EPIC-CARPLAY-PROD`, `EPIC-ANDROID-AUTO`, `EPIC-VU-PARTNER`, `EPIC-LEZ-CADASTRE`, `EPIC-TOLL-DEPTH`, `EPIC-LANE-DEPTH`, `EPIC-HOSTED-DESK`).
-2. **Excellence sweep** — [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md) sequences agent-doable vs secrets-gated work and records shipped MVP slices (including HOSTED-DESK Connection parity and Docs honesty).
-3. **Domain constraints** — EU 561 / WTD advisory behaviour; DVSA-style walkaround; GOV.UK-linked toll advisory catalogs; ORS avoid-polygon area caps (London-wide ULEZ avoid blocked at provider limits).
-4. **Engineering evidence paths** — `swift test`, `web-dispatch` `npm test`, GitHub Actions `android-c1`, phase verification Docs, fleet E2E playbook.
+#### Methodology
 
-**Findings relevant to analysis:**
+1. **Collect** — Public competitor pages / upgrade notes (CoPilot, Sygic Truck, TomTom GO Truck, TRAVIS×Trimble; Samsara/Geotab when HOS/VU is in scope), via Firecrawl or equivalent; notes stay local (do not commit scrapes).
+2. **Score** — Maintain Lead / Parity / Gap integers in [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md); tag residuals to epics (`EPIC-CARPLAY-PROD`, `EPIC-ANDROID-AUTO`, `EPIC-VU-PARTNER`, `EPIC-LEZ-CADASTRE`, `EPIC-TOLL-DEPTH`, `EPIC-LANE-DEPTH`, `EPIC-HOSTED-DESK`).
+3. **Weight** — Apply OO + SF (and Android / hosted) weights from [`buyer-personas-uk-hgv.md`](buyer-personas-uk-hgv.md).
+4. **Rank** — Prefer slices maximising `(competitor best − RF) × persona weight × driver_impact`, after verifying the gap is still open in greppable symbols (not stale Doc checkboxes).
+5. **Gate** — Skip work that needs paid Apple/partner secrets, live tariff APIs, or Stripe unless unlocked by name. Free open-data catalog fills (ORS-safe LEZ densify) are allowed when residual coarse holes remain.
+6. **Sequence** — [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md) records agent-doable vs secrets-gated order and shipped MVP slices.
 
-- Physics rehearsal and advisory HOS+desk coupling are differentiators relative to pure truck-nav peers.
-- Offline depth and production CarPlay/Android Auto remain competitor leads where RouteFinder is gated or MVP-limited.
-- Hosted multi-depot **org identity + Connection meters** shipped as Account-Manager-lite; Stripe self-serve billing remains explicitly out of scope.
-- Further LEZ densify / mid-corridor / toll-£ catalog clones are anti-grind unless a Mersey-class hole or measurable scorecard gap appears.
+#### Evidence grades
+
+| Grade | Meaning | Example |
+|-------|---------|---------|
+| **S** | Greppable symbol / type | `FleetProxyDeskStatus`, `UKLowEmissionZoneBoundaries` |
+| **T** | Automated unit/integration test | `FleetProxyDeskStatusTests`, `ukLezBristolAndBathDensifiedUnderOrsCap` |
+| **C** | CI job green | `macos` / `ios` / `web-dispatch` / `android-c1` / `hosted-gateway` |
+| **D** | Doc SSOT row | scorecard Shipped vs Residual; phase verification |
+
+A claim is **auditable** only when it cites at least one of S/T/C/D. Marketing-only competitor fluff does not move scorecard integers.
+
+#### Findings relevant to analysis
+
+- Physics rehearsal and advisory HOS+desk coupling are differentiators relative to pure truck-nav peers (**S/T**).
+- Offline depth and production CarPlay/Android Auto remain competitor leads where RouteFinder is gated or MVP-limited (**D**).
+- Hosted multi-depot **org identity + Connection meters** shipped as Account-Manager-lite; Stripe self-serve billing remains out of scope (**S/T/D**).
+- Open-data LEZ densify MVP includes Sheffield / Birmingham / Bradford / Bristol / Bath (ORS-safe); residual coarse zones + London ORS-blocked (**S/T/D**). Free densify continues only for remaining ORS-safe coarse holes — not unbounded London ULEZ, not live £.
 
 ### 1.5 Alternative solutions
 
@@ -333,10 +360,24 @@ Design decisions implement the Analysis objectives (§1.6) within the constraint
 
 #### Design trade-offs and limitations
 
-- **ORS dependency vs fully self-hosted graph:** Faster constraint coverage and global HGV profiles; accepts provider area caps (e.g. London-wide ULEZ avoid) and fair-use metering.
-- **Account-Manager-lite vs CoPilot-class billing UI:** Delivers depot `orgId`/`orgName` + meters now; defers Stripe deliberately.
-- **Authored LEZ / named tolls vs licensed cadastre / live tariffs:** Ship advisories with honest labelling; residuals remain gated.
-- **Coordinator hosts vs full TCA rewrite:** Incremental decomposition (ADR in architecture Doc) preferred over big-bang view-model rewrite.
+| Choice | Upside | Failure consequence if wrong |
+|--------|--------|------------------------------|
+| ORS dependency vs fully self-hosted graph | Fast constraint coverage + global HGV profiles | Provider outage/429 → route failure banners; area caps block London-wide ULEZ avoid |
+| Account-Manager-lite vs Stripe billing UI | Depot identity + meters without SaaS scope | No self-serve seat billing; Operator must mint tokens |
+| Open-data LEZ / named tolls vs licensed feeds | Ship advisories now with honest labelling | False precision risk if Docs claim “legal cadastre” or “live £” — forbidden |
+| Coordinator hosts vs big-bang TCA rewrite | Incremental extraction; testable with in-memory fleet fixtures | Residual god-object pressure if new domains skip extraction ADR |
+
+#### System invariants (must hold)
+
+| Invariant | Enforcement |
+|-----------|-------------|
+| No HTTP from Views | Architecture rule; I/O via `RouteController` / `DataLayer` |
+| Contracts are pure | No `URLSession` in Contracts module |
+| VU is legal authority | Product copy + HOS advisory labelling; no VU-download claim |
+| Tokens never unmasked in UI/Docs shots | `maskApiKey` / `maskedTokenLine`; screenshot policy |
+| LEZ avoid rings under ORS area soft cap | `LEZAvoidPolicy.avoidPolygonAreaCapSquareMeters`; London omitted from avoid set |
+| Cross-surface fleet contract aligned | [`fleet-api-schema.json`](fleet-api-schema.json) + mirrored DTOs |
+| Catalog triple-sync for shared UK data | Swift + Android + `web-dispatch` in one PR when catalogs move |
 
 ### 2.2 System architecture
 
@@ -498,6 +539,70 @@ Accessibility and operator clarity: mask secrets in UI and screenshots; prefer e
 | NFO6 | CI / tests | `swift test`, `npm test`, `android-c1` | §4 |
 | NFO7 | Docs SSOT | scorecard / sweep / this writeup | §4 |
 
+### 2.8 Threat model and trust boundaries
+
+Surfaces do not share a single trust domain. Secrets, Bearer tokens, and third-party keys cross boundaries only through Operator-minted configuration — never via git or Docs screenshots.
+
+| Boundary | Trust posture | Abuse / failure cases |
+|----------|---------------|------------------------|
+| **Cab (iOS / Android)** | Device holds Connection URL + Bearer for fleet; solo ORS key optional on Apple | Stolen device → rotate depot token; unmasked token in screenshot → rotate + purge shot |
+| **Desk (Mac / web-dispatch)** | Same Bearer org token family; Connection Test hits `/v1/proxy/status` | Token pasted into chat/PR → treat as compromised; UI must use `maskApiKey` / `maskedTokenLine` |
+| **LAN fleet server** | Bearer auth + fair-use caps on same Wi‑Fi | Open LAN without Bearer → reject; brute token → rate-limit / Operator revoke |
+| **Hosted gateway** | HTTPS edge; org identity + meters; Operator-deployed | Public URL without TLS or weak token → Operator config failure; 429 under abuse |
+| **Third-party APIs (ORS, TomTom, DVLA/RegCheck, OpenWeather)** | Depot/solo keys; `RemoteRequestPolicy` | Key leak → provider revoke; 429 / outage → user banners, not silent empty maps |
+| **Git / Docs** | No secrets in tree; screenshot policy | Unmasked key in commit history → rotate; do not “fix” by redacting only the Doc |
+
+**Non-goals of this threat model:** full STRIDE workbook (pass 4 appendix), multi-tenant SaaS isolation, Stripe PCI scope. VU / tacho hardware remains outside RouteFinder’s authority boundary.
+
+### 2.9 Concurrency and consistency
+
+| Concern | Design rule | Greppable anchor |
+|---------|-------------|------------------|
+| Swift I/O | `async`/`await`; actors / isolation for shared mutable state | Package concurrency norms; NFO2 |
+| UI observation | `@Observable` / hosts on VM; coordinators own orchestration | `RouteViewModel` + coordinator hosts |
+| Fleet publish | Active-trip **snapshots** (GPS, defects, optional layby) — not a live VU feed | `FleetDispatchCoordinator` snapshot path |
+| Cross-surface truth | Wire contract is `/v1/*` + [`fleet-api-schema.json`](fleet-api-schema.json); Android/web mirror DTOs | `FleetProxyDeskStatus` decode tests |
+| Catalog consistency | Toll / LEZ shared data triple-synced in one PR | Swift + Android + `web-dispatch` |
+| Offline vs live | Offline H3 tiles degrade gracefully; do not invent live constraint fidelity offline | Hybrid policy in README / architecture |
+
+**Consistency claim (honest):** desks show last published snapshot and capped poll/SSE; they do not guarantee continuous GPS or legal HOS clocks.
+
+### 2.10 Cross-surface API contract
+
+| Contract element | Role |
+|------------------|------|
+| [`fleet-api-schema.json`](fleet-api-schema.json) | SSOT for fleet wire shapes including `FleetProxyDeskStatus` (`orgId` / `orgName`, meters) |
+| `/v1/proxy/status` | Connection identity + fair-use meters for web / Mac / Android |
+| `/v1/*` trip / SSE / active-trip | Dispatch push, driver poll, snapshot publish |
+| Versioning honesty | `/v1` is the shipped family; breaking field removals require schema + all clients in lockstep — no silent “v2 invent” in Docs |
+| Catalog triple-sync | UK toll £ and LEZ rings must land Swift + Kotlin + web together |
+
+Schema drift without a mirrored client decode is a **bug**, not a soft Doc update. Stripe billing fields are explicitly **out of contract** until unlocked.
+
+### 2.11 Observability and fair-use
+
+| Mechanism | Purpose |
+|-----------|---------|
+| `RouteFinderLog` categories (`routing`, `geocode`, `fleet`, `metering`) | Structured diagnosis without dumping secrets |
+| `RemoteRequestPolicy` | Shared timeout / retry / jitter / 429 + `Retry-After` for ORS, TomTom, fleet, DVLA/RegCheck |
+| Usage ledger + proxy meters | Soft budgets; Connection UI shows ORS (and related) meters when gateway reports them |
+| Connection Test | Operator-visible depot / masked token / meters before dispatch |
+
+Fair-use is **soft product protection**, not a hard SLA guarantee to end customers. Abuse that exhausts provider quotas surfaces as 429 / failure banners after policy retries.
+
+### 2.12 Failure and degradation matrix
+
+| Failure | User-visible behaviour | Notes |
+|---------|------------------------|-------|
+| ORS down / timeout | Route failure banner; no silent empty corridor | Policy retries then fail closed on plan |
+| Proxy / gateway 429 | Retry with backoff; then banner; meters may show pressure | Fair-use / abuse |
+| Missing ORS or fleet keys | Explicit configuration banners | Do not auto-invent keys |
+| LEZ ring over ORS area soft cap | Ring omitted from avoid set (e.g. London ULEZ) | `LEZAvoidPolicy`; not “ULEZ unsupported forever” marketing |
+| Offline tile miss | Degrade to available region / live path when online | Not Sygic-class country pack claim |
+| SSE drop | Desk falls back to capped poll / reconnect path | Snapshot freshness may lag |
+| Invalid / rotated Bearer | Auth failure on Connection Test / publish | Operator remints token |
+| Catalog stale vs operator tariff | Indicative £ / advisory LEZ only | Residual = live feed / licensed cadastre |
+
 ---
 
 ## 3. Implementation
@@ -543,7 +648,7 @@ When offline tiles are present, `PathfindingEngine` evaluates routes over `Graph
 
 | Concern | Implementation sketch |
 |---------|----------------------|
-| LEZ avoid | Authored rings (11 catalog zones); Settings toggle; ORS `avoid_polygons` when enabled; densify MVP for Sheffield / Birmingham / Bradford |
+| LEZ avoid | Authored rings (11 catalog zones); Settings toggle; ORS `avoid_polygons` when enabled; densify MVP for Sheffield / Birmingham / Bradford / Bristol / Bath |
 | Tolls | `UKTollAdvisoryCatalog` (Swift) triple-synced with Android + web-dispatch; HUD/TTS/desk indicative £; ORS avoid-tolls replan |
 | Hazmat / ADR | Passed through ORS vehicle profile parameters |
 | Clearance | `ClearanceCorridorProbe` (Overpass maxheight/weight; off-route heading) |
@@ -867,3 +972,4 @@ Configuration and key placement: root README API-keys section and [`hosted-gatew
 | 2026-11-11 | #135 / #136 | **Section 4 Testing complete** (4.1–4.8); next = §5 Evaluation |
 | 2026-11-11 | #137 / #138 | **Section 5 Evaluation complete** (developer-led; no clients); next = Appendices |
 | 2026-11-11 | #139 / (this PR) | **Appendices A–E polished**; `EPIC-DOCS-WRITEUP` structurally **Done** |
+| 2026-11-11 | #143 / (this PR) | **Senior monograph pass 1** — Abstract/Status reframe; §1.4 scoring/evidence method; Design invariants + §§2.8–2.12; Bristol+Bath LEZ honesty; next = pass 2 Implementation depth |

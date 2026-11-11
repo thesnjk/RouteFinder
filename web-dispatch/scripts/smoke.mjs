@@ -922,7 +922,7 @@ const SMOKE_TOLL_CATALOG = [
     latitude: 52.65,
     longitude: -1.75,
     approachRadiusMeters: 4000,
-    indicativeCostGBP: 13.0,
+    indicativeCostGBP: 20.2,
   },
   {
     id: 'dartford-crossing',
@@ -930,7 +930,7 @@ const SMOKE_TOLL_CATALOG = [
     latitude: 51.464,
     longitude: 0.258,
     approachRadiusMeters: 3500,
-    indicativeCostGBP: 6.0,
+    indicativeCostGBP: 8.4,
   },
   {
     id: 'severn-crossings',
@@ -982,7 +982,7 @@ const dartfordM6 = advisoriesAlongRoute([
 assert.equal(dartfordM6.length, 2)
 assert.equal(dartfordM6[0].id, 'dartford-crossing')
 assert.equal(dartfordM6[1].id, 'm6-toll')
-assert.equal(indicativeRouteTotalGBP(dartfordM6), 19)
+assert.equal(indicativeRouteTotalGBP(dartfordM6), 28.6)
 
 const severnOnly = advisoriesAlongRoute([
   [-2.7, 51.59],

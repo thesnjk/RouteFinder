@@ -13,9 +13,11 @@ class TollAdvisoryAlongRouteMatcherTest {
         assertTrue(UKTollAdvisoryCatalog.all.size >= 12)
         val dartford = UKTollAdvisoryCatalog.advisory("dartford-crossing")
         val m6 = UKTollAdvisoryCatalog.advisory("m6-toll")
+        val tyne = UKTollAdvisoryCatalog.advisory("tyne-tunnel")
         val severn = UKTollAdvisoryCatalog.advisory("severn-crossings")
-        assertNotNull(dartford?.indicativeCostGBP)
-        assertNotNull(m6?.indicativeCostGBP)
+        assertEquals(8.40, dartford?.indicativeCostGBP!!, 0.001)
+        assertEquals(20.20, m6?.indicativeCostGBP!!, 0.001)
+        assertEquals(5.20, tyne?.indicativeCostGBP!!, 0.001)
         assertNull(severn?.indicativeCostGBP)
     }
 

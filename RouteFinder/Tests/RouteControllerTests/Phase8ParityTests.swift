@@ -18,9 +18,11 @@ import Testing
 @Test func ukTollCatalogSeedsIndicativeGBPForTolledCrossings() {
     let dartford = UKTollAdvisoryCatalog.advisory(id: "dartford-crossing")
     let m6 = UKTollAdvisoryCatalog.advisory(id: "m6-toll")
+    let tyne = UKTollAdvisoryCatalog.advisory(id: "tyne-tunnel")
     let severn = UKTollAdvisoryCatalog.advisory(id: "severn-crossings")
-    #expect(dartford?.indicativeCostGBP != nil)
-    #expect(m6?.indicativeCostGBP != nil)
+    #expect(dartford?.indicativeCostGBP == 8.40)
+    #expect(m6?.indicativeCostGBP == 20.20)
+    #expect(tyne?.indicativeCostGBP == 5.20)
     #expect(severn?.indicativeCostGBP == nil)
 }
 

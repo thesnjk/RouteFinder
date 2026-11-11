@@ -2,7 +2,7 @@
 
 Full Android navigation beyond the shipped C2 MVP (offline graph, Android Auto) remains a **multi-month** Kotlin program for the deepest parity items. Split product prioritization from engineering parity below.
 
-Last updated: 2026-11-08 (U12–U15 Done + roadworks-in-fuse + live TomTom hazard; next = product-gated offline / Android Auto)
+Last updated: 2026-11-11 (U12–U15 Done + roadworks-in-fuse + live TomTom hazard + FleetSetupWizard/DriverHome Connection proxy-status parity; next = product-gated offline / Android Auto)
 
 ---
 
@@ -37,6 +37,7 @@ Related mid-market items (also pilot-gated for *priority*):
 | DVSA walkaround → snapshot + PDF / photos | `InspectionWalkaroundDialog` + `InspectionReportPdfRenderer` | **Shipped** (U12) |
 | LEZ / HOS / layby advisory | `UkLezCatalog` + `HosAdvisoryClock` (Drive/Break/Off + weekly + 10h ext + fortnight 90h + WTD 60h heads-up) + `LaybyAdvisoryEngine` + map parking availability circles (`ParkingMapMarkerBuilder`; crowd/prior — not live bays) | **Shipped** (U13 + PARKING-AVAIL + HOS-DUTYLOG + HOS-EXTENSION + HOS-WTD) |
 | Fleet TomTom / OpenWeather / Overpass proxy | `FleetForecastProxy` + Android clients via `FleetOrsConfig` | **Shipped** (U14) |
+| Connection `/v1/proxy/status` depot + masked token + ORS meters | `FleetProxyStatusLabels` on FleetSetupWizard Test + DriverHome badge | **Shipped** (HOSTED-DESK 2026-11-11) |
 | Off-route heading clearance | `ClearanceCorridorProbe.isOffRoute` + heading corridor | **Shipped** (U14b) |
 | ORS LEZ `avoid_polygons` when avoid toggle on | `LezAvoidPolicy` + `OrsDirectionsRequest` | **Shipped** (U15) |
 | CI green | `.github/workflows/ci.yml` `android-c1` job | **Pass** |

@@ -1,163 +1,416 @@
-# RouteFinder — project writeup
+# RouteFinder — Professional Technical Writeup
 
-Living end-to-end narrative of what RouteFinder is, which surfaces ship today, and what remains gated. Integers and verification stay in the scorecard / phase Docs — this file tells the story and points at those SSOTs.
+**Title:** RouteFinder — A Constraint-Aware UK HGV Navigator and Fleet Desk  
+**Author / owner:** Jacob Hackett  
+**Document type:** Living professional technical writeup (AQA NEA–style structure; **no client interviews**)  
+**Repository:** proprietary — see root [`LICENSE`](../LICENSE)  
+**Last updated:** 2026-11-11  
+**Status:** **iterative** — Section 1 Analysis complete; Sections 2–5 and Appendices stubbed (next attach = §2 Design)
 
-Last updated: 2026-11-11  
-Status: **iterative** (Ch 1–4 drafted; Ch 5–8 stubbed — next attach fills Ch 5)  
-Gated product work (AA / CarPlay / VU / live £ / HD / Stripe / Android offline / country PBF) resumes only when unlocked by name.
+Integers, CI evidence, and phase verification remain authoritative in [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md), [`engineering-test-matrix.md`](engineering-test-matrix.md), and relevant `phase*` Docs. This document provides the formal analysis–design–implementation–testing–evaluation narrative and points at those SSOTs.
+
+Gated product work (Android Auto / offline packs, CarPlay production entitlements, VU partner SDK, live toll £ feeds, HD lane assets, Stripe billing, further country PBF) resumes only when unlocked by name.
+
+---
+
+## Abstract
+
+RouteFinder is a native multi-surface system for UK heavy goods vehicle (HGV) operators. It plans constraint-aware routes (length, width, height, weight, axle, hazmat / ADR), rehearses kinetic risk before departure, overlays advisory hours-of-service (HOS) planning, and connects in-cab drivers to an office desk over LAN or hosted HTTPS. The vehicle unit (VU) / digital tachograph remains the legal record; RouteFinder’s clocks and “Can I drive now?” answers are planning aids only.
+
+This writeup follows a professional NEA-style structure (Analysis → Design → Implementation → Testing → Evaluation → Appendices) adapted to a production product rather than a single-client coursework brief. Stakeholder needs are derived from documented buyer personas and competitive research, not from fabricated client interviews.
+
+---
+
+## Document control
+
+| Field | Value |
+|-------|--------|
+| Primary file | `Docs/project-writeup.md` |
+| Related indexes | [`developer-map.md`](developer-map.md), root [`README.md`](../README.md) |
+| Architecture SSOT | [`architecture.md`](architecture.md) |
+| Competitive SSOT | [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md), [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md) |
+| Fleet API contract | [`fleet-api-schema.json`](fleet-api-schema.json) |
 
 ---
 
 ## Table of contents
 
-1. [What RouteFinder is](#1-what-routefinder-is)
-2. [Surfaces map](#2-surfaces-map)
-3. [Fleet and hosted desk today](#3-fleet-and-hosted-desk-today)
-4. [Routing, UK living layer, compliance](#4-routing-uk-living-layer-compliance)
-5. [Competitive posture](#5-competitive-posture) *(stub)*
-6. [Architecture and repo layout](#6-architecture-and-repo-layout) *(stub)*
-7. [Operator / pilot path](#7-operator--pilot-path) *(stub)*
-8. [Open gates and non-goals](#8-open-gates-and-non-goals) *(stub)*
-9. [Changelog of writeup iterations](#9-changelog-of-writeup-iterations)
+1. [Analysis](#1-analysis)
+   - [1.1 Problem statement](#11-problem-statement)
+   - [1.2 Background](#12-background)
+   - [1.3 Stakeholders and personas](#13-stakeholders-and-personas)
+   - [1.4 Research into the problem](#14-research-into-the-problem)
+   - [1.5 Alternative solutions](#15-alternative-solutions)
+   - [1.6 Objectives](#16-objectives)
+   - [1.7 Modelling the problem](#17-modelling-the-problem)
+   - [1.8 Requirements derivation](#18-requirements-derivation)
+   - [1.9 Constraints](#19-constraints)
+   - [1.10 Assumptions](#110-assumptions)
+2. [Design](#2-design) *(stub)*
+3. [Implementation](#3-implementation) *(stub)*
+4. [Testing](#4-testing) *(stub)*
+5. [Evaluation](#5-evaluation) *(stub)*
+6. [Appendices](#6-appendices) *(stub)*
+7. [Document changelog](#7-document-changelog)
 
 ---
 
-## 1. What RouteFinder is
+## 1. Analysis
 
-RouteFinder is a native **HGV / truck navigator and fleet desk** aimed at UK operators. It plans constraint-aware routes (length / width / height / weight / axle / hazmat / ADR), rehearses them with vehicle physics, and keeps hours-of-service as an **advisory** overlay — the vehicle unit (VU) / digital tachograph remains the legal record.
+### 1.1 Problem statement
 
-The product is not a multi-tenant SaaS portal. The core experience is:
+UK HGV drivers and small-fleet transport managers must plan and execute journeys under vehicle-specific constraints that consumer navigation systems routinely ignore or under-specify: low bridges, weight limits, length/width restrictions, hazmat / ADR tunnel codes, Low Emission Zones (LEZ) / Clean Air Zones (CAZ), named tolls, and legally mandated driving and rest limits under EU Regulation 561 and the Working Time Directive (WTD).
 
-- **In-cab** — iOS gold-standard driver app plus Android C2 fleet driver (depot-issued handset; CarPlay / Android Auto not required for pilots).
-- **Office desk** — Mac/iPad dispatch console and a browser desk (`web-dispatch`) for Windows/Linux PCs, talking to a LAN fleet server or an optional hosted gateway.
-- **UK living layer** — RegCheck/DVLA plate profiles, truck POIs, LEZ/CAZ advisories and avoid rings (authored, not legal cadastre), named UK toll £ hints, crowd hazards fused with TomTom, layby occupancy priors.
+Failures of constraint-aware planning produce operational and legal risk: unsuitable roads, unexpected LEZ exposure, missed rest opportunities, inflated ETAs that do not reflect grade or kinetic reality, and office–cab disconnect when depot Wi‑Fi or LAN pairing fails. Enterprise telematics (e.g. Samsara, Geotab) emphasises compliance download and fleet tracking; dedicated truck navigators (e.g. Sygic Truck, CoPilot) emphasise maps and guidance; few systems combine **constraint routing**, **physics rehearsal**, **advisory HOS**, and a **lightweight fleet desk** that works on LAN or hosted HTTPS without becoming a multi-tenant SaaS billing product.
 
-**Owner:** Jacob Hackett. The repository and software are proprietary and confidential — see root [`LICENSE`](../LICENSE). No public redistribution rights except under written agreement.
+**Problem to solve:** design and ship a coherent product that (a) routes HGVs under explicit constraints, (b) rehearses kinetic risk and produces shareable trip documentation, (c) advises HOS without claiming VU authority, (d) supports iOS and Android C2 in-cab use plus Mac/web dispatch, and (e) remains honest about residuals that require paid partner entitlements or licensed data.
 
-**Legal (HOS):** RouteFinder’s HOS clock, imported card remainings, and “Can I drive now?” answers are planning aids only. Do not use them as a substitute for the legal tachograph record or enforcement decisions.
+### 1.2 Background
 
-Deeper stranger-path UX: [`getting-started.md`](getting-started.md). Feature bullets and API-key notes: root [`README.md`](../README.md).
+#### Domain
+
+Articulated and rigid HGVs operating UK long-haul and regional trunking face:
+
+- **Physical constraints** — height, weight, length, width, axle load, hazmat classifications.
+- **Spatial policy** — LEZ/CAZ charging and access rules; authored avoid polygons are a pragmatic approximation of legal cadastre.
+- **Economic friction** — named tolls (e.g. M6 Toll, Dartford, Tyne, Mersey) where indicative £ advisories help commit/avoid decisions before live operator feeds exist.
+- **Temporal law** — daily/weekly driving limits, breaks, fortnight and WTD ceilings; the VU is authoritative for enforcement.
+- **Operational coupling** — office staff push multi-stop jobs; drivers need toast/SSE handoff, GPS snapshots for roster pins, and Connection clarity (depot identity, masked token, API meters).
+
+#### Product thesis
+
+RouteFinder is positioned as a **native HGV navigator and fleet desk**, not a public multi-tenant portal. Core experience:
+
+- **In-cab** — iOS gold-standard driver app; Android C2 fleet driver on a depot-issued handset (CarPlay / Android Auto not required for pilots).
+- **Office desk** — Mac/iPad dispatch plus `web-dispatch` for Windows/Linux PCs.
+- **Connectivity** — `RouteFinderFleetServer` on office LAN, or Operator hosted gateway over HTTPS with org bearer tokens.
+- **UK living layer** — RegCheck/DVLA plate profiles, truck POIs, LEZ/toll/layby/hazard overlays, crowd reports fused with TomTom where configured.
+
+#### Legal posture (non-negotiable)
+
+RouteFinder’s HOS clock, imported card remainings, and “Can I drive now?” answers are **planning aids only**. They must not be used as a substitute for the legal tachograph record or enforcement decisions. LEZ rings are authored / open-data densified approximations, not certified cadastral boundaries. Toll £ figures are named advisories, not live operator class tariffs unless a paid feed is unlocked.
+
+### 1.3 Stakeholders and personas
+
+No client interviews are used in this writeup. Needs are taken from the committed persona Doc [`buyer-personas-uk-hgv.md`](buyer-personas-uk-hgv.md) and from competitive scoring practice in the sweep / scorecard.
+
+| Stakeholder | Role | Primary needs |
+|-------------|------|----------------|
+| Owner-operator (“Dave”) | 1 tractor; personal iPhone; high budget sensitivity | Constraint routing, break/layby guidance, LEZ awareness, voice/map at junctions, physics rehearsal, degraded-signal resilience |
+| Small fleet operator (“Sarah”) | 2–20 vehicles; Mac/iPad office | Push trip with constraints, physics ETA, shareable trip brief, LAN discovery without heavy IT, optional layby prediction on active trips |
+| Android-heavy fleet (secondary) | Depot Android handsets | Fleet ORS proxy (no driver HeiGIT key), MapLibre nav, SSE handoff, Connection wizard/home parity |
+| Hosted-remote desk (secondary) | Depot Wi‑Fi unreliable | HTTPS gateway, named depot profiles, `/v1/proxy/status` org identity + meters |
+
+**Deal-breakers captured from personas (honest):** routes through unsuitable village infrastructure; surprise LEZ entry; no break planning on long legs; opaque subscription with no differentiation; entitlement-gated CarPlay on personal teams; smaller offline footprint than Sygic-class Europe packs.
+
+### 1.4 Research into the problem
+
+Research is documentary and competitive, not interview-based.
+
+1. **Competitive feature scoring** — [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md) records Lead / Parity / Gap integers against Sygic, TomTom, CoPilot, and telematics peers, with residuals tagged to epics (`EPIC-CARPLAY-PROD`, `EPIC-ANDROID-AUTO`, `EPIC-VU-PARTNER`, `EPIC-LEZ-CADASTRE`, `EPIC-TOLL-DEPTH`, `EPIC-LANE-DEPTH`, `EPIC-HOSTED-DESK`).
+2. **Excellence sweep** — [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md) sequences agent-doable vs secrets-gated work and records shipped MVP slices (including HOSTED-DESK Connection parity and Docs honesty).
+3. **Domain constraints** — EU 561 / WTD advisory behaviour; DVSA-style walkaround; GOV.UK-linked toll advisory catalogs; ORS avoid-polygon area caps (London-wide ULEZ avoid blocked at provider limits).
+4. **Engineering evidence paths** — `swift test`, `web-dispatch` `npm test`, GitHub Actions `android-c1`, phase verification Docs, fleet E2E playbook.
+
+**Findings relevant to analysis:**
+
+- Physics rehearsal and advisory HOS+desk coupling are differentiators relative to pure truck-nav peers.
+- Offline depth and production CarPlay/Android Auto remain competitor leads where RouteFinder is gated or MVP-limited.
+- Hosted multi-depot **org identity + Connection meters** shipped as Account-Manager-lite; Stripe self-serve billing remains explicitly out of scope.
+- Further LEZ densify / mid-corridor / toll-£ catalog clones are anti-grind unless a Mersey-class hole or measurable scorecard gap appears.
+
+### 1.5 Alternative solutions
+
+| Class | Examples | Strengths | Gaps vs RouteFinder thesis |
+|-------|----------|-----------|----------------------------|
+| Consumer maps | Apple Maps, Google Maps | Ubiquity, UX polish | Weak HGV constraint fidelity; no fleet desk; no physics rehearsal |
+| Truck navigators | Sygic Truck, CoPilot, TomTom GO Truck | Offline packs, LEZ depth, AA/CarPlay maturity | Limited physics rehearsal; desk often separate or enterprise-priced; subscription friction for owner-operators |
+| Fleet telematics | Samsara, Geotab | VU/compliance download, tracking | Navigation/physics not core; heavier IT footprint |
+| Open routing stacks | ORS + OSM tooling, GraphHopper | Transparent constraints API | Not a full cab+desk product; no HOS/walkaround/dispatch UX |
+| Educational / research routers | Student Dijkstra/A* GUIs | Algorithm pedagogy | Not production multi-surface fleet systems |
+
+**Conclusion:** Build a focused native product that uses ORS (and hybrid offline where shipped) for constraint routing, adds physics + advisory compliance + desk sync, and documents gated gaps honestly rather than claiming enterprise VU or licensed cadastre parity.
+
+### 1.6 Objectives
+
+#### 1.6.1 Functional objectives (FO)
+
+| ID | Objective | Surface evidence (shipped MVP unless noted) |
+|----|-----------|-----------------------------------------------|
+| FO1 | Plan HGV routes under length/width/height/weight/axle/hazmat/ADR constraints | ORS via planning stack; trailer→ORS length ladder on cab/desk |
+| FO2 | Support multi-stop jobs and office→driver trip push | Fleet server + Mac/web dispatch; SSE/toast handoff |
+| FO3 | Rehearse kinetic risk and export trip brief (text/PDF) | Physics / rehearsal engines; shareable brief |
+| FO4 | Advise HOS (561/WTD) and Can-I-drive day/week without claiming VU authority | HOS advisory modules; desk week cards; legal disclaimer |
+| FO5 | Provide UK living-layer advisories (LEZ, tolls, laybys, hazards, plate profile) | Catalogs + HUD/TTS/desk indicative £; RegCheck/DVLA when configured |
+| FO6 | Operate desk+driver on LAN or hosted HTTPS with clear Connection status | Fleet server / hosted-gateway; `/v1/proxy/status` orgId/orgName + meters on web/Mac/Android |
+| FO7 | Ship Android C2 fleet driver as ORS-proxy thin client | `android-fleet-driver/`; [`android-c2-gate.md`](android-c2-gate.md) |
+| FO8 | Enrich lane/street guidance via OSM Overpass within caps | Overpass ≤12/route; residual HD visuals gated |
+
+#### 1.6.2 Non-functional objectives (NFO)
+
+| ID | Objective | Approach |
+|----|-----------|----------|
+| NFO1 | Modular architecture; no HTTP from Views | Swift package modules + coordinators ([`architecture.md`](architecture.md)) |
+| NFO2 | Strict concurrency / async I/O | Swift 5.9+ / Swift 6 package norms; actors for shared mutable state |
+| NFO3 | Consistent glass UI | `GlassmorphicModifiers` on SwiftUI chrome |
+| NFO4 | Secrets hygiene | No committed API keys; mask tokens in UI and screenshots |
+| NFO5 | Remote reliability | `RemoteRequestPolicy` timeouts/retries/429 handling |
+| NFO6 | Verifiability | Unit/CI gates (`swift test`, `npm test`, `android-c1`) + phase Docs |
+| NFO7 | Honest Docs SSOT | Scorecard/sweep/writeup updated when surfaces ship |
+
+#### 1.6.3 Measurable success criteria
+
+| Criterion | Measurement |
+|-----------|-------------|
+| Constraint route returns usable geometry for valid HGV profile | Automated routing/planning tests + manual stranger path in [`getting-started.md`](getting-started.md) |
+| Trip push visible on paired driver | Fleet E2E / LAN checklist [`fleet-e2e-qa.md`](fleet-e2e-qa.md) |
+| Proxy status shows depot identity + meters on Connection Test | Greppable UI parity (web `maskApiKey`, Mac Settings/Wizard, Android wizard/home) |
+| CI green for package + web + Android job | `.github/workflows/ci.yml` |
+| Legal disclaimer present for HOS | README + in-product advisory copy |
+| Residuals labelled, not claimed Shipped | Scorecard Gated/Residual rows |
+
+#### 1.6.4 Objective validation criteria
+
+An FO is **validated** when: (1) greppable implementation exists on the claimed surface(s); (2) automated tests or a named phase/CI job cover the critical path where applicable; (3) Docs (scorecard or gate Doc) mark Shipped (MVP) vs Residual without contradiction. An NFO is validated by architecture rules, CI, and Docs honesty checks in the same PR week as surface changes.
+
+### 1.7 Modelling the problem
+
+#### 1.7.0 Problem decomposition
+
+```mermaid
+flowchart TB
+  subgraph cab [InCab]
+    Plan[ConstraintRoute]
+    Rehearse[PhysicsRehearse]
+    Nav[GuidanceAndFuse]
+    Hos[AdvisoryHOS]
+  end
+  subgraph desk [OfficeDesk]
+    Jobs[OrgTrips]
+    Push[TripPush]
+    Roster[RosterAndGPS]
+    Conn[ConnectionStatus]
+  end
+  subgraph edge [EdgeServices]
+    ORS[OpenRouteService]
+    FleetAPI[FleetLANOrHosted]
+    Live[TomTomOverpassEtc]
+  end
+  Plan --> ORS
+  Nav --> Live
+  Push --> FleetAPI
+  Conn --> FleetAPI
+  Roster --> FleetAPI
+  Plan --> Rehearse --> Nav
+  Hos --> Nav
+  Jobs --> Push
+```
+
+#### 1.7.1 Routing / graph model
+
+Production routing for live HGV plans is primarily **ORS-backed** with vehicle profile parameters. Offline / hybrid pathfinding uses in-package graph tiles (H3) and cost models where downloaded — see module graph in [`architecture.md`](architecture.md) (`GraphCore`, `CostModel`, `PathfindingEngine`). This writeup does not equate the product to a single educational Dijkstra/A* CSV graph; those algorithms may appear inside offline engines but the operator-facing contract is constraint-aware route requests + rehearsal + desk sync.
+
+#### 1.7.2 Surface / deployment model
+
+| Node | Responsibility |
+|------|----------------|
+| iOS / Mac app | UI, coordinators, local rehearsal, fleet client |
+| Android C2 | Kotlin thin client; fleet proxy routing; MapLibre |
+| `web-dispatch` | React desk; Connection profiles; roster; indicative tolls; layby card |
+| Fleet server | LAN `/v1/*`, Bearer auth, fair-use, push |
+| Hosted gateway | HTTPS Operator deployment of the same API family |
+| External APIs | ORS, TomTom, Overpass, RegCheck/DVLA, OpenWeather (when configured) |
+
+#### 1.7.3 Level-0 data flow (desk ↔ driver)
+
+```mermaid
+flowchart LR
+  Dispatcher[DispatcherMacOrWeb] -->|HTTPS_or_LAN_Bearer| Fleet[FleetServerOrGateway]
+  Fleet -->|SSE_or_poll_trip| Driver[iOS_or_Android]
+  Driver -->|GPS_snapshot| Fleet
+  Fleet -->|roster_pins| Dispatcher
+  Driver -->|ORS_via_proxy_or_key| ORS[ORS]
+  Dispatcher -->|proxy_status| Fleet
+```
+
+#### 1.7.4 Summary
+
+The system is modelled as coordinated cab and desk clients sharing a fleet API, with routing and live enrichment as external services, and with legal/compliance boundaries enforced in product copy and residual labelling.
+
+### 1.8 Requirements derivation
+
+Requirements are derived by intersecting:
+
+1. Persona jobs-to-be-done (constraint route, breaks, LEZ, push trip, physics ETA, Connection clarity).
+2. Competitive gaps that are agent-doable without inventing secrets-gated epics.
+3. Hard engineering rules (glass UI, concurrency, secrets, Docs honesty).
+
+Each FO in §1.6 traces to at least one persona job and one verification path. Residuals that need Apple entitlements, VU partner SDKs, Stripe, or licensed live tariffs are recorded as **constraints** (§1.9), not as silently deferred FOs.
+
+### 1.9 Constraints
+
+| Constraint | Impact |
+|------------|--------|
+| Proprietary codebase / no public redistribution without agreement | Documentation may link paths but must not leak secrets |
+| HeiGIT ORS avoid-polygon area caps | London-wide ULEZ avoid not shippable as unbounded polygon |
+| Personal vs paid Apple Developer team | CarPlay production entitlements inactive until paid team |
+| Android Auto / deep offline packs | Product-gated per [`android-c2-gate.md`](android-c2-gate.md) |
+| No VU partner SDK in-session | Legal remote VU download residual |
+| No Stripe keys / billing product scope | Hosted desk stops at Account-Manager-lite |
+| Anti-grind policy | No mid-corridor / LEZ densify / toll-£ clones without measurable gap or catalog hole |
+| Fair-use API metering | Soft budgets / ledger; meters exposed on proxy status |
+
+### 1.10 Assumptions
+
+1. Operators can obtain ORS (and optional TomTom/OpenWeather) credentials or use fleet proxy keys configured by the depot — drivers on fleet mode do not need personal HeiGIT keys.
+2. LAN or hosted Connectivity is available for desk↔driver push; solo drivers may use on-device ORS keys.
+3. Authored LEZ rings and named toll advisories are acceptable for MVP with clear non-legal / non-live labelling.
+4. CI on GitHub Actions plus local `swift test` / `npm test` is sufficient automated evidence for ungated surfaces; physical device smoke remains optional via phase checklists.
+5. Persona Docs remain a valid substitute for client interviews for analysis and prioritisation in this writeup.
+6. Future gated unlocks will be named explicitly before implementation rather than inferred.
 
 ---
 
-## 2. Surfaces map
+## 2. Design
 
-| Surface | Role today | Primary path |
-|---------|------------|--------------|
-| **iOS driver** | Pair or solo ORS; rehearse / start; predictive fuse; layby / toll / LEZ / HOS advisory; crowd hazards | `RouteFinderApp.xcodeproj` + `RouteFinder/` UI / navigation coordinators |
-| **Android C2** | Fleet ORS proxy client; MapLibre; SSE handoff; fuse parity slices; Connection wizard + home depot/meters | `android-fleet-driver/` — see [`android-c2-gate.md`](android-c2-gate.md) |
-| **Mac / iPad desk** | Disk-backed org → trip → physics ETA; fleet roster / yard GPS pins; Connection Test proxy-status | Mac dispatch + Settings / FleetSetupWizard in the app package |
-| **web-dispatch** | Vite + React LAN/hosted desk; roster; trip push; indicative tolls; predicted layby; Connection depot profiles | [`web-dispatch/`](../web-dispatch/README.md) |
-| **Fleet server** | LAN sync, Bearer/`--api-key`, fair-use caps, push trip → driver | `RouteFinderFleetServer` (package / server target) |
-| **Hosted gateway** | Operator VPS / Workers when depot Wi‑Fi fails; same `/v1/*` contract | `hosted-gateway/` + [`hosted-gateway-deployment.md`](hosted-gateway-deployment.md) |
-| **Physics / sim** | Pre-trip kinetic risk, shareable trip brief (text/PDF), rehearsal vs play | Physics / rehearsal engines in `RouteFinder/` |
-| **Compliance** | DVSA-style walkaround, HOS advisory (561 / WTD), LEZ avoid toggles | Walkaround + HOS modules; desk Can-I-drive cards |
+*(Stub — fill next attach. Target subsections:)*
 
-CarPlay code paths exist but production entitlements are inactive. Android Auto and deep Android offline packs remain product-gated. Screenshots: [`screenshots/README.md`](screenshots/README.md).
+### 2.1 Design goals / rationale
+- Modular OOP / SPM boundaries; strategy-like routing clients; centralised cost/constraints; layered architecture; accessible UI; extensibility.
+- Technology selection: Swift 6 + SwiftUI + MapLibre; Kotlin Android C2; Vite/React desk; Workers/VPS gateway.
+- Pointers: [`architecture.md`](architecture.md), root README tech stack.
 
----
+### 2.2 System architecture
+- Expand module dependency + coordinator + desk↔driver diagrams from architecture Doc.
+- Error handling / reliability (`RemoteRequestPolicy`); extensibility points (proxy providers, catalogs).
 
-## 3. Fleet and hosted desk today
+### 2.3 Data / class design
+- Core models: vehicle profile, trip/job brief, proxy status (`FleetProxyDeskStatus`), HOS state, risk advisory.
+- Rationale mapping to FOs.
 
-Operators run either:
+### 2.4 Algorithm / planning design
+- ORS request shaping; hybrid offline pathfinding overview; predictive risk fuse; LEZ avoid polygons; toll advisory matching — complexity and failure modes at product level (not NEA CSV Dijkstra prose unless citing offline engine).
 
-1. **Office LAN** — `RouteFinderFleetServer` on the depot network; drivers pair via discovery / QR; desk uses Connection base URL (web defaults to `/fleet` Vite proxy → `:8080`).
-2. **Hosted (HTTPS)** — Operator gateway with org bearer tokens; drivers and desks point Connection at `https://fleet.yourdomain.com` (see deploy Doc).
+### 2.5 Interface design
+- Glassmorphic SwiftUI; web-dispatch Connection; Android wizard/home; accessibility notes.
 
-**Account-Manager-lite (shipped MVP slice, 2026-11-11):** `GET /v1/proxy/status` returns depot identity (`orgId` / `orgName`) plus ORS (and related) meter fields. Contract: [`fleet-api-schema.json`](fleet-api-schema.json) (`FleetProxyDeskStatus`). UI parity:
+### 2.6 Data dictionary
+- Key fields: orgId/orgName, meters, vehicle dimensions, duty state, predictedLayby, corridor toll advisories.
 
-- Web Connection / status panels (masked API key via `maskApiKey`)
-- Mac Settings Connection Test + FleetSetupWizard Test + dispatch fleet-proxy panel
-- Android FleetSetupWizard Test + DriverHome badge (`FleetProxyStatusLabels`)
-
-Named depot profiles let the desk switch org tokens without re-pasting. **Stripe / self-serve billing is explicitly out of scope** for this MVP — residual under `EPIC-HOSTED-DESK`.
-
-Deploy and Operator notes: [`hosted-gateway-deployment.md`](hosted-gateway-deployment.md). Fleet QA: [`fleet-e2e-qa.md`](fleet-e2e-qa.md).
+### 2.7 Objective traceability matrix
+- FO/NFO → design component → implementation path (seed in Appendix A; complete in Design PR).
 
 ---
 
-## 4. Routing, UK living layer, compliance
+## 3. Implementation
 
-How a trip is planned, annotated for UK HGV reality, and kept legally honest. Feature bullets mirror root [`README.md`](../README.md); status integers live in [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md).
+*(Stub — fill after §2.)*
 
-### Constraint routing
+### 3.1 Implementation overview
+- File/module responsibility mapping across `RouteFinder/`, app project, `web-dispatch/`, `android-fleet-driver/`, `hosted-gateway/`.
 
-OpenRouteService drives HGV constraint routing: length / width / height / weight / axle / hazmat / ADR tunnel codes. Cab and desk can push trailer→ORS length ladders (12 / 16.5 / 18.75 / 25.25 m) while the constraint profile stays the documented baseline. Live TomTom flow sampling can trigger an ORS `avoid_polygons` recalculation when traffic warrants a reroute.
+### 3.2 Graph / routing implementation
+- ORS client; offline tiles policy; trailer length ladder.
 
-**Offline:** iOS uses H3 graph tiles with a hybrid ORS/offline policy, proactive corridor prefetch after Find (capped ≤ East Anglia), and Settings download regions (Norfolk demo, East Anglia mid-corridor, UK mainland large) plus optional on-device MapLibre packs — not Sygic-class country packs. Android offline packs remain product-gated.
+### 3.3 Route planning / coordinators
+- `RoutePlanningCoordinator`, search mapping, recalculate debounce.
 
-### Physics rehearsal
+### 3.4 Pathfinding / offline engines
+- Where `PathfindingEngine` / cost model apply.
 
-Before commit, RouteFinder rehearses kinetic risk (grade, brake fade, slip) and can share a trip brief as plain text or PDF (with route map when geometry is available). Rehearse vs Play stays a stranger-path distinction in [`user-guide-simulation.md`](user-guide-simulation.md).
+### 3.5 Cost model, preferences, vehicle constraints
+- Avoid toggles (LEZ, tolls); hazmat/ADR.
 
-### UK living layer
+### 3.6 Multi-stop / fleet dispatch
+- Job brief, push, SSE, snapshots.
 
-- **Plate → profile** — RegCheck + DVLA for vehicle dimensions / class when configured.
-- **Truck POIs** — fuel / parking / weigh / layby discovery along the job.
-- **LEZ / CAZ** — banners and avoid-on-route using simplified authored rings for all 11 catalog zones (Settings toggle; **not** legal cadastral). Open-data densify MVP shipped for Sheffield + Birmingham + Bradford; other zones still coarse envelopes; London-wide ULEZ avoid is ORS area-cap blocked. Residual: `EPIC-LEZ-CADASTRE`.
-- **Tolls** — named UK £ advisories + one-shot commit TTS + iOS/Android in-nav toll HUD + ORS avoid-tolls replan; Mac/web desk show corridor indicative £ (including M6 / Dartford / Tyne + Mersey £4.80 + Dunham £4.00 + Batheaston HGV-unsuitable). **Not** live operator / class tariffs — residual `EPIC-TOLL-DEPTH`.
-- **Hazards** — on-device crowd reports (iOS + Android C2) fused with TomTom live ahead, MapLibre pins, and still-there confirm; OSM roadworks enter the predictive fuse when Overpass proxy is configured.
-- **Laybys / parking** — ranked green/amber/red map pins, occupancy taps with age-weighted priors (“Looks full” / “Has spaces”), Break Now; Mac/web `predictedLayby` card/pin + Android snapshot publish. Residual: live bay counts / partner occupancy feed. Booking remains deep-link + voice entry (not native partner book API).
+### 3.7 UI implementation by surface
+- iOS/Mac glass; web desk; Android Compose screens.
 
-### Compliance and HOS
+### 3.8 Error handling and robustness
+- Remote policy; user-visible banners; masked tokens.
 
-Hours of service are **advisory**: EU Regulation 561 / Working Time Directive clock, rest insertion suggestions, driver-card JSON/DDD import, and “Can I drive now?” (day + week) on cab and desk. Walkaround checks follow a local DVSA-style checklist with snapshot / PDF / photos on Android C2 parity slices.
+### 3.9 Automated testing integration
+- SPM tests; web smoke; Android unit tests; CI jobs.
 
-**The VU / digital tachograph is authoritative.** Remote legal VU download is residual (`EPIC-VU-PARTNER`); desk Can-I-drive week cards and CSV stubs are planning aids only.
-
-### Lane guidance and voice
-
-OSM `turn:lanes` strip + street/lane TTS with prepare re-speak when Overpass upgrades heuristic→OSM inside the prepare window (iOS + Android C2; Overpass capped ≤12 / route, STRAIGHT skip, ~50 km). Domain PTT covers which-lane / avoid-tolls / layby / hazard / book parking / Can-I-drive. **Not** HD lane visuals — residual `EPIC-LANE-DEPTH`.
-
----
-
-## 5. Competitive posture
-
-*(Stub — fill after Ch 4.)*
-
-- Summarize Lead / Parity / Gap from [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md) without inventing brochure claims.
-- List gated residuals: CarPlay prod, Android Auto, VU partner, live toll £, HD lanes, Stripe, country PBF / Android offline.
-- Sweep runbook: [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md).
-- Personas weight: [`buyer-personas-uk-hgv.md`](buyer-personas-uk-hgv.md) when present.
+### 3.10 Objective fulfilment confirmation
+- Table FO → symbol/path → Doc status.
 
 ---
 
-## 6. Architecture and repo layout
+## 4. Testing
 
-*(Stub — fill after Ch 5.)*
+*(Stub — fill after §3.)*
 
-- Module / coordinator story: [`architecture.md`](architecture.md).
-- Thin index (layout, tests, hard rules): [`developer-map.md`](developer-map.md).
-- Packages: `RouteFinder/`, `RouteFinderApp.xcodeproj`, `web-dispatch/`, `hosted-gateway/`, `android-fleet-driver/`, `Docs/`.
-- UI glass: `GlassmorphicModifiers`; Swift strict concurrency; never commit unmasked keys.
+### 4.1 Testing strategy
+- Unit + integration + CI; optional physical smoke ([`phase1-device-checklist.md`](phase1-device-checklist.md)).
 
----
+### 4.2 Unit testing
+- `cd RouteFinder && swift test`; Android Gradle unit tests (JDK 17–22).
 
-## 7. Operator / pilot path
+### 4.3 Routing / algorithm testing
+- Constraint and planning cases; offline where present.
 
-*(Stub — fill after Ch 6.)*
+### 4.4 Cost model and constraint testing
+- LEZ avoid, toll advisory catalogs, trailer ladder.
 
-- Stranger tests by role: [`getting-started.md`](getting-started.md).
-- Pilot pack / outreach: [`pilot-fleet-pack.md`](pilot-fleet-pack.md), [`pilot-outreach.md`](pilot-outreach.md).
-- Optional physical smoke: [`phase1-device-checklist.md`](phase1-device-checklist.md).
-- Feedback backlog: [`pilot-feedback-backlog.md`](pilot-feedback-backlog.md).
+### 4.5 Edge case and robustness testing
+- Invalid geocode, proxy failure, missing keys banners.
 
----
+### 4.6 Performance / fair-use
+- Metering ledger; proxy status meters.
 
-## 8. Open gates and non-goals
+### 4.7 Test evidence
+- CI links; phase verification Docs; screenshot index.
 
-*(Stub — fill after Ch 7.)*
-
-- **Gated:** `EPIC-ANDROID-AUTO` / offline packs, `EPIC-CARPLAY-PROD`, `EPIC-VU-PARTNER`, live toll £, HD lane visuals, Stripe billing, further country PBF.
-- **Anti-grind:** no mid-corridor / LEZ densify / toll-£ clones unless Mersey-class catalog hole or measurable scorecard gap; no unbounded London ULEZ avoid PRs (ORS area caps).
-- **Non-goals:** full SaaS billing UI; multi-surface crowd LAN invent; claiming legal cadastre or live operator tariffs without feeds.
-- When product gates stay locked, agents continue this writeup’s next unfinished chapter instead of STOP-looping.
+### 4.8 Objective verification table
+- Cross-reference FO/NFO to tests.
 
 ---
 
-## 9. Changelog of writeup iterations
+## 5. Evaluation
 
-| Date | PR / issue | Chapters |
-|------|------------|----------|
-| 2026-11-11 | #125 / #126 | Scaffold ToC 1–9; draft Ch 1–3; stub Ch 4–8 |
-| 2026-11-11 | #127 / (this PR) | Draft Ch 4 (routing / UK living layer / compliance); next = Ch 5 |
+*(Stub — fill after §4. **Developer-led only — no client evaluation method.**)*
+
+### 5.1 Method of developer evaluation
+- Compare shipped surfaces to FO/NFO and scorecard; cite CI/phase evidence.
+
+### 5.2 Comparison against original objectives
+- Met / partial / gated table.
+
+### 5.3 Limitations
+- Entitlements, cadastre, live £, VU download, HD lanes, Stripe, Android offline.
+
+### 5.4 Maintenance and future work
+- Unlock-gated epics; writeup section completion order.
+
+---
+
+## 6. Appendices
+
+*(Stub — polish after §5.)*
+
+### Appendix A — Objectives traceability seed
+- Maintain FO/NFO IDs; fill design/impl/test columns as sections land.
+
+### Appendix B — Document index
+- developer-map, getting-started, architecture, scorecard, sweep, fleet-api-schema, hosted-gateway-deployment, android-c2-gate, pilot-fleet-pack.
+
+### Appendix C — Screenshots
+- [`screenshots/README.md`](screenshots/README.md) (masked secrets).
+
+### Appendix D — Data sources
+- ORS, OSM/Overpass, TomTom, RegCheck/DVLA, OpenWeather — licences and configuration notes from README.
+
+### Appendix E — Glossary
+- HGV, LEZ/CAZ, ORS, HOS, VU, SSE, Account-Manager-lite, Anti-grind.
+
+---
+
+## 7. Document changelog
+
+| Date | PR / issue | Change |
+|------|------------|--------|
+| 2026-11-11 | #125 / #126 | Initial living narrative Ch 1–3 |
+| 2026-11-11 | #127 / #128 | Narrative Ch 4 (routing / UK layer / compliance) |
+| 2026-11-11 | #129 / (this PR) | Restructure to NEA-style; **Section 1 Analysis complete**; §§2–5 + Appendices stubbed |

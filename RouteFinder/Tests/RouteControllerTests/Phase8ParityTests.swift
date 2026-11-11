@@ -5,9 +5,11 @@ import RouteController
 import Testing
 
 @Test func ukTollCatalogHasMajorCrossings() {
-    #expect(UKTollAdvisoryCatalog.all.count >= 12)
+    #expect(UKTollAdvisoryCatalog.all.count >= 14)
     #expect(UKTollAdvisoryCatalog.advisory(id: "dartford-crossing") != nil)
     #expect(UKTollAdvisoryCatalog.advisory(id: "m6-toll") != nil)
+    #expect(UKTollAdvisoryCatalog.advisory(id: "mersey-tunnels-queensway") != nil)
+    #expect(UKTollAdvisoryCatalog.advisory(id: "mersey-tunnels-kingsway") != nil)
 }
 
 @Test func routingPreferencesAvoidTollsDefaultsOffForCommitHonesty() {
@@ -19,10 +21,14 @@ import Testing
     let dartford = UKTollAdvisoryCatalog.advisory(id: "dartford-crossing")
     let m6 = UKTollAdvisoryCatalog.advisory(id: "m6-toll")
     let tyne = UKTollAdvisoryCatalog.advisory(id: "tyne-tunnel")
+    let queensway = UKTollAdvisoryCatalog.advisory(id: "mersey-tunnels-queensway")
+    let kingsway = UKTollAdvisoryCatalog.advisory(id: "mersey-tunnels-kingsway")
     let severn = UKTollAdvisoryCatalog.advisory(id: "severn-crossings")
     #expect(dartford?.indicativeCostGBP == 8.40)
     #expect(m6?.indicativeCostGBP == 20.20)
     #expect(tyne?.indicativeCostGBP == 5.20)
+    #expect(queensway?.indicativeCostGBP == 4.80)
+    #expect(kingsway?.indicativeCostGBP == 4.80)
     #expect(severn?.indicativeCostGBP == nil)
 }
 

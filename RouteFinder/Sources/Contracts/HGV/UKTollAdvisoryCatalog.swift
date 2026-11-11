@@ -77,7 +77,7 @@ public struct UKTollAdvisory: Sendable, Hashable, Codable, Identifiable, Equatab
 /// larger goods vehicles where published) — **not** live class tables. As-of **2025-10**
 /// public operator pages; always verify before travel.
 public enum UKTollAdvisoryCatalog: Sendable {
-    /// All seeded advisories (≈16 major UK truck-relevant tolls / crossings).
+    /// All seeded advisories (≈18 major UK truck-relevant tolls / crossings).
     public static let all: [UKTollAdvisory] = [
         UKTollAdvisory(
             id: "m6-toll",
@@ -111,6 +111,28 @@ public enum UKTollAdvisoryCatalog: Sendable {
             infoURL: URL(string: "https://www.merseyflow.co.uk/"),
             indicativeCostGBP: 4.00,
             indicativeCostNote: "indicative; check Merseyflow class"
+        ),
+        UKTollAdvisory(
+            id: "mersey-tunnels-queensway",
+            name: "Mersey Tunnel — Queensway",
+            latitude: 53.3920,
+            longitude: -3.0140,
+            approachRadiusMeters: 2_500,
+            hint: "Queensway (Birkenhead) A41 — both Mersey Tunnels charge; T-FLOW discounts available.",
+            infoURL: URL(string: "https://www.merseytravel.gov.uk/tunnels/tolls-fees-and-charges/"),
+            indicativeCostGBP: 4.80,
+            indicativeCostNote: "indicative Class 2 2-axle HGV cash; check Merseytravel"
+        ),
+        UKTollAdvisory(
+            id: "mersey-tunnels-kingsway",
+            name: "Mersey Tunnel — Kingsway",
+            latitude: 53.4100,
+            longitude: -3.0200,
+            approachRadiusMeters: 2_500,
+            hint: "Kingsway (Wallasey) A59 — both Mersey Tunnels charge; T-FLOW discounts available.",
+            infoURL: URL(string: "https://www.merseytravel.gov.uk/tunnels/tolls-fees-and-charges/"),
+            indicativeCostGBP: 4.80,
+            indicativeCostNote: "indicative Class 2 2-axle HGV cash; check Merseytravel"
         ),
         UKTollAdvisory(
             id: "severn-crossings",

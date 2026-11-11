@@ -136,6 +136,20 @@ import Testing
     #expect(!birmingham.contains(Coordinate(latitude: 52.586, longitude: -1.982)))
 }
 
+@Test func ukLezBradfordDensifiedUnderOrsCap() {
+    let bradford = try! #require(UKLowEmissionZoneCatalog.zones.first { $0.id == "bradford-caz" })
+    let ring = bradford.avoidPolygonRing()
+    #expect(ring.count - 1 >= 20)
+    #expect(ring.first == ring.last)
+    #expect(
+        LEZAvoidPolicy.approximateRingAreaSquareMeters(ring)
+            <= LEZAvoidPolicy.avoidPolygonAreaCapSquareMeters
+    )
+    #expect(bradford.contains(Coordinate(latitude: bradford.latitude, longitude: bradford.longitude)))
+    // Leeds city centre approach outside Bradford CAZ.
+    #expect(!bradford.contains(Coordinate(latitude: 53.80, longitude: -1.55)))
+}
+
 @Test func ukLezCircleFallbackWhenNoBoundaryRing() {
     let circleOnly = UKLowEmissionZoneCatalog.Zone(
         id: "test-circle",

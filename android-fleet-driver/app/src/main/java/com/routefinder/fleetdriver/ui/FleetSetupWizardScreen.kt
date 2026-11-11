@@ -37,10 +37,12 @@ import com.routefinder.fleetdriver.fleet.FleetApi
 import com.routefinder.fleetdriver.fleet.FleetBonjourDiscovery
 import com.routefinder.fleetdriver.fleet.FleetConnectionGate
 import com.routefinder.fleetdriver.fleet.FleetPreferences
+import com.routefinder.fleetdriver.fleet.FleetProxyStatusLabels
 import com.routefinder.fleetdriver.fleet.VehicleQRParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 
 private enum class WizardStep(val index: Int) {
     Enable(0),
@@ -69,6 +71,7 @@ fun FleetSetupWizardScreen(
     var status by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var connected by remember { mutableStateOf(false) }
+    var proxyStatus by remember { mutableStateOf<JSONObject?>(null) }
     var showScanner by remember { mutableStateOf(false) }
     var discovering by remember { mutableStateOf(false) }
     var discoveryStatus by remember { mutableStateOf<String?>(null) }
@@ -309,6 +312,7 @@ fun FleetSetupWizardScreen(
                                         val health = withContext(Dispatchers.IO) { api.health() }
                                         if (!health.optBoolean("ok")) {
                                             connected = false
+                                            proxyStatus = null
                                             status = FleetConnectionGate.statusLabel(
                                                 healthOk = false,
                                                 authSucceeded = false,
@@ -316,16 +320,18 @@ fun FleetSetupWizardScreen(
                                             return@launch
                                         }
                                         try {
-                                            withContext(Dispatchers.IO) {
+                                            val body = withContext(Dispatchers.IO) {
                                                 api.verifyAuthenticatedAccess()
                                             }
                                             connected = true
+                                            proxyStatus = body
                                             status = FleetConnectionGate.statusLabel(
                                                 healthOk = true,
                                                 authSucceeded = true,
                                             )
                                         } catch (e: Exception) {
                                             connected = false
+                                            proxyStatus = null
                                             status = FleetConnectionGate.statusLabel(
                                                 healthOk = true,
                                                 authSucceeded = false,
@@ -335,6 +341,7 @@ fun FleetSetupWizardScreen(
                                         }
                                     } catch (e: Exception) {
                                         connected = false
+                                        proxyStatus = null
                                         status = FleetConnectionGate.statusLabel(
                                             healthOk = false,
                                             authSucceeded = false,
@@ -346,6 +353,32 @@ fun FleetSetupWizardScreen(
                             },
                             modifier = Modifier.fillMaxWidth(),
                         ) { Text("Test connection") }
+                        proxyStatus?.let { proxy ->
+                            FleetProxyStatusLabels.authenticatedDepotLine(proxy)?.let { depot ->
+                                Text(
+                                    depot,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            Text(
+                                FleetProxyStatusLabels.maskedTokenLine(apiKey),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                FleetProxyStatusLabels.orsSummaryLine(proxy),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            FleetProxyStatusLabels.nearCapWarning(proxy)?.let { warning ->
+                                Text(
+                                    warning,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
                         Text(
                             if (isHosted) {
                                 "Tap Test connection until Connected. Hosted gateway must pass health + auth — use your org bearer token only."

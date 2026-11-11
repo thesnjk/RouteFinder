@@ -2,8 +2,44 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://routefinder.local/fleet-api-schema.json",
   "title": "RouteFinder Fleet API fragment",
-  "description": "Optional JSON Schema fragment for FleetTrip + FleetJobBrief + walkaround handoff. All jobBrief and inspection fields are optional for backward-compatible clients.",
+  "description": "Optional JSON Schema fragment for FleetTrip + FleetJobBrief + walkaround handoff + GET /v1/proxy/status (FleetProxyDeskStatus). All jobBrief, inspection, forecast meter, and org identity fields are optional for backward-compatible clients.",
   "definitions": {
+    "FleetProxyDeskStatus": {
+      "type": "object",
+      "description": "Body of GET /v1/proxy/status — ORS/forecast metering plus optional authenticated org identity (HOSTED-DESK).",
+      "required": [
+        "orsConfigured",
+        "routesToday",
+        "routeDailyCap",
+        "geocodeToday",
+        "geocodeDailyCap"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "orsConfigured": { "type": "boolean" },
+        "routesToday": { "type": "integer", "minimum": 0 },
+        "routeDailyCap": { "type": "integer", "minimum": 0 },
+        "geocodeToday": { "type": "integer", "minimum": 0 },
+        "geocodeDailyCap": { "type": "integer", "minimum": 0 },
+        "tomTomConfigured": { "type": "boolean" },
+        "openWeatherConfigured": { "type": "boolean" },
+        "overpassConfigured": { "type": "boolean" },
+        "tomTomToday": { "type": "integer", "minimum": 0 },
+        "tomTomDailyCap": { "type": "integer", "minimum": 0 },
+        "openWeatherToday": { "type": "integer", "minimum": 0 },
+        "openWeatherDailyCap": { "type": "integer", "minimum": 0 },
+        "overpassToday": { "type": "integer", "minimum": 0 },
+        "overpassDailyCap": { "type": "integer", "minimum": 0 },
+        "orgId": {
+          "type": "string",
+          "description": "Authenticated or default fleet org id when the server reports it."
+        },
+        "orgName": {
+          "type": "string",
+          "description": "Authenticated or default fleet org display name when the server reports it."
+        }
+      }
+    },
     "FleetJobBrief": {
       "type": "object",
       "additionalProperties": true,

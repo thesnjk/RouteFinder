@@ -253,6 +253,26 @@ public enum UKTollAdvisoryCatalog: Sendable {
             indicativeCostNote: "indicative local; check council"
         ),
         UKTollAdvisory(
+            id: "dunham-bridge",
+            name: "Dunham Bridge (A57)",
+            latitude: 53.2611,
+            longitude: -0.7729,
+            approachRadiusMeters: 1_500,
+            hint: "A57 Trent crossing — cash/card/prepay; free Christmas Day and Boxing Day.",
+            infoURL: URL(string: "https://dunhambridge.co.uk/"),
+            indicativeCostGBP: 4.00,
+            indicativeCostNote: "indicative 6+ wheel HGV inc VAT (SI 2026/806 £3.33 ex VAT from 1 Aug 2026); check operator"
+        ),
+        UKTollAdvisory(
+            id: "batheaston-bridge",
+            name: "Batheaston Bridge (Bathampton)",
+            latitude: 51.4015,
+            longitude: -2.3256,
+            approachRadiusMeters: 1_200,
+            hint: "GOV.UK A4 Batheaston/Bathampton toll — ≈4 t weight limit; unsuitable for many HGVs.",
+            infoURL: URL(string: "https://www.gov.uk/uk-toll-roads")
+        ),
+        UKTollAdvisory(
             id: "whitchurch-bridge",
             name: "Whitchurch Bridge (Thames)",
             latitude: 51.4870,

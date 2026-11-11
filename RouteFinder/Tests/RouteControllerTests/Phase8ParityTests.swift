@@ -10,6 +10,8 @@ import Testing
     #expect(UKTollAdvisoryCatalog.advisory(id: "m6-toll") != nil)
     #expect(UKTollAdvisoryCatalog.advisory(id: "mersey-tunnels-queensway") != nil)
     #expect(UKTollAdvisoryCatalog.advisory(id: "mersey-tunnels-kingsway") != nil)
+    #expect(UKTollAdvisoryCatalog.advisory(id: "dunham-bridge") != nil)
+    #expect(UKTollAdvisoryCatalog.advisory(id: "batheaston-bridge") != nil)
 }
 
 @Test func routingPreferencesAvoidTollsDefaultsOffForCommitHonesty() {
@@ -23,12 +25,16 @@ import Testing
     let tyne = UKTollAdvisoryCatalog.advisory(id: "tyne-tunnel")
     let queensway = UKTollAdvisoryCatalog.advisory(id: "mersey-tunnels-queensway")
     let kingsway = UKTollAdvisoryCatalog.advisory(id: "mersey-tunnels-kingsway")
+    let dunham = UKTollAdvisoryCatalog.advisory(id: "dunham-bridge")
+    let batheaston = UKTollAdvisoryCatalog.advisory(id: "batheaston-bridge")
     let severn = UKTollAdvisoryCatalog.advisory(id: "severn-crossings")
     #expect(dartford?.indicativeCostGBP == 8.40)
     #expect(m6?.indicativeCostGBP == 20.20)
     #expect(tyne?.indicativeCostGBP == 5.20)
     #expect(queensway?.indicativeCostGBP == 4.80)
     #expect(kingsway?.indicativeCostGBP == 4.80)
+    #expect(dunham?.indicativeCostGBP == 4.00)
+    #expect(batheaston?.indicativeCostGBP == nil)
     #expect(severn?.indicativeCostGBP == nil)
 }
 
@@ -56,7 +62,7 @@ import Testing
     #expect(hits.contains(where: { $0.id == "dartford-crossing" }))
 }
 
-/// Desk preview parity: Dartford + M6 corridor yields both hits and ~£19 indicative total.
+/// Desk preview parity: Dartford + M6 corridor yields both hits and £28.60 indicative total.
 @Test func tollMatcherHitsDartfordAndM6WithIndicativeTotal() {
     guard let dartford = UKTollAdvisoryCatalog.advisory(id: "dartford-crossing"),
           let m6 = UKTollAdvisoryCatalog.advisory(id: "m6-toll") else {
@@ -72,7 +78,7 @@ import Testing
     #expect(hits.map(\.id).contains("dartford-crossing"))
     #expect(hits.map(\.id).contains("m6-toll"))
     #expect(hits.first?.id == "dartford-crossing")
-    #expect(UKTollAdvisory.indicativeRouteTotalGBP(advisories: hits) == 19)
+    #expect(UKTollAdvisory.indicativeRouteTotalGBP(advisories: hits) == 28.6)
     #expect(TollAdvisoryAlongRouteMatcher.advisories(along: []).isEmpty)
 }
 

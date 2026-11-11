@@ -16,12 +16,18 @@ class TollAdvisoryAlongRouteMatcherTest {
         val tyne = UKTollAdvisoryCatalog.advisory("tyne-tunnel")
         val queensway = UKTollAdvisoryCatalog.advisory("mersey-tunnels-queensway")
         val kingsway = UKTollAdvisoryCatalog.advisory("mersey-tunnels-kingsway")
+        val dunham = UKTollAdvisoryCatalog.advisory("dunham-bridge")
+        val batheaston = UKTollAdvisoryCatalog.advisory("batheaston-bridge")
         val severn = UKTollAdvisoryCatalog.advisory("severn-crossings")
+        assertNotNull(dunham)
+        assertNotNull(batheaston)
         assertEquals(8.40, dartford?.indicativeCostGBP!!, 0.001)
         assertEquals(20.20, m6?.indicativeCostGBP!!, 0.001)
         assertEquals(5.20, tyne?.indicativeCostGBP!!, 0.001)
         assertEquals(4.80, queensway?.indicativeCostGBP!!, 0.001)
         assertEquals(4.80, kingsway?.indicativeCostGBP!!, 0.001)
+        assertEquals(4.00, dunham?.indicativeCostGBP!!, 0.001)
+        assertNull(batheaston?.indicativeCostGBP)
         assertNull(severn?.indicativeCostGBP)
     }
 

@@ -212,6 +212,27 @@ export const UK_TOLL_ADVISORY_CATALOG: UKTollAdvisory[] = [
     indicativeCostNote: 'indicative local; check council',
   },
   {
+    id: 'dunham-bridge',
+    name: 'Dunham Bridge (A57)',
+    latitude: 53.2611,
+    longitude: -0.7729,
+    approachRadiusMeters: 1500,
+    hint: 'A57 Trent crossing — cash/card/prepay; free Christmas Day and Boxing Day.',
+    infoURL: 'https://dunhambridge.co.uk/',
+    indicativeCostGBP: 4.0,
+    indicativeCostNote:
+      'indicative 6+ wheel HGV inc VAT (SI 2026/806 £3.33 ex VAT from 1 Aug 2026); check operator',
+  },
+  {
+    id: 'batheaston-bridge',
+    name: 'Batheaston Bridge (Bathampton)',
+    latitude: 51.4015,
+    longitude: -2.3256,
+    approachRadiusMeters: 1200,
+    hint: 'GOV.UK A4 Batheaston/Bathampton toll — ≈4 t weight limit; unsuitable for many HGVs.',
+    infoURL: 'https://www.gov.uk/uk-toll-roads',
+  },
+  {
     id: 'whitchurch-bridge',
     name: 'Whitchurch Bridge (Thames)',
     latitude: 51.487,

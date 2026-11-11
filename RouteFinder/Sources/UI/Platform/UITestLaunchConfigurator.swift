@@ -25,8 +25,10 @@ public enum UITestLaunchConfigurator {
             || arguments.contains("UITEST_DRIVER_NEXT_STEPS")
             || arguments.contains("UITEST_WALKAROUND_NEAR_COMPLETE")
             || arguments.contains("UITEST_SEED_HAZARD_BANNER")
+            || arguments.contains("UITEST_SEED_TOMTOM_HAZARD_BANNER")
             || arguments.contains("UITEST_SEED_ROADWORKS_BANNER")
             || arguments.contains("UITEST_SEED_PREDICTIVE_RISK")
+            || arguments.contains("UITEST_SEED_LAYBY_ADVISORY")
             || arguments.contains("UITEST_SEED_DISPATCH_TOAST")
             || arguments.contains("UITEST_OPEN_WALKAROUND")
         guard isUITest else { return }
@@ -106,12 +108,20 @@ public enum UITestLaunchConfigurator {
             forKey: "RouteFinder.uitestSeedHazardBanner"
         )
         UserDefaults.standard.set(
+            arguments.contains("UITEST_SEED_TOMTOM_HAZARD_BANNER"),
+            forKey: "RouteFinder.uitestSeedTomTomHazardBanner"
+        )
+        UserDefaults.standard.set(
             arguments.contains("UITEST_SEED_ROADWORKS_BANNER"),
             forKey: "RouteFinder.uitestSeedRoadworksBanner"
         )
         UserDefaults.standard.set(
             arguments.contains("UITEST_SEED_PREDICTIVE_RISK"),
             forKey: "RouteFinder.uitestSeedPredictiveRisk"
+        )
+        UserDefaults.standard.set(
+            arguments.contains("UITEST_SEED_LAYBY_ADVISORY"),
+            forKey: "RouteFinder.uitestSeedLaybyAdvisory"
         )
         UserDefaults.standard.set(
             arguments.contains("UITEST_SEED_DISPATCH_TOAST"),

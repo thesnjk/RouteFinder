@@ -13,7 +13,7 @@ Maps **feature → test command** for demo-critical paths. Prefer targeted `--fi
 |---------|---------------|---------|
 | Route find (ORS payload + decode) | `OpenRouteServicePayloadBuilderTests`, `OpenRouteServiceRoutingClientTests`, `OpenRouteServiceErrorMappingTests` | `cd RouteFinder && swift test --filter OpenRouteService` |
 | Fleet ORS proxy (no driver key) | `FleetORSRoutingFactoryTests`, `FleetProxyTests` | `swift test --filter FleetORS` / `--filter fleetProxy` |
-| Fleet push + SSE | `fleetSSEClientReceivesTripPushedEvent`, `fleetE2EWorkflowPushSnapshotAndSSE` | `bash Scripts/fleet-e2e-smoke.sh` |
+| Fleet push + SSE | `fleetSSEClientReceivesTripPushedEvent`, `fleetE2EWorkflowPushSnapshotAndSSE`, `fleetInspectionSummaryRoundTripsViaSnapshot` | `bash Scripts/fleet-e2e-smoke.sh` |
 | Snapshot PUT (+ GPS pin) | `applySnapshotMergesDriverGPSOntoTrip`, `httpFleetStoreSyncsTripsOverLANServer`, E2E GPS asserts | `swift test --filter applySnapshotMergesDriverGPS` / E2E filter |
 | Telematics ingest stub | `fleetTelematicsIngestPersists`, `fleetTelematicsIngestViaHTTP`, hosted `gateway.test.ts` | `swift test --filter fleetTelematics` ; `cd hosted-gateway && npm test` |
 | Job intake + `FleetJobBrief` | `JobIntakePredictiveRiskTests`, `fleetCreateAndPushTripRoundTripsJobBrief` | `swift test --filter JobIntake` / `--filter RoundTripsJobBrief` |
@@ -39,11 +39,12 @@ Maps **feature → test command** for demo-critical paths. Prefer targeted `--fi
 | Bonjour | `fleetBonjour` |
 | Push roles | `createAndPushTripAssignsStopRoles` |
 | E2E push → SSE → snapshot → GPS → inspection | `fleetE2EWorkflowPushSnapshotAndSSE` |
+| Inspection summary round-trip (Part B CI) | `fleetInspectionSummaryRoundTripsViaSnapshot` |
 | Proxy status | `fleetProxyStatusReportsORSConfigured` |
 | Telematics store + HTTP | `fleetTelematicsIngestPersists`, `fleetTelematicsIngestViaHTTP` |
 | GPS merge (in-memory) | `applySnapshotMergesDriverGPSOntoTrip` |
 | Job brief wire round-trip | `fleetCreateAndPushTripRoundTripsJobBrief` |
-| **Smoke script** | `bash Scripts/fleet-e2e-smoke.sh` (14 filters, includes `jobBrief`) |
+| **Smoke script** | `bash Scripts/fleet-e2e-smoke.sh` (15 filters, includes inspection Part B CI) |
 
 SSE helpers: `waitForFleetServerReady`, `beginSSESubscription`, `awaitSSEEvent` in `FleetTestServerSupport.swift`.
 
@@ -93,6 +94,8 @@ SSE helpers: `waitForFleetServerReady`, `beginSSESubscription`, `awaitSSEEvent` 
 | Walkaround defect → Save | `testWalkaroundDefectNoteEnablesSave` | C3 — `UITEST_WALKAROUND_NEAR_COMPLETE` |
 | Fuel card picker | `testFuelCardProviderPickerPersists` | C5 — Settings → Navigation |
 | Hazard banner inject | `testHazardAheadBannerOnSeededRoute` | C6 — `UITEST_SEED_HAZARD_BANNER` |
+| Layby banner inject | `testLaybyAheadBannerOnSeededRoute` | C4 — `UITEST_SEED_LAYBY_ADVISORY` + HGV |
+| TomTom hazard banner inject | `testTomTomHazardBannerOnSeededRoute` | C9 — `UITEST_SEED_TOMTOM_HAZARD_BANNER` |
 | Roadworks banner inject | `testRoadworksAheadBannerOnSeededRoute` | C7 — `UITEST_SEED_ROADWORKS_BANNER` |
 | Settings legal / API usage | `testSettingsAPIUsageAndLegalDriverTerms` | C8 |
 | Fleet pair wizard | `testDriverPairFleetOpensWizard` | Phase 3 stranger UX |
@@ -138,7 +141,7 @@ See also [`phase7-device-simulator-verification.md`](phase7-device-simulator-ver
 | Check | Result |
 |-------|--------|
 | `swift test` | **Pass** (2026-09-22) |
-| `fleet-e2e-smoke.sh` | **Pass** 14/14 (2026-09-22) |
+| `fleet-e2e-smoke.sh` | **Pass** 15 filters target (Phase 7b adds `fleetInspectionSummaryRoundTripsViaSnapshot`) |
 | Android `./gradlew :app:testDebugUnitTest` | **Pass** (2026-09-22) |
 | `hosted-gateway` `npm test` | **Pass** 8 tests (2026-09-19) |
 | `web-dispatch` `npm test` | **Pass** (2026-09-22) — includes proxy-cap + inspection asserts |

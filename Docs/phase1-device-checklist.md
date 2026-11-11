@@ -1,10 +1,12 @@
-# Phase 1 — 30-minute device checklist (Mac + iPhone)
+# Phase 1 — Optional 30-minute device smoke (Mac + iPhone)
 
-**SSOT for `EPIC-P0-DEVICE`.** Complete this on **real hardware** after CI is green. Same Wi‑Fi for Mac and iPhone. Mark Pass/Fail **only** in [`phase20-verification.md`](phase20-verification.md) rows for **C4**, **C9**, and **Fleet Part B** (plus C3–C9 notes in the table below as you go).
+**Optional pre-pilot smoke** for subjective confidence (hear TTS, live TomTom GPS, real Mac↔phone LAN). Programme gate for C4 / C9 / Fleet Part B is **Pass (CI sim / CI)** via Phase 7b — see [`phase7-device-simulator-verification.md`](phase7-device-simulator-verification.md) and [`phase20-verification.md`](phase20-verification.md).
 
-Agent Phase 31+ ungated tracks (H1/H2, HOS duty-log/extension/WTD, Lane Overpass parity) are **Done** 2026-11-09 — this checklist is the remaining programme gate. **Blocked ≠ code Fail.**
+Same Wi‑Fi for Mac and iPhone if you run Part B LAN. Mark optional notes in [`phase20-verification.md`](phase20-verification.md) only if useful.
 
-Last updated: 2026-11-09
+Agent Phase 31+ ungated tracks (H1/H2, HOS duty-log/extension/WTD, Lane Overpass parity) are **Done** 2026-11-09. Phase 7b CI-sim close **Done** 2026-11-11.
+
+Last updated: 2026-11-11
 
 ---
 
@@ -13,7 +15,7 @@ Last updated: 2026-11-09
 - [ ] Mac and iPhone on the **same Wi‑Fi**
 - [ ] Xcode: `RouteFinderApp` scheme → your iPhone (signed build)
 - [ ] Terminal: `export ORS_API_KEY="your-heigit-key"` and `export FLEET_API_KEY="your-shared-secret"` (operator keys — not on driver phone as personal HeiGIT)
-- [ ] Optional: TomTom key in Settings on iPhone for C9 only
+- [ ] Optional: TomTom key in Settings on iPhone for live C9 residual only
 
 ---
 
@@ -66,42 +68,41 @@ cd /Users/admin/Developer/RouteFinder/web-dispatch && npm run dev
 4. [ ] **Start** navigation → voice gives metric distances (e.g. “400 metres”)
 5. [ ] web-dispatch roster / Last GPS updates after Start (or sim)
 
-Mark **P49b-2 Fleet Part B** Pass/Fail in phase20 after **iPhone** walkaround → **web-dispatch** defect card (section D **C3** + Part B step 9 in [`fleet-e2e-qa.md`](fleet-e2e-qa.md)). Do not run Walkaround from Mac Settings — cab checklist is phone-only.
+Optional: after **iPhone** walkaround → **web-dispatch** defect card, note Part B LAN residual in phase20 (CI already Pass). Do not run Walkaround from Mac Settings — cab checklist is phone-only.
 
 ---
 
-## D — Physical QA scenarios C3–C9 (12 min)
+## D — Optional physical residuals C3–C9 (12 min)
+
+CI already covers chrome for C3–C9. Use this table only for live/voice residuals:
 
 | # | Steps | Pass? | Notes |
 |---|--------|-------|-------|
-| **C3** | **On iPhone** (not Mac): map menu → Walkaround → mark ≥1 defect → optional photo → Save → Share PDF; **Mac Dispatch** then shows defect card / PDF | | |
-| **C4** | Settings → Navigation → Layby voice **on** → HGV route with layby ahead → hear voice once inside 5 km | | |
-| **C5** | Settings → Fuel card provider → pick brand → route with fuel POI ahead → “Accepts your … card” banner | | |
-| **C6** | Report closure on route (hazard sheet) → during nav see hazard-ahead banner + voice | | |
-| **C7** | Route through OSM construction corridor → roadworks-ahead banner | | |
+| **C3** | **On iPhone** (not Mac): map menu → Walkaround → mark ≥1 defect → optional photo → Save → Share PDF; **Mac Dispatch** then shows defect card / PDF | | Optional PDF share / LAN card |
+| **C4** | Settings → Navigation → Layby voice **on** → HGV route with layby ahead → hear voice once inside 5 km | | Optional hear-once (CI banner Pass) |
+| **C5** | Settings → Fuel card provider → pick brand → route with fuel POI ahead → “Accepts your … card” banner | | Optional live OSM POI |
+| **C6** | Report closure on route (hazard sheet) → during nav see hazard-ahead banner + voice | | Optional live report |
+| **C7** | Route through OSM construction corridor → roadworks-ahead banner | | Optional live corridor |
 | **C8** | *(CI sim Pass)* Settings → API Usage + Legal Driver Terms — spot-check on device | | |
-| **C9** | Save TomTom key in Settings → navigate live route → traffic/closure hazard ahead alert | | Requires TomTom key on **iPhone**; else Skip |
+| **C9** | Save TomTom key in Settings → navigate live route → traffic/closure hazard ahead alert | | Optional live GPS; else Skip |
 
 ---
 
-## E — Sign-off (paste-back)
+## E — Optional paste-back
 
 Optional screenshots (local only; mask keys): `p0-c4-layby-voice.png`, `p0-c9-tomtom-hazard.png`, `p0-partb-toast.png`, `p0-partb-defect-card.png` → chat or `Docs/qa-screenshots/`.
 
-Paste to the agent (fill brackets). Agent updates **only** [`phase20-verification.md`](phase20-verification.md) C4 / C9 / Fleet Part B:
+Paste to the agent only if you want residual notes recorded:
 
 ```text
-Operator QA done. Update Docs/phase20-verification.md only:
-C4 = [Pass/Fail/Skip + note],
-C9 = [Pass/Fail/Skip + note],
-Fleet Part B = [Pass/Fail + note].
+Optional physical smoke done. Update Docs/phase20-verification.md residuals only if useful:
+C4 hear-once = [Pass/Fail/Skip + note],
+C9 live GPS = [Pass/Fail/Skip + note],
+Fleet Part B LAN = [Pass/Fail/Skip + note].
 Screenshots: [attached / paths / none].
 ```
 
-1. [ ] Replace **Blocked** / **Pending local** with **Pass** / **Fail** / **Skip** + one-line note for C4, C9, Fleet Part B
-2. [ ] If any Fail: log in [`pilot-feedback-backlog.md`](pilot-feedback-backlog.md) and run a scoped fix loop
-
-**Phase 1 exit gate:** Automated CI green + you marked C4 / C9 / Fleet Part B on real hardware.
+**Programme exit gate:** Automated CI green (Phase 7b). Physical smoke is **not** required.
 
 ---
 

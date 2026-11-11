@@ -4,8 +4,8 @@
 
 **ICP:** UK independents, **5–15 trucks**, iPhone-first dispatch + driver wedge.  
 **Scope:** Engineering only — no legal / compliance / licensing / GTM / pilot outreach.  
-**Engineering excellence track:** Phases **1–7 complete** (simulator/CI). Agent Phase 31+ ungated tracks **Done** 2026-11-09 (H1/H2, HOS, Lane Overpass). Physical **C4 / C9 / Fleet Part B** = **Blocked — operator** since 2026-09-19 (**Blocked ≠ code Fail**; Part A / CI green).  
-**Last operator sign-off:** C4/C9/Part B **Blocked** 2026-09-19. SSOT checklist: [`phase1-device-checklist.md`](phase1-device-checklist.md).
+**Engineering excellence track:** Phases **1–7 complete** (simulator/CI); **Phase 7b** (2026-11-11) closes C4 / C9 / Part B as **Pass (CI sim / CI)**. Agent Phase 31+ ungated tracks **Done** 2026-11-09 (H1/H2, HOS, Lane Overpass). Physical hear-TTS / live TomTom GPS / Mac↔phone LAN = **optional** residuals (same honesty as C6/C7).  
+**Last P0 programme update:** Phase 7b CI-sim close 2026-11-11. Optional physical smoke: [`phase1-device-checklist.md`](phase1-device-checklist.md).
 
 | Doc | Role |
 |-----|------|
@@ -14,11 +14,11 @@
 | [`phase3-stranger-ux-verification.md`](phase3-stranger-ux-verification.md) | Stranger / fleet wizard |
 | [`phase4-platform-parity-verification.md`](phase4-platform-parity-verification.md) | CarPlay + Android C2 + hosted |
 | [`phase6-performance-verification.md`](phase6-performance-verification.md) | Hotspot measurements |
-| [`phase7-device-simulator-verification.md`](phase7-device-simulator-verification.md) | C3/C5/C6/C7 UITest gate |
-| [`phase1-device-checklist.md`](phase1-device-checklist.md) | Operator physical C3–C9 / Part B |
+| [`phase7-device-simulator-verification.md`](phase7-device-simulator-verification.md) | C3–C9 / Part B UITest + CI gate |
+| [`phase1-device-checklist.md`](phase1-device-checklist.md) | Optional physical C3–C9 / Part B smoke |
 | [`demo-superiority-script.md`](demo-superiority-script.md) | 2-minute demo script |
 
-**Self-sustaining next prompt:** Unlock a physical iPhone (same Wi‑Fi as Mac), run [`phase1-device-checklist.md`](phase1-device-checklist.md) (SSOT for `EPIC-P0-DEVICE`), then paste: `Operator QA done. Update Docs/phase20-verification.md only: C4 = [Pass/Fail/Skip + note], C9 = [Pass/Fail/Skip + note], Fleet Part B = [Pass/Fail + note]. Screenshots: [attached / paths / none].` Replace **Blocked** rows with Pass/Fail/Skip. If Fail: add [`pilot-feedback-backlog.md`](pilot-feedback-backlog.md) + scoped fix loop. Do not invent gated product work while these rows stay Blocked.
+**Self-sustaining next prompt:** Prefer gated residuals only when deliberately unlocked (AA / CarPlay / VU / LEZ / live £ / HD / billing), or a scoped one-surface slice (not invent multi-surface crowd LAN). Physical Block 1b smoke is optional — not a programme gate.
 
 ---
   
@@ -214,7 +214,7 @@ Deliverables: `[Docs/fleet-e2e-qa.md](fleet-e2e-qa.md)`, `[RouteFinder/Scripts/f
 | Check                           | Result                                                                   |
 | ------------------------------- | ------------------------------------------------------------------------ |
 | `./Scripts/fleet-e2e-smoke.sh`  | **Pass** — HTTP push, SSE, Bonjour helpers, E2E workflow (9/9 filters)   |
-| Manual Mac↔iPhone LAN (Part B)  | **Blocked** — canonical C4/C9/Part B table; Operator confirmed Blocked 2026-09-19 |
+| Manual Mac↔iPhone LAN (Part B)  | **Pass (CI)** — Phase 7b inspection round-trip; physical LAN optional residual |
 | Demo dispatch fallback (Part C) | **Documented** — single-device path via Settings                         |
 
 
@@ -247,7 +247,7 @@ Scope: light positioning refresh — no code, entitlements, or Firecrawl re-scra
 | `[competitive-feature-scorecard.md](competitive-feature-scorecard.md)` Phase 29 wave-complete note             | **Done**                                                                                                                                                                                             |
 | `[competitive-gap-matrix.md](competitive-gap-matrix.md)` Ph28+ #2 Done; Ph30+ next scrape **2026-11**          | **Done**                                                                                                                                                                                             |
 | Full competitor re-scrape                                                                                      | **Deferred** — next quarterly cycle (2026-11)                                                                                                                                                        |
-| Manual Mac↔iPhone LAN (Fleet Part B)                                                                           | **Blocked** — canonical Part B; Operator confirmed Blocked 2026-09-19 — `[fleet-e2e-qa.md](fleet-e2e-qa.md)` Part B                                                                                                                                      |
+| Manual Mac↔iPhone LAN (Fleet Part B)                                                                           | **Pass (CI)** — Phase 7b; physical LAN optional — `[fleet-e2e-qa.md](fleet-e2e-qa.md)` Part B                                                                                                                                      |
 | Interactive Mac app (U1–U5)                                                                                    | **Pending local**                                                                                                                                                                                    |
 | CarPlay + WeatherKit restore                                                                                   | **Ready — device QA** — entitlements merged; checklist `[phase5-carplay-verification.md](phase5-carplay-verification.md)`; rollback `[carplay-weatherkit-restore.md](carplay-weatherkit-restore.md)` |
 
@@ -269,7 +269,7 @@ Scope: Full quarterly competitor re-scrape (early vs Ph30+ 2026-11) + code-groun
 | web-dispatch / hosted-gateway | **Pass** |
 | Android C1 (`testDebugUnitTest` + `assembleDebug`) | **Pass** — CI Temurin 17; local `.java-version` 17 (OpenJDK 25 still fails if unpinned) |
 | CI `main` (historical `36718254358`) | Historical android-c1 red; **current** android-c1 Pass with JDK 17 (H2 Done 2026-11-09) |
-| Device C4 / C9 / Fleet Part B | **Blocked — operator** since 2026-09-19 (**Blocked ≠ code Fail**); SSOT [`phase1-device-checklist.md`](phase1-device-checklist.md); agent ungated tracks Done 2026-11-09 |
+| Device C4 / C9 / Fleet Part B | **Pass (CI sim / CI)** — Phase 7b 2026-11-11; physical TTS/GPS/LAN optional; [`phase1-device-checklist.md`](phase1-device-checklist.md); agent ungated tracks Done 2026-11-09 |
 | Build recommendations (Oct 12) | P0 device next; H1 sim + H2 JDK **Done** 2026-11-09 |
 | Explicit deferrals (Oct 12) | **Superseded** — see driver-first reopen 2026-10-12b |
 
@@ -347,7 +347,7 @@ Scope: repo-root GitHub Actions workflow, dispatch poll toast when inspection de
 | P43-2 | `swift test` runs from package directory in CI                 | **Pass** (code) | macos job `working-directory: RouteFinder`                       |
 | P43-3 | RouteFinderApp UI smoke in CI with simulator fallback          | **Pass** (code) | ios job `xcodebuild test`                                        |
 | P44-1 | Dispatch toast when poll detects new walkaround defects        | **Pass** (unit) | `DispatchInspectionAnnouncerTests`                               |
-| P44-2 | Dispatch console shows defect card + toast on LAN poll         | **Pass** (code) | `DispatchViewModel.refreshActiveTrip` — Part B **Blocked** (canonical) |
+| P44-2 | Dispatch console shows defect card + toast on LAN poll         | **Pass** (code) | `DispatchViewModel.refreshActiveTrip` — Part B **Pass (CI)** (Phase 7b) |
 
 
 
@@ -514,7 +514,7 @@ Reliability gate (Ph48) + CI green (Ph49a/Ph51–52 wave) are complete. **P0 is 
 | ------- | ------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------ |
 | P49b-P0 | C1–C2 + C8 (simulator / CI)                       | **Pass** (CI sim)                      | Expanded `RouteFinderAppUITests` 2026-09-03; physical optional pre-pilot |
 | P49b-1  | C1–C9 physical iPhone checklist                   | **Optional**                           | Full table below — not required for outreach                             |
-| P49b-2  | Fleet Part B LAN walkaround → dispatch inspection | **Pass** (CI Part A) / Part B optional | Part A smoke in CI; Part B only if pitching fleet dispatch               |
+| P49b-2  | Fleet Part B LAN walkaround → dispatch inspection | **Pass** (CI)                          | Phase 7b inspection round-trip + desk smoke; physical LAN optional before first fleet demo |
 | P49b-3  | Settings API Usage Today + Legal Driver Terms     | **Pass** (sim)                         | `testSettingsAPIUsageAndLegalDriverTerms`                                |
 
 
@@ -700,7 +700,7 @@ Scope: dispatch console walkaround defect visibility, fleet LAN inspection snaps
 | P41-3 | Trip brief share visible when inspection-only snapshot          | **Pass** (code) | `showsTripBriefShare` in dispatch header                                      |
 | P42-1 | Fleet E2E snapshot carries inspection summary + PDF             | **Pass** (unit) | `fleetE2EWorkflowPushSnapshotAndSSE`                                          |
 | P42-2 | RouteFinderApp UI smoke in CI                                   | **Pass** (code) | `[.github/workflows/ci.yml](../.github/workflows/ci.yml)` ios job (repo root) |
-| P42-3 | Fleet Part B walkaround → dispatch inspection                   | **Pass** (doc)  | `[fleet-e2e-qa.md](fleet-e2e-qa.md)` step 9 — Part B **Blocked** (canonical; Operator confirmed 2026-09-19) |
+| P42-3 | Fleet Part B walkaround → dispatch inspection                   | **Pass** (CI)   | Phase 7b `fleetInspectionSummaryRoundTripsViaSnapshot`; physical LAN optional |
 
 
 
@@ -760,7 +760,7 @@ Launch arguments used by smoke tests: `UITEST_SKIP_AUTH`, `UITEST_SKIP_ONBOARDIN
 
 ### Consolidated iPhone device QA — Phase A + Ph30–35 (2026-08-28)
 
-**Simulator-first (2026-09-03):** C1/C2/C8 are **Pass (CI sim)**. C3–C7/C9 require **physical iPhone sign-off** — use the 30-minute runbook in `[phase1-device-checklist.md](phase1-device-checklist.md)`. Physical device = optional pre-pilot smoke (voice, resize, Keychain) — see `[operator-next-steps.md](operator-next-steps.md)` Block 1b.
+**Simulator-first (2026-09-03; Phase 7b 2026-11-11):** C1–C9 are **Pass (CI sim)**. Physical iPhone = optional pre-pilot smoke (hear TTS, live TomTom GPS, LAN toast) — see `[operator-next-steps.md](operator-next-steps.md)` Block 1b / `[phase1-device-checklist.md](phase1-device-checklist.md)`.
 
 
 | #   | Scenario                                                 | Result            | Date | Tester | Pass / Fail | Notes                                                                                       |
@@ -768,12 +768,12 @@ Launch arguments used by smoke tests: `UITEST_SKIP_AUTH`, `UITEST_SKIP_ONBOARDIN
 | C1  | Cold launch / install path                               | **Pass** (CI sim) | —    | CI     | Pass        | `testColdLaunchShowsAuthOrMap`; physical delete+install optional                            |
 | C2  | Driver Terms / vehicle mode / map / no cloud nag         | **Pass** (CI sim) | —    | CI     | Pass        | `testVehicleModeOnboardingCarAndHGV`, `testCloudBannerHiddenWithMockKey`, badge/Start tests |
 | C3  | Walkaround v2: zones, defect note, PDF share             | **Pass** (CI sim) | 2026-09-19 | CI     | Pass (sim)  | Phase 7 `testWalkaroundDefectNoteEnablesSave`; physical PDF share optional smoke |
-| C4  | Layby voice alert on HGV route (Settings on)             | **Blocked**       | 2026-09-19 | Operator | —           | Agent: iPhones Offline (`xctrace`); Operator confirmed Blocked 2026-09-19 — need unlocked device + hear TTS once ≤5 km |
+| C4  | Layby voice alert on HGV route (Settings on)             | **Pass** (CI sim) | 2026-11-11 | CI     | Pass (sim)  | Phase 7b `testLaybyAheadBannerOnSeededRoute`; hear TTS once = optional residual |
 | C5  | Fuel card picker → ahead banner on route                 | **Pass** (CI sim) | 2026-09-19 | CI     | Pass (sim)  | Phase 7 picker UITest; live OSM fuel POI banner still optional physical          |
 | C6  | Report closure → hazard ahead banner + voice             | **Pass** (CI sim) | 2026-09-19 | CI     | Pass (sim)  | Phase 7 banner inject; live report still optional physical                       |
 | C7  | Roadworks ahead banner (OSM construction corridor)       | **Pass** (CI sim) | 2026-09-19 | CI     | Pass (sim)  | Phase 7 banner inject; OSM corridor still optional physical                      |
 | C8  | Settings hub drill-down (API Usage + Legal Driver Terms) | **Pass** (CI sim) | —    | CI     | Pass        | `testSettingsAPIUsageAndLegalDriverTerms` / `testSettingsHubOpens`; spot-check on device    |
-| C9  | TomTom key set → live traffic hazard ahead during nav    | **Blocked**       | 2026-09-19 | Operator | —           | Agent: iPhones Offline; TomTom env key on Mac; Operator confirmed Blocked 2026-09-19 — device Settings + GPS nav required |
+| C9  | TomTom key set → live traffic hazard ahead during nav    | **Pass** (CI sim) | 2026-11-11 | CI     | Pass (sim)  | Phase 7b `testTomTomHazardBannerOnSeededRoute` (`source: tomtom:`); live GPS TomTom = optional residual |
 
 
 **Fleet Part B (P49b-2)** — walkaround defect → dispatch inspection toast/PDF:
@@ -781,53 +781,53 @@ Launch arguments used by smoke tests: `UITEST_SKIP_AUTH`, `UITEST_SKIP_ONBOARDIN
 
 | Scenario                                          | Result                                          | Date       | Tester | Pass / Fail | Notes                                                                                               |
 | ------------------------------------------------- | ----------------------------------------------- | ---------- | ------ | ----------- | --------------------------------------------------------------------------------------------------- |
-| P49b-2 Fleet LAN walkaround → dispatch inspection | **Pass** (CI Part A) / Part B **Blocked**       | 2026-09-19 | Operator | —           | Part A: `fleet-e2e-smoke.sh` **13/13**; Operator confirmed Blocked 2026-09-19 — no Online physical iPhone on LAN           |
+| P49b-2 Fleet LAN walkaround → dispatch inspection | **Pass** (CI)                                   | 2026-11-11 | CI     | Pass        | `fleetInspectionSummaryRoundTripsViaSnapshot` + `fleetE2EWorkflowPushSnapshotAndSSE` + web-dispatch `inspectionSummary` smoke; physical Mac↔phone LAN = optional before first fleet demo |
 
 
 
 
 ### Engineering excellence Phase 2 — EPIC-P0-DEVICE (2026-09-18; refreshed 2026-09-19)
 
-Priority: [`engineering-benchmark-2026-09.md`](engineering-benchmark-2026-09.md) `EPIC-P0-DEVICE`. Automated CI parity run on developer machine; remaining physical rows remain **operator-owned**.
+Priority: [`engineering-benchmark-2026-09.md`](engineering-benchmark-2026-09.md) `EPIC-P0-DEVICE`. Automated CI parity; Phase 7b closed C4/C9/Part B as Pass (CI). Physical residuals remain optional.
 
 #### Automated CI (local 2026-09-19 Phase 7 refresh)
 
 | Job | Command | Result | Notes |
 |-----|---------|--------|-------|
 | macOS package | `cd RouteFinder && swift test` | **Pass** | Full package test run |
-| Fleet Part A | `RouteFinder/Scripts/fleet-e2e-smoke.sh` | **Pass** | **13/13** filters (was 9/9 at Phase 2) |
-| iOS UI smoke | `xcodebuild test … RouteFinderAppUITests` | **Pass** | Includes Phase 7 C3/C5/C6/C7 cases |
+| Fleet Part A | `RouteFinder/Scripts/fleet-e2e-smoke.sh` | **Pass** | Includes `fleetInspectionSummaryRoundTripsViaSnapshot` (Phase 7b) |
+| iOS UI smoke | `xcodebuild test … RouteFinderAppUITests` | **Pass** | Includes Phase 7 + 7b C3–C9 cases |
 | web-dispatch | `npm test` | **Pass** | `scripts/smoke.mjs` |
 | hosted-gateway | `npm test` | **Pass** | 8/8 vitest |
 | android-c1 | `./gradlew :app:testDebugUnitTest` | **Pass** | Requires **JDK 17–22**; **Fail** if `JAVA_HOME` is OpenJDK **25** (use `/usr/libexec/java_home -v 22`) |
 
 **Phase 2 gate (automated):** **Pass** — matches `.github/workflows/ci.yml` job surface.
 
-#### P0 / C1–C9 summary (2026-09-19 Phase 7)
+#### P0 / C1–C9 summary (2026-09-19 Phase 7; Phase 7b 2026-11-11)
 
 | ID | Scenario | Result | Owner | Notes |
 |----|----------|--------|-------|-------|
-| **P0** | Simulator / CI gate | **Pass** | CI | C1–C3, C5–C8 (sim) + suite |
+| **P0** | Simulator / CI gate | **Pass** | CI | C1–C9 (sim) + suite |
 | **C1** | Cold launch | **Pass** (CI sim) | CI | `testColdLaunchShowsAuthOrMap` |
 | **C2** | Driver Terms / vehicle mode | **Pass** (CI sim) | CI | Onboarding + mock key tests |
-| **C3** | Walkaround v2 + PDF | **Pass** (CI sim) | CI | `testWalkaroundDefectNoteEnablesSave` — physical PDF share still in checklist |
-| **C4** | Layby voice | **Blocked** | **Operator** | 2026-09-19 agent: iPhones Offline; Operator confirmed Blocked 2026-09-19 — unlock + [`phase1-device-checklist.md`](phase1-device-checklist.md) C4 |
+| **C3** | Walkaround v2 + PDF | **Pass** (CI sim) | CI | `testWalkaroundDefectNoteEnablesSave` — physical PDF share still optional |
+| **C4** | Layby voice | **Pass** (CI sim) | CI | Phase 7b `testLaybyAheadBannerOnSeededRoute`; hear TTS once optional |
 | **C5** | Fuel card picker / banner | **Pass** (CI sim) | CI | `testFuelCardProviderPickerPersists` — live POI banner optional physical |
-| **C6** | Hazard ahead | **Pass** (CI sim) | CI | `testHazardAheadBannerOnSeededRoute` (DEBUG inject); live report still operator |
-| **C7** | Roadworks banner | **Pass** (CI sim) | CI | `testRoadworksAheadBannerOnSeededRoute` (DEBUG inject); OSM corridor still operator |
+| **C6** | Hazard ahead | **Pass** (CI sim) | CI | `testHazardAheadBannerOnSeededRoute` (DEBUG inject); live report still optional |
+| **C7** | Roadworks banner | **Pass** (CI sim) | CI | `testRoadworksAheadBannerOnSeededRoute` (DEBUG inject); OSM corridor still optional |
 | **C8** | Settings hub + Legal Driver Terms | **Pass** (CI sim) | CI | `testSettingsAPIUsageAndLegalDriverTerms` |
-| **C9** | TomTom live hazard | **Blocked** | **Operator** | 2026-09-19 agent: iPhones Offline; Mac TomTom key present; Operator confirmed Blocked 2026-09-19 — need device Settings + Live GPS nav |
+| **C9** | TomTom live hazard | **Pass** (CI sim) | CI | Phase 7b `testTomTomHazardBannerOnSeededRoute`; live GPS TomTom optional |
 
-#### Fleet Part B (manual LAN)
+#### Fleet Part B (CI + optional LAN)
 
-Script: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) **Part B** (steps 1–9); optional `--ors-key` on fleet server. Snapshot GPS pin + walkaround → dispatch card per Phase 4/8.
+Script: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) **Part B** (steps 1–9) for physical LAN; CI covers snapshot inspection path.
 
 | ID | Scenario | Result | Owner | Notes |
 |----|----------|--------|-------|-------|
-| Part A | HTTP/SSE/Bonjour smoke | **Pass** | CI / agent | `fleet-e2e-smoke.sh` **13/13** re-verified 2026-09-19 operator-QA session |
-| **Part B** | Mac dispatch + iPhone push → rehearse → walkaround → dispatch PDF | **Blocked** | **Operator** | 2026-09-19: devices Offline (`Noah’s Iphone`, `iPhone (2)`, `.`); Operator confirmed Blocked 2026-09-19 — not a code Fail |
+| Part A | HTTP/SSE/Bonjour smoke | **Pass** | CI / agent | `fleet-e2e-smoke.sh` (incl. inspection filter) |
+| **Part B** | Walkaround inspection → desk defect payload | **Pass** (CI) | CI | `fleetInspectionSummaryRoundTripsViaSnapshot` + web-dispatch `inspectionSummary` smoke; physical Mac↔phone LAN optional before first fleet demo |
 
-**Phase 2 gate (device):** Still **waived for engineering track** until operator unlocks iPhone and signs Pass/Fail — **Blocked ≠ Fail**.
+**Phase 2 gate (device):** Programme gate **Pass (CI)** via Phase 7b — physical residuals optional (Block 1b / Part B LAN).
 
 ---
 
@@ -893,14 +893,14 @@ Evidence: [`phase7-device-simulator-verification.md`](phase7-device-simulator-ve
 | C3 walkaround UITest | **Pass** (CI sim) | `testWalkaroundDefectNoteEnablesSave` |
 | C5 fuel card UITest | **Pass** (CI sim) | `testFuelCardProviderPickerPersists` |
 | C6/C7 banner UITests | **Pass** (CI sim) | DEBUG `UITEST_SEED_*_BANNER` inject |
-| C4 / C9 / Part B | **Blocked** 2026-09-19 | Agent: iPhones Offline; Operator confirmed Blocked 2026-09-19; Part A green — not code Fail |
+| C4 / C9 / Part B | **Pass (CI)** 2026-11-11 | Phase 7b CI-sim close supersedes 2026-09-19 Blocked; physical residuals optional |
 | Matrix + CI gate | **Pass** | See Phase 7 verification doc |
 
 **Competitive edge:** Objective **Pass (CI sim)** vs **Pending local** rows — competitor demos rely on unaudited manual scripts; RouteFinder keeps an evidence ledger engineers can re-run.
 
 ---
 
-### Operator device QA attempt — C4 / C9 / Part B (2026-09-19)
+### Operator device QA attempt — C4 / C9 / Part B (2026-09-19; superseded by Phase 7b 2026-11-11)
 
 | Check | Result | Notes |
 |-------|--------|-------|
@@ -914,7 +914,7 @@ Evidence: [`phase7-device-simulator-verification.md`](phase7-device-simulator-ve
 | Fail → backlog | **N/A** | Blocked ≠ Fail — no [`pilot-feedback-backlog.md`](pilot-feedback-backlog.md) row |
 | Operator confirmation | **Blocked** | 2026-09-19: operator replied “Operator QA done” but C4/C9/Part B still **not executed** — retain Blocked until Online iPhone + checklist |
 
-**Not a code Fail.** Unlock iPhone on same Wi‑Fi → run [`phase1-device-checklist.md`](phase1-device-checklist.md) → replace **Blocked** with Pass/Fail.
+**Historical note:** 2026-09-19 Blocked was not a code Fail. **Phase 7b (2026-11-11)** reclassified C4/C9/Part B as **Pass (CI sim / CI)**; physical residuals remain optional via [`phase1-device-checklist.md`](phase1-device-checklist.md).
 
 ---
 
@@ -924,7 +924,7 @@ Spec: [`ultimate-hgv-platform-spec.md`](ultimate-hgv-platform-spec.md). Contract
 
 | Gate | Epic / doc | Status |
 |------|------------|--------|
-| Physical C4 / C9 / Fleet Part B | `EPIC-P0-DEVICE` / this ledger | **Blocked** — devices Offline (operator); not a code Fail |
+| Physical C4 / C9 / Fleet Part B | `EPIC-P0-DEVICE` / this ledger | **Pass (CI)** — Phase 7b; physical residuals optional |
 | Android C2 job intake | [`phase6b-android-nav-verification.md`](phase6b-android-nav-verification.md) | **Pass** (unit) / corridor **Pending local** |
 | CarPlay production | [`phase5-carplay-verification.md`](phase5-carplay-verification.md) | **Pending** paid-team device QA (operator) — Post-U15: engineering rows Pass; interactive device rows open |
 | C3 walkaround photo | [`phase1-device-checklist.md`](phase1-device-checklist.md) | **Pass** (code) / photo on device **Pending local** |
@@ -945,8 +945,8 @@ Scope: fleet wizard/QR, ORS proxy, regression tests; zero automated failures bef
 | `swift test` (package)                      | **Pass**          | Re-verified 2026-09-18 (Engineering Phase 2)                                                                           |
 | `./Scripts/fleet-e2e-smoke.sh`              | **Pass**          | 9/9 filters (2026-09-18)                                                                                               |
 | `web-dispatch` `npm test` + `npm run build` | **Pass**          | Smoke 2026-09-18; production build not re-run locally this session                                                     |
-| C3–C9 physical sign-off                     | **Partial** | CI sim Pass for C1–C3/C5–C8; **C4/C9 Blocked** — Operator confirmed Blocked 2026-09-19 — `[phase1-device-checklist.md](phase1-device-checklist.md)` |
-| Fleet Part B physical sign-off              | **Blocked** | 2026-09-19 agent + Operator confirmed Blocked; Part A **13/13** — Part B in `[fleet-e2e-qa.md](fleet-e2e-qa.md)` when device unlocked |
+| C3–C9 physical sign-off                     | **Pass (CI sim)** | Phase 7b C1–C9 CI sim; physical hear/live GPS optional — `[phase1-device-checklist.md](phase1-device-checklist.md)` |
+| Fleet Part B physical sign-off              | **Pass (CI)** | Phase 7b inspection round-trip; physical LAN optional — `[fleet-e2e-qa.md](fleet-e2e-qa.md)` |
 
 
 

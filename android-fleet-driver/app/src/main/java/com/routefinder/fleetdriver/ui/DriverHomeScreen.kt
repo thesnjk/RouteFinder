@@ -41,6 +41,7 @@ import com.google.android.gms.tasks.CancellationTokenSource
 import com.routefinder.fleetdriver.fleet.FleetApi
 import com.routefinder.fleetdriver.fleet.FleetConnectionGate
 import com.routefinder.fleetdriver.fleet.FleetPreferences
+import com.routefinder.fleetdriver.fleet.FleetProxyStatusLabels
 import com.routefinder.fleetdriver.fleet.FleetSseClient
 import com.routefinder.fleetdriver.fleet.FleetTrip
 import com.routefinder.fleetdriver.fleet.SseConnectionState
@@ -52,6 +53,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 
 /**
  * Post-setup home: connection badge, trip card, SSE listen, accept + periodic GPS snapshot.
@@ -67,6 +69,7 @@ fun DriverHomeScreen(
     var serverVersion by remember { mutableStateOf<String?>(null) }
     var lastHealthAt by remember { mutableStateOf<Instant?>(null) }
     var lastHealthLabel by remember { mutableStateOf<String?>(null) }
+    var proxyStatus by remember { mutableStateOf<JSONObject?>(null) }
     var trip by remember { mutableStateOf<FleetTrip?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var lastGpsLabel by remember { mutableStateOf<String?>(null) }
@@ -86,6 +89,7 @@ fun DriverHomeScreen(
             val healthOk = health.optBoolean("ok")
             if (!healthOk) {
                 connected = false
+                proxyStatus = null
                 serverVersion = health.optString("version").takeIf { it.isNotBlank() }
                 lastHealthAt = Instant.now()
                 lastHealthLabel = "just now"
@@ -94,8 +98,9 @@ fun DriverHomeScreen(
                 return
             }
             try {
-                withContext(Dispatchers.IO) { api.verifyAuthenticatedAccess() }
+                val body = withContext(Dispatchers.IO) { api.verifyAuthenticatedAccess() }
                 connected = true
+                proxyStatus = body
                 serverVersion = health.optString("version").takeIf { it.isNotBlank() }
                 lastHealthAt = Instant.now()
                 lastHealthLabel = "just now"
@@ -103,6 +108,7 @@ fun DriverHomeScreen(
                 error = null
             } catch (e: Exception) {
                 connected = false
+                proxyStatus = null
                 serverVersion = health.optString("version").takeIf { it.isNotBlank() }
                 lastHealthAt = Instant.now()
                 lastHealthLabel = "just now"
@@ -115,6 +121,7 @@ fun DriverHomeScreen(
             }
         } catch (e: Exception) {
             connected = false
+            proxyStatus = null
             status = FleetConnectionGate.statusLabel(healthOk = false, authSucceeded = false)
             lastHealthAt = Instant.now()
             lastHealthLabel = "just now"
@@ -277,6 +284,26 @@ fun DriverHomeScreen(
                     Text("Vehicle ${prefs.vehicleId}", style = MaterialTheme.typography.bodySmall)
                     serverVersion?.let {
                         Text("Server $it", style = MaterialTheme.typography.bodySmall)
+                    }
+                    proxyStatus?.let { proxy ->
+                        FleetProxyStatusLabels.authenticatedDepotLine(proxy)?.let { depot ->
+                            Text(depot, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Text(
+                            FleetProxyStatusLabels.maskedTokenLine(prefs.apiKey),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Text(
+                            FleetProxyStatusLabels.orsSummaryLine(proxy),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        FleetProxyStatusLabels.nearCapWarning(proxy)?.let { warning ->
+                            Text(
+                                warning,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
                     }
                     lastHealthLabel?.let {
                         Text("Last health: $it", style = MaterialTheme.typography.bodySmall)

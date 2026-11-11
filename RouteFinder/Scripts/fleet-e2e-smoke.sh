@@ -25,6 +25,7 @@ TESTS=(
   fleetBonjour
   createAndPushTripAssignsStopRoles
   fleetE2EWorkflowPushSnapshotAndSSE
+  fleetInspectionSummaryRoundTripsViaSnapshot
   fleetCreateAndPushTripRoundTripsJobBrief
   fleetProxyStatusReportsORSConfigured
   fleetTelematicsIngestPersists

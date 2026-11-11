@@ -118,7 +118,7 @@ For every quarterly cycle, mark each RF surface **Lead / Parity / Gap** with one
 | CI truth       | `gh run list --limit 5` on `main`                                                                   |
 
 
-Device rows (C4 / C9 / CarPlay / Fleet Part B) stay **Blocked — operator** unless hardware is available in-session.
+Device C4 / C9 / Fleet Part B programme rows are **Pass (CI sim / CI)** via Phase 7b (2026-11-11). Physical hear-TTS / live TomTom GPS / Mac↔phone LAN and CarPlay remain optional / entitlement-gated residuals.
 
 ### Phase 5 — Gap rank and decisions
 
@@ -258,12 +258,12 @@ Update research appendix, scorecard `Last updated`, gap matrix backlog, `[phase2
 | Gate                              | Result                                                                                                                                                                                                                        |
 | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `swift test`                      | **Pass** — `spineSpeedLimitAcceleratesToMotorwayLimit` green (2026-11-09; was Oct 12 sim WIP debt). Full suite otherwise green.                                                                                              |
-| Fleet E2E smoke                   | **Pass** — 14/14 filters                                                                                                                                                                                                      |
+| Fleet E2E smoke                   | **Pass** — includes `fleetInspectionSummaryRoundTripsViaSnapshot` (Phase 7b)                                                                                                                                                  |
 | web-dispatch                      | **Pass** — smoke + production build                                                                                                                                                                                           |
 | hosted-gateway                    | **Pass** — 8 vitest + typecheck                                                                                                                                                                                               |
 | Android C1                        | **Pass** — CI Temurin 17 + `setup-android@v4`; local pin `.java-version` 17 (OpenJDK 25 still breaks AGP locally if unpinned)                                                                                                  |
 | CI `main` (historical `36718254358`) | Historical: macos/ios/web/hosted success; **android-c1** was red. **Current:** android-c1 Pass with JDK 17 pin (H2 Done 2026-11-09).                                                                                       |
-| Device C4 / C9 / Part B / CarPlay | **Blocked — operator** (unchanged)                                                                                                                                                                                            |
+| Device C4 / C9 / Part B           | **Pass (CI sim / CI)** — Phase 7b 2026-11-11; physical residuals optional. CarPlay still entitlement-gated.                                                                                                                  |
 
 
 
@@ -298,7 +298,7 @@ Original Oct 12 “Defer” list is **void** under the driver-first scope rule. 
 |------|-------------|-----------|-------------|
 | H1 | `EPIC-SIM-SPEEDLIMIT` | **Done** (2026-11-09) — Physics Lead CI-honest | `swift test --filter spineSpeedLimitAcceleratesToMotorwayLimit` Pass |
 | H2 | `EPIC-ANDROID-JDK-CI` | **Done** (2026-11-09) — CI Temurin 17 + `setup-android@v4`; local `.java-version` 17 | OpenJDK 25 still a local footgun if unpinned |
-| H3 | `EPIC-P0-DEVICE` | Demo claims need hardware truth | Operator C4 / C9 / Fleet Part B — SSOT [`phase1-device-checklist.md`](phase1-device-checklist.md) |
+| H3 | `EPIC-P0-DEVICE` | **Done** (Phase 7b 2026-11-11) — C4/C9/Part B Pass (CI); physical smoke optional | [`phase7-device-simulator-verification.md`](phase7-device-simulator-verification.md) |
 
 ### Ranked driver-first build backlog
 
@@ -369,18 +369,18 @@ Always **print** push commands. Do **not** push unless the user asked to push (o
 
 | Order | Who | Work |
 |------:|-----|------|
-| 1 | **Operator** | `EPIC-P0-DEVICE` — physical C4 / C9 / Fleet Part B via [`phase1-device-checklist.md`](phase1-device-checklist.md) (SSOT) |
+| 1 | Agent | ~~`EPIC-P0-DEVICE` / Phase 7b CI-sim close~~ **Done** 2026-11-11 — C4/C9/Part B Pass (CI) |
 | 2 | Agent | ~~H1/H2 + HOS duty-log/extension/WTD + Lane Overpass parity~~ **Done** 2026-11-09 |
-| 3 | Agent | Gated residuals only (AA / CarPlay / VU / LEZ / live £ / HD / billing) — do not invent multi-surface epics (e.g. crowd LAN) until deliberately scoped |
-| 4 | Agent | After operator paste-back: update [`phase20-verification.md`](phase20-verification.md) C4/C9/Part B only |
+| 3 | Agent | Gated residuals only when unlocked (AA / CarPlay / VU / LEZ / live £ / HD / billing) — do not invent multi-surface epics (e.g. crowd LAN) until deliberately scoped |
+| 4 | Operator | Optional Block 1b / Part B LAN smoke via [`phase1-device-checklist.md`](phase1-device-checklist.md) before first pilot / fleet demo |
 
-Also see: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B for walkaround → desk defect detail.
+Also see: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B for optional physical walkaround → desk defect detail.
 
 ---
 
-## Operator playbook — `EPIC-P0-DEVICE`
+## Operator playbook — optional physical residuals
 
-**Do not duplicate steps here.** Follow the SSOT checklist:
+Programme gate is **Pass (CI)**. Physical smoke is optional for subjective confidence:
 
 → [`phase1-device-checklist.md`](phase1-device-checklist.md) (~30 min, Mac + iPhone, same Wi‑Fi)
 
@@ -388,14 +388,14 @@ Also see: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B for walkaround → desk de
 
 Take screenshots **only** if useful; mask keys. Suggested names: `p0-c4-layby-voice.png`, `p0-c9-tomtom-hazard.png`, `p0-partb-toast.png`, `p0-partb-defect-card.png` → chat or `Docs/qa-screenshots/`.
 
-### Paste-back (required)
+### Optional paste-back
 
 ```text
-Operator QA done. Update Docs/phase20-verification.md only:
-C4 = [Pass/Fail/Skip + note],
-C9 = [Pass/Fail/Skip + note],
-Fleet Part B = [Pass/Fail + note].
+Optional physical smoke done. Update Docs/phase20-verification.md residuals only if useful:
+C4 hear-once = [Pass/Fail/Skip + note],
+C9 live GPS = [Pass/Fail/Skip + note],
+Fleet Part B LAN = [Pass/Fail/Skip + note].
 Screenshots: [attached / paths / none].
 ```
 
-Agent then updates [`phase20-verification.md`](phase20-verification.md) **only** (no unrelated edits) and ends that turn with the [Agent delivery protocol](#agent-delivery-protocol-mandatory-end-of-every-output) again.
+Agent then updates residual notes in [`phase20-verification.md`](phase20-verification.md) if asked and ends that turn with the [Agent delivery protocol](#agent-delivery-protocol-mandatory-end-of-every-output) again.

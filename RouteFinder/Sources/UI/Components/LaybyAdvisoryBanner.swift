@@ -75,6 +75,7 @@ struct LaybyAdvisoryBanner: View {
         .controlSheetStyle()
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilitySummary)
+        .accessibilityIdentifier("laybyAheadBanner")
     }
 
     private var primaryLine: String {

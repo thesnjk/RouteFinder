@@ -185,15 +185,34 @@ const inspectionSummary = {
 assert.equal(inspectionHasDefects({ latestInspectionSummary: inspectionSummary }), true)
 assert.equal(inspectionHasDefects({ latestInspectionSummary: { ...inspectionSummary, defectCount: 0 } }), false)
 assert.equal(inspectionHasDefects(null), false)
+assert.equal(inspectionHasDefects({}), false)
 assert.ok(inspectionSummaryLine(inspectionSummary).includes('Unit 1 (AB12 CDE) — 2 defect(s)'))
+assert.equal(
+  inspectionSummaryLine({ ...inspectionSummary, registrationPlate: undefined }),
+  `Unit 1 — 2 defect(s) at ${inspectionSummary.completedAt}`,
+)
 assert.ok(inspectionToastMessage(inspectionSummary).startsWith('Walkaround: Unit 1'))
+assert.equal(
+  inspectionToastMessage({ ...inspectionSummary, registrationPlate: '' }),
+  'Walkaround: Unit 1 — 2 defect(s) reported',
+)
 assert.equal(shouldAnnounceInspection(null, inspectionSummary, null), true)
+assert.equal(shouldAnnounceInspection(inspectionSummary, null, null), false)
+assert.equal(shouldAnnounceInspection(null, { ...inspectionSummary, defectCount: 0 }, null), false)
 assert.equal(shouldAnnounceInspection(inspectionSummary, inspectionSummary, inspectionSummary), false)
 assert.equal(
   shouldAnnounceInspection(
     inspectionSummary,
     { ...inspectionSummary, defectCount: 3, completedAt: '2026-09-22T13:00:00Z' },
     inspectionSummary,
+  ),
+  true,
+)
+assert.equal(
+  shouldAnnounceInspection(
+    inspectionSummary,
+    { ...inspectionSummary, completedAt: '2026-09-22T14:00:00Z' },
+    null,
   ),
   true,
 )

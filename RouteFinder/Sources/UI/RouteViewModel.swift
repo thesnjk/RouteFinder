@@ -2555,7 +2555,7 @@ public final class RouteViewModel {
         seedUITestMapBannersIfNeeded()
     }
 
-    /// Injects hazard / roadworks HUD banners for C6/C7 simulator UITests.
+    /// Injects hazard / roadworks / layby HUD banners for C4/C6/C7/C9 simulator UITests.
     private func seedUITestMapBannersIfNeeded() {
         let seedHazard = ProcessInfo.processInfo.arguments.contains("UITEST_SEED_HAZARD_BANNER")
             || UserDefaults.standard.bool(forKey: "RouteFinder.uitestSeedHazardBanner")
@@ -2568,6 +2568,40 @@ public final class RouteViewModel {
                 source: "uitest"
             )
             UserDefaults.standard.set(false, forKey: "RouteFinder.uitestSeedHazardBanner")
+        }
+
+        let seedTomTomHazard = ProcessInfo.processInfo.arguments.contains("UITEST_SEED_TOMTOM_HAZARD_BANNER")
+            || UserDefaults.standard.bool(forKey: "RouteFinder.uitestSeedTomTomHazardBanner")
+        if seedTomTomHazard {
+            activeHazardAheadAnnouncement = HazardAheadAnnouncement(
+                id: "uitest-tomtom-hazard",
+                type: .traffic,
+                distanceRemainingMeters: 2_400,
+                message: "Live traffic delay ahead in 2.4 km",
+                source: "tomtom:traffic"
+            )
+            UserDefaults.standard.set(false, forKey: "RouteFinder.uitestSeedTomTomHazardBanner")
+        }
+
+        let seedLayby = ProcessInfo.processInfo.arguments.contains("UITEST_SEED_LAYBY_ADVISORY")
+            || UserDefaults.standard.bool(forKey: "RouteFinder.uitestSeedLaybyAdvisory")
+        if seedLayby {
+            let advisory = LaybyAdvisory(
+                stop: LaybyStop(
+                    id: "uitest-layby",
+                    coordinate: Coordinate(latitude: 52.2, longitude: -0.9),
+                    label: "UITest Northbound layby"
+                ),
+                distanceRemainingMeters: 3_200,
+                estimatedArrivalSeconds: 180,
+                confidence: 0.85,
+                occupancyPrior: .moderate,
+                reasonCodes: [.hosDeadline],
+                isAdvisory: true
+            )
+            laybyAdvisory = advisory
+            rankedLaybyAdvisories = [advisory]
+            UserDefaults.standard.set(false, forKey: "RouteFinder.uitestSeedLaybyAdvisory")
         }
 
         let seedRoadworks = ProcessInfo.processInfo.arguments.contains("UITEST_SEED_ROADWORKS_BANNER")

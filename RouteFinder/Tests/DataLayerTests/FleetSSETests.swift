@@ -248,6 +248,64 @@ private func startFleetServer(
     #expect(briefText.contains("Felixstowe"))
 }
 
+/// Part B CI: walkaround inspectionSummary + PDF round-trip via snapshot PUT/GET (no physical phone).
+@Test func fleetInspectionSummaryRoundTripsViaSnapshot() async throws {
+    let storageDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("FleetInspectionSummary-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: storageDir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: storageDir) }
+
+    let port = 18098
+    let serverTask = startFleetServer(port: port, storageDirectory: storageDir, apiKey: nil)
+    defer { serverTask.cancel() }
+
+    let baseURL = URL(string: "http://127.0.0.1:\(port)")!
+    try await waitForFleetServerReady(baseURL: baseURL)
+    let client = HTTPFleetStore(baseURL: baseURL)
+    let org = try await client.createOrg(name: "Inspection Summary Ltd")
+    let vehicle = try await client.registerVehicle(
+        FleetVehicle(orgId: org.id, label: "Inspect Artic", registrationPlate: "IN01 TST")
+    )
+    let trip = try await client.createAndPushTrip(
+        orgId: org.id,
+        vehicleId: vehicle.id,
+        stops: [
+            FleetTripStop(sequence: 0, label: "Depot", latitude: 52.63, longitude: 1.30, role: .origin),
+            FleetTripStop(sequence: 1, label: "Customer", latitude: 52.75, longitude: 0.40, role: .destination),
+        ]
+    )
+
+    let inspectionSummary = TripBriefInspectionSummary(
+        vehicleLabel: "Inspect Artic",
+        registrationPlate: "IN01 TST",
+        defectCount: 1,
+        completedAt: Date(timeIntervalSince1970: 1_720_100_000)
+    )
+    let pdfFixture = Data("%PDF-1.4 part-b-inspection".utf8).base64EncodedString()
+    let snapshot = FleetTripSnapshot(
+        tripId: trip.id,
+        status: .active,
+        orderedStopIds: trip.stops.map(\.id),
+        latestInspectionSummary: inspectionSummary,
+        inspectionReportPDFBase64: pdfFixture
+    )
+    let updated = try await client.applySnapshot(snapshot)
+    #expect(updated.latestInspectionSummary?.defectCount == 1)
+    #expect(updated.latestInspectionSummary?.vehicleLabel == "Inspect Artic")
+    #expect(updated.latestInspectionSummary?.registrationPlate == "IN01 TST")
+    #expect(updated.inspectionReportPDFBase64 == pdfFixture)
+
+    let fetched = try await client.trip(id: trip.id)
+    #expect(fetched?.latestInspectionSummary?.defectCount == 1)
+    #expect(fetched?.inspectionReportPDFBase64 == pdfFixture)
+
+    let briefContext = TripBriefContext.from(fleetTrip: updated, vehicleLabel: vehicle.label)
+    #expect(briefContext.latestInspectionSummary?.defectCount == 1)
+    let briefText = TripBriefFormatter.plainText(from: briefContext)
+    #expect(briefText.contains("Inspection warning"))
+    #expect(briefText.contains("1 defect(s)"))
+}
+
 @Test func fleetCreateAndPushTripRoundTripsJobBrief() async throws {
     let storageDir = FileManager.default.temporaryDirectory
         .appendingPathComponent("FleetJobBriefRoundTrip-\(UUID().uuidString)", isDirectory: true)

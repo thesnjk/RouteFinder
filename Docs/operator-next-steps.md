@@ -2,7 +2,7 @@
 
 Simulator-first gate after code ship on `main`. CI UI tests are the official P0 Pass — physical iPhone is optional once before the first pilot email.
 
-Last updated: 2026-09-27
+Last updated: 2026-11-11
 
 ---
 
@@ -22,18 +22,19 @@ That is **P0 Pass**. No code action required from you for Block 1.
 
 ### Block 1b — Optional pre-pilot phone smoke (~10 min)
 
-**Once** before the first pilot email if you want subjective/device confidence.
+**Once** before the first pilot email if you want subjective/device confidence. Programme C4/C9 chrome is already **Pass (CI sim)** (Phase 7b).
 
 1. Real HeiGIT key on fleet server (`--ors-key`) so drivers need no HeiGIT account — or paste keys only for single-device demos.
-2. Listen for metric voice (“400 metres”); tweak Voice/rate in Settings.
+2. Listen for metric voice (“400 metres”) / optional layby TTS hear-once; tweak Voice/rate in Settings.
 3. Optional: spot-check [`phase8-parity-verification.md`](phase8-parity-verification.md) (toll advisory, TRAVIS link, offline progress).
 4. Settings → Legal: Privacy / Terms links present (placeholder URLs until you host HTML).
+5. Full optional runbook: [`phase1-device-checklist.md`](phase1-device-checklist.md).
 
 ---
 
-## Block 2 — Fleet Part B (~30 min) **recommended before first meeting**
+## Block 2 — Fleet Part B LAN (~30 min) **optional before first fleet demo**
 
-Mac + iPhone on same Wi‑Fi. Full steps: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B.
+CI already **Pass** for inspection snapshot → desk payload (Phase 7b). Run physical LAN only if pitching live Mac↔phone dispatch. Full steps: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B.
 
 1. Mac: `cd RouteFinder && swift run RouteFinderFleetServer --port 8080 --ors-key "$ORS_API_KEY" --api-key "$FLEET_API_KEY"`
 2. Paste the same `$FLEET_API_KEY` into Mac Settings (fleet API key), web Bearer (if used), and the driver fleet wizard

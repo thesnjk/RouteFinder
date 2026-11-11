@@ -366,6 +366,34 @@ final class RouteFinderAppUITests: XCTestCase {
         )
     }
 
+    /// C4: Seeded layby advisory banner appears on HGV demo route (chrome wiring; TTS hear-once is optional residual).
+    @MainActor
+    func testLaybyAheadBannerOnSeededRoute() throws {
+        let app = launchApp(skipAuth: true, seedRoute: true, hgvMode: true, seedLaybyAdvisory: true)
+        XCTAssertTrue(app.buttons["mapToolbarMenu"].waitForExistence(timeout: launchTimeout), "map should load")
+        let banner = identifiedElement("laybyAheadBanner", in: app).firstMatch
+        XCTAssertTrue(banner.waitForExistence(timeout: launchTimeout), "laybyAheadBanner")
+        XCTAssertTrue(
+            banner.label.contains("UITest Northbound layby")
+                || app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "UITest Northbound layby")).firstMatch.exists,
+            "Expected UITEST layby copy, got: \(banner.label)"
+        )
+    }
+
+    /// C9: Seeded TomTom-sourced hazard banner appears on demo route (chrome wiring; live GPS TomTom is optional residual).
+    @MainActor
+    func testTomTomHazardBannerOnSeededRoute() throws {
+        let app = launchApp(skipAuth: true, seedRoute: true, seedTomTomHazardBanner: true)
+        XCTAssertTrue(app.buttons["mapToolbarMenu"].waitForExistence(timeout: launchTimeout), "map should load")
+        let banner = identifiedElement("hazardAheadBanner", in: app).firstMatch
+        XCTAssertTrue(banner.waitForExistence(timeout: launchTimeout), "hazardAheadBanner")
+        XCTAssertTrue(
+            banner.label.contains("Live traffic delay")
+                || app.staticTexts["Live traffic delay ahead in 2.4 km"].exists,
+            "Expected TomTom-sourced hazard copy, got: \(banner.label)"
+        )
+    }
+
     /// U3: Seeded predictive-risk fuse shows unified primary banner (≥3 kinds fused).
     @MainActor
     func testPredictiveRiskPrimaryBannerOnSeededRoute() throws {
@@ -432,8 +460,10 @@ final class RouteFinderAppUITests: XCTestCase {
         walkaroundNearComplete: Bool = false,
         openWalkaround: Bool = false,
         seedHazardBanner: Bool = false,
+        seedTomTomHazardBanner: Bool = false,
         seedRoadworksBanner: Bool = false,
-        seedPredictiveRisk: Bool = false
+        seedPredictiveRisk: Bool = false,
+        seedLaybyAdvisory: Bool = false
     ) -> XCUIApplication {
         let app = XCUIApplication()
         if skipAuth {
@@ -472,11 +502,17 @@ final class RouteFinderAppUITests: XCTestCase {
         if seedHazardBanner {
             app.launchArguments += ["UITEST_SEED_HAZARD_BANNER"]
         }
+        if seedTomTomHazardBanner {
+            app.launchArguments += ["UITEST_SEED_TOMTOM_HAZARD_BANNER"]
+        }
         if seedRoadworksBanner {
             app.launchArguments += ["UITEST_SEED_ROADWORKS_BANNER"]
         }
         if seedPredictiveRisk {
             app.launchArguments += ["UITEST_SEED_PREDICTIVE_RISK"]
+        }
+        if seedLaybyAdvisory {
+            app.launchArguments += ["UITEST_SEED_LAYBY_ADVISORY"]
         }
         app.launch()
         XCUIDevice.shared.orientation = .portrait

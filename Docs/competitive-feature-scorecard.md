@@ -1,6 +1,6 @@
 # Competitive Feature Scorecard — September 2026
 
-Last updated: 2026-11-09 (P0 Docs SSOT next; Lane Overpass + HOS Done; residual HD / live £ / AA / CarPlay / VU)
+Last updated: 2026-11-11 (Phase 7b P0 Pass CI; Midlands + DESK-LAYBY Done; residual HD / live £ / AA / CarPlay / VU / country PBF)
 
 Scoring: **0** Absent · **1** Weak · **2** Parity · **3** Lead  
 Personas: **OO** = UK owner-operator · **SF** = small fleet (2–20 vehicles)

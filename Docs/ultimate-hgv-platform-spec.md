@@ -95,7 +95,7 @@ flowchart LR
 | `EPIC-JOB-INTAKE` | U2 | **Done** — push with weight/ADR → auto-route iOS+Android; optional fields |
 | `EPIC-PREDICTIVE-RISK` | U3 | **Done** — MVP fuse ≥3 kinds (`PredictiveRiskEngine`) + HUD + voice dedup |
 | `EPIC-WALKAROUND-MEDIA` | U4 | **Done** — defect photos + PDF/fleet size guard |
-| `EPIC-P0-DEVICE` / Android C2 / CarPlay | U5 | **Docs tied**; physical rows remain operator Blocked / Pending |
+| `EPIC-P0-DEVICE` / Android C2 / CarPlay | U5 | **P0 Pass (CI)** Phase 7b; Android C2 unit Pass; CarPlay entitlement-gated; physical residuals optional |
 
 ### Deferred Phase 2+ (not in MVP)
 

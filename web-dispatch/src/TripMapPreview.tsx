@@ -13,6 +13,7 @@ import {
   fleetPinsFingerprint,
   type RosterDriverPin,
 } from './fleetRoster'
+import { parkingTierFromOccupancy } from './predictedLayby'
 import { tripMapFingerprint, tripMapFetchFingerprint } from './tripMapFingerprint'
 import { advisoriesAlongRoute } from './tollAdvisoryAlongRouteMatcher'
 import type { UKTollAdvisory } from './ukTollAdvisoryCatalog'
@@ -232,6 +233,21 @@ export function TripMapPreview({
           .setLngLat([current.driverLongitude, current.driverLatitude])
           .addTo(map),
       )
+    }
+
+    const predicted = current?.predictedLayby
+    if (predicted?.stop?.coordinate) {
+      const { latitude, longitude } = predicted.stop.coordinate
+      if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+        bounds.extend([longitude, latitude])
+        hasBounds = true
+        const tier = parkingTierFromOccupancy(predicted.occupancyPrior)
+        const el = document.createElement('div')
+        el.className = `map-marker map-marker--layby map-marker--layby-${tier}`
+        el.title = `Predicted layby: ${predicted.stop.label}`
+        el.textContent = 'P'
+        markers.push(new Marker({ element: el }).setLngLat([longitude, latitude]).addTo(map))
+      }
     }
 
     if (hasBounds) {

@@ -29,6 +29,7 @@ Open http://127.0.0.1:5173
 - First-run tour → **Bootstrap demo fleet** (or Create org → register vehicle) → show **QR** → Push trip
 - Driver snapshot panel + MapLibre corridor preview
 - Walkaround defects card + optional PDF download when the phone publishes an inspection summary
+- Predicted layby card + map pin when the phone publishes `predictedLayby` (Mac DispatchStatusPanel parity)
 
 Operator steps: [`../Docs/web-dispatch-operator-guide.md`](../Docs/web-dispatch-operator-guide.md)
 
@@ -48,6 +49,7 @@ Operator steps: [`../Docs/web-dispatch-operator-guide.md`](../Docs/web-dispatch-
 - Vehicle pairing QR (`routefinder-vehicle:<uuid>`)
 - Active-trip snapshot poll + MapLibre preview (job brief weight / ADR / time windows on push)
 - Walkaround defect card + PDF in Driver snapshot when `latestInspectionSummary.defectCount > 0`
+- Predicted layby card + occupancy-tier map pin when `predictedLayby` is present on the active trip snapshot
 - Geocode stop search via fleet Pelias proxy
 - ORS + optional TomTom / OpenWeather proxy status from `/v1/proxy/status`
 - Hosted HTTPS base URL supported (same client as LAN)

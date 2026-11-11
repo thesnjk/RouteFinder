@@ -52,6 +52,7 @@ import com.routefinder.fleetdriver.fleet.TelematicsCSVImporterError
 import com.routefinder.fleetdriver.fleet.TelematicsImportBatch
 import com.routefinder.fleetdriver.fleet.TelematicsProvider
 import com.routefinder.fleetdriver.fleet.VehicleRegistrationResolver
+import com.routefinder.fleetdriver.fleet.predictedLaybyJson
 import com.routefinder.fleetdriver.hazard.CrowdReport
 import com.routefinder.fleetdriver.hazard.CrowdReportStillTherePrompt
 import com.routefinder.fleetdriver.hazard.HazardAheadAnnouncement
@@ -1127,6 +1128,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                             trip = tripForEta,
                             status = "optimized",
                             physicsETASeconds = result.durationSeconds,
+                            predictedLayby = predictedLaybySnapshotJson(),
                         )
                     }
                     activeTrip = tripForEta.copy(
@@ -2186,6 +2188,7 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                                 driverLatitude = lat,
                                 driverLongitude = lon,
                                 driverLocationRecordedAt = Instant.now().toString(),
+                                predictedLayby = predictedLaybySnapshotJson(),
                             )
                         }
                     } catch (_: Exception) {
@@ -2194,6 +2197,24 @@ class NavigationViewModel(application: Application) : AndroidViewModel(applicati
                 delay(20_000)
             }
         }
+    }
+
+    /** Swift-compatible predictedLayby JSON from the current cab advisory, if any. */
+    private fun predictedLaybySnapshotJson(): JSONObject? {
+        val advisory = laybyAdvisory ?: return null
+        // ~80 km/h HGV cruise for desk ETA hint (matches Mac card when seconds present).
+        val etaSeconds =
+            if (advisory.remainingMeters > 0) advisory.remainingMeters / 22.0 else null
+        return predictedLaybyJson(
+            stopId = advisory.site.id,
+            label = advisory.site.name,
+            latitude = advisory.site.coordinate.latitude,
+            longitude = advisory.site.coordinate.longitude,
+            distanceRemainingMeters = advisory.remainingMeters,
+            occupancyPrior = advisory.occupancyPrior.displayLabel,
+            estimatedArrivalSeconds = etaSeconds,
+            isAdvisory = true,
+        )
     }
 
     fun clearToast() {

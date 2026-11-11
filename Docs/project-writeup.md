@@ -5,7 +5,7 @@
 **Document type:** Living professional technical writeup (AQA NEA–style structure; **no client interviews**)  
 **Repository:** proprietary — see root [`LICENSE`](../LICENSE)  
 **Last updated:** 2026-11-11  
-**Status:** **iterative** — Sections 1–4 (Analysis → Testing) complete; Section 5 and Appendices stubbed (next attach = §5 Evaluation)
+**Status:** **iterative** — Sections 1–5 (Analysis → Evaluation) complete; Appendices stubbed (next attach = Appendices polish)
 
 Integers, CI evidence, and phase verification remain authoritative in [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md), [`engineering-test-matrix.md`](engineering-test-matrix.md), and relevant `phase*` Docs. This document provides the formal analysis–design–implementation–testing–evaluation narrative and points at those SSOTs.
 
@@ -74,7 +74,11 @@ This writeup follows a professional NEA-style structure (Analysis → Design →
    - [4.6 Performance / fair-use](#46-performance--fair-use)
    - [4.7 Test evidence](#47-test-evidence)
    - [4.8 Objective verification table](#48-objective-verification-table)
-5. [Evaluation](#5-evaluation) *(stub)*
+5. [Evaluation](#5-evaluation)
+   - [5.1 Method of developer evaluation](#51-method-of-developer-evaluation)
+   - [5.2 Comparison against original objectives](#52-comparison-against-original-objectives)
+   - [5.3 Limitations](#53-limitations)
+   - [5.4 Maintenance and future work](#54-maintenance-and-future-work)
 6. [Appendices](#6-appendices) *(stub)*
 7. [Document changelog](#7-document-changelog)
 
@@ -702,25 +706,68 @@ PR merges should keep these green; this section cites the harness rather than pa
 
 ## 5. Evaluation
 
-*(Stub — fill next attach. **Developer-led only — no client evaluation method.**)*
+Evaluation is **developer-led only**. This writeup does not use client interviews, client questionnaires, or fabricated user quotes. Judgement combines Analysis objectives (§1.6), Implementation evidence (§3.10), Testing harnesses (§4.7–4.8), and the competitive scorecard / sweep SSOTs.
 
 ### 5.1 Method of developer evaluation
-- Compare shipped surfaces to FO/NFO and scorecard; cite CI/phase evidence.
+
+1. **Objective trace** — For each FO/NFO, require a greppable implementation path (§3) and a named automated or CI verification path (§4.8).
+2. **Scorecard honesty** — Cross-check [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md) for Shipped (MVP) vs Residual / Gated labels; do not promote residuals to “Met.”
+3. **CI as standing evidence** — Treat `.github/workflows/ci.yml` jobs (`macos`, `ios`, `web-dispatch`, `android-c1`, `hosted-gateway`) as the recurring correctness gate; optional physical smoke remains operator-owned ([`phase1-device-checklist.md`](phase1-device-checklist.md), [`fleet-e2e-qa.md`](fleet-e2e-qa.md)).
+4. **Persona fit (documentary)** — Re-read [`buyer-personas-uk-hgv.md`](buyer-personas-uk-hgv.md) jobs-to-be-done; confirm Dave/Sarah/Priya/Omar critical needs are covered by Met or Partial rows, with known loses called out under Limitations.
+5. **Non-goals** — Explicitly exclude Stripe billing UI, inventing densify/toll clones (Anti-grind), and claiming VU/legal cadastre/live tariff authority.
 
 ### 5.2 Comparison against original objectives
-- Met / partial / gated table.
+
+| ID | Outcome | Evidence summary |
+|----|---------|------------------|
+| FO1 Constraint routing | **Met (MVP)** | ORS planning + trailer ladder; package tests (§4.3–4.4) |
+| FO2 Multi-stop + desk push | **Met (MVP)** | Fleet server/gateway + Mac/web dispatch; SSE/store tests; fleet smoke |
+| FO3 Physics rehearsal + brief | **Met (MVP)** | Simulation coordinator; kinetic + trip-brief tests |
+| FO4 Advisory HOS / Can-I-drive | **Partial** | Clock/import/desk cards shipped; legal VU download residual (`EPIC-VU-PARTNER`) |
+| FO5 UK living layer | **Partial** | LEZ/toll/layby/hazard MVP slices shipped; live £ + full cadastre residual |
+| FO6 LAN/hosted Connection status | **Partial** | `FleetProxyDeskStatus` + UI parity shipped; Stripe self-serve residual (`EPIC-HOSTED-DESK`) |
+| FO7 Android C2 fleet driver | **Partial** | C2 MVP + CI `android-c1`; Android Auto / offline packs gated |
+| FO8 Lane / Overpass guidance | **Partial** | Overpass parity shipped; HD lane visuals residual (`EPIC-LANE-DEPTH`) |
+| NFO1 Modular architecture | **Met** | SPM modules + coordinators ([`architecture.md`](architecture.md)) |
+| NFO2 Strict concurrency | **Met** | Package norms under `swift test` |
+| NFO3 Glass UI | **Met** | `GlassmorphicModifiers` convention + UI smoke |
+| NFO4 Secrets hygiene | **Met** | Masking tests + screenshot policy |
+| NFO5 Remote reliability | **Met** | `RemoteRequestPolicy` + ledger/meter tests |
+| NFO6 Verifiability | **Met** | CI jobs §4.7 |
+| NFO7 Docs SSOT | **Met** | Scorecard/sweep/writeup iteration (this epic) |
+
+**Overall:** Core cab+desk MVP objectives are met or honestly partial. Remaining gaps are predominantly secrets-, partner-, or Anti-grind-gated rather than unmarked incomplete work.
 
 ### 5.3 Limitations
-- Entitlements, cadastre, live £, VU download, HD lanes, Stripe, Android offline.
+
+| Limitation | Epic / note |
+|------------|-------------|
+| Android Auto not shipped | `EPIC-ANDROID-AUTO` (product gate) |
+| CarPlay production entitlements inactive | `EPIC-CARPLAY-PROD` |
+| Legal remote VU download absent | `EPIC-VU-PARTNER` |
+| Live operator toll £ / class feed absent | `EPIC-TOLL-DEPTH` residual |
+| HD lane visuals absent | `EPIC-LANE-DEPTH` residual |
+| Stripe / self-serve billing out of scope | `EPIC-HOSTED-DESK` residual |
+| Android offline packs / further country PBF | Product-gated; not Sygic-class offline |
+| Remaining coarse LEZ envelopes; London-wide ULEZ ORS area-cap blocked | `EPIC-LEZ-CADASTRE`; Anti-grind on densify clones |
+| Live bay / partner parking book API | Scorecard residuals on parking MVP |
+| Optional physical LAN/device smoke not always run | Operator checklist residual |
+
+Authored LEZ rings and named toll advisories must not be described as certified cadastre or live tariffs. HOS remains advisory relative to the VU.
 
 ### 5.4 Maintenance and future work
-- Unlock-gated epics; writeup section completion order.
+
+**Product:** Resume gated epics only when unlocked by name (or when secrets/entitlements are provided). Do not invent mid-corridor / LEZ densify / toll-£ clones without a Mersey-class catalog hole or measurable scorecard gap. Prefer desk/cab parity checks after cab-only slices (master-prompt Surfaces guidance).
+
+**Documentation:** Next writeup attach polishes **§6 Appendices** (A–E): fold §2.7 / §3.10 / §4.8 into Appendix A traceability, expand Doc index, screenshots pointer, data sources, glossary. After Appendices, mark `EPIC-DOCS-WRITEUP` Done on the sweep and keep this file as living SSOT narrative (update changelog when surfaces move).
+
+**Process:** Continue issue → branch → PR → print-merge cadence; never commit `Docs/agent-master-prompt.md`; never merge unless asked.
 
 ---
 
 ## 6. Appendices
 
-*(Stub — polish after §5.)*
+*(Stub — polish next attach.)*
 
 ### Appendix A — Objectives traceability seed
 - Maintain FO/NFO IDs; fill design/impl/test columns as sections land.
@@ -748,4 +795,5 @@ PR merges should keep these green; this section cites the harness rather than pa
 | 2026-11-11 | #129 / #130 | Restructure to NEA-style; **Section 1 Analysis complete**; §§2–5 + Appendices stubbed |
 | 2026-11-11 | #131 / #132 | **Section 2 Design complete** (2.1–2.7); next = §3 Implementation |
 | 2026-11-11 | #133 / #134 | **Section 3 Implementation complete** (3.1–3.10); next = §4 Testing |
-| 2026-11-11 | #135 / (this PR) | **Section 4 Testing complete** (4.1–4.8); next = §5 Evaluation |
+| 2026-11-11 | #135 / #136 | **Section 4 Testing complete** (4.1–4.8); next = §5 Evaluation |
+| 2026-11-11 | #137 / (this PR) | **Section 5 Evaluation complete** (developer-led; no clients); next = Appendices |

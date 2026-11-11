@@ -51,6 +51,16 @@ import Testing
     )
     #expect(!OfflineCorridorPrefetch.isWithinAutoPrefetchCap(northWestBox))
 
+    // Scotland Central Belt mid-corridor is a manual pack — outside auto-prefetch cap.
+    let scotland = OfflineDownloadRegion.scotlandCentral.boundingBox
+    let scotlandBox = GeographicBoundingBox(
+        minLat: scotland.minLat,
+        maxLat: scotland.maxLat,
+        minLon: scotland.minLon,
+        maxLon: scotland.maxLon
+    )
+    #expect(!OfflineCorridorPrefetch.isWithinAutoPrefetchCap(scotlandBox))
+
     let uk = OfflineDownloadRegion.ukCorridor.boundingBox
     let ukBox = GeographicBoundingBox(
         minLat: uk.minLat,

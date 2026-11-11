@@ -1,6 +1,6 @@
 # Competitive Feature Scorecard — September 2026
 
-Last updated: 2026-11-11 (Phase 7b P0 Pass CI; Midlands + DESK-LAYBY Done; residual HD / live £ / AA / CarPlay / VU / country PBF)
+Last updated: 2026-11-11 (Phase 7b P0 Pass CI; Midlands + North West + DESK-LAYBY Done; residual HD / live £ / AA / CarPlay / VU / country PBF)
 
 Scoring: **0** Absent · **1** Weak · **2** Parity · **3** Lead  
 Personas: **OO** = UK owner-operator · **SF** = small fleet (2–20 vehicles)
@@ -16,7 +16,7 @@ RouteFinder scores from code inventory + Phase 20/26/27/30–44 + **Phase 8** + 
 | Toll awareness | **0** | **2** | Named UK advisories + ORS avoid/replan; **not** live tariffs |
 | Telematics display | **0** | **2** | CSV + fleet ingest → desk pins; **not** remote VU |
 | Parking partners | **1** | **2** | TRAVIS/SNAP deep links; **not** booking |
-| Offline UX | **2** | **2** | Same capability; region picker + progress (Midlands M1–M6 mid-corridor) |
+| Offline UX | **2** | **2** | Same capability; region picker + progress (Midlands M1–M6 + North West M6–M62 mid-corridors) |
 | Lane guidance | **2** | **2**† | OSM tag expansion + nav refresh + late-OSM prepare TTS (iOS + Android); still below TomTom HD |
 
 † Documented as ~2.5 internally for OSM refresh depth; scorecard stays integer **2** vs TomTom/Sygic **3**.
@@ -28,7 +28,7 @@ RouteFinder scores from code inventory + Phase 20/26/27/30–44 + **Phase 8** + 
 | Capability | Weight | RF | Sygic | TomTom HW | CoPilot 11 | Garmin | Notes |
 |---|---:|---:|---:|---:|---:|---:|---|
 | Constraint routing (L/W/H/hazmat) | 18% | **3** | 2 | 3 | 3 | 3 | RF ORS + offline hybrid |
-| Offline UK maps | 12% | **2** | 3 | 3 | 2 | 3 | RF corridor packs (Norfolk / East Anglia / Midlands M1–M6) + post-find polyline prefetch (≤ East Anglia); residual = country-pack depth; Android offline gated |
+| Offline UK maps | 12% | **2** | 3 | 3 | 2 | 3 | RF corridor packs (Norfolk / East Anglia / Midlands M1–M6 / North West M6–M62) + post-find polyline prefetch (≤ East Anglia); residual = country-pack depth / `ukCorridor` hosting; Android offline gated |
 | Physics rehearsal | 14% | **3**‡ | 0 | 0 | 0 | 0 | RF wedge; `spineSpeedLimitAcceleratesToMotorwayLimit` Pass (2026-11-09) |
 | Layby / break intel | 12% | **3** | 1 | 2 | 2 | 2 | RF fused ranker + Break Now + TRAVIS/SNAP links (Ph8); CoPilot 11.4 parking icons — still **2** (booking ≠ RF $0) |
 | LEZ compliance | 8% | **3** | 3 | 3 | 2 | 2 | RF 11 zones + ORS avoid (iOS rings; Android U15) |

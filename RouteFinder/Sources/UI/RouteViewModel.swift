@@ -308,6 +308,15 @@ public final class RouteViewModel {
     public var useRemoteFleetServer: Bool = false
     /// Last fleet server connection test result for Settings UI.
     public var fleetServerConnectionStatus: String?
+    /// Proxy metering + org identity from `/v1/proxy/status` after Settings Test succeeds.
+    public var fleetProxyStatus: FleetProxyDeskStatus?
+    /// Masked fleet API key for Settings Connection (web Connection parity — never full secret).
+    public var settingsMaskedFleetAPITokenLine: String {
+        let draft = fleetServerAPIKeyText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let saved = (try? FleetServerCredentials.loadAPIKey()) ?? ""
+        let token = draft.isEmpty ? saved : draft
+        return FleetProxyDeskStatus.maskedTokenLine(for: token)
+    }
     /// Fleet servers discovered via Bonjour on the local network.
     public var discoveredFleetServers: [DiscoveredFleetServer] = []
     /// Whether a Bonjour fleet discovery scan is in progress.

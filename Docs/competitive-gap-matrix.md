@@ -110,7 +110,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 - Full **toll tariff** depth — Mac + web desk corridor indicative £ **Shipped (MVP slice)** + named advisories/avoid/HUD/PTT + authored HGV £ refresh (M6/Dartford/Tyne) + Mersey Tunnels + Dunham Bridge + Batheaston Bridge (2026-11-11); residual live operator tariffs — `EPIC-TOLL-DEPTH`
 - **Remote VU download** — `EPIC-VU-PARTNER` (CSV / webhook + desk Can-I-drive week card shipped; legal VU residual)
 - Legal **cadastral LEZ** — `EPIC-LEZ-CADASTRE` open-data densify Sheffield + Birmingham + Bradford **Shipped (MVP slice)** 2026-11-11; residual = remaining zones + London-wide ULEZ (ORS area-cap blocked) + licensed cadastre
-- **Hosted multi-depot desk** — `EPIC-HOSTED-DESK` org identity + web/Mac Connection masked token/meters + `fleet-api-schema.json` FleetProxyDeskStatus **Shipped (MVP slice)** 2026-11-11; residual = Stripe/self-serve billing
+- **Hosted multi-depot desk** — `EPIC-HOSTED-DESK` org identity + web + Mac Settings/Dispatch Connection masked token/meters + `fleet-api-schema.json` FleetProxyDeskStatus **Shipped (MVP slice)** 2026-11-11; residual = Stripe/self-serve billing
 - **In-process planet PBF** parser (pipeline uses osmium + `PBFPreprocessor` / tile scripts — not a driver-facing gap)
 
 Epic order + first slices: Phase 31+ and [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md#driver-first-reopen--2026-10-12b).

@@ -85,6 +85,7 @@ private final class MockFleetHost: FleetDispatchHost {
     var fleetServerAPIKeyText = ""
     var useRemoteFleetServer = false
     var fleetServerConnectionStatus: String?
+    var fleetProxyStatus: FleetProxyDeskStatus?
     var discoveredFleetServers: [DiscoveredFleetServer] = []
     var isDiscoveringFleetServers = false
     var fleetDiscoveryStatus: String?

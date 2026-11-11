@@ -5,7 +5,7 @@
 **Document type:** Living professional technical writeup (AQA NEA–style structure; **no client interviews**)  
 **Repository:** proprietary — see root [`LICENSE`](../LICENSE)  
 **Last updated:** 2026-11-11  
-**Status:** **iterative** — Section 1 Analysis complete; Sections 2–5 and Appendices stubbed (next attach = §2 Design)
+**Status:** **iterative** — Sections 1–2 (Analysis + Design) complete; Sections 3–5 and Appendices stubbed (next attach = §3 Implementation)
 
 Integers, CI evidence, and phase verification remain authoritative in [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md), [`engineering-test-matrix.md`](engineering-test-matrix.md), and relevant `phase*` Docs. This document provides the formal analysis–design–implementation–testing–evaluation narrative and points at those SSOTs.
 
@@ -46,7 +46,14 @@ This writeup follows a professional NEA-style structure (Analysis → Design →
    - [1.8 Requirements derivation](#18-requirements-derivation)
    - [1.9 Constraints](#19-constraints)
    - [1.10 Assumptions](#110-assumptions)
-2. [Design](#2-design) *(stub)*
+2. [Design](#2-design)
+   - [2.1 Design goals / rationale](#21-design-goals--rationale)
+   - [2.2 System architecture](#22-system-architecture)
+   - [2.3 Data / class design](#23-data--class-design)
+   - [2.4 Algorithm / planning design](#24-algorithm--planning-design)
+   - [2.5 Interface design](#25-interface-design)
+   - [2.6 Data dictionary](#26-data-dictionary)
+   - [2.7 Objective traceability matrix](#27-objective-traceability-matrix)
 3. [Implementation](#3-implementation) *(stub)*
 4. [Testing](#4-testing) *(stub)*
 5. [Evaluation](#5-evaluation) *(stub)*
@@ -273,38 +280,202 @@ Each FO in §1.6 traces to at least one persona job and one verification path. R
 
 ## 2. Design
 
-*(Stub — fill next attach. Target subsections:)*
+Design decisions implement the Analysis objectives (§1.6) within the constraints of §1.9. Detailed module rules remain SSOT in [`architecture.md`](architecture.md); this section records rationale, structure, data, planning behaviour, UI principles, and FO/NFO traceability.
 
 ### 2.1 Design goals / rationale
-- Modular OOP / SPM boundaries; strategy-like routing clients; centralised cost/constraints; layered architecture; accessible UI; extensibility.
-- Technology selection: Swift 6 + SwiftUI + MapLibre; Kotlin Android C2; Vite/React desk; Workers/VPS gateway.
-- Pointers: [`architecture.md`](architecture.md), root README tech stack.
+
+| Goal | Rationale | Maps to |
+|------|-----------|---------|
+| Modular Swift package boundaries | Keep Contracts pure; isolate GraphCore / CostModel / PathfindingEngine / DataLayer / RouteController / UI so routing and fleet I/O can evolve without View-layer HTTP | NFO1, FO1 |
+| Coordinator extraction from `RouteViewModel` | Domain boundaries (fleet, hazards, planning, simulation, HOS, predictive risk) reduce god-object merge risk; hosts keep `@Observable` state | NFO1, FO2–FO5 |
+| Centralised remote policy | One timeout/retry/429 policy for ORS, TomTom, fleet, RegCheck/DVLA | NFO5 |
+| Glassmorphic UI consistency | Single modifier family across SwiftUI chrome for operator familiarity | NFO3 |
+| Account-Manager-lite, not Stripe SaaS | Hosted org identity + meters close desk Connectivity gap without billing product scope | FO6, §1.9 |
+| Cross-surface API parity | Same `/v1/*` family for Mac, web, iOS, Android | FO2, FO6, FO7 |
+
+#### Technology selection
+
+| Layer | Choice | Justification |
+|-------|--------|---------------|
+| Apple cab/desk | Swift 6 SPM + SwiftUI + MapLibre (WKWebView) | Native performance; shared package across iOS/Mac; glass UI |
+| Live HGV routing | HeiGIT OpenRouteService | Constraint parameters (dimensions, hazmat/ADR) without maintaining a full commercial map stack |
+| Hybrid offline | H3 graph tiles + PathfindingEngine / CostModel | Degraded-signal resilience for OO persona; not Sygic-class country packs |
+| Android C2 | Kotlin thin client + MapLibre | Fleet ORS proxy; no driver HeiGIT key; parity slices vs iOS |
+| Office PC desk | Vite + React (`web-dispatch`) | Windows/Linux operators without requiring a Mac |
+| Hosted edge | Workers / VPS gateway | HTTPS when LAN fails; same contract as LAN server |
+
+#### Design trade-offs and limitations
+
+- **ORS dependency vs fully self-hosted graph:** Faster constraint coverage and global HGV profiles; accepts provider area caps (e.g. London-wide ULEZ avoid) and fair-use metering.
+- **Account-Manager-lite vs CoPilot-class billing UI:** Delivers depot `orgId`/`orgName` + meters now; defers Stripe deliberately.
+- **Authored LEZ / named tolls vs licensed cadastre / live tariffs:** Ship advisories with honest labelling; residuals remain gated.
+- **Coordinator hosts vs full TCA rewrite:** Incremental decomposition (ADR in architecture Doc) preferred over big-bang view-model rewrite.
 
 ### 2.2 System architecture
-- Expand module dependency + coordinator + desk↔driver diagrams from architecture Doc.
-- Error handling / reliability (`RemoteRequestPolicy`); extensibility points (proxy providers, catalogs).
+
+#### Module dependency graph (Swift package)
+
+```mermaid
+flowchart BT
+    Contracts
+    GraphCore --> Contracts
+    CostModel --> Contracts
+    DataLayer --> Contracts
+    DataLayer --> GraphCore
+    DataLayer --> CostModel
+    PathfindingEngine --> Contracts
+    PathfindingEngine --> GraphCore
+    PathfindingEngine --> CostModel
+    RouteController --> Contracts
+    RouteController --> DataLayer
+    RouteController --> PathfindingEngine
+    UI --> RouteController
+    UI --> DataLayer
+    UI --> NavigationCore
+```
+
+**Rules:** (1) No HTTP from Views — remote I/O via `RouteController` or `DataLayer`. (2) Contracts are pure models/formatters/metering. (3) Coordinators own async orchestration; `RouteViewModel` remains the observation root.
+
+#### Coordinator end-state
+
+```mermaid
+flowchart LR
+    Views --> RouteViewModel
+    RouteViewModel --> FleetDispatchCoordinator
+    RouteViewModel --> HazardNavigationCoordinator
+    RouteViewModel --> RoutePlanningCoordinator
+    RouteViewModel --> RouteSimulationCoordinator
+    RouteViewModel --> HosAdvisoryCoordinator
+    RouteViewModel --> PredictiveRiskCoordinator
+    RouteViewModel --> NavigationCoordinator
+    FleetDispatchCoordinator --> HTTPFleetStore
+    HazardNavigationCoordinator --> TomTomTrafficFlowClient
+    HazardNavigationCoordinator --> RoadworksAlongRouteRepository
+    PredictiveRiskCoordinator --> ForecastRiskSampler
+    PredictiveRiskCoordinator --> ClearanceCorridorProbe
+    RoutePlanningCoordinator --> OpenRouteServiceRoutingClient
+    RouteViewModel --> RouteController
+    RouteController --> APIUsageLedger
+```
+
+| Coordinator | Responsibility |
+|-------------|----------------|
+| `FleetDispatchCoordinator` | Poll/SSE dispatch, snapshot publish, Bonjour discovery, fleet store reload |
+| `HazardNavigationCoordinator` | TomTom sampling, roadworks corridor, crowd hydrate, hazard overlay/voice |
+| `PredictiveRiskCoordinator` | Fuse kinetic / weather / hazard / roadworks / traffic / schedule / forecast / clearance → primary HUD |
+| `RoutePlanningCoordinator` | Search mapping, LEZ avoid rings, recalculate debounce, lane enrichment, traffic reroute, failures |
+| `RouteSimulationCoordinator` | Simulation callbacks, kinetic advisories, physics ETA / rehearse, Break Now, layby voice |
+| `HosAdvisoryCoordinator` | Duty transitions, can-I-drive, tacho import/persistence, rest forecast |
+
+Supporting modules: `ForecastRiskSampler`, `ClearanceCorridorProbe`. Logging categories: `routing`, `geocode`, `fleet`, `metering`.
+
+#### Desk to driver (LAN / hosted)
+
+```mermaid
+flowchart LR
+    WebDispatch --> FleetServer
+    MacDispatch --> FleetServer
+    FleetServer -->|SSE_REST| iOSDriver
+    FleetServer -->|SSE_REST| AndroidDriver
+    FleetServer -->|ORS_Pelias_proxy| iOSDriver
+    FleetServer -->|ORS_Pelias_proxy| AndroidDriver
+    FleetServer -->|ORS_Pelias_proxy| WebDispatch
+    iOSDriver -->|snapshot_GPS_inspection| FleetServer
+    AndroidDriver -->|snapshot_GPS_inspection| FleetServer
+```
+
+Mac and web desks poll active-trip snapshots (roster status / physics ETA / GPS age / defects; yard pins from cab GPS, not live VU). Hosted gateway preserves the same API family over HTTPS ([`hosted-gateway-deployment.md`](hosted-gateway-deployment.md)).
+
+#### Error handling and safety
+
+`RemoteRequestPolicy` centralises timeout, retry, exponential backoff with jitter, and HTTP 429 / `Retry-After` for ORS, TomTom, fleet HTTP, and DVLA/RegCheck. User-visible banners cover missing ORS/fleet configuration; Connection UIs mask API tokens. Fair-use soft budgets surface via metering ledger and proxy-status meters.
+
+#### Extensibility points
+
+- Routing client behind planning coordinator (ORS today; offline hybrid where tiles exist).
+- UK catalogs (LEZ rings, toll advisories) as data, not hard-wired UI.
+- Fleet proxy providers (TomTom / OpenWeather / Overpass) via server configuration.
+- Additional coordinators only if `RouteViewModel` remains a merge hotspot (architecture ADR).
 
 ### 2.3 Data / class design
-- Core models: vehicle profile, trip/job brief, proxy status (`FleetProxyDeskStatus`), HOS state, risk advisory.
-- Rationale mapping to FOs.
+
+| Concept | Role | FO link |
+|---------|------|---------|
+| Vehicle / constraint profile | Dimensions, axle, hazmat/ADR, trailer→ORS length ladder | FO1 |
+| Job / trip brief | Stops, vehicle profile, physics ETA, shareable text/PDF brief | FO2, FO3 |
+| `FleetProxyDeskStatus` | `orgId` / `orgName`, masked key presentation, ORS (and related) meters — [`fleet-api-schema.json`](fleet-api-schema.json) | FO6 |
+| Active-trip snapshot | Status, GPS, defects, optional `predictedLayby` for desk card/pin | FO2, FO5 |
+| HOS advisory state | Duty clocks, remainings, can-I-drive day/week (non-authoritative) | FO4 |
+| `RouteRiskAdvisory` / fuse inputs | Kinetic, traffic, hazard, roadworks, schedule, forecast, clearance | FO5 |
+| Toll / LEZ advisory records | Named £ hints; authored avoid polygons | FO5 |
+| API usage ledger | Soft budgets / burn visibility | NFO5, FO6 |
+
+Rationale: keep wire contracts (fleet JSON Schema) and Swift/Kotlin/TS mirrors aligned so Connection and roster behaviour stay triple-surface honest. Pure Contracts types avoid URLSession coupling (NFO1).
 
 ### 2.4 Algorithm / planning design
-- ORS request shaping; hybrid offline pathfinding overview; predictive risk fuse; LEZ avoid polygons; toll advisory matching — complexity and failure modes at product level (not NEA CSV Dijkstra prose unless citing offline engine).
+
+| Concern | Design approach | Failure / limit |
+|---------|-----------------|-----------------|
+| Live HGV route | Shape ORS directions with vehicle constraints; optional avoid-tolls / LEZ `avoid_polygons` | Provider errors → user-visible failure; area caps block unbounded London ULEZ |
+| Traffic reroute | TomTom flow sampling may trigger ORS recalculation with avoid polygons | Falls back to prior route / heuristic when live samples unavailable |
+| Hybrid offline | H3 tiles + PathfindingEngine / CostModel when downloads present; corridor prefetch after Find (capped) | Not Sygic-class Europe packs; Android offline gated |
+| Predictive fuse | Combine kinetic, weather, hazard, roadworks, traffic, schedule, forecast, clearance into primary HUD | Individual samplers degrade independently |
+| Toll advisories | Match corridor to named UK catalog (indicative £; Mersey/Dunham/Batheaston among seeded entries) | Not live operator class tariffs |
+| Lane enrichment | OSM Overpass `turn:lanes` with caps (≤12/route, STRAIGHT skip, ~50 km) | Residual HD visuals |
+| HOS advisory | Clock + import + can-I-drive rules as planning aid | VU remains legal authority |
+
+Complexity is dominated by network-bound ORS/live calls and fuse sampling, not by a single educational shortest-path coursework graph. Offline engines may use classical graph search internally; operator-facing design remains constraint request + rehearsal + desk sync.
 
 ### 2.5 Interface design
-- Glassmorphic SwiftUI; web-dispatch Connection; Android wizard/home; accessibility notes.
+
+| Surface | Design principles |
+|---------|-------------------|
+| iOS / Mac SwiftUI | `GlassmorphicModifiers` (`glassPanel`, `controlSheetStyle`, …); Settings / FleetSetupWizard Connection Test shows depot + masked token + meters; dispatch roster and toll/layby panels |
+| web-dispatch | Connection profiles per depot token; proxy status; roster/GPS age; indicative corridor tolls; predicted layby card/pin |
+| Android C2 | FleetSetupWizard Test + DriverHome badge via shared label helpers; MapLibre nav; metric TTS |
+| Stranger path | Role picker and first-run flows in [`getting-started.md`](getting-started.md) |
+
+Accessibility and operator clarity: mask secrets in UI and screenshots; prefer explicit Test/status copy over silent failures; keep CarPlay/AA out of pilot-required paths while entitlements remain inactive.
 
 ### 2.6 Data dictionary
-- Key fields: orgId/orgName, meters, vehicle dimensions, duty state, predictedLayby, corridor toll advisories.
+
+| Name | Meaning | Notes |
+|------|---------|-------|
+| `orgId` / `orgName` | Hosted/LAN depot identity from `/v1/proxy/status` | Account-Manager-lite; not billing customer id |
+| API key (masked) | Bearer / proxy credential display | Never commit or screenshot unmasked |
+| ORS meters / fair-use fields | Usage counters on proxy status | Soft budgets via ledger |
+| Vehicle dimensions / axle / hazmat | Constraint profile inputs to ORS | Trailer count → length ladder |
+| Active-trip snapshot | Cab-published trip state for desk roster | GPS age = snapshot freshness |
+| `predictedLayby` | Desk layby prediction payload | Not live bay sensors |
+| Corridor toll advisories | Named UK £ hints along preview geometry | Indicative only |
+| HOS duty / remainings | Advisory clocks and imports | Non-authoritative vs VU |
+| LEZ avoid rings | Authored polygons for ORS avoid | Not legal cadastre |
 
 ### 2.7 Objective traceability matrix
-- FO/NFO → design component → implementation path (seed in Appendix A; complete in Design PR).
+
+| ID | Design component | Primary path / symbol area | Test column |
+|----|------------------|----------------------------|-------------|
+| FO1 | ORS planning + constraint profile | `RoutePlanningCoordinator` / ORS client | §4 |
+| FO2 | Fleet dispatch + SSE/REST | `FleetDispatchCoordinator`, fleet server, web/Mac desk | §4 |
+| FO3 | Physics rehearsal + brief | `RouteSimulationCoordinator` / physics engines | §4 |
+| FO4 | HOS advisory | `HosAdvisoryCoordinator` | §4 |
+| FO5 | UK living layer + fuse | Hazard / predictive coordinators; catalogs | §4 |
+| FO6 | Connection + proxy status | Fleet API schema; Settings/Wizard/web/Android status UIs | §4 |
+| FO7 | Android C2 client | `android-fleet-driver/` | §4 |
+| FO8 | Overpass lane enrichment | Planning lane enrichment path | §4 |
+| NFO1 | Module + coordinator rules | [`architecture.md`](architecture.md) | §4 |
+| NFO2 | Strict concurrency | Package concurrency norms | §4 |
+| NFO3 | Glass UI | `GlassmorphicModifiers` | §4 |
+| NFO4 | Secrets hygiene | Masking helpers; Docs screenshots policy | §4 |
+| NFO5 | `RemoteRequestPolicy` + ledger | DataLayer networking | §4 |
+| NFO6 | CI / tests | `swift test`, `npm test`, `android-c1` | §4 |
+| NFO7 | Docs SSOT | scorecard / sweep / this writeup | §4 |
 
 ---
 
 ## 3. Implementation
 
-*(Stub — fill after §2.)*
+*(Stub — fill next attach.)*
 
 ### 3.1 Implementation overview
 - File/module responsibility mapping across `RouteFinder/`, app project, `web-dispatch/`, `android-fleet-driver/`, `hosted-gateway/`.
@@ -413,4 +584,5 @@ Each FO in §1.6 traces to at least one persona job and one verification path. R
 |------|------------|--------|
 | 2026-11-11 | #125 / #126 | Initial living narrative Ch 1–3 |
 | 2026-11-11 | #127 / #128 | Narrative Ch 4 (routing / UK layer / compliance) |
-| 2026-11-11 | #129 / (this PR) | Restructure to NEA-style; **Section 1 Analysis complete**; §§2–5 + Appendices stubbed |
+| 2026-11-11 | #129 / #130 | Restructure to NEA-style; **Section 1 Analysis complete**; §§2–5 + Appendices stubbed |
+| 2026-11-11 | #131 / (this PR) | **Section 2 Design complete** (2.1–2.7); next = §3 Implementation |

@@ -78,6 +78,8 @@ public enum OfflineDownloadRegion: String, Sendable, Codable, CaseIterable, Iden
     case demoNorfolk
     /// Mid-size East Anglia / A14–M11 band (Norwich–Cambridge–Ipswich pilots).
     case eastAnglia
+    /// Mid-size Midlands / M1–M6 band (Birmingham–Leicester–Northampton–Coventry).
+    case midlands
     case ukCorridor
 
     public var id: String { rawValue }
@@ -86,6 +88,7 @@ public enum OfflineDownloadRegion: String, Sendable, Codable, CaseIterable, Iden
         switch self {
         case .demoNorfolk: return "Norfolk demo corridor"
         case .eastAnglia: return "East Anglia (A14–M11)"
+        case .midlands: return "Midlands (M1–M6)"
         case .ukCorridor: return "UK mainland (large)"
         }
     }
@@ -94,6 +97,7 @@ public enum OfflineDownloadRegion: String, Sendable, Codable, CaseIterable, Iden
         switch self {
         case .demoNorfolk: return "Small — suitable for first install."
         case .eastAnglia: return "Medium — covers Norwich–Cambridge–Ipswich; larger than Norfolk demo, far smaller than UK mainland."
+        case .midlands: return "Medium — covers Birmingham–Leicester–Northampton–Coventry (M1–M6); larger than East Anglia, far smaller than UK mainland."
         case .ukCorridor: return "Large download — prefer pre-placed *.graphjson when possible."
         }
     }
@@ -105,6 +109,10 @@ public enum OfflineDownloadRegion: String, Sendable, Codable, CaseIterable, Iden
         case .eastAnglia:
             // Includes Norfolk demo bbox plus Cambridge / Ipswich approach (A14–M11 band).
             return (minLat: 51.70, maxLat: 52.90, minLon: 0.00, maxLon: 1.80)
+        case .midlands:
+            // Birmingham–Leicester–Nottingham–Northampton–Coventry approach (M1–M6 band).
+            // Separate corridor from East Anglia (does not contain that bbox).
+            return (minLat: 51.80, maxLat: 53.40, minLon: -2.80, maxLon: -0.40)
         case .ukCorridor:
             return (minLat: 49.8, maxLat: 58.7, minLon: -8.2, maxLon: 1.8)
         }

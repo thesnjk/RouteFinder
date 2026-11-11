@@ -11,6 +11,15 @@ struct OfflineDownloadRegionTests {
         #expect(region.sizeWarning.localizedCaseInsensitiveContains("medium"))
     }
 
+    @Test func midlandsMetadataIsPresent() {
+        let region = OfflineDownloadRegion.midlands
+        #expect(region.id == "midlands")
+        #expect(region.displayName.contains("Midlands"))
+        #expect(region.displayName.contains("M1"))
+        #expect(!region.sizeWarning.isEmpty)
+        #expect(region.sizeWarning.localizedCaseInsensitiveContains("medium"))
+    }
+
     @Test func eastAngliaContainsNorfolkDemoCenter() {
         let norfolk = OfflineDownloadRegion.demoNorfolk.boundingBox
         let centerLat = (norfolk.minLat + norfolk.maxLat) / 2
@@ -21,20 +30,40 @@ struct OfflineDownloadRegionTests {
         #expect(OfflineDownloadRegion.eastAnglia.contains(.demoNorfolk))
     }
 
-    @Test func eastAngliaAreaMuchSmallerThanUKMainland() {
-        let eastArea = OfflineDownloadRegion.eastAnglia.approximateAreaSquareDegrees
-        let ukArea = OfflineDownloadRegion.ukCorridor.approximateAreaSquareDegrees
-        let norfolkArea = OfflineDownloadRegion.demoNorfolk.approximateAreaSquareDegrees
-        #expect(eastArea > norfolkArea)
-        #expect(eastArea < ukArea * 0.05)
-        #expect(OfflineDownloadRegion.ukCorridor.contains(.eastAnglia))
+    @Test func midlandsDoesNotContainEastAnglia() {
+        #expect(!OfflineDownloadRegion.midlands.contains(.eastAnglia))
+        #expect(!OfflineDownloadRegion.eastAnglia.contains(.midlands))
     }
 
-    @Test func allCasesIncludeMidCorridorBetweenDemoAndUK() {
+    @Test func midlandsContainsBirminghamApproach() {
+        let box = OfflineDownloadRegion.midlands.boundingBox
+        // Birmingham ~52.48, -1.90
+        #expect(box.minLat <= 52.48 && 52.48 <= box.maxLat)
+        #expect(box.minLon <= -1.90 && -1.90 <= box.maxLon)
+        // Northampton ~52.24, -0.90
+        #expect(box.minLat <= 52.24 && 52.24 <= box.maxLat)
+        #expect(box.minLon <= -0.90 && -0.90 <= box.maxLon)
+    }
+
+    @Test func areaOrderingNorfolkEastMidlandsUK() {
+        let norfolkArea = OfflineDownloadRegion.demoNorfolk.approximateAreaSquareDegrees
+        let eastArea = OfflineDownloadRegion.eastAnglia.approximateAreaSquareDegrees
+        let midlandsArea = OfflineDownloadRegion.midlands.approximateAreaSquareDegrees
+        let ukArea = OfflineDownloadRegion.ukCorridor.approximateAreaSquareDegrees
+        #expect(eastArea > norfolkArea)
+        #expect(midlandsArea > eastArea)
+        #expect(midlandsArea < ukArea * 0.08)
+        #expect(eastArea < ukArea * 0.05)
+        #expect(OfflineDownloadRegion.ukCorridor.contains(.eastAnglia))
+        #expect(OfflineDownloadRegion.ukCorridor.contains(.midlands))
+    }
+
+    @Test func allCasesIncludeMidCorridorsBetweenDemoAndUK() {
         let cases = OfflineDownloadRegion.allCases
         #expect(cases.contains(.demoNorfolk))
         #expect(cases.contains(.eastAnglia))
+        #expect(cases.contains(.midlands))
         #expect(cases.contains(.ukCorridor))
-        #expect(cases.count == 3)
+        #expect(cases.count == 4)
     }
 }

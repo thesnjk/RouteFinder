@@ -1,7 +1,7 @@
 # Engineering test matrix
 
 Engineering excellence Phase 5 (`eng-p5-tests`). No legal/GTM.  
-Last updated: 2026-11-09
+Last updated: 2026-11-11
 
 Maps **feature → test command** for demo-critical paths. Prefer targeted `--filter` runs while iterating; full suites before merge.
 
@@ -19,6 +19,7 @@ Maps **feature → test command** for demo-critical paths. Prefer targeted `--fi
 | Job intake + `FleetJobBrief` | `JobIntakePredictiveRiskTests`, `fleetCreateAndPushTripRoundTripsJobBrief` | `swift test --filter JobIntake` / `--filter RoundTripsJobBrief` |
 | Predictive risk fuse | `JobIntakePredictiveRiskTests` (fuse ≥3 kinds + forecast/clearance/off-route), UITest `testPredictiveRiskPrimaryBannerOnSeededRoute` | `swift test --filter PredictiveRisk` / `--filter JobIntakePredictive` ; UITest seed `UITEST_SEED_PREDICTIVE_RISK` |
 | Physics sim speed-limit gate | `spineSpeedLimitAcceleratesToMotorwayLimit` (`RouteSimulationEngineTests`) | `cd RouteFinder && swift test --filter spineSpeedLimitAcceleratesToMotorwayLimit` (**Pass** 2026-11-09) |
+| Offline region packs (Norfolk / East Anglia / Midlands / UK) | `OfflineDownloadRegionTests`, `offlineCorridorPrefetchCapMatchesEastAnglia` | `swift test --filter OfflineDownloadRegion` / `--filter offlineCorridorPrefetch` |
 | Android job intake / ADR→ORS / time windows | `JobIntakeHandlerTest`, `TimeWindowRiskEvaluatorTest` | `cd android-fleet-driver && ./gradlew :app:testDebugUnitTest --tests '*JobIntake*' --tests '*TimeWindow*'` |
 | Android forecast / clearance fuse | `ForecastAndClearanceRiskTest`, `PredictiveRiskEngineTest` | `./gradlew :app:testDebugUnitTest --tests '*Forecast*' --tests '*PredictiveRisk*'` |
 | Android LEZ ORS avoid polygons (U15) | `ComplianceParityTest` (`lezAvoidPolicy*`, `orsDirectionsRequestEncodesAvoidPolygons*`) | `./gradlew :app:testDebugUnitTest --tests '*ComplianceParity*'` |

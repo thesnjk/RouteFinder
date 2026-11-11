@@ -3,7 +3,7 @@
 Living end-to-end narrative of what RouteFinder is, which surfaces ship today, and what remains gated. Integers and verification stay in the scorecard / phase Docs — this file tells the story and points at those SSOTs.
 
 Last updated: 2026-11-11  
-Status: **iterative** (Ch 1–3 drafted; Ch 4–8 stubbed — next attach fills the next unfinished chapter)  
+Status: **iterative** (Ch 1–4 drafted; Ch 5–8 stubbed — next attach fills Ch 5)  
 Gated product work (AA / CarPlay / VU / live £ / HD / Stripe / Android offline / country PBF) resumes only when unlocked by name.
 
 ---
@@ -13,7 +13,7 @@ Gated product work (AA / CarPlay / VU / live £ / HD / Stripe / Android offline 
 1. [What RouteFinder is](#1-what-routefinder-is)
 2. [Surfaces map](#2-surfaces-map)
 3. [Fleet and hosted desk today](#3-fleet-and-hosted-desk-today)
-4. [Routing, UK living layer, compliance](#4-routing-uk-living-layer-compliance) *(stub)*
+4. [Routing, UK living layer, compliance](#4-routing-uk-living-layer-compliance)
 5. [Competitive posture](#5-competitive-posture) *(stub)*
 6. [Architecture and repo layout](#6-architecture-and-repo-layout) *(stub)*
 7. [Operator / pilot path](#7-operator--pilot-path) *(stub)*
@@ -78,13 +78,36 @@ Deploy and Operator notes: [`hosted-gateway-deployment.md`](hosted-gateway-deplo
 
 ## 4. Routing, UK living layer, compliance
 
-*(Stub — fill next.)*
+How a trip is planned, annotated for UK HGV reality, and kept legally honest. Feature bullets mirror root [`README.md`](../README.md); status integers live in [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md).
 
-- Constraint routing via OpenRouteService (length / width / height / weight / axle / hazmat / ADR).
-- UK LEZ/CAZ authored rings + avoid-on-route; densify residuals and London ORS area caps — see scorecard `EPIC-LEZ-CADASTRE`.
-- Named UK toll advisories (not live operator tariffs) — `EPIC-TOLL-DEPTH` residual = live £ feed.
-- Layby / parking availability UX + HOS advisory / Can-I-drive — link catalogs and phase Docs when drafting.
-- Pointers to flesh: root README “What it does”, [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md).
+### Constraint routing
+
+OpenRouteService drives HGV constraint routing: length / width / height / weight / axle / hazmat / ADR tunnel codes. Cab and desk can push trailer→ORS length ladders (12 / 16.5 / 18.75 / 25.25 m) while the constraint profile stays the documented baseline. Live TomTom flow sampling can trigger an ORS `avoid_polygons` recalculation when traffic warrants a reroute.
+
+**Offline:** iOS uses H3 graph tiles with a hybrid ORS/offline policy, proactive corridor prefetch after Find (capped ≤ East Anglia), and Settings download regions (Norfolk demo, East Anglia mid-corridor, UK mainland large) plus optional on-device MapLibre packs — not Sygic-class country packs. Android offline packs remain product-gated.
+
+### Physics rehearsal
+
+Before commit, RouteFinder rehearses kinetic risk (grade, brake fade, slip) and can share a trip brief as plain text or PDF (with route map when geometry is available). Rehearse vs Play stays a stranger-path distinction in [`user-guide-simulation.md`](user-guide-simulation.md).
+
+### UK living layer
+
+- **Plate → profile** — RegCheck + DVLA for vehicle dimensions / class when configured.
+- **Truck POIs** — fuel / parking / weigh / layby discovery along the job.
+- **LEZ / CAZ** — banners and avoid-on-route using simplified authored rings for all 11 catalog zones (Settings toggle; **not** legal cadastral). Open-data densify MVP shipped for Sheffield + Birmingham + Bradford; other zones still coarse envelopes; London-wide ULEZ avoid is ORS area-cap blocked. Residual: `EPIC-LEZ-CADASTRE`.
+- **Tolls** — named UK £ advisories + one-shot commit TTS + iOS/Android in-nav toll HUD + ORS avoid-tolls replan; Mac/web desk show corridor indicative £ (including M6 / Dartford / Tyne + Mersey £4.80 + Dunham £4.00 + Batheaston HGV-unsuitable). **Not** live operator / class tariffs — residual `EPIC-TOLL-DEPTH`.
+- **Hazards** — on-device crowd reports (iOS + Android C2) fused with TomTom live ahead, MapLibre pins, and still-there confirm; OSM roadworks enter the predictive fuse when Overpass proxy is configured.
+- **Laybys / parking** — ranked green/amber/red map pins, occupancy taps with age-weighted priors (“Looks full” / “Has spaces”), Break Now; Mac/web `predictedLayby` card/pin + Android snapshot publish. Residual: live bay counts / partner occupancy feed. Booking remains deep-link + voice entry (not native partner book API).
+
+### Compliance and HOS
+
+Hours of service are **advisory**: EU Regulation 561 / Working Time Directive clock, rest insertion suggestions, driver-card JSON/DDD import, and “Can I drive now?” (day + week) on cab and desk. Walkaround checks follow a local DVSA-style checklist with snapshot / PDF / photos on Android C2 parity slices.
+
+**The VU / digital tachograph is authoritative.** Remote legal VU download is residual (`EPIC-VU-PARTNER`); desk Can-I-drive week cards and CSV stubs are planning aids only.
+
+### Lane guidance and voice
+
+OSM `turn:lanes` strip + street/lane TTS with prepare re-speak when Overpass upgrades heuristic→OSM inside the prepare window (iOS + Android C2; Overpass capped ≤12 / route, STRAIGHT skip, ~50 km). Domain PTT covers which-lane / avoid-tolls / layby / hazard / book parking / Can-I-drive. **Not** HD lane visuals — residual `EPIC-LANE-DEPTH`.
 
 ---
 
@@ -136,4 +159,5 @@ Deploy and Operator notes: [`hosted-gateway-deployment.md`](hosted-gateway-deplo
 
 | Date | PR / issue | Chapters |
 |------|------------|----------|
-| 2026-11-11 | #125 / (this PR) | Scaffold ToC 1–9; draft Ch 1–3; stub Ch 4–8 |
+| 2026-11-11 | #125 / #126 | Scaffold ToC 1–9; draft Ch 1–3; stub Ch 4–8 |
+| 2026-11-11 | #127 / (this PR) | Draft Ch 4 (routing / UK living layer / compliance); next = Ch 5 |

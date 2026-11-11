@@ -34,7 +34,7 @@ xcodebuild test -project RouteFinderApp.xcodeproj -scheme RouteFinderApp \
 
 ## Docs pointers
 
-- Project writeup (senior full-stack technical monograph; living Doc; pass 1 systems Design depth): `Docs/project-writeup.md`
+- Project writeup (senior full-stack technical monograph; complete living Doc — Appendices A–F): `Docs/project-writeup.md`
 - Fleet LAN QA: `Docs/fleet-e2e-qa.md`
 - Fleet API schema: `Docs/fleet-api-schema.json` (`FleetProxyDeskStatus` / `/v1/proxy/status` contract)
 - Hosted desk deploy: `Docs/hosted-gateway-deployment.md` (EPIC-HOSTED-DESK Operator gateway)

@@ -6,7 +6,7 @@
 **Document type:** Production engineering monograph — Analysis → Design → Implementation → Testing → Evaluation → Appendices; **no client interviews**  
 **Repository:** proprietary — see root [`LICENSE`](../LICENSE)  
 **Last updated:** 2026-11-11  
-**Status:** **senior monograph — pass 1 shipped** (systems Design depth §§2.8–2.12); further passes deepen Impl / Test / Eval; product residuals remain secrets-gated
+**Status:** **senior monograph — complete** (pass 4 Appendices); living Doc — update changelog on surface change; product residuals remain secrets-gated
 
 Integers, CI evidence, and phase verification remain authoritative in [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md), [`engineering-test-matrix.md`](engineering-test-matrix.md), and relevant `phase*` Docs. This monograph states invariants, trust boundaries, contracts, and failure modes, and points at those SSOTs for greppable proof.
 
@@ -31,7 +31,7 @@ Gated product work (Android Auto / offline packs, CarPlay production entitlement
 | Field | Value |
 |-------|--------|
 | Primary file | `Docs/project-writeup.md` |
-| Edition | Senior monograph pass 1 (systems Design) |
+| Edition | Senior monograph complete (pass 4 Appendices) |
 | Related indexes | [`developer-map.md`](developer-map.md), root [`README.md`](../README.md) |
 | Architecture SSOT | [`architecture.md`](architecture.md) |
 | Competitive SSOT | [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md), [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md) |
@@ -97,6 +97,7 @@ Gated product work (Android Auto / offline packs, CarPlay production entitlement
    - [Appendix C — Screenshots](#appendix-c--screenshots)
    - [Appendix D — Data sources](#appendix-d--data-sources)
    - [Appendix E — Glossary](#appendix-e--glossary)
+   - [Appendix F — STRIDE-lite threat table](#appendix-f--stride-lite-threat-table)
 7. [Document changelog](#7-document-changelog)
 
 ---
@@ -607,7 +608,7 @@ Fair-use is **soft product protection**, not a hard SLA guarantee to end custome
 
 ## 3. Implementation
 
-Implementation realises the Design (§2) across multiple repositories paths in one monorepo. Symbol names below are greppable entry points; deeper APIs remain in source and [`architecture.md`](architecture.md).
+Implementation realises the Design (§2) across multiple repository paths in one monorepo. Symbol names below are greppable entry points; deeper APIs remain in source and [`architecture.md`](architecture.md). Evidence grades follow §1.4 (**S** symbol / **T** test / **C** CI / **D** Doc SSOT).
 
 ### 3.1 Implementation overview
 
@@ -622,106 +623,192 @@ Implementation realises the Design (§2) across multiple repositories paths in o
 
 **Independence:** Cab (iOS/Android), desk (Mac/web), and edge (LAN server / hosted gateway) ship as separate binaries/services sharing contracts (`fleet-api-schema.json`, mirrored DTOs). A change to glass UI does not require Android rebuild; proxy-status fields must stay schema-aligned across surfaces.
 
+#### Primary call graphs
+
+**Cab plan (live / hybrid)**
+
+```mermaid
+flowchart LR
+  View[SwiftUI_View] --> RVM[RouteViewModel]
+  RVM --> RPC[RoutePlanningCoordinator]
+  RPC --> ORS[OpenRouteServiceRoutingClient]
+  RPC --> Offline[PathfindingEngine_GraphCore]
+  RPC --> LEZ[LEZAvoidPolicy_rings]
+  RVM --> Ledger[APIUsageLedger]
+```
+
+**Desk push → cab**
+
+```mermaid
+flowchart LR
+  Desk[Mac_Dispatch_or_web] -->|"POST_/v1_trip"| Edge[LAN_server_or_hosted_gateway]
+  Edge -->|SSE_or_poll| Cab[FleetDispatchCoordinator]
+  Cab --> Snap[active_trip_snapshot]
+  Snap -->|"GPS_defects_layby"| Desk
+```
+
+**Connection identity**
+
+```mermaid
+flowchart LR
+  UI[Settings_Wizard_web_Android] -->|"GET_/v1/proxy/status"| Edge2[Fleet_edge]
+  Edge2 --> FPS[FleetProxyDeskStatus]
+  FPS --> Mask[maskApiKey_maskedTokenLine]
+  Mask --> UI
+```
+
 ### 3.2 Graph / routing implementation
 
-Live HGV plans are requested through the OpenRouteService client path used by `RoutePlanningCoordinator` (see architecture end-state: `OpenRouteServiceRoutingClient`). Vehicle constraint parameters (length / width / height / weight / axle / hazmat / ADR) are supplied from the active profile. Cab and desk apply a trailer→ORS length ladder (12 / 16.5 / 18.75 / 25.25 m) when trailer count is set on the job brief, without changing the documented baseline constraint profile.
+Live HGV plans are requested through the OpenRouteService client path used by `RoutePlanningCoordinator` (`OpenRouteServiceRoutingClient`). Vehicle constraint parameters (length / width / height / weight / axle / hazmat / ADR) are supplied from the active profile.
 
-Hybrid offline uses downloaded H3 graph tiles with package `GraphCore` / `CostModel` / `PathfindingEngine` under the hybrid ORS/offline policy described in the README (region packs: Norfolk demo, East Anglia mid-corridor, UK mainland large; corridor prefetch after Find capped ≤ East Anglia). Android offline packs remain product-gated.
+**Invariant — trailer → ORS length ladder:** Cab and desk map trailer count to overall length **12 / 16.5 / 18.75 / 25.25 m** via `VehicleProfile.suggestedOverallLengthMeters(trailerCount:)` (and desk `FleetJobBrief` / web `vehicleComboLength` + push `vehicleProfile`). `FleetJobBrief.applyingWeight` **must preserve `trailerCount`** when weight fields change — dropping trailers silently under-constrains ORS (**S/T**).
+
+Hybrid offline uses downloaded H3 graph tiles with `GraphCore` / `CostModel` / `PathfindingEngine` (region packs: Norfolk demo, East Anglia mid-corridor, UK mainland large; corridor prefetch after Find capped ≤ East Anglia). Android offline packs remain product-gated.
 
 ### 3.3 Route planning / coordinators
 
-`RoutePlanningCoordinator` (hosted by `RouteViewModel` as `RoutePlanningHost`) owns search-result mapping, LEZ avoid-ring attachment, recalculate debounce, lane enrichment triggers, traffic-reroute evaluation, and route-failure presentation. Related coordinators implemented alongside it:
+`RoutePlanningCoordinator` (hosted by `RouteViewModel` as `RoutePlanningHost`) owns search-result mapping, LEZ avoid-ring attachment, recalculate debounce, lane enrichment triggers, traffic-reroute evaluation, and route-failure presentation. Related coordinators:
 
-- `FleetDispatchCoordinator` — poll/SSE, snapshots, Bonjour, store reload; exposes `fleetProxyStatus: FleetProxyDeskStatus?`
-- `HazardNavigationCoordinator` — TomTom flow, roadworks corridor, crowd hydrate
-- `PredictiveRiskCoordinator` — fuse → `RouteRiskAdvisory` primary HUD
-- `RouteSimulationCoordinator` — rehearse / physics ETA / Break Now / layby voice
-- `HosAdvisoryCoordinator` — duty transitions, can-I-drive, tacho import
+| Coordinator | Owns | Does not own |
+|-------------|------|--------------|
+| `RoutePlanningCoordinator` | ORS plan attach, LEZ rings, lane enrich, failures | Observation fields (host/`RouteViewModel`) |
+| `FleetDispatchCoordinator` | Poll/SSE, snapshots, Bonjour, store reload; `fleetProxyStatus` | Legal VU clocks |
+| `HazardNavigationCoordinator` | TomTom flow, roadworks corridor, crowd hydrate | Primary risk fuse |
+| `PredictiveRiskCoordinator` | Fuse → `RouteRiskAdvisory` primary HUD | Raw TomTom sampling |
+| `RouteSimulationCoordinator` | Rehearse / physics ETA / Break Now / layby voice | Live map HTTP |
+| `HosAdvisoryCoordinator` | Duty transitions, can-I-drive, tacho import | VU download / partner SDK |
 
 Observation state remains on `RouteViewModel` / dispatch view models; coordinators hold async orchestration (architecture ADR).
 
 ### 3.4 Pathfinding / offline engines
 
-When offline tiles are present, `PathfindingEngine` evaluates routes over `GraphCore` structures with `CostModel` edge costs aligned to vehicle constraints. This path complements—not replaces—ORS for live constrained HGV routing. Implementation complexity and test fixtures live under the Swift package modules named above; this writeup does not restate an educational CSV Dijkstra coursework engine as the production contract.
+When offline tiles are present, `PathfindingEngine` evaluates routes over `GraphCore` with `CostModel` edge costs aligned to vehicle constraints. This path complements—not replaces—ORS for live constrained HGV routing. Missing tiles degrade per §2.12 (offline tile miss); implementation does not invent Sygic-class country-pack fidelity offline.
 
 ### 3.5 Cost model, preferences, vehicle constraints
 
-| Concern | Implementation sketch |
-|---------|----------------------|
-| LEZ avoid | Authored rings (11 catalog zones); Settings toggle; ORS `avoid_polygons` when enabled; densify MVP for Sheffield / Birmingham / Bradford / Bristol / Bath |
-| Tolls | `UKTollAdvisoryCatalog` (Swift) triple-synced with Android + web-dispatch; HUD/TTS/desk indicative £; ORS avoid-tolls replan |
-| Hazmat / ADR | Passed through ORS vehicle profile parameters |
-| Clearance | `ClearanceCorridorProbe` (Overpass maxheight/weight; off-route heading) |
-| Forecast risk | `ForecastRiskSampler` (TomTom + OpenWeather when proxy configured) |
+| Concern | Implementation | Key invariant |
+|---------|----------------|---------------|
+| LEZ avoid | Authored rings (11 catalog zones); Settings toggle; ORS `avoid_polygons` when enabled; densify MVP Sheffield / Birmingham / Bradford / Bristol / Bath | Rings over `LEZAvoidPolicy.avoidPolygonAreaCapSquareMeters` omitted (e.g. London ULEZ) |
+| Tolls | `UKTollAdvisoryCatalog` (Swift) triple-synced with Android + `web-dispatch`; HUD/TTS/desk indicative £; ORS avoid-tolls replan | One PR updates all three surfaces; not live operator tariff |
+| Hazmat / ADR | ORS vehicle profile parameters | Profile fields must reach client request intact |
+| Clearance | `ClearanceCorridorProbe` (Overpass maxheight/weight; off-route heading) | Advisory only |
+| Forecast risk | `ForecastRiskSampler` (TomTom + OpenWeather when proxy configured) | Soft budgets via `APIUsageLedger` |
+| Soft metering | `APIUsageLedger` + proxy meters on Connection | Soft product protection — not a customer SLA |
 
-Catalog honesty rules: not legal cadastre; not live operator tariffs unless a feed is unlocked.
+Catalog honesty: not legal cadastre; not live operator tariffs unless a feed is unlocked.
 
 ### 3.6 Multi-stop / fleet dispatch
 
-Disk-backed org → trip → physics ETA on Mac dispatch; `web-dispatch` mirrors push and roster. Fleet server (LAN) or hosted gateway accepts Bearer auth, enforces fair-use caps, and delivers trips via SSE/REST. Drivers publish GPS/inspection snapshots; desks poll active-trip (capped) for roster rows and yard pins. Connection `/v1/proxy/status` decodes to `FleetProxyDeskStatus` (`orgId` / `orgName`, meters) with `maskApiKey` / `maskedTokenLine` for UI — parity on web, Mac Settings / FleetSetupWizard / dispatch panel, Android FleetSetupWizard + DriverHome (`FleetProxyStatusLabels`).
+Disk-backed org → trip → physics ETA on Mac dispatch; `web-dispatch` mirrors push and roster. Fleet server (LAN) or hosted gateway accepts Bearer auth, enforces fair-use caps, and delivers trips via SSE/REST. Drivers publish GPS/inspection snapshots; desks poll active-trip (capped) for roster rows and yard pins.
+
+#### Connection parity matrix (`FleetProxyDeskStatus`)
+
+| Surface | Entry | Shows `orgId`/`orgName` | Masked token | ORS meters |
+|---------|-------|-------------------------|--------------|------------|
+| web-dispatch | Connection depot profiles | Yes | `maskApiKey` | Yes (when reported) |
+| Mac Settings | Connection Test | Yes | `maskedTokenLine` | Yes |
+| Mac FleetSetupWizard | Wizard Test | Yes | Same helpers | Yes |
+| Mac dispatch panel | Fleet-proxy glass panel | Yes | Same helpers | Yes |
+| Android FleetSetupWizard | Wizard Test | Yes | `FleetProxyStatusLabels` | Yes |
+| Android DriverHome | Home badge | Yes | Same labels | Yes |
+
+Wire SSOT: [`fleet-api-schema.json`](fleet-api-schema.json). Schema field additions require mirrored decode on every row above (**S/T**).
 
 ### 3.7 UI implementation by surface
 
-| Surface | Implementation notes |
-|---------|---------------------|
-| iOS / Mac | SwiftUI + `GlassmorphicModifiers`; Settings Connection Test; FleetSetupWizard Test; dispatch glass panels (toll, roster, proxy) |
-| web-dispatch | React Connection depot profiles; proxy status; corridor preview; predicted layby card/pin |
-| Android C2 | Compose screens; MapLibre; metric TTS; wizard Test + home badge for depot/meters |
+| Surface | Implementation notes | Hard rule |
+|---------|---------------------|-----------|
+| iOS / Mac | SwiftUI; Settings Connection Test; FleetSetupWizard Test; dispatch glass panels (toll, roster, proxy) | All chrome via `GlassmorphicModifiers` |
+| web-dispatch | React Connection depot profiles; proxy status; corridor preview; predicted layby card/pin | Pure helpers + `scripts/smoke.mjs` parity |
+| Android C2 | Compose; MapLibre; metric TTS; wizard Test + home badge for depot/meters | JDK 17–22 for Gradle; no driver HeiGIT key |
 
-Stranger-path role picker and first-run flows: [`getting-started.md`](getting-started.md). Screenshots policy: [`screenshots/README.md`](screenshots/README.md).
+Stranger-path role picker: [`getting-started.md`](getting-started.md). Screenshots: [`screenshots/README.md`](screenshots/README.md) — never unmasked Bearer/API keys.
 
 ### 3.8 Error handling and robustness
 
-`RemoteRequestPolicy` (DataLayer networking) applies shared timeout, retry, exponential backoff with jitter, and HTTP 429 / `Retry-After` handling for ORS, TomTom, fleet HTTP, and DVLA/RegCheck. Missing ORS or fleet configuration surfaces as explicit banners. Tokens are masked in product UI and must not appear unmasked in Docs screenshots. Soft API budgets use the usage ledger; meters appear on proxy status when the gateway reports them. Structured logs use `RouteFinderLog` categories (`routing`, `geocode`, `fleet`, `metering`).
+`RemoteRequestPolicy` (DataLayer) applies shared timeout, retry, exponential backoff with jitter, and HTTP 429 / `Retry-After` for ORS, TomTom, fleet HTTP, and DVLA/RegCheck. Structured logs: `RouteFinderLog` (`routing`, `geocode`, `fleet`, `metering`). Soft budgets: `APIUsageLedger` + proxy meters.
+
+| Failure (§2.12) | Implementation hook |
+|-----------------|---------------------|
+| ORS down / timeout | Planning failure banner after policy retries |
+| Proxy 429 | `RemoteRequestPolicy` backoff; then banner |
+| Missing keys | Explicit configuration banners |
+| LEZ over area cap | `LEZAvoidPolicy` omit from avoid set |
+| Offline tile miss | Hybrid degrade; no false country-pack claim |
+| SSE drop | Poll/reconnect via `FleetDispatchCoordinator` |
+| Invalid Bearer | Connection Test / publish auth failure |
+| Catalog stale vs live tariff | Indicative £ copy only |
 
 ### 3.9 Automated testing integration
 
-| Suite | Command / job | Role |
-|-------|---------------|------|
-| Swift package | `cd RouteFinder && swift test` | Unit/integration across modules (e.g. `FleetProxyDeskStatusTests`, toll catalog parity tests) |
-| web-dispatch | `cd web-dispatch && npm test` (+ smoke helpers) | Desk pure helpers / Connection behaviour |
-| Android | Gradle unit tests; CI job `android-c1` | C2 client regressions (JDK 17–22 on PATH) |
-| UI / phase | Optional `xcodebuild` UI tests; phase* Docs | Device/simulator evidence |
+| Suite / CI job (`.github/workflows/ci.yml`) | Guards (§3 claims) |
+|---------------------------------------------|---------------------|
+| `macos` — `swift build` / `swift test` / `fleet-e2e-smoke.sh` | Package modules, fleet smoke, coordinators, catalogs, `FleetProxyDeskStatusTests` |
+| `ios` — simulator library build + `RouteFinderAppUITests` smoke | App host wiring; UI smoke subset |
+| `web-dispatch` — `npm test` + `npm run build` | Desk helpers, Connection/mask parity, corridor preview helpers |
+| `android-c1` — `:app:testDebugUnitTest` + `assembleDebug` | C2 client, `FleetProxyStatusLabels`, catalog mirrors (JDK 17) |
+| `hosted-gateway` — `npm test` + `typecheck` | Gateway `/v1` edge behaviour |
 
-Detailed strategy, edge cases, and objective–test cross-reference are reserved for §4 Testing.
+Local mirrors: `cd RouteFinder && swift test`; `cd web-dispatch && npm test`; `cd android-fleet-driver && ./gradlew test` (JDK 17–22). Detailed strategy remains §4 Testing.
 
 ### 3.10 Objective fulfilment confirmation
 
-| ID | Implementation evidence (greppable) | Docs status |
-|----|-------------------------------------|-------------|
-| FO1 | ORS planning client + vehicle profile / trailer ladder | Shipped (MVP) |
-| FO2 | `FleetDispatchCoordinator`, fleet server, web/Mac push + roster | Shipped (MVP) |
-| FO3 | `RouteSimulationCoordinator` / physics rehearsal + trip brief | Shipped (MVP) |
-| FO4 | `HosAdvisoryCoordinator`; desk Can-I-drive cards; legal disclaimer | Shipped (MVP); VU download residual |
-| FO5 | LEZ/toll catalogs; hazard + predictive coordinators; layby pins | Shipped (MVP slices); live £ / full cadastre residual |
-| FO6 | `FleetProxyDeskStatus` + Connection UIs (web/Mac/Android) | Shipped (MVP); Stripe residual |
-| FO7 | `android-fleet-driver/` + [`android-c2-gate.md`](android-c2-gate.md) | Shipped (MVP); AA/offline gated |
-| FO8 | Overpass lane enrichment in planning path | Shipped (MVP slice); HD residual |
-| NFO1–NFO7 | Module rules, glass UI, masking, `RemoteRequestPolicy`, CI, Docs SSOT | Enforced in-repo / CI / Docs upkeep |
+| ID | Evidence (S/T/C/D) | Status |
+|----|--------------------|--------|
+| FO1 | **S** `OpenRouteServiceRoutingClient` / trailer ladder; **T** profile/brief tests; **C** `macos` | Shipped (MVP) |
+| FO2 | **S** `FleetDispatchCoordinator` + fleet edge; **T**/`fleet-e2e-smoke`; **C** `macos` | Shipped (MVP) |
+| FO3 | **S** `RouteSimulationCoordinator`; **T** physics/sim suites; **C** `macos` | Shipped (MVP) |
+| FO4 | **S** `HosAdvisoryCoordinator` + desk Can-I-drive; **D** disclaimer | Shipped (MVP); VU residual |
+| FO5 | **S** LEZ/toll catalogs + hazard/predictive; **T** densify/catalog tests; **D** scorecard | Shipped (MVP slices); live £ / cadastre residual |
+| FO6 | **S** `FleetProxyDeskStatus`; **T** mask/decode tests; **C** web + android-c1; **D** schema | Shipped (MVP); Stripe residual |
+| FO7 | **S** `android-fleet-driver/`; **C** `android-c1`; **D** [`android-c2-gate.md`](android-c2-gate.md) | Shipped (MVP); AA/offline gated |
+| FO8 | **S** Overpass lane enrichment path; **D** scorecard HD residual | Shipped (MVP slice); HD residual |
+| NFO1 | **D** [`architecture.md`](architecture.md) module rules | Enforced |
+| NFO2 | **S**/package concurrency norms | Enforced |
+| NFO3 | **S** `GlassmorphicModifiers` | Enforced |
+| NFO4 | **S/T** `maskApiKey` / `maskedTokenLine`; screenshot policy | Enforced |
+| NFO5 | **S/T** `RemoteRequestPolicy` + `APIUsageLedger` | Enforced |
+| NFO6 | **C** ci.yml jobs above | Enforced |
+| NFO7 | **D** scorecard / sweep / this writeup | Enforced |
 
 ---
 
 ## 4. Testing
 
-Testing validates Implementation (§3) against Analysis objectives (§1.6) without inventing Pass/Fail logs. Commands and suite names below are greppable in-repo; operators re-run them to refresh evidence. Cross-surface ledgers and phase checklists remain SSOT in [`engineering-test-matrix.md`](engineering-test-matrix.md) and relevant `phase*` Docs.
+Testing validates Implementation (§3) against Analysis objectives (§1.6) without inventing Pass/Fail logs or pasted CI transcripts that go stale. Commands and suite names are greppable; operators re-run them to refresh evidence. Cross-surface ledgers remain SSOT in [`engineering-test-matrix.md`](engineering-test-matrix.md) and relevant `phase*` Docs. Evidence grades follow §1.4 (**S** / **T** / **C** / **D**).
 
 ### 4.1 Testing strategy
 
-| Layer | Purpose | Primary entry |
-|-------|---------|---------------|
-| Swift package unit/integration | Module correctness (routing, fleet, HOS, UI helpers, coordinators) | `cd RouteFinder && swift test` |
-| macOS CI package + fleet smoke | Release build, full package tests, scripted fleet smoke | `.github/workflows/ci.yml` job `macos` |
-| iOS simulator smoke | App UI smoke subset | CI job `ios` (`RouteFinderAppUITests`) |
-| web-dispatch | Desk helpers + build | `cd web-dispatch && npm test` (CI job `web-dispatch`) |
-| Android C2 | Unit tests + debug APK | CI job `android-c1` (`./gradlew :app:testDebugUnitTest`) |
-| Hosted gateway | Gateway unit/typecheck | CI job `hosted-gateway` |
-| Optional physical / LAN | Device and depot walkthrough | [`phase1-device-checklist.md`](phase1-device-checklist.md), [`fleet-e2e-qa.md`](fleet-e2e-qa.md) |
+| Layer | Purpose | Primary entry | Grade |
+|-------|---------|---------------|-------|
+| Swift package unit/integration | Module correctness (routing, fleet, HOS, UI helpers, coordinators) | `cd RouteFinder && swift test` | **T** → **C** via `macos` |
+| macOS CI package + fleet smoke | Release build, full package tests, scripted fleet smoke | `.github/workflows/ci.yml` job `macos` | **C** |
+| iOS simulator smoke | App UI smoke subset | CI job `ios` (`RouteFinderAppUITests`) | **C** |
+| web-dispatch | Desk helpers + build | `cd web-dispatch && npm test` (CI job `web-dispatch`) | **T/C** |
+| Android C2 | Unit tests + debug APK | CI job `android-c1` | **T/C** |
+| Hosted gateway | Gateway unit/typecheck | CI job `hosted-gateway` | **T/C** |
+| Optional physical / LAN | Device and depot walkthrough | [`phase1-device-checklist.md`](phase1-device-checklist.md), [`fleet-e2e-qa.md`](fleet-e2e-qa.md) | Operator **D** |
 
-**Justification:** Automated suites catch regressions on every PR; optional physical smoke covers Bonjour/LAN and device-only paths that CI cannot fully own. This matches NEA-style multi-layer coverage without claiming client UAT.
+**Pyramid claim:** Unit/integration (**T**) is the default proof of invariants (§2.8–2.12, §3); CI jobs (**C**) are the standing regression gate; physical smoke is optional confidence, never a substitute for green CI. No client UAT.
+
+#### Property-style claims (invariant → suite)
+
+| Invariant (Design / Impl) | Property under test | Suite / control |
+|---------------------------|---------------------|-----------------|
+| Tokens never unmasked in UI | Empty / short / long tokens mask to `(none)` / `••••` / ellipsis form | `FleetProxyDeskStatusTests`; Android `FleetProxyStatusLabelsTest`; web mask helpers |
+| Cross-surface proxy decode | `orgId` / `orgName` + meters decode from schema-shaped JSON | `FleetProxyDeskStatusTests`; [`fleet-api-schema.json`](fleet-api-schema.json) (**D**) |
+| Trailer ladder preserves count | `trailerCount` survives weight apply; length ∈ {12, 16.5, 18.75, 25.25} m | `VehicleProfileComboLengthTests`; `FleetJobBrief` path |
+| LEZ rings under ORS area soft cap | Densified Sheffield / Birmingham / Bradford / Bristol / Bath ≤ `LEZAvoidPolicy.avoidPolygonAreaCapSquareMeters`; oversize rings omitted | `TruckPoiLivingLayerTests` (`ukLez*DensifiedUnderOrsCap`, London omit paths) |
+| Remote 429 / retry policy | Shared backoff + `Retry-After` behaviour | `RemoteRequestPolicyTests`, `ORSErrorParserTests` |
+| Fair-use soft budgets | Ledger / meter counters update without inventing SLA | `APIUsageLedgerTests`, `FleetProxyUsageMeterTests` |
+| Fleet auth boundary | Invalid / missing Bearer rejected | `FleetAuthTests` |
+| SSE / dispatch continuity | SSE path + push/paste gates | `FleetSSETests`, `DispatchPushGateTests`, `DispatchFleetKeyPasteGateTests` |
+| Toll catalog presence | Named UK advisories present (incl. Mersey / Dunham / Batheaston) | `Phase8ParityTests` |
+| Hybrid offline policy | Tile miss degrades; policy does not claim country-pack parity | `HybridRoutingPolicyTests`, `OfflineGraphStoreTests`, `OfflineCorridorPrefetchTests` |
 
 ### 4.2 Unit testing
 
-**Swift:** From [`developer-map.md`](developer-map.md):
+**Swift:**
 
 ```bash
 cd RouteFinder && swift test
@@ -737,32 +824,35 @@ Representative suites (non-exhaustive):
 | `RoutePlanningCoordinatorTests` | Planning coordinator orchestration |
 | `FleetDispatchCoordinatorTests` | Dispatch host / proxy status wiring |
 | `VehicleProfileComboLengthTests` | Trailer→ORS length ladder |
+| `TruckPoiLivingLayerTests` | LEZ catalog / densify under ORS cap (incl. Bristol+Bath) |
 | `HybridRoutingPolicyTests` / `OfflineGraphStoreTests` / `OfflineCorridorPrefetchTests` | Hybrid offline policy |
 | `EU561HosClockTests` / `TachoImportTests` | Advisory HOS / import |
 | `KineticPhysicsEngineTests` / `TripBriefFormatterTests` | Physics + brief |
 | `APIUsageLedgerTests` / `FleetProxyUsageMeterTests` | Fair-use metering |
+| `FleetAuthTests` / `FleetSSETests` | Auth boundary / SSE |
 
-**Android:** JDK 17–22 on `PATH`; CI uses Temurin 17. Local/CI: `./gradlew :app:testDebugUnitTest` under `android-fleet-driver/`. Prefer `--rerun-tasks` when outputs look stale (master-prompt Android note).
+**Android:** JDK 17–22 on `PATH`; CI uses Temurin 17. `./gradlew :app:testDebugUnitTest` under `android-fleet-driver/` (prefer `--rerun-tasks` when outputs look stale). Includes `FleetProxyStatusLabelsTest` mask parity.
 
 **web-dispatch / hosted-gateway:** `npm test` in each package directory (also on CI).
 
 ### 4.3 Routing / algorithm testing
 
-Constraint and planning behaviour is covered by package tests such as `OpenRouteServicePayloadBuilderTests`, `FleetORSRoutingFactoryTests`, `HybridRoutingPolicyTests`, `TrafficRerouteCoordinatorTests`, and `LaneGuidanceEnricherTests` (Overpass caps / enrichment). Offline store and prefetch tests exercise tile-backed paths where present. Live ORS/TomTom calls in CI remain environment-dependent; factories and payload builders are the stable automated surface.
+Constraint and planning behaviour: `OpenRouteServicePayloadBuilderTests`, `FleetORSRoutingFactoryTests`, `HybridRoutingPolicyTests`, `TrafficRerouteCoordinatorTests`, `LaneGuidanceEnricherTests` (Overpass caps / enrichment). Offline store and prefetch tests exercise tile-backed paths where present. Live ORS/TomTom calls in CI remain environment-dependent; factories and payload builders are the stable automated surface (**T**; live optional).
 
 ### 4.4 Cost model and constraint testing
 
-| Area | Evidence |
-|------|----------|
+| Area | Evidence (**T**) |
+|------|------------------|
 | Toll catalog | `Phase8ParityTests`, `CommittedRouteTollAnnouncementTests` |
 | Trailer / combo length | `VehicleProfileComboLengthTests` |
+| LEZ densify / area cap | `TruckPoiLivingLayerTests` (`ukLezSheffieldAndBirminghamDensifiedUnderOrsCap`, `ukLezBradfordDensifiedUnderOrsCap`, `ukLezBristolAndBathDensifiedUnderOrsCap`) |
 | Layby / parking | `LaybyPredictionEngineTests`, `ParkingAvailabilityTierTests`, `ParkingMapPinBuilderTests` |
 | Hazards / roadworks | `HazardOverlayBuilderTests`, `RoadworksAlongRouteRepositoryTests`, `LiveTrafficHazardSamplerTests` |
 | UK living layer POIs | `TruckPoiLivingLayerTests` |
 
-LEZ avoid policy on Android is covered under C2 unit tests and documented in [`android-c2-gate.md`](android-c2-gate.md); Swift planning tests cover avoid-ring attachment via the planning coordinator path.
+Android LEZ avoid policy: C2 unit tests + [`android-c2-gate.md`](android-c2-gate.md) (**D**). Swift planning tests cover avoid-ring attachment via the planning coordinator path.
 
-### 4.5 Edge case and robustness testing
+### 4.5 Edge case, robustness, and threat coverage
 
 | Concern | Evidence |
 |---------|----------|
@@ -773,80 +863,95 @@ LEZ avoid policy on Android is covered under C2 unit tests and documented in [`a
 | Dispatch gates (paste / push) | `DispatchFleetKeyPasteGateTests`, `DispatchPushGateTests` |
 | Fleet auth / SSE | `FleetAuthTests`, `FleetSSETests` |
 
-User-visible “add API key or pair with fleet” behaviour is stranger-path documented in [`getting-started.md`](getting-started.md) and exercised in UI smoke where configured.
+User-visible “add API key or pair with fleet” behaviour: [`getting-started.md`](getting-started.md) + UI smoke where configured.
+
+#### Threat / abuse coverage (lite — maps §2.8; full STRIDE → pass 4)
+
+| Threat / abuse (trust boundary) | Control | Automated / policy proof |
+|---------------------------------|---------|--------------------------|
+| Stolen / pasted Bearer in UI or Docs shot | Mask helpers; screenshot policy | `FleetProxyDeskStatusTests`; Android `FleetProxyStatusLabelsTest`; [`screenshots/README.md`](screenshots/README.md) (**D**) |
+| Secrets committed to git | Never commit keys; `.git/info/exclude` for local master-prompt | Process + PR review (**D**); no unmasked keys in tree |
+| Open LAN / invalid Bearer | Fleet auth reject | `FleetAuthTests` |
+| Provider / gateway abuse → 429 | `RemoteRequestPolicy` backoff then fail closed | `RemoteRequestPolicyTests` |
+| Schema drift across surfaces | Schema SSOT + mirrored decode | [`fleet-api-schema.json`](fleet-api-schema.json) + `FleetProxyDeskStatusTests` |
+| Oversize LEZ avoid DoS / ORS reject | Area soft cap omit | `TruckPoiLivingLayerTests` London/oversized omit paths |
 
 ### 4.6 Performance / fair-use
 
-Automated performance helpers exist (e.g. `SimulationPerformanceTests`, `LaneGuidanceEnricherPerformanceTests`) as engineering guards, not marketed SLAs. Fair-use is validated behaviourally via `APIUsageLedgerTests` and `FleetProxyUsageMeterTests`; Connection UIs surface meters from `/v1/proxy/status` when the gateway reports them. No synthetic throughput numbers are claimed in this writeup.
+Automated performance helpers (`SimulationPerformanceTests`, `LaneGuidanceEnricherPerformanceTests`) are engineering guards, **not** marketed SLAs. Fair-use: `APIUsageLedgerTests`, `FleetProxyUsageMeterTests`; Connection UIs surface meters from `/v1/proxy/status` when reported. No synthetic throughput numbers claimed here.
 
 ### 4.7 Test evidence
 
-| Evidence class | Location |
-|----------------|----------|
-| CI workflow | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) — jobs `macos`, `ios`, `web-dispatch`, `android-c1`, `hosted-gateway` |
-| Fleet scripted smoke | `RouteFinder/Scripts/fleet-e2e-smoke.sh` (invoked on `macos` CI) |
-| Engineering matrix | [`engineering-test-matrix.md`](engineering-test-matrix.md) |
-| Phase / surface ledgers | `Docs/phase*` verification Docs; [`phase20-verification.md`](phase20-verification.md) when active |
-| Product screenshots | [`screenshots/README.md`](screenshots/README.md) (masked secrets) |
-| Android gate | [`android-c2-gate.md`](android-c2-gate.md) — CI green criterion |
+| Evidence class | Location | Grade |
+|----------------|----------|-------|
+| CI workflow | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) — `macos`, `ios`, `web-dispatch`, `android-c1`, `hosted-gateway` | **C** |
+| Fleet scripted smoke | `RouteFinder/Scripts/fleet-e2e-smoke.sh` (on `macos`) | **C** |
+| Engineering matrix | [`engineering-test-matrix.md`](engineering-test-matrix.md) | **D** |
+| Phase / surface ledgers | `Docs/phase*`; [`phase20-verification.md`](phase20-verification.md) when active | **D** |
+| Product screenshots | [`screenshots/README.md`](screenshots/README.md) (masked) | **D** |
+| Android gate | [`android-c2-gate.md`](android-c2-gate.md) | **D** |
 
-PR merges should keep these green; this section cites the harness rather than pasting dated log transcripts that go stale.
+Cite the harness; do not paste dated logs into this monograph.
 
 ### 4.8 Objective verification table
 
-| ID | Verification evidence | Notes |
-|----|----------------------|-------|
-| FO1 | ORS payload/factory tests; combo length tests; `swift test` | Live ORS optional beyond builders |
-| FO2 | Fleet dispatch/SSE/HTTP store tests; fleet-e2e smoke; web `npm test` | Physical LAN optional |
-| FO3 | Kinetic physics + trip brief formatter/PDF tests | |
-| FO4 | `EU561HosClockTests`, tacho import tests; disclaimer in README | VU partner residual ungated here |
-| FO5 | Toll Phase8 parity; layby/hazard/roadworks suites; living-layer POI tests | Live £ / full cadastre residual |
-| FO6 | `FleetProxyDeskStatusTests`; Connection UI wiring tests; schema Doc | Stripe residual |
-| FO7 | CI `android-c1` unit + assemble | AA/offline gated |
+| ID | Verification (**T/C/D**) | Notes |
+|----|--------------------------|-------|
+| FO1 | `OpenRouteServicePayloadBuilderTests`, `FleetORSRoutingFactoryTests`, `VehicleProfileComboLengthTests`; **C** `macos` | Live ORS optional beyond builders |
+| FO2 | `FleetDispatchCoordinatorTests`, `FleetSSETests`, fleet-e2e smoke; web `npm test` | Physical LAN optional |
+| FO3 | `KineticPhysicsEngineTests`, `TripBriefFormatterTests` | |
+| FO4 | `EU561HosClockTests`, `TachoImportTests`; README disclaimer (**D**) | VU residual |
+| FO5 | `Phase8ParityTests`, `TruckPoiLivingLayerTests` (incl. Bristol+Bath), layby/hazard suites | Live £ / full cadastre residual |
+| FO6 | `FleetProxyDeskStatusTests`; Android `FleetProxyStatusLabelsTest`; schema (**D**) | Stripe residual |
+| FO7 | **C** `android-c1` unit + assemble; [`android-c2-gate.md`](android-c2-gate.md) | AA/offline gated |
 | FO8 | `LaneGuidanceEnricherTests` (+ performance helper) | HD residual |
-| NFO1 | Architecture rules + coordinator tests | |
-| NFO2 | Package concurrency norms under `swift test` | |
-| NFO3 | UI tests / glass usage convention (code review + UI smoke) | |
-| NFO4 | Masking unit tests; screenshot policy | |
+| NFO1 | Architecture (**D**) + coordinator tests | |
+| NFO2 | Package concurrency under `swift test` | |
+| NFO3 | Glass convention + UI smoke (**C** `ios`) | |
+| NFO4 | Masking unit tests; screenshot policy (**D**) | |
 | NFO5 | `RemoteRequestPolicyTests`; ledger/meter tests | |
-| NFO6 | CI jobs listed in §4.7 | |
-| NFO7 | Scorecard/sweep/writeup updated in same PR week as surface changes | |
+| NFO6 | CI jobs §4.7 (**C**) | |
+| NFO7 | Scorecard/sweep/writeup same-PR-week (**D**) | |
 
 ---
 
 ## 5. Evaluation
 
-Evaluation is **developer-led only**. This writeup does not use client interviews, client questionnaires, or fabricated user quotes. Judgement combines Analysis objectives (§1.6), Implementation evidence (§3.10), Testing harnesses (§4.7–4.8), and the competitive scorecard / sweep SSOTs.
+Evaluation is **developer-led only** — no client interviews, questionnaires, or fabricated quotes. Judgement combines Analysis objectives (§1.6), Implementation evidence (§3.10), Testing harnesses (§4.1–4.8), and competitive SSOTs.
 
 ### 5.1 Method of developer evaluation
 
-1. **Objective trace** — For each FO/NFO, require a greppable implementation path (§3) and a named automated or CI verification path (§4.8).
-2. **Scorecard honesty** — Cross-check [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md) for Shipped (MVP) vs Residual / Gated labels; do not promote residuals to “Met.”
-3. **CI as standing evidence** — Treat `.github/workflows/ci.yml` jobs (`macos`, `ios`, `web-dispatch`, `android-c1`, `hosted-gateway`) as the recurring correctness gate; optional physical smoke remains operator-owned ([`phase1-device-checklist.md`](phase1-device-checklist.md), [`fleet-e2e-qa.md`](fleet-e2e-qa.md)).
-4. **Persona fit (documentary)** — Re-read [`buyer-personas-uk-hgv.md`](buyer-personas-uk-hgv.md) jobs-to-be-done; confirm Dave/Sarah/Priya/Omar critical needs are covered by Met or Partial rows, with known loses called out under Limitations.
-5. **Non-goals** — Explicitly exclude Stripe billing UI, inventing densify/toll clones (Anti-grind), and claiming VU/legal cadastre/live tariff authority.
+1. **Objective trace** — Each FO/NFO needs greppable **S** (§3) and named **T** or **C** (§4.8); **D** alone is insufficient for Met.
+2. **Vocabulary lock** — Outcomes use scorecard language only:
+   - **Met (MVP)** — shipped path + automated proof; residual may still exist at Lead depth
+   - **Partial** — MVP shipped but a named gated residual remains (**Partial ≠ Fail**)
+   - **Residual / Gated** — not claimed Met; listed under §5.3
+3. **Scorecard honesty** — Cross-check [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md); never promote Residual to Met.
+4. **CI as standing evidence** — `.github/workflows/ci.yml` jobs are the recurring gate; physical smoke is operator-owned.
+5. **Persona fit (documentary)** — [`buyer-personas-uk-hgv.md`](buyer-personas-uk-hgv.md); Met/Partial must cover critical JTBD; known loses stay in Limitations.
+6. **Non-goals** — No Stripe billing UI invent; no densify/toll Anti-grind; no VU / legal cadastre / live tariff authority claims.
 
 ### 5.2 Comparison against original objectives
 
 | ID | Outcome | Evidence summary |
 |----|---------|------------------|
-| FO1 Constraint routing | **Met (MVP)** | ORS planning + trailer ladder; package tests (§4.3–4.4) |
-| FO2 Multi-stop + desk push | **Met (MVP)** | Fleet server/gateway + Mac/web dispatch; SSE/store tests; fleet smoke |
+| FO1 Constraint routing | **Met (MVP)** | ORS planning + trailer ladder; §4.3–4.4 suites |
+| FO2 Multi-stop + desk push | **Met (MVP)** | Fleet edge + Mac/web; SSE/store tests; fleet smoke |
 | FO3 Physics rehearsal + brief | **Met (MVP)** | Simulation coordinator; kinetic + trip-brief tests |
-| FO4 Advisory HOS / Can-I-drive | **Partial** | Clock/import/desk cards shipped; legal VU download residual (`EPIC-VU-PARTNER`) |
-| FO5 UK living layer | **Partial** | LEZ/toll/layby/hazard MVP slices shipped; live £ + full cadastre residual |
-| FO6 LAN/hosted Connection status | **Partial** | `FleetProxyDeskStatus` + UI parity shipped; Stripe self-serve residual (`EPIC-HOSTED-DESK`) |
-| FO7 Android C2 fleet driver | **Partial** | C2 MVP + CI `android-c1`; Android Auto / offline packs gated |
-| FO8 Lane / Overpass guidance | **Partial** | Overpass parity shipped; HD lane visuals residual (`EPIC-LANE-DEPTH`) |
+| FO4 Advisory HOS / Can-I-drive | **Partial** | Clock/import/desk cards shipped; VU download residual (`EPIC-VU-PARTNER`) — Partial ≠ Fail |
+| FO5 UK living layer | **Partial** | LEZ densify MVP includes Sheffield / Birmingham / Bradford / Bristol / Bath + toll/layby/hazard slices; live £ + remaining coarse zones + London ORS-blocked residual |
+| FO6 LAN/hosted Connection status | **Partial** | `FleetProxyDeskStatus` + UI parity shipped; Stripe residual (`EPIC-HOSTED-DESK`) |
+| FO7 Android C2 fleet driver | **Partial** | C2 MVP + **C** `android-c1`; AA / offline packs gated |
+| FO8 Lane / Overpass guidance | **Partial** | Overpass parity shipped; HD residual (`EPIC-LANE-DEPTH`) |
 | NFO1 Modular architecture | **Met** | SPM modules + coordinators ([`architecture.md`](architecture.md)) |
 | NFO2 Strict concurrency | **Met** | Package norms under `swift test` |
-| NFO3 Glass UI | **Met** | `GlassmorphicModifiers` convention + UI smoke |
+| NFO3 Glass UI | **Met** | `GlassmorphicModifiers` + UI smoke |
 | NFO4 Secrets hygiene | **Met** | Masking tests + screenshot policy |
 | NFO5 Remote reliability | **Met** | `RemoteRequestPolicy` + ledger/meter tests |
 | NFO6 Verifiability | **Met** | CI jobs §4.7 |
-| NFO7 Docs SSOT | **Met** | Scorecard/sweep/writeup iteration (this epic) |
+| NFO7 Docs SSOT | **Met** | Scorecard/sweep/writeup iteration (`EPIC-DOCS-WRITEUP-SENIOR`) |
 
-**Overall:** Core cab+desk MVP objectives are met or honestly partial. Remaining gaps are predominantly secrets-, partner-, or Anti-grind-gated rather than unmarked incomplete work.
+**Overall:** Core cab+desk MVP objectives are Met or honestly Partial. Remaining gaps are secrets-, partner-, or Anti-grind-gated — not unmarked incomplete work.
 
 ### 5.3 Limitations
 
@@ -863,15 +968,15 @@ Evaluation is **developer-led only**. This writeup does not use client interview
 | Live bay / partner parking book API | Scorecard residuals on parking MVP |
 | Optional physical LAN/device smoke not always run | Operator checklist residual |
 
-Authored LEZ rings and named toll advisories must not be described as certified cadastre or live tariffs. HOS remains advisory relative to the VU.
+Authored LEZ rings and named toll advisories are **not** certified cadastre or live tariffs. HOS remains advisory relative to the VU.
 
 ### 5.4 Maintenance and future work
 
-**Product:** Resume gated epics only when unlocked by name (or when secrets/entitlements are provided). Do not invent mid-corridor / LEZ densify / toll-£ clones without a Mersey-class catalog hole or measurable scorecard gap. Prefer desk/cab parity checks after cab-only slices (master-prompt Surfaces guidance).
+**Product:** Resume gated epics only when unlocked by name. Do not invent mid-corridor / LEZ densify / toll-£ clones without a Mersey-class catalog hole or measurable scorecard gap. Prefer desk/cab parity after cab-only slices.
 
-**Documentation:** §6 Appendices A–E are polished; `EPIC-DOCS-WRITEUP` is structurally Done. Keep this file as living SSOT narrative (update changelog when surfaces move). Do not invent further writeup chapters without a surface change; product work resumes only on unlocked gates.
+**Documentation:** `EPIC-DOCS-WRITEUP` (NEA spine) and `EPIC-DOCS-WRITEUP-SENIOR` (passes 1–4) are **Done**. Keep this file as a living narrative — update changelog when surfaces move; do not invent further monograph passes without a surface change. Product work resumes only on unlocked gates.
 
-**Process:** Continue issue → branch → PR → print-merge cadence; never commit `Docs/agent-master-prompt.md`; never merge unless asked.
+**Process:** Issue → branch → PR → print-merge; never commit `Docs/agent-master-prompt.md`; never merge unless asked.
 
 ---
 
@@ -879,52 +984,73 @@ Authored LEZ rings and named toll advisories must not be described as certified 
 
 ### Appendix A — Objectives traceability
 
-Consolidated from §§2.7, 3.10, 4.8, and 5.2.
+Consolidated from §§2.7, 3.10, 4.8, and 5.2. Evidence grades per §1.4 (**S/T/C/D**).
 
-| ID | Design component | Implementation path | Test / CI evidence | Evaluation |
-|----|------------------|---------------------|--------------------|------------|
-| FO1 | ORS planning + constraint profile | ORS client; trailer→ORS ladder | Payload/factory + combo-length tests; `swift test` | **Met (MVP)** |
-| FO2 | Fleet dispatch + SSE/REST | `FleetDispatchCoordinator`; fleet server/gateway; Mac/web desk | Fleet SSE/HTTP/store tests; fleet-e2e smoke; web `npm test` | **Met (MVP)** |
-| FO3 | Physics rehearsal + brief | `RouteSimulationCoordinator` / physics engines | Kinetic + trip-brief tests | **Met (MVP)** |
-| FO4 | HOS advisory | `HosAdvisoryCoordinator` | `EU561HosClockTests`, tacho import; README disclaimer | **Partial** (VU residual) |
-| FO5 | UK living layer + fuse | Hazard/predictive coordinators; catalogs | Toll Phase8; layby/hazard/roadworks/POI suites | **Partial** (live £ / cadastre) |
-| FO6 | Connection + proxy status | `FleetProxyDeskStatus`; Connection UIs | `FleetProxyDeskStatusTests`; schema Doc | **Partial** (Stripe residual) |
-| FO7 | Android C2 client | `android-fleet-driver/` | CI `android-c1` | **Partial** (AA/offline gated) |
+| ID | Design component | Implementation path (**S**) | Test / CI evidence (**T/C/D**) | Evaluation |
+|----|------------------|-----------------------------|-------------------------------|------------|
+| FO1 | ORS planning + constraint profile | `OpenRouteServiceRoutingClient`; trailer→ORS ladder | Payload/factory + `VehicleProfileComboLengthTests`; **C** `macos` | **Met (MVP)** |
+| FO2 | Fleet dispatch + SSE/REST | `FleetDispatchCoordinator`; fleet server/gateway; Mac/web desk | `FleetSSETests` / store tests; fleet-e2e smoke; web `npm test` | **Met (MVP)** |
+| FO3 | Physics rehearsal + brief | `RouteSimulationCoordinator` / physics engines | `KineticPhysicsEngineTests`, `TripBriefFormatterTests` | **Met (MVP)** |
+| FO4 | HOS advisory | `HosAdvisoryCoordinator` | `EU561HosClockTests`, tacho import; README disclaimer (**D**) | **Partial** (VU residual) |
+| FO5 | UK living layer + fuse | Hazard/predictive coordinators; LEZ/toll catalogs | `Phase8ParityTests`; `TruckPoiLivingLayerTests` (Sheffield / Birmingham / Bradford / Bristol / Bath); layby/hazard suites | **Partial** (live £ / remaining cadastre) |
+| FO6 | Connection + proxy status | `FleetProxyDeskStatus`; Connection UIs | `FleetProxyDeskStatusTests`; Android `FleetProxyStatusLabelsTest`; schema (**D**) | **Partial** (Stripe residual) |
+| FO7 | Android C2 client | `android-fleet-driver/` | **C** `android-c1`; [`android-c2-gate.md`](android-c2-gate.md) | **Partial** (AA/offline gated) |
 | FO8 | Overpass lane enrichment | Planning lane enrichment | `LaneGuidanceEnricherTests` | **Partial** (HD residual) |
 | NFO1 | Module + coordinator rules | [`architecture.md`](architecture.md) | Coordinator tests | **Met** |
 | NFO2 | Strict concurrency | Package norms | `swift test` | **Met** |
-| NFO3 | Glass UI | `GlassmorphicModifiers` | UI smoke / convention | **Met** |
-| NFO4 | Secrets hygiene | Masking helpers | Masking unit tests; screenshot policy | **Met** |
-| NFO5 | Remote policy + ledger | DataLayer networking | `RemoteRequestPolicyTests`; ledger/meter tests | **Met** |
-| NFO6 | Verifiability | CI workflow | Jobs `macos` / `ios` / `web-dispatch` / `android-c1` / `hosted-gateway` | **Met** |
+| NFO3 | Glass UI | `GlassmorphicModifiers` | UI smoke (**C** `ios`) / convention | **Met** |
+| NFO4 | Secrets hygiene | `maskApiKey` / `maskedTokenLine` | Masking unit tests; screenshot policy (**D**) | **Met** |
+| NFO5 | Remote policy + ledger | `RemoteRequestPolicy`; `APIUsageLedger` | `RemoteRequestPolicyTests`; ledger/meter tests | **Met** |
+| NFO6 | Verifiability | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) | Jobs `macos` / `ios` / `web-dispatch` / `android-c1` / `hosted-gateway` | **Met** |
 | NFO7 | Docs SSOT | scorecard / sweep / this writeup | PR Docs upkeep | **Met** |
 
-### Appendix B — Document index
+### Appendix B — SSOT bibliography
+
+Grouped index of authoritative Docs (prefer these over chat memory).
+
+#### Architecture / product map
 
 | Doc | Role |
 |-----|------|
+| This file [`project-writeup.md`](project-writeup.md) | Senior full-stack technical monograph (living) |
 | [`developer-map.md`](developer-map.md) | Thin layout / tests / hard rules index |
-| [`getting-started.md`](getting-started.md) | Stranger-path role picker |
 | [`architecture.md`](architecture.md) | Modules, coordinators, desk↔driver |
+| [`getting-started.md`](getting-started.md) | Stranger-path role picker |
+| Root [`README.md`](../README.md) | Product bullets, API keys, legal HOS notice |
+
+#### Competitive / personas
+
+| Doc | Role |
+|-----|------|
 | [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md) | Lead / Parity / Gap integers |
 | [`competitive-gap-matrix.md`](competitive-gap-matrix.md) | Sequenced gaps |
 | [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md) | Research runbook + agent rows |
 | [`buyer-personas-uk-hgv.md`](buyer-personas-uk-hgv.md) | OO / SF / Android / hosted personas |
+
+#### Fleet / API / hosted
+
+| Doc | Role |
+|-----|------|
 | [`fleet-api-schema.json`](fleet-api-schema.json) | Fleet wire contract (`FleetProxyDeskStatus`) |
 | [`hosted-gateway-deployment.md`](hosted-gateway-deployment.md) | Operator HTTPS gateway |
 | [`android-c2-gate.md`](android-c2-gate.md) | Android C2 status + gates |
-| [`engineering-test-matrix.md`](engineering-test-matrix.md) | Cross-surface test ledger |
 | [`fleet-e2e-qa.md`](fleet-e2e-qa.md) | Fleet E2E playbook |
-| [`phase1-device-checklist.md`](phase1-device-checklist.md) | Optional physical smoke |
 | [`pilot-fleet-pack.md`](pilot-fleet-pack.md) | Pilot pack |
+
+#### QA / CI
+
+| Doc | Role |
+|-----|------|
+| [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) | Standing CI jobs |
+| [`engineering-test-matrix.md`](engineering-test-matrix.md) | Cross-surface test ledger |
+| [`phase1-device-checklist.md`](phase1-device-checklist.md) | Optional physical smoke |
 | [`screenshots/README.md`](screenshots/README.md) | Product shot captions / re-capture |
-| Root [`README.md`](../README.md) | Product bullets, API keys, legal HOS notice |
 
 ### Appendix C — Screenshots
 
 Visual evidence for GTM and stranger paths lives under [`screenshots/`](screenshots/) with captions in [`screenshots/README.md`](screenshots/README.md). Re-capture via `RouteFinderAppUITests/ProductScreenshotsUITests` when chrome changes.
 
-**Hard rule:** never commit or publish screenshots that show unmasked API keys, Bearer tokens, or org secrets. Prefer Connection UIs that already mask tokens (`maskApiKey` / `maskedTokenLine`).
+**Hard rule:** never commit or publish screenshots that show unmasked API keys, Bearer tokens, or org secrets. Prefer Connection UIs that already mask tokens (`maskApiKey` / `maskedTokenLine` / Android `FleetProxyStatusLabels`).
 
 ### Appendix D — Data sources
 
@@ -932,10 +1058,11 @@ Visual evidence for GTM and stranger paths lives under [`screenshots/`](screensh
 |--------|--------------------|-------|
 | HeiGIT OpenRouteService | Live HGV constraint routing / geocode (solo or fleet proxy) | Operator/depot keys; fair-use meters; avoid-polygon area caps |
 | OpenStreetMap / Overpass | Lane enrichment, roadworks, clearance probes, POI context | Open data; query caps (e.g. Overpass ≤12/route) |
+| Open-data LEZ / CAZ (OGL/OSM) | Densified avoid rings for Sheffield / Birmingham / Bradford / Bristol / Bath | ORS-safe; not legal cadastre; London ULEZ omit by area cap |
 | TomTom | Live traffic / hazard sampling when configured | Proprietary feed via fleet proxy or configured key |
 | RegCheck + DVLA | Plate → vehicle profile | Configured credentials; planning aid |
 | OpenWeather | Forecast risk sampler when configured | Optional via proxy |
-| Authored UK catalogs | LEZ rings, named toll £ advisories | Not legal cadastre; not live operator tariffs |
+| Authored UK catalogs | LEZ rings, named toll £ advisories | Triple-sync Swift + Android + web; not live operator tariffs |
 | Driver-card JSON/DDD import | Advisory HOS remainings | VU remains legal authority |
 
 Configuration and key placement: root README API-keys section and [`hosted-gateway-deployment.md`](hosted-gateway-deployment.md). Do not commit secrets.
@@ -957,6 +1084,29 @@ Configuration and key placement: root README API-keys section and [`hosted-gatew
 | Fair-use meters | Soft API budgets / proxy-status usage fields |
 | C2 | Android fleet-driver navigator MVP (proxy client) |
 | Glass UI | SwiftUI chrome via `GlassmorphicModifiers` |
+| S / T / C / D | Evidence grades: Symbol / Test / CI job / Doc SSOT (§1.4) |
+| `FleetProxyDeskStatus` | `/v1/proxy/status` DTO — `orgId` / `orgName` + meters |
+| `RemoteRequestPolicy` | Shared timeout / retry / 429 policy for remote I/O |
+| `LEZAvoidPolicy` | Avoid-ring selection + `avoidPolygonAreaCapSquareMeters` soft cap |
+| `APIUsageLedger` | Soft usage accounting surfaced via Connection meters |
+| Triple-sync | Shared UK catalog change lands Swift + Android + `web-dispatch` in one PR |
+| STRIDE-lite | Condensed Spoofing/Tampering/Repudiation/Info disclosure/DoS/Elevation table (Appendix F) |
+| Partial ≠ Fail | Gated residual after MVP ship — not unmarked incomplete work (§5.1) |
+
+### Appendix F — STRIDE-lite threat table
+
+Formalizes §2.8 trust boundaries and §4.5 threat-coverage lite. Not a full enterprise threat model; controls are those already shipped.
+
+| STRIDE | Boundary / asset | Threat example | Control in RouteFinder |
+|--------|------------------|----------------|------------------------|
+| **S** Spoofing | LAN / hosted fleet edge | Caller without valid Bearer | `FleetAuthTests` path; Operator-minted tokens; Connection Test fails closed |
+| **T** Tampering | Desk↔cab trip / snapshot wire | Schema drift or malformed proxy JSON | [`fleet-api-schema.json`](fleet-api-schema.json) + mirrored decode (`FleetProxyDeskStatusTests`) |
+| **R** Repudiation | Advisory HOS / VU authority | Product presented as legal tacho | Copy + README disclaimer; VU remains authority (no download claim) |
+| **I** Info disclosure | Cab / desk UI, Docs screenshots, git | Unmasked Bearer / API key | `maskApiKey` / `maskedTokenLine` / `FleetProxyStatusLabels`; screenshot policy; no secrets in git |
+| **D** Denial of service | ORS / gateway / Overpass | 429 floods; oversize LEZ avoid polygons | `RemoteRequestPolicy` backoff; fair-use meters; `LEZAvoidPolicy` area soft cap (London omit) |
+| **E** Elevation of privilege | Hosted multi-depot | Cross-org access via shared weak token | Per-org Bearer minting (Operator); Account-Manager-lite identity — **not** multi-tenant SaaS IAM / Stripe |
+
+Residual threats requiring unlock: partner VU channels, Stripe PCI, production CarPlay/AA entitlement surfaces.
 
 ---
 
@@ -972,4 +1122,7 @@ Configuration and key placement: root README API-keys section and [`hosted-gatew
 | 2026-11-11 | #135 / #136 | **Section 4 Testing complete** (4.1–4.8); next = §5 Evaluation |
 | 2026-11-11 | #137 / #138 | **Section 5 Evaluation complete** (developer-led; no clients); next = Appendices |
 | 2026-11-11 | #139 / (this PR) | **Appendices A–E polished**; `EPIC-DOCS-WRITEUP` structurally **Done** |
-| 2026-11-11 | #143 / (this PR) | **Senior monograph pass 1** — Abstract/Status reframe; §1.4 scoring/evidence method; Design invariants + §§2.8–2.12; Bristol+Bath LEZ honesty; next = pass 2 Implementation depth |
+| 2026-11-11 | #143 / #144 | **Senior monograph pass 1** — Abstract/Status reframe; §1.4 scoring/evidence method; Design invariants + §§2.8–2.12; Bristol+Bath LEZ honesty; next = pass 2 Implementation depth |
+| 2026-11-11 | #145 / #146 | **Senior monograph pass 2** — §3 Implementation depth (call graphs, key invariants, Connection parity, CI map, FO/NFO S/T/C/D); next = pass 3 Testing/Evaluation |
+| 2026-11-11 | #147 / #148 | **Senior monograph pass 3** — §§4–5 Testing/Evaluation (property claims, threat-coverage lite, S/T/C/D verification, Met/Partial vocabulary); next = pass 4 Appendices |
+| 2026-11-11 | #149 / (this PR) | **Senior monograph pass 4** — Appendices A–F (SSOT bibliography, glossary expansion, STRIDE-lite); `EPIC-DOCS-WRITEUP-SENIOR` **Done** |

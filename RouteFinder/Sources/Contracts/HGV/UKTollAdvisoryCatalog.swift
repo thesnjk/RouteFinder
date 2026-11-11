@@ -87,8 +87,8 @@ public enum UKTollAdvisoryCatalog: Sendable {
             approachRadiusMeters: 4_000,
             hint: "Private motorway — class-based charges; tag or account.",
             infoURL: URL(string: "https://www.m6toll.co.uk/"),
-            indicativeCostGBP: 13.00,
-            indicativeCostNote: "indicative HGV class; check M6 Toll"
+            indicativeCostGBP: 20.20,
+            indicativeCostNote: "indicative Class 4 2-axle HGV 3-zone day; check M6 Toll"
         ),
         UKTollAdvisory(
             id: "dartford-crossing",
@@ -98,8 +98,8 @@ public enum UKTollAdvisoryCatalog: Sendable {
             approachRadiusMeters: 3_500,
             hint: "Dart Charge — pay by midnight next day for most vehicles.",
             infoURL: URL(string: "https://www.gov.uk/dart-charge"),
-            indicativeCostGBP: 6.00,
-            indicativeCostNote: "indicative HGV day; check GOV.UK"
+            indicativeCostGBP: 8.40,
+            indicativeCostNote: "indicative >2 axles day one-off; check GOV.UK"
         ),
         UKTollAdvisory(
             id: "mersey-gateway",
@@ -140,8 +140,8 @@ public enum UKTollAdvisoryCatalog: Sendable {
             approachRadiusMeters: 2_500,
             hint: "TT2 account recommended for HGVs. Day rates vary by vehicle class.",
             infoURL: URL(string: "https://www.tt2.co.uk/"),
-            indicativeCostGBP: 3.00,
-            indicativeCostNote: "indicative; check TT2"
+            indicativeCostGBP: 5.20,
+            indicativeCostNote: "indicative Class 3 >3.5t one-way; check TT2"
         ),
         UKTollAdvisory(
             id: "tamar-bridge",

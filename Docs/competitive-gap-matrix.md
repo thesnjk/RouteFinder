@@ -1,6 +1,6 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-11-11 (Phase 7b P0 Pass CI; Midlands + North West + Scotland Central + LEZ densify Sheffield/Birmingham/Bradford + DESK-LAYBY Done; Phase 58 waived; residual HD / live £ / AA / CarPlay / VU / country PBF)  
+Last updated: 2026-11-11 (Phase 7b P0 Pass CI; Midlands + North West + Scotland Central + LEZ densify + toll authored refresh + DESK-LAYBY Done; Phase 58 waived; residual HD / live £ feed / AA / CarPlay / VU / country PBF)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then driver-benefit gaps previously deferred (CarPlay/AA, parking book, VU, tolls, LEZ cadastre).
 
 > **Oct 12 Ultimate competitive excellence sweep:** Full quarterly re-scrape (Firecrawl + Apify). CoPilot **11.4** captured; **no RF scorecard integer changes**. Engineering gates: fleet/web/hosted/Android Pass. Sim speed-limit UITest debt closed 2026-11-09 (`spineSpeedLimitAcceleratesToMotorwayLimit` Pass).
@@ -107,7 +107,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 - **Combo length / trailer count** — **Shipped (MVP)** cab + Mac/web desk trailer→ORS ladder; was `EPIC-COMBO-LENGTH`
 - **Hands-free driver assistant** — **Shipped (MVP)** domain PTT (which-lane / avoid-tolls / layby / hazard / book parking / Can-I-drive day+week); was `EPIC-VOICE-ASSIST`
 - **Lane HD / street callouts** — street TTS/HUD sanitize **Shipped (MVP slice)** (iOS + Android drop turn/keep/head echoes); residual HD visuals / richer OSM — `EPIC-LANE-DEPTH`
-- Full **toll tariff** depth — Mac + web desk corridor indicative £ **Shipped (MVP slice)** + named advisories/avoid/HUD/PTT; residual live operator tariffs — `EPIC-TOLL-DEPTH`
+- Full **toll tariff** depth — Mac + web desk corridor indicative £ **Shipped (MVP slice)** + named advisories/avoid/HUD/PTT + authored HGV £ refresh (M6/Dartford/Tyne 2026-11-11); residual live operator tariffs — `EPIC-TOLL-DEPTH`
 - **Remote VU download** — `EPIC-VU-PARTNER` (CSV / webhook + desk Can-I-drive week card shipped; legal VU residual)
 - Legal **cadastral LEZ** — `EPIC-LEZ-CADASTRE` open-data densify Sheffield + Birmingham + Bradford **Shipped (MVP slice)** 2026-11-11; residual = remaining zones + London-wide ULEZ (ORS area-cap blocked) + licensed cadastre
 - **Hosted multi-depot desk** — `EPIC-HOSTED-DESK` (named depot profiles exist; no billing UI)
@@ -239,7 +239,7 @@ See [`ultimate-hgv-platform-spec.md`](ultimate-hgv-platform-spec.md).
 8. **`EPIC-ANDROID-AUTO`** — Android Auto nav for fleet driver.
 9. **`EPIC-COMBO-LENGTH`** — **Shipped (MVP)** cab + desk trailer count → ORS length ladder (12 / 16.5 / 18.75 / 25.25 m).
 10. **`EPIC-LANE-DEPTH`** — street TTS sanitize + Overpass iOS↔Android parity **Shipped (MVP slice)** (cap 12 / STRAIGHT skip / 50 km arc). Residual: HD lane visuals.
-11. **`EPIC-TOLL-DEPTH`** — Mac + web desk corridor indicative £ **Shipped (MVP slice)** (avoid/HUD/PTT + cab catalog). Residual: live operator tariffs.
+11. **`EPIC-TOLL-DEPTH`** — Mac + web desk corridor indicative £ **Shipped (MVP slice)** (avoid/HUD/PTT + cab catalog) + authored HGV £ refresh (M6/Dartford/Tyne 2026-11-11). Residual: live operator tariffs.
 12. **`EPIC-VU-PARTNER`** — legal remote VU download (partner webhook + desk Can-I-drive week card shipped as advisory MVP).
 13. **`EPIC-LEZ-CADASTRE`** — Sheffield + Birmingham + Bradford open-data densify **Shipped (MVP slice)** 2026-11-11; residual = remaining zones + London ORS-blocked + licensed cadastre.
 14. **`EPIC-HOSTED-DESK`** — hosted multi-depot desk billing/token UX.

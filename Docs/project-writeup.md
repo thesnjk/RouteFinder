@@ -5,7 +5,7 @@
 **Document type:** Living professional technical writeup (AQA NEA–style structure; **no client interviews**)  
 **Repository:** proprietary — see root [`LICENSE`](../LICENSE)  
 **Last updated:** 2026-11-11  
-**Status:** **iterative** — Sections 1–5 (Analysis → Evaluation) complete; Appendices stubbed (next attach = Appendices polish)
+**Status:** **complete** (living Doc — update changelog when surfaces move; product residuals remain secrets-gated)
 
 Integers, CI evidence, and phase verification remain authoritative in [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md), [`engineering-test-matrix.md`](engineering-test-matrix.md), and relevant `phase*` Docs. This document provides the formal analysis–design–implementation–testing–evaluation narrative and points at those SSOTs.
 
@@ -79,7 +79,12 @@ This writeup follows a professional NEA-style structure (Analysis → Design →
    - [5.2 Comparison against original objectives](#52-comparison-against-original-objectives)
    - [5.3 Limitations](#53-limitations)
    - [5.4 Maintenance and future work](#54-maintenance-and-future-work)
-6. [Appendices](#6-appendices) *(stub)*
+6. [Appendices](#6-appendices)
+   - [Appendix A — Objectives traceability](#appendix-a--objectives-traceability)
+   - [Appendix B — Document index](#appendix-b--document-index)
+   - [Appendix C — Screenshots](#appendix-c--screenshots)
+   - [Appendix D — Data sources](#appendix-d--data-sources)
+   - [Appendix E — Glossary](#appendix-e--glossary)
 7. [Document changelog](#7-document-changelog)
 
 ---
@@ -767,22 +772,86 @@ Authored LEZ rings and named toll advisories must not be described as certified 
 
 ## 6. Appendices
 
-*(Stub — polish next attach.)*
+### Appendix A — Objectives traceability
 
-### Appendix A — Objectives traceability seed
-- Maintain FO/NFO IDs; fill design/impl/test columns as sections land.
+Consolidated from §§2.7, 3.10, 4.8, and 5.2.
+
+| ID | Design component | Implementation path | Test / CI evidence | Evaluation |
+|----|------------------|---------------------|--------------------|------------|
+| FO1 | ORS planning + constraint profile | ORS client; trailer→ORS ladder | Payload/factory + combo-length tests; `swift test` | **Met (MVP)** |
+| FO2 | Fleet dispatch + SSE/REST | `FleetDispatchCoordinator`; fleet server/gateway; Mac/web desk | Fleet SSE/HTTP/store tests; fleet-e2e smoke; web `npm test` | **Met (MVP)** |
+| FO3 | Physics rehearsal + brief | `RouteSimulationCoordinator` / physics engines | Kinetic + trip-brief tests | **Met (MVP)** |
+| FO4 | HOS advisory | `HosAdvisoryCoordinator` | `EU561HosClockTests`, tacho import; README disclaimer | **Partial** (VU residual) |
+| FO5 | UK living layer + fuse | Hazard/predictive coordinators; catalogs | Toll Phase8; layby/hazard/roadworks/POI suites | **Partial** (live £ / cadastre) |
+| FO6 | Connection + proxy status | `FleetProxyDeskStatus`; Connection UIs | `FleetProxyDeskStatusTests`; schema Doc | **Partial** (Stripe residual) |
+| FO7 | Android C2 client | `android-fleet-driver/` | CI `android-c1` | **Partial** (AA/offline gated) |
+| FO8 | Overpass lane enrichment | Planning lane enrichment | `LaneGuidanceEnricherTests` | **Partial** (HD residual) |
+| NFO1 | Module + coordinator rules | [`architecture.md`](architecture.md) | Coordinator tests | **Met** |
+| NFO2 | Strict concurrency | Package norms | `swift test` | **Met** |
+| NFO3 | Glass UI | `GlassmorphicModifiers` | UI smoke / convention | **Met** |
+| NFO4 | Secrets hygiene | Masking helpers | Masking unit tests; screenshot policy | **Met** |
+| NFO5 | Remote policy + ledger | DataLayer networking | `RemoteRequestPolicyTests`; ledger/meter tests | **Met** |
+| NFO6 | Verifiability | CI workflow | Jobs `macos` / `ios` / `web-dispatch` / `android-c1` / `hosted-gateway` | **Met** |
+| NFO7 | Docs SSOT | scorecard / sweep / this writeup | PR Docs upkeep | **Met** |
 
 ### Appendix B — Document index
-- developer-map, getting-started, architecture, scorecard, sweep, fleet-api-schema, hosted-gateway-deployment, android-c2-gate, pilot-fleet-pack.
+
+| Doc | Role |
+|-----|------|
+| [`developer-map.md`](developer-map.md) | Thin layout / tests / hard rules index |
+| [`getting-started.md`](getting-started.md) | Stranger-path role picker |
+| [`architecture.md`](architecture.md) | Modules, coordinators, desk↔driver |
+| [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md) | Lead / Parity / Gap integers |
+| [`competitive-gap-matrix.md`](competitive-gap-matrix.md) | Sequenced gaps |
+| [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md) | Research runbook + agent rows |
+| [`buyer-personas-uk-hgv.md`](buyer-personas-uk-hgv.md) | OO / SF / Android / hosted personas |
+| [`fleet-api-schema.json`](fleet-api-schema.json) | Fleet wire contract (`FleetProxyDeskStatus`) |
+| [`hosted-gateway-deployment.md`](hosted-gateway-deployment.md) | Operator HTTPS gateway |
+| [`android-c2-gate.md`](android-c2-gate.md) | Android C2 status + gates |
+| [`engineering-test-matrix.md`](engineering-test-matrix.md) | Cross-surface test ledger |
+| [`fleet-e2e-qa.md`](fleet-e2e-qa.md) | Fleet E2E playbook |
+| [`phase1-device-checklist.md`](phase1-device-checklist.md) | Optional physical smoke |
+| [`pilot-fleet-pack.md`](pilot-fleet-pack.md) | Pilot pack |
+| [`screenshots/README.md`](screenshots/README.md) | Product shot captions / re-capture |
+| Root [`README.md`](../README.md) | Product bullets, API keys, legal HOS notice |
 
 ### Appendix C — Screenshots
-- [`screenshots/README.md`](screenshots/README.md) (masked secrets).
+
+Visual evidence for GTM and stranger paths lives under [`screenshots/`](screenshots/) with captions in [`screenshots/README.md`](screenshots/README.md). Re-capture via `RouteFinderAppUITests/ProductScreenshotsUITests` when chrome changes.
+
+**Hard rule:** never commit or publish screenshots that show unmasked API keys, Bearer tokens, or org secrets. Prefer Connection UIs that already mask tokens (`maskApiKey` / `maskedTokenLine`).
 
 ### Appendix D — Data sources
-- ORS, OSM/Overpass, TomTom, RegCheck/DVLA, OpenWeather — licences and configuration notes from README.
+
+| Source | Use in RouteFinder | Notes |
+|--------|--------------------|-------|
+| HeiGIT OpenRouteService | Live HGV constraint routing / geocode (solo or fleet proxy) | Operator/depot keys; fair-use meters; avoid-polygon area caps |
+| OpenStreetMap / Overpass | Lane enrichment, roadworks, clearance probes, POI context | Open data; query caps (e.g. Overpass ≤12/route) |
+| TomTom | Live traffic / hazard sampling when configured | Proprietary feed via fleet proxy or configured key |
+| RegCheck + DVLA | Plate → vehicle profile | Configured credentials; planning aid |
+| OpenWeather | Forecast risk sampler when configured | Optional via proxy |
+| Authored UK catalogs | LEZ rings, named toll £ advisories | Not legal cadastre; not live operator tariffs |
+| Driver-card JSON/DDD import | Advisory HOS remainings | VU remains legal authority |
+
+Configuration and key placement: root README API-keys section and [`hosted-gateway-deployment.md`](hosted-gateway-deployment.md). Do not commit secrets.
 
 ### Appendix E — Glossary
-- HGV, LEZ/CAZ, ORS, HOS, VU, SSE, Account-Manager-lite, Anti-grind.
+
+| Term | Meaning |
+|------|---------|
+| HGV | Heavy goods vehicle (truck) under UK/EU constraint regimes |
+| LEZ / CAZ | Low Emission Zone / Clean Air Zone |
+| ORS | OpenRouteService (HeiGIT) |
+| HOS | Hours of service (advisory 561 / WTD clocks in-app) |
+| VU | Vehicle unit / digital tachograph — legal record |
+| SSE | Server-Sent Events (trip handoff channel) |
+| Account-Manager-lite | Hosted/LAN org identity + Connection meters without Stripe billing UI |
+| Anti-grind | Policy rejecting densify/toll/corridor clones without measurable gap or catalog hole |
+| FO / NFO | Functional / non-functional objectives (§1.6) |
+| Hybrid offline | ORS live + on-device H3 tiles / PathfindingEngine when downloaded |
+| Fair-use meters | Soft API budgets / proxy-status usage fields |
+| C2 | Android fleet-driver navigator MVP (proxy client) |
+| Glass UI | SwiftUI chrome via `GlassmorphicModifiers` |
 
 ---
 
@@ -796,4 +865,5 @@ Authored LEZ rings and named toll advisories must not be described as certified 
 | 2026-11-11 | #131 / #132 | **Section 2 Design complete** (2.1–2.7); next = §3 Implementation |
 | 2026-11-11 | #133 / #134 | **Section 3 Implementation complete** (3.1–3.10); next = §4 Testing |
 | 2026-11-11 | #135 / #136 | **Section 4 Testing complete** (4.1–4.8); next = §5 Evaluation |
-| 2026-11-11 | #137 / (this PR) | **Section 5 Evaluation complete** (developer-led; no clients); next = Appendices |
+| 2026-11-11 | #137 / #138 | **Section 5 Evaluation complete** (developer-led; no clients); next = Appendices |
+| 2026-11-11 | #139 / (this PR) | **Appendices A–E polished**; `EPIC-DOCS-WRITEUP` structurally **Done** |

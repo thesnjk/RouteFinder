@@ -103,4 +103,23 @@ struct FleetProxyDeskStatusTests {
         #expect(lines[1].contains("TomTom: on"))
         #expect(lines[1].contains("OpenWeather: on"))
     }
+
+    @Test func decodesOptionalOrgIdentityAndSummaryLine() throws {
+        let json = """
+        {
+          "orsConfigured": true,
+          "routesToday": 1,
+          "routeDailyCap": 100,
+          "geocodeToday": 0,
+          "geocodeDailyCap": 100,
+          "orgId": "11111111-1111-1111-1111-111111111111",
+          "orgName": "Demo Haulage Ltd"
+        }
+        """.data(using: .utf8)!
+        let status = try JSONDecoder().decode(FleetProxyDeskStatus.self, from: json)
+        #expect(status.orgId == "11111111-1111-1111-1111-111111111111")
+        #expect(status.orgName == "Demo Haulage Ltd")
+        #expect(status.authenticatedDepotLine?.contains("Demo Haulage Ltd") == true)
+        #expect(status.summaryLines.first?.contains("Authenticated depot") == true)
+    }
 }

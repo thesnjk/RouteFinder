@@ -10,13 +10,16 @@ public enum FleetORSProxy {
     public static let peliasUpstreamBase = "https://api.heigit.org/pelias/v1"
 
     /// Registers `/v1/proxy/*` routes when an ORS key is configured.
+    ///
+    /// - Parameter orgIdentity: Optional async lookup for LAN default org id/name on `/v1/proxy/status`.
     public static func registerRoutes(
         on router: Router<BasicRequestContext>,
         orsAPIKey: String?,
         tomTomAPIKey: String? = nil,
         openWeatherAPIKey: String? = nil,
         meter: FleetProxyUsageMeter,
-        session: URLSession = .shared
+        session: URLSession = .shared,
+        orgIdentity: (@Sendable () async -> (id: String, name: String)?)? = nil
     ) {
         let trimmed = orsAPIKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let configured = !trimmed.isEmpty
@@ -24,10 +27,13 @@ public enum FleetORSProxy {
         let openWeatherConfigured = !(openWeatherAPIKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "").isEmpty
 
         router.get("v1/proxy/status") { _, _ async throws -> Response in
+            let identity = await orgIdentity?()
             let status = await meter.status(
                 orsConfigured: configured,
                 tomTomConfigured: tomTomConfigured,
-                openWeatherConfigured: openWeatherConfigured
+                openWeatherConfigured: openWeatherConfigured,
+                orgId: identity?.id,
+                orgName: identity?.name
             )
             return try jsonResponse(status)
         }

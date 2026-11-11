@@ -6,6 +6,23 @@ export const NEAR_CAP_FRACTION = 0.9
 const NEAR_CAP_WARNING =
   'Near daily proxy cap — raise --route-daily-cap / --geocode-daily-cap or wait until tomorrow.'
 
+/** Masks a bearer/API token for Connection panel display (never show full secret). */
+export function maskApiKey(token: string): string {
+  const trimmed = token.trim()
+  if (!trimmed) return '(none)'
+  if (trimmed.length <= 8) return '••••'
+  return `${trimmed.slice(0, 4)}…${trimmed.slice(-4)}`
+}
+
+/** Authenticated depot line from proxy status org identity (Mac parity). */
+export function authenticatedDepotLine(status: FleetProxyStatus): string | null {
+  const name = status.orgName?.trim()
+  if (!name) return null
+  const id = status.orgId?.trim()
+  if (id) return `Authenticated depot: ${name} (${id})`
+  return `Authenticated depot: ${name}`
+}
+
 /** Remaining ORS route budget for today (never negative). */
 export function routesRemaining(status: FleetProxyStatus): number {
   return Math.max(0, status.routeDailyCap - status.routesToday)

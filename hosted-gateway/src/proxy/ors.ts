@@ -27,7 +27,7 @@ export function createProxyRoutes(config: GatewayConfig, meters: MeterRegistry):
   app.get('/status', (c) => {
     const org = c.get('org') as OrgConfig
     const meter = meters.forOrg(org)
-    return c.json(meter.status(configured))
+    return c.json(meter.status(configured, org))
   })
 
   if (!configured) {

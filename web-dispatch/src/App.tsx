@@ -24,7 +24,12 @@ import {
 } from './predictedLayby'
 import { fleetProxyUserMessage } from './fleetProxyError'
 import { fleetHealthLabel } from './fleetHealthLabel'
-import { nearCapWarning, orsSummaryLine } from './fleetProxyStatusLabel'
+import {
+  authenticatedDepotLine,
+  maskApiKey,
+  nearCapWarning,
+  orsSummaryLine,
+} from './fleetProxyStatusLabel'
 import { loadNorfolkDemoStops } from './demoCorridor'
 import { bootstrapDemoFleet } from './bootstrapDemoFleet'
 import { canPushTrip, isPushBlockedByFleetHealth } from './dispatchPushGate'
@@ -576,6 +581,10 @@ export default function App() {
         </div>
         {proxyStatus ? (
           <>
+            {authenticatedDepotLine(proxyStatus) ? (
+              <p className="muted">{authenticatedDepotLine(proxyStatus)}</p>
+            ) : null}
+            <p className="muted">Token: {maskApiKey(apiKey)}</p>
             <p className="muted">{orsSummaryLine(proxyStatus)}</p>
             {nearCapWarning(proxyStatus) ? (
               <p className="muted roster-warn">{nearCapWarning(proxyStatus)}</p>

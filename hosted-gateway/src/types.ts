@@ -85,6 +85,10 @@ export interface FleetProxyStatusResponse {
   routeDailyCap: number
   geocodeToday: number
   geocodeDailyCap: number
+  /** Authenticated hosted org id (Account-Manager-lite). */
+  orgId?: string
+  /** Authenticated hosted org display name. */
+  orgName?: string
 }
 
 export interface CreateOrgRequest {

@@ -82,7 +82,7 @@ export class OrgProxyMeter {
     this.persist()
   }
 
-  status(orsConfigured: boolean): FleetProxyStatusResponse {
+  status(orsConfigured: boolean, org?: OrgConfig): FleetProxyStatusResponse {
     this.rolloverIfNeeded()
     return {
       orsConfigured,
@@ -90,6 +90,12 @@ export class OrgProxyMeter {
       routeDailyCap: this.routeDailyCap,
       geocodeToday: this.geocodeCount,
       geocodeDailyCap: this.geocodeDailyCap,
+      ...(org
+        ? {
+            orgId: org.id,
+            orgName: org.name,
+          }
+        : {}),
     }
   }
 }

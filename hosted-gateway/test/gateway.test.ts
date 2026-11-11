@@ -156,9 +156,13 @@ describe('proxy metering', () => {
       orsConfigured: boolean
       routesToday: number
       geocodeToday: number
+      orgId?: string
+      orgName?: string
     }
     expect(body1.orsConfigured).toBe(true)
     expect(body1.routesToday).toBe(0)
+    expect(body1.orgId).toBe(demoOrg.id)
+    expect(body1.orgName).toBe(demoOrg.name)
 
     // Record via meter directly (avoid real HeiGIT calls).
     const meter = first.meters.forOrg(demoOrg)

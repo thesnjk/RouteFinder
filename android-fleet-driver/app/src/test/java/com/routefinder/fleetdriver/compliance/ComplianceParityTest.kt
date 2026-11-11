@@ -157,6 +157,32 @@ class ComplianceParityTest {
     }
 
     @Test
+    fun lezBristolAndBathDensifiedUnderOrsCap() {
+        val bristol = UkLezCatalog.zones.first { it.id == "bristol-caz" }
+        val bath = UkLezCatalog.zones.first { it.id == "bath-caz" }
+        val bristolRing = UkLezBoundaries.bristolCAZ
+        val bathRing = UkLezBoundaries.bathCAZ
+        assertTrue(bristolRing.size - 1 >= 20)
+        assertTrue(bathRing.size - 1 >= 20)
+        assertEquals(bristolRing.first()[0], bristolRing.last()[0], 1e-9)
+        assertEquals(bristolRing.first()[1], bristolRing.last()[1], 1e-9)
+        assertEquals(bathRing.first()[0], bathRing.last()[0], 1e-9)
+        assertEquals(bathRing.first()[1], bathRing.last()[1], 1e-9)
+        assertTrue(
+            LezAvoidPolicy.approximateRingAreaSquareMeters(bristolRing) <=
+                LezAvoidPolicy.AVOID_POLYGON_AREA_CAP_SQUARE_METERS,
+        )
+        assertTrue(
+            LezAvoidPolicy.approximateRingAreaSquareMeters(bathRing) <=
+                LezAvoidPolicy.AVOID_POLYGON_AREA_CAP_SQUARE_METERS,
+        )
+        assertTrue(bristol.contains(bristol.center))
+        assertTrue(bath.contains(bath.center))
+        assertFalse(bristol.contains(LatLon(51.506, -2.691)))
+        assertFalse(bath.contains(LatLon(51.413, -2.497)))
+    }
+
+    @Test
     fun lezAvoidPolicyOmitsZoneContainingDestination() {
         val bath = UkLezCatalog.zones.first { it.id == "bath-caz" }
         val rings = LezAvoidPolicy.polygons(

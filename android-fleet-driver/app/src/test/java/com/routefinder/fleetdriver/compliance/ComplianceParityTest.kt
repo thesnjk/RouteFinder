@@ -142,6 +142,21 @@ class ComplianceParityTest {
     }
 
     @Test
+    fun lezBradfordDensifiedUnderOrsCap() {
+        val bradford = UkLezCatalog.zones.first { it.id == "bradford-caz" }
+        val ring = UkLezBoundaries.bradfordCAZ
+        assertTrue(ring.size - 1 >= 20)
+        assertEquals(ring.first()[0], ring.last()[0], 1e-9)
+        assertEquals(ring.first()[1], ring.last()[1], 1e-9)
+        assertTrue(
+            LezAvoidPolicy.approximateRingAreaSquareMeters(ring) <=
+                LezAvoidPolicy.AVOID_POLYGON_AREA_CAP_SQUARE_METERS,
+        )
+        assertTrue(bradford.contains(bradford.center))
+        assertFalse(bradford.contains(LatLon(53.80, -1.55)))
+    }
+
+    @Test
     fun lezAvoidPolicyOmitsZoneContainingDestination() {
         val bath = UkLezCatalog.zones.first { it.id == "bath-caz" }
         val rings = LezAvoidPolicy.polygons(

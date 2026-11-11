@@ -4,7 +4,7 @@
 
 **ICP:** UK independents, **5–15 trucks**, iPhone-first dispatch + driver wedge.  
 **Scope:** Engineering only — no legal / compliance / licensing / GTM / pilot outreach.  
-**Engineering excellence track:** Phases **1–7 complete** (simulator/CI); **Phase 7b** (2026-11-11) closes C4 / C9 / Part B as **Pass (CI sim / CI)**. Agent Phase 31+ ungated tracks **Done** 2026-11-09 (H1/H2, HOS, Lane Overpass). **EPIC-OFFLINE-UX** Midlands mid-corridor **Done** 2026-11-11. **EPIC-OFFLINE-NORTHWEST** M6–M62 mid-corridor **Done** 2026-11-11. **EPIC-OFFLINE-SCOTLAND-CENTRAL** M8–M9 mid-corridor **Done** 2026-11-11. **EPIC-LEZ-CADASTRE** Sheffield + Birmingham open-data densify **Done** 2026-11-11 (ORS-safe; not legal cadastre Pass). **EPIC-DESK-LAYBY** web + Android predictedLayby **Done** 2026-11-11. Physical hear-TTS / live TomTom GPS / Mac↔phone LAN = **optional** residuals (same honesty as C6/C7).  
+**Engineering excellence track:** Phases **1–7 complete** (simulator/CI); **Phase 7b** (2026-11-11) closes C4 / C9 / Part B as **Pass (CI sim / CI)**. Agent Phase 31+ ungated tracks **Done** 2026-11-09 (H1/H2, HOS, Lane Overpass). **EPIC-OFFLINE-UX** Midlands mid-corridor **Done** 2026-11-11. **EPIC-OFFLINE-NORTHWEST** M6–M62 mid-corridor **Done** 2026-11-11. **EPIC-OFFLINE-SCOTLAND-CENTRAL** M8–M9 mid-corridor **Done** 2026-11-11. **EPIC-LEZ-CADASTRE** Sheffield + Birmingham + Bradford open-data densify **Done** 2026-11-11 (ORS-safe; not legal cadastre Pass). **EPIC-DESK-LAYBY** web + Android predictedLayby **Done** 2026-11-11. Physical hear-TTS / live TomTom GPS / Mac↔phone LAN = **optional** residuals (same honesty as C6/C7).  
 **Last product update:** Desk layby parity 2026-11-11; Docs P0 + Phase 58 SSOT 2026-11-11. Optional physical smoke: [`phase1-device-checklist.md`](phase1-device-checklist.md).
 
 | Doc | Role |
@@ -18,7 +18,7 @@
 | [`phase1-device-checklist.md`](phase1-device-checklist.md) | Optional physical C3–C9 / Part B smoke |
 | [`demo-superiority-script.md`](demo-superiority-script.md) | 2-minute demo script |
 
-**Self-sustaining next prompt:** North West + Scotland Central mid-corridors + LEZ densify (Sheffield/Birmingham) slices **Done**. Next implementation requires an **explicit user unlock by name** (AA / CarPlay / VU / further LEZ / live £ / HD / billing / Android offline / further country PBF). Do not invent multi-surface crowd LAN or reintroduce “P0 Blocked since 2026-09-19” / Phase 58 Blocked. Physical Block 1b smoke is optional — not a programme gate.
+**Self-sustaining next prompt:** North West + Scotland Central mid-corridors + LEZ densify (Sheffield/Birmingham/Bradford) slices **Done**. Next implementation requires an **explicit user unlock by name** (AA / CarPlay / VU / further LEZ / live £ / HD / billing / Android offline / further country PBF). Do not invent multi-surface crowd LAN or reintroduce “P0 Blocked since 2026-09-19” / Phase 58 Blocked. Physical Block 1b smoke is optional — not a programme gate.
 
 ---
   

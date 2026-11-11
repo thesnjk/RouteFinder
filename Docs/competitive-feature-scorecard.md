@@ -1,6 +1,6 @@
 # Competitive Feature Scorecard — September 2026
 
-Last updated: 2026-11-11 (Phase 7b P0 Pass CI; Midlands + North West + Scotland Central + LEZ densify + DESK-LAYBY Done; residual HD / live £ / AA / CarPlay / VU / country PBF)
+Last updated: 2026-11-11 (Phase 7b P0 Pass CI; Midlands + North West + Scotland Central + LEZ densify Sheffield/Birmingham/Bradford + DESK-LAYBY Done; residual HD / live £ / AA / CarPlay / VU / country PBF)
 
 Scoring: **0** Absent · **1** Weak · **2** Parity · **3** Lead  
 Personas: **OO** = UK owner-operator · **SF** = small fleet (2–20 vehicles)
@@ -108,7 +108,7 @@ Weighted OO/SF tables above are **unchanged** by Phase 6 (performance / honesty,
 | LEZ / CAZ ORS `avoid_polygons` | **3** | **3** (U15) | Android `LezAvoidPolicy` mirrors iOS area + long-haul caps |
 | HOS clock + layby ahead | **3** | **3** (WTD+fortnight) | Android Drive/Break/Off + weekly 56h + 10h ext + fortnight 90h gate + WTD ≥60h heads-up; both platforms have best-effort DDD/JSON importers (opaque binary DDD residual) |
 
-† U12–U15 closed Android walkaround PDF, LEZ/HOS/layby advisory, fleet forecast/clearance proxy, off-route clearance, and ORS LEZ avoid. 2026-11: Android roadworks-in-fuse + corridor layby Overpass + ~5 km layby voice + Can-I-drive day/week + **duty-log** + **10h extension** + **WTD/fortnight** + **Lane Overpass parity** (cap 12 / STRAIGHT skip / 50 km). **EPIC-LEZ-CADASTRE** open-data densify Sheffield + Birmingham rings (ORS-safe) **Shipped (MVP slice)** 2026-11-11. Residual: HD lane visuals; opaque binary DDD; remaining LEZ coarse envelopes; London-wide ULEZ ORS-blocked by area cap; licensed cadastre; optional U16 shared boundary asset.
+† U12–U15 closed Android walkaround PDF, LEZ/HOS/layby advisory, fleet forecast/clearance proxy, off-route clearance, and ORS LEZ avoid. 2026-11: Android roadworks-in-fuse + corridor layby Overpass + ~5 km layby voice + Can-I-drive day/week + **duty-log** + **10h extension** + **WTD/fortnight** + **Lane Overpass parity** (cap 12 / STRAIGHT skip / 50 km). **EPIC-LEZ-CADASTRE** open-data densify Sheffield + Birmingham + Bradford rings (ORS-safe) **Shipped (MVP slice)** 2026-11-11. Residual: HD lane visuals; opaque binary DDD; remaining LEZ coarse envelopes; London-wide ULEZ ORS-blocked by area cap; licensed cadastre; optional U16 shared boundary asset.
 
 ---
 
@@ -138,6 +138,6 @@ Policy: ship anything that benefits the driver; sequence by impact, not permanen
 | Lane HD / street callouts | TomTom / Sygic / CoPilot 11.4 | OSM Overpass parity (12 / STRAIGHT skip / 50 km) + sanitize street TTS/HUD/which-lane; residual HD visuals | **Shipped (MVP slice)** — Overpass parity Done; residual HD lane visuals (`EPIC-LANE-DEPTH`) |
 | Toll tariff depth | PTV / TomTom | Named UK advisories + avoid/HUD/PTT + Mac/web desk corridor indicative £ | **Shipped (MVP slice)** — residual live operator tariffs (`EPIC-TOLL-DEPTH`) |
 | Remote VU download | Samsara / Geotab | Advisory tacho + desk Can-I-drive week card; CSV stub | **Residual** `EPIC-VU-PARTNER` (legal VU download) |
-| Legal LEZ cadastre | Sygic / TomTom | Sheffield + Birmingham open-data densified (MVP slice); other zones still coarse envelopes | **Residual** `EPIC-LEZ-CADASTRE` (remaining zones + London ORS-blocked) |
+| Legal LEZ cadastre | Sygic / TomTom | Sheffield + Birmingham + Bradford open-data densified (MVP slice); other zones still coarse envelopes | **Residual** `EPIC-LEZ-CADASTRE` (remaining zones + London ORS-blocked) |
 | Hosted multi-depot desk | CoPilot Account Manager | Named depot profiles; no billing UI | **Residual** `EPIC-HOSTED-DESK` |
 | Per-seat API burn visibility | Enterprise fleet SaaS | On-device ledger + soft budgets (Ph45) | Keep ledger; expand when hosted seats ship |

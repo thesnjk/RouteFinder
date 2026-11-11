@@ -3,8 +3,8 @@ package com.routefinder.fleetdriver.compliance
 /**
  * Hand-authored / open-data-simplified UK LEZ / CAZ boundary rings for ORS `avoid_polygons`.
  * Mirrors iOS ``UKLowEmissionZoneBoundaries`` — closed GeoJSON-style `[lon, lat]` envelopes,
- * not legal cadastral boundaries. Sheffield + Birmingham densified from OGL / OSM-published
- * outlines (~28 verts, under ORS avoid area caps).
+ * not legal cadastral boundaries. Sheffield + Birmingham + Bradford densified from OGL /
+ * OSM-published outlines (~28 verts, under ORS avoid area caps).
  */
 object UkLezBoundaries {
     val londonULEZ: List<DoubleArray> = closed(
@@ -158,14 +158,36 @@ object UkLezBoundaries {
 
     val bradfordCAZ: List<DoubleArray> = closed(
         listOf(
-            doubleArrayOf(-1.800, 53.780),
-            doubleArrayOf(-1.720, 53.780),
-            doubleArrayOf(-1.700, 53.790),
-            doubleArrayOf(-1.700, 53.812),
-            doubleArrayOf(-1.720, 53.822),
-            doubleArrayOf(-1.800, 53.822),
-            doubleArrayOf(-1.820, 53.810),
-            doubleArrayOf(-1.820, 53.790),
+            doubleArrayOf(-1.8025, 53.84146),
+            doubleArrayOf(-1.81567, 53.84042),
+            doubleArrayOf(-1.81161, 53.8382),
+            doubleArrayOf(-1.8185, 53.83541),
+            doubleArrayOf(-1.81094, 53.8331),
+            doubleArrayOf(-1.81874, 53.8265),
+            doubleArrayOf(-1.80796, 53.82477),
+            doubleArrayOf(-1.79786, 53.82814),
+            doubleArrayOf(-1.78129, 53.82545),
+            doubleArrayOf(-1.78373, 53.82422),
+            doubleArrayOf(-1.78271, 53.81953),
+            doubleArrayOf(-1.77006, 53.8056),
+            doubleArrayOf(-1.78519, 53.79932),
+            doubleArrayOf(-1.78247, 53.79074),
+            doubleArrayOf(-1.77491, 53.78661),
+            doubleArrayOf(-1.78352, 53.78253),
+            doubleArrayOf(-1.77863, 53.7772),
+            doubleArrayOf(-1.74678, 53.76824),
+            doubleArrayOf(-1.73174, 53.77081),
+            doubleArrayOf(-1.72815, 53.77548),
+            doubleArrayOf(-1.72524, 53.77385),
+            doubleArrayOf(-1.72661, 53.7755),
+            doubleArrayOf(-1.72173, 53.77905),
+            doubleArrayOf(-1.71738, 53.79009),
+            doubleArrayOf(-1.7256, 53.80541),
+            doubleArrayOf(-1.73719, 53.81108),
+            doubleArrayOf(-1.75647, 53.80949),
+            doubleArrayOf(-1.77477, 53.82964),
+            doubleArrayOf(-1.76983, 53.83419),
+            doubleArrayOf(-1.77135, 53.83646),
         ),
     )
 

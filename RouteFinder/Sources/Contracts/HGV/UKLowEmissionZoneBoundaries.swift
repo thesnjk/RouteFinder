@@ -3,9 +3,10 @@ import Foundation
 /// Hand-authored / open-data-simplified UK LEZ / CAZ boundary rings for ORS `avoid_polygons`.
 ///
 /// Rings are closed GeoJSON-style `[lon, lat]` envelopes — **not** legal cadastral boundaries.
-/// Sheffield + Birmingham densified from OGL / OSM-published outlines (Douglas–Peucker ≈28 verts),
-/// kept under HeiGIT ORS avoid-polygon area caps. London-wide ULEZ remains a coarse envelope
-/// (full TfL polygon exceeds ORS ~200 km² avoid limit — announcement/`contains` only).
+/// Sheffield + Birmingham + Bradford densified from OGL / OSM-published outlines
+/// (Douglas–Peucker ≈28 verts), kept under HeiGIT ORS avoid-polygon area caps.
+/// London-wide ULEZ remains a coarse envelope (full TfL polygon exceeds ORS ~200 km²
+/// avoid limit — announcement/`contains` only).
 public enum UKLowEmissionZoneBoundaries: Sendable {
     /// Closed rings keyed by catalog zone id.
     public static let ringsByZoneId: [String: [[Double]]] = [
@@ -166,16 +167,39 @@ public enum UKLowEmissionZoneBoundaries: Sendable {
         [-4.320, 55.855],
     ])
 
-    /// Bradford CAZ — city-centre envelope.
+    /// Bradford CAZ — densified from Bradford Council open GeoJSON (UK OGL / CBMDC),
+    /// Douglas–Peucker ≈30 verts; area ~22 km² (under ORS avoid soft cap).
     public static let bradfordCAZ: [[Double]] = closed([
-        [-1.800, 53.780],
-        [-1.720, 53.780],
-        [-1.700, 53.790],
-        [-1.700, 53.812],
-        [-1.720, 53.822],
-        [-1.800, 53.822],
-        [-1.820, 53.810],
-        [-1.820, 53.790],
+        [-1.8025, 53.84146],
+        [-1.81567, 53.84042],
+        [-1.81161, 53.8382],
+        [-1.8185, 53.83541],
+        [-1.81094, 53.8331],
+        [-1.81874, 53.8265],
+        [-1.80796, 53.82477],
+        [-1.79786, 53.82814],
+        [-1.78129, 53.82545],
+        [-1.78373, 53.82422],
+        [-1.78271, 53.81953],
+        [-1.77006, 53.8056],
+        [-1.78519, 53.79932],
+        [-1.78247, 53.79074],
+        [-1.77491, 53.78661],
+        [-1.78352, 53.78253],
+        [-1.77863, 53.7772],
+        [-1.74678, 53.76824],
+        [-1.73174, 53.77081],
+        [-1.72815, 53.77548],
+        [-1.72524, 53.77385],
+        [-1.72661, 53.7755],
+        [-1.72173, 53.77905],
+        [-1.71738, 53.79009],
+        [-1.7256, 53.80541],
+        [-1.73719, 53.81108],
+        [-1.75647, 53.80949],
+        [-1.77477, 53.82964],
+        [-1.76983, 53.83419],
+        [-1.77135, 53.83646],
     ])
 
     /// Oxford Zero Emission Zone — compact historic centre envelope.

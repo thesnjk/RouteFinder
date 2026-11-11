@@ -20,7 +20,11 @@ export function tripMapFingerprint(trip: FleetTrip | null): string {
     trip.driverLatitude != null && trip.driverLongitude != null
       ? `${roundCoord(trip.driverLatitude)},${roundCoord(trip.driverLongitude)}`
       : '-'
-  return `${trip.id}#${stops}#${driver}`
+  const layby =
+    trip.predictedLayby?.stop?.coordinate != null
+      ? `${trip.predictedLayby.stop.id}:${roundCoord(trip.predictedLayby.stop.coordinate.latitude)},${roundCoord(trip.predictedLayby.stop.coordinate.longitude)}:${trip.predictedLayby.occupancyPrior}`
+      : '-'
+  return `${trip.id}#${stops}#${driver}#${layby}`
 }
 
 /**

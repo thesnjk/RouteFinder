@@ -57,7 +57,11 @@ function tripMapFingerprint(trip) {
     trip.driverLatitude != null && trip.driverLongitude != null
       ? `${roundCoord(trip.driverLatitude)},${roundCoord(trip.driverLongitude)}`
       : '-'
-  return `${trip.id}#${stops}#${driver}`
+  const layby =
+    trip.predictedLayby?.stop?.coordinate != null
+      ? `${trip.predictedLayby.stop.id}:${roundCoord(trip.predictedLayby.stop.coordinate.latitude)},${roundCoord(trip.predictedLayby.stop.coordinate.longitude)}:${trip.predictedLayby.occupancyPrior}`
+      : '-'
+  return `${trip.id}#${stops}#${driver}#${layby}`
 }
 
 const baseTrip = {
@@ -216,6 +220,69 @@ assert.equal(
   ),
   true,
 )
+
+/** Mirrors web-dispatch/src/predictedLayby.ts for CI without a TS runner. */
+function hasPredictedLayby(trip) {
+  const layby = trip?.predictedLayby
+  if (!layby?.stop?.coordinate) return false
+  const { latitude, longitude } = layby.stop.coordinate
+  return Number.isFinite(latitude) && Number.isFinite(longitude)
+}
+
+function parkingTierFromOccupancy(prior) {
+  switch (prior) {
+    case 'low':
+      return 'ample'
+    case 'moderate':
+      return 'limited'
+    case 'high':
+      return 'full'
+    default:
+      return 'limited'
+  }
+}
+
+function formatLaybyEta(seconds) {
+  if (seconds == null || !Number.isFinite(seconds) || seconds <= 0) return null
+  const minutes = Math.max(1, Math.round(seconds / 60))
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60)
+    const rem = minutes % 60
+    return rem === 0 ? `~${hours} h` : `~${hours} h ${rem} min`
+  }
+  return `~${minutes} min`
+}
+
+function predictedLaybyLine(layby) {
+  const parts = [layby.stop.label]
+  const eta = formatLaybyEta(layby.estimatedArrivalSeconds ?? null)
+  if (eta) parts.push(`ETA ${eta}`)
+  parts.push(`occupancy: ${layby.occupancyPrior}`)
+  return parts.join(' · ')
+}
+
+const sampleLayby = {
+  stop: {
+    id: 'm1-watford-gap',
+    label: 'M1 J18 Watford Gap',
+    coordinate: { latitude: 52.306, longitude: -1.122 },
+  },
+  distanceRemainingMeters: 4500,
+  estimatedArrivalSeconds: 204,
+  occupancyPrior: 'low',
+  isAdvisory: true,
+}
+assert.equal(hasPredictedLayby({ predictedLayby: sampleLayby }), true)
+assert.equal(hasPredictedLayby({}), false)
+assert.equal(hasPredictedLayby(null), false)
+assert.equal(parkingTierFromOccupancy('low'), 'ample')
+assert.equal(parkingTierFromOccupancy('moderate'), 'limited')
+assert.equal(parkingTierFromOccupancy('high'), 'full')
+assert.equal(formatLaybyEta(204), '~3 min')
+assert.equal(formatLaybyEta(null), null)
+assert.ok(predictedLaybyLine(sampleLayby).includes('M1 J18 Watford Gap'))
+assert.ok(predictedLaybyLine(sampleLayby).includes('occupancy: low'))
+assert.ok(predictedLaybyLine(sampleLayby).includes('ETA ~3 min'))
 
 /** Proxy status parsing tolerates ORS-only and full forecast JSON. */
 function parseProxyStatus(json) {

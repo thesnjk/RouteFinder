@@ -83,6 +83,47 @@ object InspectionMediaBudget {
     }
 }
 
+/**
+ * Builds Swift-compatible `LaybyAdvisory` JSON for fleet snapshot `predictedLayby`.
+ *
+ * Shape mirrors iOS `LaybyStop` + `LaybyAdvisory` Codable keys so Mac / web-dispatch
+ * can decode the same field iOS already publishes.
+ */
+fun predictedLaybyJson(
+    stopId: String,
+    label: String,
+    latitude: Double,
+    longitude: Double,
+    distanceRemainingMeters: Double,
+    occupancyPrior: String,
+    estimatedArrivalSeconds: Double? = null,
+    confidence: Double = 0.5,
+    isAdvisory: Boolean = true,
+): JSONObject {
+    val stop = JSONObject()
+        .put("id", stopId)
+        .put("label", label)
+        .put(
+            "coordinate",
+            JSONObject()
+                .put("latitude", latitude)
+                .put("longitude", longitude),
+        )
+    val json = JSONObject()
+        .put("stop", stop)
+        .put("distanceRemainingMeters", distanceRemainingMeters)
+        .put("confidence", confidence.coerceIn(0.0, 1.0))
+        .put("occupancyPrior", occupancyPrior)
+        .put("reasonCodes", JSONArray())
+        .put("isAdvisory", isAdvisory)
+    if (estimatedArrivalSeconds != null) {
+        json.put("estimatedArrivalSeconds", estimatedArrivalSeconds)
+    } else {
+        json.put("estimatedArrivalSeconds", JSONObject.NULL)
+    }
+    return json
+}
+
 fun FleetTrip.toSnapshotJson(
     statusOverride: String? = null,
     driverLatitude: Double? = null,
@@ -91,6 +132,7 @@ fun FleetTrip.toSnapshotJson(
     physicsETASecondsOverride: Double? = null,
     latestInspectionSummary: JSONObject? = null,
     inspectionReportPDFBase64: String? = null,
+    predictedLayby: JSONObject? = null,
 ): JSONObject {
     val ordered = JSONArray()
     stops.sortedBy { it.sequence }.forEach { ordered.put(it.id) }
@@ -107,6 +149,7 @@ fun FleetTrip.toSnapshotJson(
     if (latestInspectionSummary != null) json.put("latestInspectionSummary", latestInspectionSummary)
     val cappedPdf = inspectionReportPDFBase64?.let { InspectionMediaBudget.cappedPDFBase64(it) }
     if (cappedPdf != null) json.put("inspectionReportPDFBase64", cappedPdf)
+    if (predictedLayby != null) json.put("predictedLayby", predictedLayby)
     return json
 }
 

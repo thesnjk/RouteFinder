@@ -16,6 +16,12 @@ import {
   inspectionToastMessage,
   shouldAnnounceInspection,
 } from './inspectionSummary'
+import {
+  formatLaybyEta,
+  hasPredictedLayby,
+  occupancyDisplayLabel,
+  predictedLaybyLine,
+} from './predictedLayby'
 import { fleetProxyUserMessage } from './fleetProxyError'
 import { fleetHealthLabel } from './fleetHealthLabel'
 import { nearCapWarning, orsSummaryLine } from './fleetProxyStatusLabel'
@@ -1097,6 +1103,36 @@ export default function App() {
                 <p className="muted">
                   Driver-reported defects — verify in the operator defect system before dispatch.
                 </p>
+              </div>
+            ) : null}
+            {hasPredictedLayby(snapshotTrip) && snapshotTrip.predictedLayby ? (
+              <div className="layby-card">
+                <div className="layby-card__header">
+                  <strong>Predicted layby</strong>
+                </div>
+                <p className="layby-card__line">
+                  {predictedLaybyLine(snapshotTrip.predictedLayby)}
+                </p>
+                {formatLaybyEta(snapshotTrip.predictedLayby.estimatedArrivalSeconds) ? (
+                  <p className="muted">
+                    ETA {formatLaybyEta(snapshotTrip.predictedLayby.estimatedArrivalSeconds)} ·
+                    occupancy:{' '}
+                    {occupancyDisplayLabel(snapshotTrip.predictedLayby.occupancyPrior)}
+                    {snapshotTrip.predictedLayby.breakWindowOpensAt
+                      ? ` · break window ${new Date(
+                          snapshotTrip.predictedLayby.breakWindowOpensAt,
+                        ).toLocaleTimeString()}`
+                      : ''}
+                  </p>
+                ) : (
+                  <p className="muted">
+                    Occupancy:{' '}
+                    {occupancyDisplayLabel(snapshotTrip.predictedLayby.occupancyPrior)}
+                    {snapshotTrip.predictedLayby.isAdvisory
+                      ? ' · advisory (tacho remains legal record)'
+                      : ''}
+                  </p>
+                )}
               </div>
             ) : null}
             <ul>

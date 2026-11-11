@@ -4,8 +4,8 @@
 
 **ICP:** UK independents, **5–15 trucks**, iPhone-first dispatch + driver wedge.  
 **Scope:** Engineering only — no legal / compliance / licensing / GTM / pilot outreach.  
-**Engineering excellence track:** Phases **1–7 complete** (simulator/CI); **Phase 7b** (2026-11-11) closes C4 / C9 / Part B as **Pass (CI sim / CI)**. Agent Phase 31+ ungated tracks **Done** 2026-11-09 (H1/H2, HOS, Lane Overpass). **EPIC-OFFLINE-UX** Midlands mid-corridor **Done** 2026-11-11. Physical hear-TTS / live TomTom GPS / Mac↔phone LAN = **optional** residuals (same honesty as C6/C7).  
-**Last product update:** Midlands offline pack 2026-11-11. Optional physical smoke: [`phase1-device-checklist.md`](phase1-device-checklist.md).
+**Engineering excellence track:** Phases **1–7 complete** (simulator/CI); **Phase 7b** (2026-11-11) closes C4 / C9 / Part B as **Pass (CI sim / CI)**. Agent Phase 31+ ungated tracks **Done** 2026-11-09 (H1/H2, HOS, Lane Overpass). **EPIC-OFFLINE-UX** Midlands mid-corridor **Done** 2026-11-11. **EPIC-DESK-LAYBY** web + Android predictedLayby **Done** 2026-11-11. Physical hear-TTS / live TomTom GPS / Mac↔phone LAN = **optional** residuals (same honesty as C6/C7).  
+**Last product update:** Desk layby parity 2026-11-11. Optional physical smoke: [`phase1-device-checklist.md`](phase1-device-checklist.md).
 
 | Doc | Role |
 |-----|------|
@@ -18,7 +18,7 @@
 | [`phase1-device-checklist.md`](phase1-device-checklist.md) | Optional physical C3–C9 / Part B smoke |
 | [`demo-superiority-script.md`](demo-superiority-script.md) | 2-minute demo script |
 
-**Self-sustaining next prompt:** Prefer gated residuals only when deliberately unlocked (AA / CarPlay / VU / LEZ / live £ / HD / billing / Android offline / country PBF). Do not invent multi-surface crowd LAN. Physical Block 1b smoke is optional — not a programme gate. Offline residual after Midlands = country-pack depth only (still RF=2 honesty).
+**Self-sustaining next prompt:** Prefer gated residuals only when deliberately unlocked (AA / CarPlay / VU / LEZ / live £ / HD / billing / Android offline / country PBF). Do not invent multi-surface crowd LAN. Physical Block 1b smoke is optional — not a programme gate. Offline residual after Midlands = country-pack depth only (still RF=2 honesty). Desk predicted-layby Mac/web/Android publish is Pass (live bay feed residual).
 
 ---
   

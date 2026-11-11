@@ -66,6 +66,29 @@ export interface TripBriefInspectionSummary {
   completedAt: string
 }
 
+/** Hour-of-day occupancy prior (mirrors Swift LaybyOccupancyPrior). */
+export type LaybyOccupancyPrior = 'low' | 'moderate' | 'high'
+
+/** Layby stop projected onto the route (mirrors Swift LaybyStop). */
+export interface PredictedLaybyStop {
+  id: string
+  label: string
+  coordinate: { latitude: number; longitude: number }
+  arcLengthAlongRouteMeters?: number | null
+  distanceFromRouteMeters?: number | null
+}
+
+/** Driver predicted layby from snapshot (mirrors Swift LaybyAdvisory / FleetTrip.predictedLayby). */
+export interface PredictedLayby {
+  stop: PredictedLaybyStop
+  distanceRemainingMeters: number
+  estimatedArrivalSeconds?: number | null
+  confidence?: number | null
+  occupancyPrior: LaybyOccupancyPrior
+  breakWindowOpensAt?: string | null
+  isAdvisory?: boolean | null
+}
+
 export interface FleetTrip {
   id: string
   orgId: string
@@ -87,6 +110,8 @@ export interface FleetTrip {
   driverLongitude?: number | null
   /** ISO timestamp when driver location was recorded. */
   driverLocationRecordedAt?: string | null
+  /** Cab-ranked predicted layby from the latest driver snapshot. */
+  predictedLayby?: PredictedLayby | null
 }
 
 export interface FleetServerHealth {

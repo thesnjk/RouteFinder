@@ -44,4 +44,32 @@ class FleetSnapshotJsonTest {
         val json = sampleTrip().toSnapshotJson()
         assertFalse(json.has("inspectionReportPDFBase64"))
     }
+
+    @Test
+    fun toSnapshotJson_includesPredictedLayby() {
+        val layby = predictedLaybyJson(
+            stopId = "m1-watford-gap",
+            label = "M1 J18 Watford Gap",
+            latitude = 52.306,
+            longitude = -1.122,
+            distanceRemainingMeters = 4_500.0,
+            occupancyPrior = "low",
+            estimatedArrivalSeconds = 204.5,
+        )
+        val json = sampleTrip().toSnapshotJson(predictedLayby = layby)
+        assertTrue(json.has("predictedLayby"))
+        val decoded = json.getJSONObject("predictedLayby")
+        assertEquals("low", decoded.getString("occupancyPrior"))
+        assertEquals(4_500.0, decoded.getDouble("distanceRemainingMeters"), 0.01)
+        val stop = decoded.getJSONObject("stop")
+        assertEquals("M1 J18 Watford Gap", stop.getString("label"))
+        assertEquals(52.306, stop.getJSONObject("coordinate").getDouble("latitude"), 0.0001)
+        assertEquals(-1.122, stop.getJSONObject("coordinate").getDouble("longitude"), 0.0001)
+    }
+
+    @Test
+    fun toSnapshotJson_omitsPredictedLaybyWhenNull() {
+        val json = sampleTrip().toSnapshotJson()
+        assertFalse(json.has("predictedLayby"))
+    }
 }

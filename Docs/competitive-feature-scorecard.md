@@ -130,7 +130,7 @@ Policy: ship anything that benefits the driver; sequence by impact, not permanen
 | Capability | Best-in-class | RouteFinder today | Status / residual epic |
 |---|---|---|---|
 | Hands-free driver assistant | CoPilot 11.4 | Domain PTT: which-lane / avoid-tolls / layby / hazard / book parking / Can-I-drive day+week | **Shipped (MVP)** — residual: freer NLU / street-name depth (`EPIC-LANE-DEPTH`) |
-| Parking availability UX | CoPilot 11.4 icons | Ranked layby green/amber/red map pins (iOS + Android) + occupancy taps + Break Now | **Shipped (MVP)** — residual: live bay counts / partner occupancy feed |
+| Parking availability UX | CoPilot 11.4 icons | Ranked layby green/amber/red map pins (iOS + Android) + occupancy taps + Break Now; Mac/web desk `predictedLayby` card + pin + Android snapshot publish | **Shipped (MVP)** — residual: live bay counts / partner occupancy feed |
 | Parking booking | CoPilot + TRAVIS | Deep links + voice “book parking” entry | **Shipped (MVP)** — residual: native partner book API |
 | CarPlay production | Sygic / CoPilot | Code ready; entitlements inactive | **Gated** `EPIC-CARPLAY-PROD` |
 | Android Auto | CoPilot 11.4 | Not shipped | **Gated** `EPIC-ANDROID-AUTO` |

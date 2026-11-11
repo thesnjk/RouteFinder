@@ -99,6 +99,7 @@ class FleetApi(
         physicsETASeconds: Double? = null,
         latestInspectionSummary: JSONObject? = null,
         inspectionReportPDFBase64: String? = null,
+        predictedLayby: JSONObject? = null,
     ): FleetTrip {
         val media = "application/json; charset=utf-8".toMediaType()
         val payload = trip.toSnapshotJson(
@@ -109,6 +110,7 @@ class FleetApi(
             physicsETASecondsOverride = physicsETASeconds,
             latestInspectionSummary = latestInspectionSummary,
             inspectionReportPDFBase64 = inspectionReportPDFBase64,
+            predictedLayby = predictedLayby,
         )
         val request = Request.Builder()
             .url(url("/v1/trips/${trip.id}/snapshot"))

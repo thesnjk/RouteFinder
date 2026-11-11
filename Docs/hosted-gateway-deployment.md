@@ -146,7 +146,7 @@ curl -s -H "Authorization: Bearer YOUR_ORG_TOKEN" \
   https://fleet.yourdomain.com/v1/proxy/status
 ```
 
-1. Open **web-dispatch** → Connection → save a **depot profile** (name + `https://fleet.yourdomain.com` + that org’s bearer token) → Test /health. Connection shows authenticated depot name, masked token, and ORS meters from `/v1/proxy/status`. Mac/iOS **Settings → Connection** and **Fleet setup wizard → Test** show the same depot / masked token / ORS meters. Use one profile per org token for multi-depot.
+1. Open **web-dispatch** → Connection → save a **depot profile** (name + `https://fleet.yourdomain.com` + that org’s bearer token) → Test /health. Connection shows authenticated depot name, masked token, and ORS meters from `/v1/proxy/status`. Mac/iOS **Settings → Connection**, **Fleet setup wizard → Test**, and **Android fleet wizard → Test** show the same depot / masked token / ORS meters. Use one profile per org token for multi-depot.
 2. Geocode a stop (needs ORS proxy on).
 3. Push a trip to a vehicle UUID.
 4. On a phone **on cellular**, run fleet setup → **Hosted (HTTPS)** → same URL + token → pair vehicle → receive SSE trip → Find route (no device ORS key).

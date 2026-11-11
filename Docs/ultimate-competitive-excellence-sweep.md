@@ -313,7 +313,7 @@ Original Oct 12 “Defer” list is **void** under the driver-first scope rule. 
 | 7 | `EPIC-LANE-DEPTH` | Fewer missed exits at complex junctions | TomTom / Sygic HD lanes | OSM + Overpass depth; street-name callouts like CoPilot 11.4 | Callouts on prepare/execute + richer `turn:lanes` |
 | 8 | `EPIC-TOLL-DEPTH` | Know toll cost / avoid before committing | TomTom / PTV tariffs | Authored UK tariffs → live feed when affordable | Expand `UKTollAdvisoryCatalog` with £ hints |
 | 9 | `EPIC-VU-PARTNER` | True remaining drive time from the legal VU | Samsara / Geotab remote VU | Partner SDK / webhook; keep advisory honest | Read-only VU status card + Can-I-drive fuse |
-| 10 | `EPIC-LEZ-CADASTRE` | Fewer false LEZ hits / misses | Sygic / TomTom legal zones | Licensed polygons or OS-derived rings | Replace circle envelopes with cadastral-grade UK rings |
+| 10 | `EPIC-LEZ-CADASTRE` | Fewer false LEZ hits / misses | Sygic / TomTom legal zones | Sheffield + Birmingham open-data densify **Shipped (MVP slice)** 2026-11-11; residual = remaining zones + London ORS-blocked + licensed cadastre | Densify remaining coarse envelopes; do not claim legal Pass |
 | 11 | `EPIC-HOSTED-DESK` | Desk pushes trips without LAN when depot Wi‑Fi fails | CoPilot Account Manager | Hosted gateway already exists | Billing/token UX + multi-depot roster for remote desk |
 
 **Sequenced later ≠ won’t ship.** Hygiene H1–H3 land before epic rank 1+ unless a pilot forces otherwise.

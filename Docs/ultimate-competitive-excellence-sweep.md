@@ -390,7 +390,8 @@ Always **print** push commands. Do **not** push unless the user asked to push (o
 | 14f | Agent | ~~`EPIC-HOSTED-DESK` Android FleetSetupWizard Test proxy-status parity~~ **Done** 2026-11-11 — Android wizard Test matches iOS/web |
 | 14g | Agent | ~~`EPIC-HOSTED-DESK` Android DriverHome proxy-status parity~~ **Done** 2026-11-11 — home badge shows depot / masked token / ORS meters |
 | 14h | Agent | ~~`EPIC-DOCS` honesty SSOT after HOSTED-DESK Connection~~ **Done** 2026-11-11 — developer-map + README + android-c2-gate match greppable orgId/orgName / schema / deploy pointers |
-| 15 | Agent | **Stop inventing product epics** — next implementation requires paid secrets/entitlements (AA / CarPlay / VU / further LEZ / live £ feed / HD / Stripe / Android offline / further country PBF). Do not invent multi-surface crowd LAN; do not ask-loop while agent-doable residuals remain. |
+| 15 | Agent | **Stop inventing product epics** — next *product* implementation requires paid secrets/entitlements (AA / CarPlay / VU / further LEZ / live £ feed / HD / Stripe / Android offline / further country PBF). Do not invent multi-surface crowd LAN; do not ask-loop while agent-doable residuals remain. |
+| 16 | Agent | `EPIC-DOCS-WRITEUP` iterative [`project-writeup.md`](project-writeup.md) **In progress** 2026-11-11 — Ch 1–3 drafted (thesis / surfaces / fleet+hosted desk); next attach fills Ch 4+ (not STOP-loop) |
 | 14 | Operator | Optional Block 1b / Part B LAN smoke via [`phase1-device-checklist.md`](phase1-device-checklist.md) before first pilot / fleet demo |
 
 Also see: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B for optional physical walkaround → desk defect detail.

@@ -18,6 +18,7 @@ Product showcase captures (see [`Docs/screenshots/`](Docs/screenshots/) for capt
 
 ## User guide
 
+- [Project writeup](Docs/project-writeup.md) — Living end-to-end narrative (surfaces, fleet/hosted desk, gated residuals); iterative chapters
 - [Route simulation and rehearsal](Docs/user-guide-simulation.md) — Rehearse Route vs Play, traffic banner, lane guidance, vehicle footprint, language settings
 - [Fleet E2E QA playbook](Docs/fleet-e2e-qa.md) — Automated fleet smoke script + Mac/iPhone LAN checklist
 - [CarPlay + WeatherKit restore](Docs/carplay-weatherkit-restore.md) — Paid-team entitlement restore (personal team: use OpenWeather instead)

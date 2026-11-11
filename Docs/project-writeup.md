@@ -5,7 +5,7 @@
 **Document type:** Living professional technical writeup (AQA NEA–style structure; **no client interviews**)  
 **Repository:** proprietary — see root [`LICENSE`](../LICENSE)  
 **Last updated:** 2026-11-11  
-**Status:** **iterative** — Sections 1–3 (Analysis + Design + Implementation) complete; Sections 4–5 and Appendices stubbed (next attach = §4 Testing)
+**Status:** **iterative** — Sections 1–4 (Analysis → Testing) complete; Section 5 and Appendices stubbed (next attach = §5 Evaluation)
 
 Integers, CI evidence, and phase verification remain authoritative in [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md), [`engineering-test-matrix.md`](engineering-test-matrix.md), and relevant `phase*` Docs. This document provides the formal analysis–design–implementation–testing–evaluation narrative and points at those SSOTs.
 
@@ -65,7 +65,15 @@ This writeup follows a professional NEA-style structure (Analysis → Design →
    - [3.8 Error handling and robustness](#38-error-handling-and-robustness)
    - [3.9 Automated testing integration](#39-automated-testing-integration)
    - [3.10 Objective fulfilment confirmation](#310-objective-fulfilment-confirmation)
-4. [Testing](#4-testing) *(stub)*
+4. [Testing](#4-testing)
+   - [4.1 Testing strategy](#41-testing-strategy)
+   - [4.2 Unit testing](#42-unit-testing)
+   - [4.3 Routing / algorithm testing](#43-routing--algorithm-testing)
+   - [4.4 Cost model and constraint testing](#44-cost-model-and-constraint-testing)
+   - [4.5 Edge case and robustness testing](#45-edge-case-and-robustness-testing)
+   - [4.6 Performance / fair-use](#46-performance--fair-use)
+   - [4.7 Test evidence](#47-test-evidence)
+   - [4.8 Objective verification table](#48-objective-verification-table)
 5. [Evaluation](#5-evaluation) *(stub)*
 6. [Appendices](#6-appendices) *(stub)*
 7. [Document changelog](#7-document-changelog)
@@ -581,37 +589,120 @@ Detailed strategy, edge cases, and objective–test cross-reference are reserved
 
 ## 4. Testing
 
-*(Stub — fill next attach.)*
+Testing validates Implementation (§3) against Analysis objectives (§1.6) without inventing Pass/Fail logs. Commands and suite names below are greppable in-repo; operators re-run them to refresh evidence. Cross-surface ledgers and phase checklists remain SSOT in [`engineering-test-matrix.md`](engineering-test-matrix.md) and relevant `phase*` Docs.
 
 ### 4.1 Testing strategy
-- Unit + integration + CI; optional physical smoke ([`phase1-device-checklist.md`](phase1-device-checklist.md)).
+
+| Layer | Purpose | Primary entry |
+|-------|---------|---------------|
+| Swift package unit/integration | Module correctness (routing, fleet, HOS, UI helpers, coordinators) | `cd RouteFinder && swift test` |
+| macOS CI package + fleet smoke | Release build, full package tests, scripted fleet smoke | `.github/workflows/ci.yml` job `macos` |
+| iOS simulator smoke | App UI smoke subset | CI job `ios` (`RouteFinderAppUITests`) |
+| web-dispatch | Desk helpers + build | `cd web-dispatch && npm test` (CI job `web-dispatch`) |
+| Android C2 | Unit tests + debug APK | CI job `android-c1` (`./gradlew :app:testDebugUnitTest`) |
+| Hosted gateway | Gateway unit/typecheck | CI job `hosted-gateway` |
+| Optional physical / LAN | Device and depot walkthrough | [`phase1-device-checklist.md`](phase1-device-checklist.md), [`fleet-e2e-qa.md`](fleet-e2e-qa.md) |
+
+**Justification:** Automated suites catch regressions on every PR; optional physical smoke covers Bonjour/LAN and device-only paths that CI cannot fully own. This matches NEA-style multi-layer coverage without claiming client UAT.
 
 ### 4.2 Unit testing
-- `cd RouteFinder && swift test`; Android Gradle unit tests (JDK 17–22).
+
+**Swift:** From [`developer-map.md`](developer-map.md):
+
+```bash
+cd RouteFinder && swift test
+```
+
+Representative suites (non-exhaustive):
+
+| Suite | Focus |
+|-------|--------|
+| `FleetProxyDeskStatusTests` | Decode `orgId`/`orgName`, meters; `maskApiKey` / `maskedTokenLine` |
+| `Phase8ParityTests` | `UKTollAdvisoryCatalog` presence (Dartford, M6, Mersey, Dunham, Batheaston, …) |
+| `RemoteRequestPolicyTests` | Timeout/retry/429 behaviour |
+| `RoutePlanningCoordinatorTests` | Planning coordinator orchestration |
+| `FleetDispatchCoordinatorTests` | Dispatch host / proxy status wiring |
+| `VehicleProfileComboLengthTests` | Trailer→ORS length ladder |
+| `HybridRoutingPolicyTests` / `OfflineGraphStoreTests` / `OfflineCorridorPrefetchTests` | Hybrid offline policy |
+| `EU561HosClockTests` / `TachoImportTests` | Advisory HOS / import |
+| `KineticPhysicsEngineTests` / `TripBriefFormatterTests` | Physics + brief |
+| `APIUsageLedgerTests` / `FleetProxyUsageMeterTests` | Fair-use metering |
+
+**Android:** JDK 17–22 on `PATH`; CI uses Temurin 17. Local/CI: `./gradlew :app:testDebugUnitTest` under `android-fleet-driver/`. Prefer `--rerun-tasks` when outputs look stale (master-prompt Android note).
+
+**web-dispatch / hosted-gateway:** `npm test` in each package directory (also on CI).
 
 ### 4.3 Routing / algorithm testing
-- Constraint and planning cases; offline where present.
+
+Constraint and planning behaviour is covered by package tests such as `OpenRouteServicePayloadBuilderTests`, `FleetORSRoutingFactoryTests`, `HybridRoutingPolicyTests`, `TrafficRerouteCoordinatorTests`, and `LaneGuidanceEnricherTests` (Overpass caps / enrichment). Offline store and prefetch tests exercise tile-backed paths where present. Live ORS/TomTom calls in CI remain environment-dependent; factories and payload builders are the stable automated surface.
 
 ### 4.4 Cost model and constraint testing
-- LEZ avoid, toll advisory catalogs, trailer ladder.
+
+| Area | Evidence |
+|------|----------|
+| Toll catalog | `Phase8ParityTests`, `CommittedRouteTollAnnouncementTests` |
+| Trailer / combo length | `VehicleProfileComboLengthTests` |
+| Layby / parking | `LaybyPredictionEngineTests`, `ParkingAvailabilityTierTests`, `ParkingMapPinBuilderTests` |
+| Hazards / roadworks | `HazardOverlayBuilderTests`, `RoadworksAlongRouteRepositoryTests`, `LiveTrafficHazardSamplerTests` |
+| UK living layer POIs | `TruckPoiLivingLayerTests` |
+
+LEZ avoid policy on Android is covered under C2 unit tests and documented in [`android-c2-gate.md`](android-c2-gate.md); Swift planning tests cover avoid-ring attachment via the planning coordinator path.
 
 ### 4.5 Edge case and robustness testing
-- Invalid geocode, proxy failure, missing keys banners.
+
+| Concern | Evidence |
+|---------|----------|
+| API key masking edge cases | `FleetProxyDeskStatusTests` (`""`, short tokens, ellipsis form) |
+| Proxy JSON decode | Same suite — org identity + meters |
+| Remote failures / 429 | `RemoteRequestPolicyTests`, `ORSErrorParserTests` |
+| Route failure presentation | `RouteFailureMapperTests` |
+| Dispatch gates (paste / push) | `DispatchFleetKeyPasteGateTests`, `DispatchPushGateTests` |
+| Fleet auth / SSE | `FleetAuthTests`, `FleetSSETests` |
+
+User-visible “add API key or pair with fleet” behaviour is stranger-path documented in [`getting-started.md`](getting-started.md) and exercised in UI smoke where configured.
 
 ### 4.6 Performance / fair-use
-- Metering ledger; proxy status meters.
+
+Automated performance helpers exist (e.g. `SimulationPerformanceTests`, `LaneGuidanceEnricherPerformanceTests`) as engineering guards, not marketed SLAs. Fair-use is validated behaviourally via `APIUsageLedgerTests` and `FleetProxyUsageMeterTests`; Connection UIs surface meters from `/v1/proxy/status` when the gateway reports them. No synthetic throughput numbers are claimed in this writeup.
 
 ### 4.7 Test evidence
-- CI links; phase verification Docs; screenshot index.
+
+| Evidence class | Location |
+|----------------|----------|
+| CI workflow | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) — jobs `macos`, `ios`, `web-dispatch`, `android-c1`, `hosted-gateway` |
+| Fleet scripted smoke | `RouteFinder/Scripts/fleet-e2e-smoke.sh` (invoked on `macos` CI) |
+| Engineering matrix | [`engineering-test-matrix.md`](engineering-test-matrix.md) |
+| Phase / surface ledgers | `Docs/phase*` verification Docs; [`phase20-verification.md`](phase20-verification.md) when active |
+| Product screenshots | [`screenshots/README.md`](screenshots/README.md) (masked secrets) |
+| Android gate | [`android-c2-gate.md`](android-c2-gate.md) — CI green criterion |
+
+PR merges should keep these green; this section cites the harness rather than pasting dated log transcripts that go stale.
 
 ### 4.8 Objective verification table
-- Cross-reference FO/NFO to tests.
+
+| ID | Verification evidence | Notes |
+|----|----------------------|-------|
+| FO1 | ORS payload/factory tests; combo length tests; `swift test` | Live ORS optional beyond builders |
+| FO2 | Fleet dispatch/SSE/HTTP store tests; fleet-e2e smoke; web `npm test` | Physical LAN optional |
+| FO3 | Kinetic physics + trip brief formatter/PDF tests | |
+| FO4 | `EU561HosClockTests`, tacho import tests; disclaimer in README | VU partner residual ungated here |
+| FO5 | Toll Phase8 parity; layby/hazard/roadworks suites; living-layer POI tests | Live £ / full cadastre residual |
+| FO6 | `FleetProxyDeskStatusTests`; Connection UI wiring tests; schema Doc | Stripe residual |
+| FO7 | CI `android-c1` unit + assemble | AA/offline gated |
+| FO8 | `LaneGuidanceEnricherTests` (+ performance helper) | HD residual |
+| NFO1 | Architecture rules + coordinator tests | |
+| NFO2 | Package concurrency norms under `swift test` | |
+| NFO3 | UI tests / glass usage convention (code review + UI smoke) | |
+| NFO4 | Masking unit tests; screenshot policy | |
+| NFO5 | `RemoteRequestPolicyTests`; ledger/meter tests | |
+| NFO6 | CI jobs listed in §4.7 | |
+| NFO7 | Scorecard/sweep/writeup updated in same PR week as surface changes | |
 
 ---
 
 ## 5. Evaluation
 
-*(Stub — fill after §4. **Developer-led only — no client evaluation method.**)*
+*(Stub — fill next attach. **Developer-led only — no client evaluation method.**)*
 
 ### 5.1 Method of developer evaluation
 - Compare shipped surfaces to FO/NFO and scorecard; cite CI/phase evidence.
@@ -656,4 +747,5 @@ Detailed strategy, edge cases, and objective–test cross-reference are reserved
 | 2026-11-11 | #127 / #128 | Narrative Ch 4 (routing / UK layer / compliance) |
 | 2026-11-11 | #129 / #130 | Restructure to NEA-style; **Section 1 Analysis complete**; §§2–5 + Appendices stubbed |
 | 2026-11-11 | #131 / #132 | **Section 2 Design complete** (2.1–2.7); next = §3 Implementation |
-| 2026-11-11 | #133 / (this PR) | **Section 3 Implementation complete** (3.1–3.10); next = §4 Testing |
+| 2026-11-11 | #133 / #134 | **Section 3 Implementation complete** (3.1–3.10); next = §4 Testing |
+| 2026-11-11 | #135 / (this PR) | **Section 4 Testing complete** (4.1–4.8); next = §5 Evaluation |

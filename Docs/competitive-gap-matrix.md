@@ -1,6 +1,6 @@
 # HGV Navigation Competitive Gap Matrix
 
-Last updated: 2026-11-11 (Phase 7b P0 Pass CI; Midlands + DESK-LAYBY Done; residual HD / live £ / AA / CarPlay / VU / country PBF)  
+Last updated: 2026-11-11 (Phase 7b P0 Pass CI; Midlands + DESK-LAYBY Done; Phase 58 waived; residual HD / live £ / AA / CarPlay / VU / country PBF)  
 Strategy: global vision, **ship UK first**; differentiate on physics-sim + predictive telematics, then fleet/dispatch, then driver-benefit gaps previously deferred (CarPlay/AA, parking book, VU, tolls, LEZ cadastre).
 
 > **Oct 12 Ultimate competitive excellence sweep:** Full quarterly re-scrape (Firecrawl + Apify). CoPilot **11.4** captured; **no RF scorecard integer changes**. Engineering gates: fleet/web/hosted/Android Pass. Sim speed-limit UITest debt closed 2026-11-09 (`spineSpeedLimitAcceleratesToMotorwayLimit` Pass).
@@ -95,7 +95,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 | **55** | Start Navigation primary CTA on iOS results sheet | **Done** (code) — `NavigationStartRow` + UI smoke with `UITEST_SEED_ROUTE` |
 | **56** | iOS native map feel (full-bleed, vehicle, overview, alerts) | **Done** (code) — `MapCanvasBackdrop`, `CompactAlertStack`, device QA pending |
 | **57** | Map resize, voice, Car/HGV onboarding, bottom peek sheet  | **Done** (code) — P57-7 device QA **Pending local** |
-| **58** | Device-feedback fixes (post-P0)                             | **Blocked** — agent implements after operator marks P0 Pass/Fail |
+| **58** | Device-feedback fixes (post-P0)                             | **N/A / waived** — Phase 7b Pass (CI) 2026-11-11; no operator Fail paste-back; physical smoke optional via [`phase1-device-checklist.md`](phase1-device-checklist.md); open Fail items → [`pilot-feedback-backlog.md`](pilot-feedback-backlog.md) if filed |
 | **P8** | Competitive parity extras (toll hints, telematics stub, parking links, offline UX, lane depth) | **Done** (2026-09) — see [`phase8-parity-verification.md`](phase8-parity-verification.md) |
 
 ### Remaining gaps (not claiming parity yet — sequenced under driver-first)

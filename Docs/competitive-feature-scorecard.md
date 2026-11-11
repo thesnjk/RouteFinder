@@ -1,6 +1,6 @@
 # Competitive Feature Scorecard — September 2026
 
-Last updated: 2026-11-11 (Phase 7b P0 Pass CI; Midlands + North West + Scotland Central + LEZ densify + toll refresh + Mersey + Dunham/Batheaston + DESK-LAYBY Done; residual HD / live £ feed / AA / CarPlay / VU / country PBF)
+Last updated: 2026-11-11 (Phase 7b P0 Pass CI; Midlands + NW + Scotland + LEZ densify + toll A-roads + HOSTED-DESK org identity + DESK-LAYBY Done; residual HD / live £ / AA / CarPlay / VU / Stripe / country PBF)
 
 Scoring: **0** Absent · **1** Weak · **2** Parity · **3** Lead  
 Personas: **OO** = UK owner-operator · **SF** = small fleet (2–20 vehicles)
@@ -139,5 +139,5 @@ Policy: ship anything that benefits the driver; sequence by impact, not permanen
 | Toll tariff depth | PTV / TomTom | Named UK advisories + avoid/HUD/PTT + Mac/web desk corridor indicative £ (M6/Dartford/Tyne + Mersey £4.80 + Dunham £4.00 + Batheaston HGV-unsuitable seed 2026-11-11) | **Shipped (MVP slice)** — residual live operator / class feed (`EPIC-TOLL-DEPTH`) |
 | Remote VU download | Samsara / Geotab | Advisory tacho + desk Can-I-drive week card; CSV stub | **Residual** `EPIC-VU-PARTNER` (legal VU download) |
 | Legal LEZ cadastre | Sygic / TomTom | Sheffield + Birmingham + Bradford open-data densified (MVP slice); other zones still coarse envelopes | **Residual** `EPIC-LEZ-CADASTRE` (remaining zones + London ORS-blocked) |
-| Hosted multi-depot desk | CoPilot Account Manager | Named depot profiles; no billing UI | **Residual** `EPIC-HOSTED-DESK` |
+| Hosted multi-depot desk | CoPilot Account Manager | Named depot profiles + `/v1/proxy/status` orgId/orgName + web Connection depot/masked token/meters (2026-11-11) | **Shipped (MVP slice)** — residual Stripe/self-serve billing (`EPIC-HOSTED-DESK`) |
 | Per-seat API burn visibility | Enterprise fleet SaaS | On-device ledger + soft budgets (Ph45) | Keep ledger; expand when hosted seats ship |

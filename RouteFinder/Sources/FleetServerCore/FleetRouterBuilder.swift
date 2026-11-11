@@ -32,7 +32,12 @@ public enum FleetRouterBuilder {
             orsAPIKey: orsAPIKey,
             tomTomAPIKey: tomTomAPIKey,
             openWeatherAPIKey: openWeatherAPIKey,
-            meter: proxyMeter
+            meter: proxyMeter,
+            orgIdentity: {
+                let orgs = (try? await store.orgs()) ?? []
+                guard let first = orgs.first else { return nil }
+                return (first.id.uuidString, first.name)
+            }
         )
 
         router.get("v1/orgs") { _, _ async throws -> Response in

@@ -314,7 +314,7 @@ Original Oct 12 “Defer” list is **void** under the driver-first scope rule. 
 | 8 | `EPIC-TOLL-DEPTH` | Know toll cost / avoid before committing | TomTom / PTV tariffs | Authored HGV £ refresh + Mersey + Dunham (£4.00) + Batheaston (HGV-unsuitable) **Shipped (MVP slice)** 2026-11-11; residual = live operator feed | Keep catalog notes honest; no live API claim |
 | 9 | `EPIC-VU-PARTNER` | True remaining drive time from the legal VU | Samsara / Geotab remote VU | Partner SDK / webhook; keep advisory honest | Read-only VU status card + Can-I-drive fuse |
 | 10 | `EPIC-LEZ-CADASTRE` | Fewer false LEZ hits / misses | Sygic / TomTom legal zones | Sheffield + Birmingham + Bradford open-data densify **Shipped (MVP slice)** 2026-11-11; residual = remaining zones + London ORS-blocked + licensed cadastre | Densify remaining coarse envelopes; do not claim legal Pass |
-| 11 | `EPIC-HOSTED-DESK` | Desk pushes trips without LAN when depot Wi‑Fi fails | CoPilot Account Manager | Hosted gateway already exists | Billing/token UX + multi-depot roster for remote desk |
+| 11 | `EPIC-HOSTED-DESK` | Desk pushes trips without LAN when depot Wi‑Fi fails | CoPilot Account Manager | Org identity on proxy/status + Connection depot/masked token/meters **Shipped (MVP slice)** 2026-11-11; residual = Stripe billing | Keep non-goal: no full SaaS billing UI |
 
 **Sequenced later ≠ won’t ship.** Hygiene H1–H3 land before epic rank 1+ unless a pilot forces otherwise.
 
@@ -382,7 +382,8 @@ Always **print** push commands. Do **not** push unless the user asked to push (o
 | 11 | Agent | ~~`EPIC-TOLL-DEPTH` authored HGV indicative £ refresh~~ **Done** 2026-11-11 — M6/Dartford/Tyne; residual = live operator feed |
 | 12 | Agent | ~~`EPIC-TOLL-DEPTH` Mersey Tunnels Queensway/Kingsway~~ **Done** 2026-11-11 — Class 2 HGV cash £4.80; residual = live operator feed |
 | 13 | Agent | ~~`EPIC-TOLL-DEPTH` Dunham Bridge + Batheaston Bridge~~ **Done** 2026-11-11 — GOV.UK A-road holes; Dunham £4.00 / Batheaston HGV-unsuitable; residual = live operator feed |
-| 14 | Agent | **Stop inventing product epics** — next implementation requires an **explicit user unlock by name** (AA / CarPlay / VU / further LEZ / live £ feed / HD / billing / Android offline / further country PBF). Do not invent multi-surface crowd LAN. |
+| 14 | Agent | ~~`EPIC-HOSTED-DESK` org identity + Connection meters~~ **Done** 2026-11-11 — proxy/status orgId/orgName; residual = Stripe billing |
+| 15 | Agent | **Stop inventing product epics** — next implementation requires paid secrets/entitlements (AA / CarPlay / VU / further LEZ / live £ feed / HD / Stripe / Android offline / further country PBF). Do not invent multi-surface crowd LAN; do not ask-loop while agent-doable residuals remain. |
 | 14 | Operator | Optional Block 1b / Part B LAN smoke via [`phase1-device-checklist.md`](phase1-device-checklist.md) before first pilot / fleet demo |
 
 Also see: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B for optional physical walkaround → desk defect detail.

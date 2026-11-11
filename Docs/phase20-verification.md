@@ -18,7 +18,7 @@
 | [`phase1-device-checklist.md`](phase1-device-checklist.md) | Optional physical C3–C9 / Part B smoke |
 | [`demo-superiority-script.md`](demo-superiority-script.md) | 2-minute demo script |
 
-**Self-sustaining next prompt:** North West + Scotland Central mid-corridors + LEZ densify + toll authored £ refresh + Mersey + Dunham/Batheaston slices **Done**. Next implementation requires an **explicit user unlock by name** (AA / CarPlay / VU / further LEZ / live £ feed / HD / billing / Android offline / further country PBF). Do not invent multi-surface crowd LAN or reintroduce “P0 Blocked since 2026-09-19” / Phase 58 Blocked. Physical Block 1b smoke is optional — not a programme gate.
+**Self-sustaining next prompt:** North West + Scotland Central + LEZ densify + toll A-roads + **EPIC-HOSTED-DESK** org identity slices **Done**. Next product work that needs paid secrets/entitlements (AA / CarPlay / VU / further LEZ / live £ feed / HD / Stripe / Android offline / further country PBF) — agent self-picks other agent-doable residuals first; do not ask-loop. Do not invent multi-surface crowd LAN or reintroduce “P0 Blocked since 2026-09-19” / Phase 58 Blocked. Physical Block 1b smoke is optional — not a programme gate.
 
 ---
   

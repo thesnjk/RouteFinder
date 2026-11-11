@@ -133,6 +133,10 @@ export interface FleetProxyStatus {
   tomTomDailyCap?: number
   openWeatherToday?: number
   openWeatherDailyCap?: number
+  /** Authenticated hosted/LAN org id when server reports it. */
+  orgId?: string
+  /** Authenticated hosted/LAN org display name when server reports it. */
+  orgName?: string
 }
 
 export interface FleetConnection {

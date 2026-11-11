@@ -124,7 +124,9 @@ public actor FleetProxyUsageMeter {
     public func status(
         orsConfigured: Bool,
         tomTomConfigured: Bool = false,
-        openWeatherConfigured: Bool = false
+        openWeatherConfigured: Bool = false,
+        orgId: String? = nil,
+        orgName: String? = nil
     ) -> FleetProxyStatusResponse {
         rolloverIfNeeded()
         return FleetProxyStatusResponse(
@@ -141,7 +143,9 @@ public actor FleetProxyUsageMeter {
             openWeatherToday: openWeatherCount,
             openWeatherDailyCap: budget.openWeatherDailyCap,
             overpassToday: overpassCount,
-            overpassDailyCap: budget.overpassDailyCap
+            overpassDailyCap: budget.overpassDailyCap,
+            orgId: orgId,
+            orgName: orgName
         )
     }
 
@@ -232,6 +236,10 @@ public struct FleetProxyStatusResponse: Sendable, Codable, Equatable {
     public let openWeatherDailyCap: Int
     public let overpassToday: Int
     public let overpassDailyCap: Int
+    /// Authenticated or default fleet org id when known (hosted / LAN).
+    public let orgId: String?
+    /// Authenticated or default fleet org display name when known.
+    public let orgName: String?
 
     public init(
         orsConfigured: Bool,
@@ -247,7 +255,9 @@ public struct FleetProxyStatusResponse: Sendable, Codable, Equatable {
         openWeatherToday: Int = 0,
         openWeatherDailyCap: Int = 200,
         overpassToday: Int = 0,
-        overpassDailyCap: Int = 100
+        overpassDailyCap: Int = 100,
+        orgId: String? = nil,
+        orgName: String? = nil
     ) {
         self.orsConfigured = orsConfigured
         self.routesToday = routesToday
@@ -263,5 +273,7 @@ public struct FleetProxyStatusResponse: Sendable, Codable, Equatable {
         self.openWeatherDailyCap = openWeatherDailyCap
         self.overpassToday = overpassToday
         self.overpassDailyCap = overpassDailyCap
+        self.orgId = orgId
+        self.orgName = orgName
     }
 }

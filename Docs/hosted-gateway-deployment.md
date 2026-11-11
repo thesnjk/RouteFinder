@@ -100,7 +100,7 @@ nginx equivalent: `proxy_pass http://127.0.0.1:8787;` with Let’s Encrypt certs
 
 Each org in `config/orgs.json` has **route** and **geocode** daily caps (`routeDailyCap` / `geocodeDailyCap`, typically 2000). When a cap is hit, proxy calls return **HTTP 429**. Desk and drivers already show actionable copy (`fleetProxyUserMessage` / Android `FleetProxyErrorMapper` / iOS `RouteFailureMapper`) — not a silent failure.
 
-Check usage:
+Check usage (response includes `orgId` / `orgName` for the authenticated bearer — Account-Manager-lite desk identity):
 
 ```bash
 curl -s -H "Authorization: Bearer YOUR_ORG_TOKEN" \
@@ -146,7 +146,7 @@ curl -s -H "Authorization: Bearer YOUR_ORG_TOKEN" \
   https://fleet.yourdomain.com/v1/proxy/status
 ```
 
-1. Open **web-dispatch** → Connection → save a **depot profile** (name + `https://fleet.yourdomain.com` + that org’s bearer token) → Test /health. Use one profile per org token for multi-depot.
+1. Open **web-dispatch** → Connection → save a **depot profile** (name + `https://fleet.yourdomain.com` + that org’s bearer token) → Test /health. Connection shows authenticated depot name, masked token, and ORS meters from `/v1/proxy/status`. Use one profile per org token for multi-depot.
 2. Geocode a stop (needs ORS proxy on).
 3. Push a trip to a vehicle UUID.
 4. On a phone **on cellular**, run fleet setup → **Hosted (HTTPS)** → same URL + token → pair vehicle → receive SSE trip → Find route (no device ORS key).

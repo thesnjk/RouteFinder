@@ -684,6 +684,21 @@ function isNearAnyORSCap(status) {
   )
 }
 
+function maskApiKey(token) {
+  const trimmed = (token ?? '').trim()
+  if (!trimmed) return '(none)'
+  if (trimmed.length <= 8) return '••••'
+  return `${trimmed.slice(0, 4)}…${trimmed.slice(-4)}`
+}
+
+function authenticatedDepotLine(status) {
+  const name = (status.orgName ?? '').trim()
+  if (!name) return null
+  const id = (status.orgId ?? '').trim()
+  if (id) return `Authenticated depot: ${name} (${id})`
+  return `Authenticated depot: ${name}`
+}
+
 function orsSummaryLine(status) {
   if (!status.orsConfigured) {
     return 'ORS proxy: off (start server with --ors-key for address search and driver routing)'
@@ -733,6 +748,18 @@ const proxyOff = {
 }
 assert.ok(orsSummaryLine(proxyOff).includes('off'))
 assert.equal(nearCapWarning(proxyOff), null)
+assert.equal(maskApiKey(''), '(none)')
+assert.equal(maskApiKey('abcdef'), '••••')
+assert.equal(maskApiKey('test-token-alpha'), 'test…lpha')
+assert.equal(
+  authenticatedDepotLine({
+    ...proxyOk,
+    orgId: '11111111-1111-1111-1111-111111111111',
+    orgName: 'Demo Haulage Ltd',
+  }),
+  'Authenticated depot: Demo Haulage Ltd (11111111-1111-1111-1111-111111111111)',
+)
+assert.equal(authenticatedDepotLine(proxyOk), null)
 
 const proxyOver = {
   orsConfigured: true,

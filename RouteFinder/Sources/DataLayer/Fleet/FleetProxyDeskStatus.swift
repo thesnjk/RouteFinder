@@ -26,6 +26,10 @@ public struct FleetProxyDeskStatus: Sendable, Codable, Equatable {
     public let openWeatherToday: Int
     /// Daily OpenWeather budget.
     public let openWeatherDailyCap: Int
+    /// Authenticated or default org id when the server reports it.
+    public let orgId: String?
+    /// Authenticated or default org display name when the server reports it.
+    public let orgName: String?
 
     /// Fraction of cap at which the desk shows a near-cap warning.
     public static let nearCapFraction: Double = 0.9
@@ -42,7 +46,9 @@ public struct FleetProxyDeskStatus: Sendable, Codable, Equatable {
         tomTomToday: Int = 0,
         tomTomDailyCap: Int = 500,
         openWeatherToday: Int = 0,
-        openWeatherDailyCap: Int = 200
+        openWeatherDailyCap: Int = 200,
+        orgId: String? = nil,
+        orgName: String? = nil
     ) {
         self.orsConfigured = orsConfigured
         self.routesToday = routesToday
@@ -55,6 +61,8 @@ public struct FleetProxyDeskStatus: Sendable, Codable, Equatable {
         self.tomTomDailyCap = tomTomDailyCap
         self.openWeatherToday = openWeatherToday
         self.openWeatherDailyCap = openWeatherDailyCap
+        self.orgId = orgId
+        self.orgName = orgName
     }
 
     public init(from decoder: Decoder) throws {
@@ -70,6 +78,8 @@ public struct FleetProxyDeskStatus: Sendable, Codable, Equatable {
         tomTomDailyCap = try container.decodeIfPresent(Int.self, forKey: .tomTomDailyCap) ?? 500
         openWeatherToday = try container.decodeIfPresent(Int.self, forKey: .openWeatherToday) ?? 0
         openWeatherDailyCap = try container.decodeIfPresent(Int.self, forKey: .openWeatherDailyCap) ?? 200
+        orgId = try container.decodeIfPresent(String.self, forKey: .orgId)
+        orgName = try container.decodeIfPresent(String.self, forKey: .orgName)
     }
 
     /// Remaining ORS route budget for today (never negative).
@@ -122,9 +132,21 @@ public struct FleetProxyDeskStatus: Sendable, Codable, Equatable {
         return "\(tomTom) · \(weather)"
     }
 
+    /// Authenticated depot line when org identity is present.
+    public var authenticatedDepotLine: String? {
+        guard let orgName, !orgName.isEmpty else { return nil }
+        if let orgId, !orgId.isEmpty {
+            return "Authenticated depot: \(orgName) (\(orgId))"
+        }
+        return "Authenticated depot: \(orgName)"
+    }
+
     /// Ordered summary lines for the Mac Dispatch proxy card.
     public var summaryLines: [String] {
-        [orsSummaryLine, forecastSummaryLine]
+        if let authenticatedDepotLine {
+            return [authenticatedDepotLine, orsSummaryLine, forecastSummaryLine]
+        }
+        return [orsSummaryLine, forecastSummaryLine]
     }
 
     /// Near-cap caption when either ORS meter is ≥ 90% used.
@@ -150,5 +172,7 @@ public struct FleetProxyDeskStatus: Sendable, Codable, Equatable {
         case tomTomDailyCap
         case openWeatherToday
         case openWeatherDailyCap
+        case orgId
+        case orgName
     }
 }

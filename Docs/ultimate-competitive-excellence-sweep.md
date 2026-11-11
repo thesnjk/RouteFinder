@@ -371,8 +371,9 @@ Always **print** push commands. Do **not** push unless the user asked to push (o
 |------:|-----|------|
 | 1 | Agent | ~~`EPIC-P0-DEVICE` / Phase 7b CI-sim close~~ **Done** 2026-11-11 — C4/C9/Part B Pass (CI) |
 | 2 | Agent | ~~H1/H2 + HOS duty-log/extension/WTD + Lane Overpass parity~~ **Done** 2026-11-09 |
-| 3 | Agent | Gated residuals only when unlocked (AA / CarPlay / VU / LEZ / live £ / HD / billing) — do not invent multi-surface epics (e.g. crowd LAN) until deliberately scoped |
-| 4 | Operator | Optional Block 1b / Part B LAN smoke via [`phase1-device-checklist.md`](phase1-device-checklist.md) before first pilot / fleet demo |
+| 3 | Agent | ~~`EPIC-OFFLINE-UX` Midlands M1–M6 mid-corridor~~ **Done** 2026-11-11 — residual = country-pack depth only |
+| 4 | Agent | Gated residuals only when unlocked (AA / CarPlay / VU / LEZ / live £ / HD / billing / Android offline) — do not invent multi-surface epics (e.g. crowd LAN) until deliberately scoped |
+| 5 | Operator | Optional Block 1b / Part B LAN smoke via [`phase1-device-checklist.md`](phase1-device-checklist.md) before first pilot / fleet demo |
 
 Also see: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B for optional physical walkaround → desk defect detail.
 

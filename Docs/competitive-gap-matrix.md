@@ -100,6 +100,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 
 ### Remaining gaps (not claiming parity yet — sequenced under driver-first)
 
+- **Offline country-pack depth** — Midlands M1–M6 mid-corridor **Shipped** (`OfflineDownloadRegion.midlands`); residual = Sygic-style UK country pack / Android offline (gated) — still RF=2
 - **CarPlay / Android Auto** — `EPIC-CARPLAY-PROD` / `EPIC-ANDROID-AUTO` (code path exists; entitlements + AA surface gated)
 - **Parking availability** — **Shipped (MVP)** ranked layby green/amber/red map pins (iOS + Android) + occupancy taps + Break Now; was `EPIC-PARKING-AVAIL` (live bay feed residual). **Parking booking MVP shipped** (`EPIC-PARKING-BOOK` deep links + voice entry; native book API residual)
 - **Combo length / trailer count** — **Shipped (MVP)** cab + Mac/web desk trailer→ORS ladder; was `EPIC-COMBO-LENGTH`
@@ -149,7 +150,7 @@ See [`ultimate-hgv-platform-spec.md`](ultimate-hgv-platform-spec.md).
 | Capability | RouteFinder | Typical truck GPS | Fleet telematics | Notes |
 |---|---|---|---|---|
 | Full constraint routing on live route | **Strong** (ORS L/W/H/length/axle/hazmat/ADR/avoids) | Strong | Strong | Phase 0–2 |
-| Offline maps | **UK region packs** (H3 routing tiles + local map-pack HTTP) | Strong | Hybrid | Phase 3–4 |
+| Offline maps | **UK region packs** (Norfolk / East Anglia / Midlands M1–M6 + H3 tiles + local map-pack HTTP); residual = country-pack depth | Strong | Hybrid | Phase 3–4 + EPIC-OFFLINE-UX Midlands 2026-11-11 |
 | Truck POI network | **Fuel / parking / weigh / layby along-route** (+ disk cache + occupancy prior) | Strong | Weak as nav | Living layer |
 | Physics pre-trip + kinetic risk | **Strong** (Rehearse + live HUD/voice + shareable brief) | Absent | Absent | Wedge |
 | Plate → auto vehicle profile (UK) | **Strong** (RegCheck + DVLA chain) | Manual | Asset registry | UK first |

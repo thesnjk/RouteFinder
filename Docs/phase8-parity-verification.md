@@ -31,9 +31,10 @@ Manual QA for toll hints, telematics stub, parking deep links, offline UX, and l
 
 ## Offline pack UX
 
-- [ ] Settings → Offline Routing → region picker (Norfolk / UK)
+- [ ] Settings → Offline Routing → region picker (Norfolk / East Anglia / Midlands M1–M6 / UK mainland)
 - [ ] Download shows linear progress
 - [ ] Map pack section shows pack path; macOS **Reveal in Finder** works
+- [x] Midlands mid-corridor enum + size honesty — `OfflineDownloadRegion.midlands` + `OfflineDownloadRegionTests` (2026-11-11)
 
 ## Lane guidance depth
 

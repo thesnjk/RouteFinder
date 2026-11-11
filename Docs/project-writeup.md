@@ -6,7 +6,7 @@
 **Document type:** Production engineering monograph — Analysis → Design → Implementation → Testing → Evaluation → Appendices; **no client interviews**  
 **Repository:** proprietary — see root [`LICENSE`](../LICENSE)  
 **Last updated:** 2026-11-11  
-**Status:** **senior monograph — pass 3 shipped** (Testing/Evaluation §§4–5); next = pass 4 Appendices; product residuals remain secrets-gated
+**Status:** **senior monograph — complete** (pass 4 Appendices); living Doc — update changelog on surface change; product residuals remain secrets-gated
 
 Integers, CI evidence, and phase verification remain authoritative in [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md), [`engineering-test-matrix.md`](engineering-test-matrix.md), and relevant `phase*` Docs. This monograph states invariants, trust boundaries, contracts, and failure modes, and points at those SSOTs for greppable proof.
 
@@ -31,7 +31,7 @@ Gated product work (Android Auto / offline packs, CarPlay production entitlement
 | Field | Value |
 |-------|--------|
 | Primary file | `Docs/project-writeup.md` |
-| Edition | Senior monograph pass 3 (Testing / Evaluation) |
+| Edition | Senior monograph complete (pass 4 Appendices) |
 | Related indexes | [`developer-map.md`](developer-map.md), root [`README.md`](../README.md) |
 | Architecture SSOT | [`architecture.md`](architecture.md) |
 | Competitive SSOT | [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md), [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md) |
@@ -97,6 +97,7 @@ Gated product work (Android Auto / offline packs, CarPlay production entitlement
    - [Appendix C — Screenshots](#appendix-c--screenshots)
    - [Appendix D — Data sources](#appendix-d--data-sources)
    - [Appendix E — Glossary](#appendix-e--glossary)
+   - [Appendix F — STRIDE-lite threat table](#appendix-f--stride-lite-threat-table)
 7. [Document changelog](#7-document-changelog)
 
 ---
@@ -973,9 +974,9 @@ Authored LEZ rings and named toll advisories are **not** certified cadastre or l
 
 **Product:** Resume gated epics only when unlocked by name. Do not invent mid-corridor / LEZ densify / toll-£ clones without a Mersey-class catalog hole or measurable scorecard gap. Prefer desk/cab parity after cab-only slices.
 
-**Documentation:** `EPIC-DOCS-WRITEUP` (NEA spine) is Done. `EPIC-DOCS-WRITEUP-SENIOR` continues: **next = pass 4 Appendices** (STRIDE-lite table, glossary expansion, SSOT bibliography). Keep this file as living narrative (changelog on surface change).
+**Documentation:** `EPIC-DOCS-WRITEUP` (NEA spine) and `EPIC-DOCS-WRITEUP-SENIOR` (passes 1–4) are **Done**. Keep this file as a living narrative — update changelog when surfaces move; do not invent further monograph passes without a surface change. Product work resumes only on unlocked gates.
 
-**Process:** Issue → branch → PR → print-merge; never commit `Docs/agent-master-prompt.md`; never merge unless asked. Stack later writeup passes on the prior feature tip while its PR is still open.
+**Process:** Issue → branch → PR → print-merge; never commit `Docs/agent-master-prompt.md`; never merge unless asked.
 
 ---
 
@@ -983,52 +984,73 @@ Authored LEZ rings and named toll advisories are **not** certified cadastre or l
 
 ### Appendix A — Objectives traceability
 
-Consolidated from §§2.7, 3.10, 4.8, and 5.2.
+Consolidated from §§2.7, 3.10, 4.8, and 5.2. Evidence grades per §1.4 (**S/T/C/D**).
 
-| ID | Design component | Implementation path | Test / CI evidence | Evaluation |
-|----|------------------|---------------------|--------------------|------------|
-| FO1 | ORS planning + constraint profile | ORS client; trailer→ORS ladder | Payload/factory + combo-length tests; `swift test` | **Met (MVP)** |
-| FO2 | Fleet dispatch + SSE/REST | `FleetDispatchCoordinator`; fleet server/gateway; Mac/web desk | Fleet SSE/HTTP/store tests; fleet-e2e smoke; web `npm test` | **Met (MVP)** |
-| FO3 | Physics rehearsal + brief | `RouteSimulationCoordinator` / physics engines | Kinetic + trip-brief tests | **Met (MVP)** |
-| FO4 | HOS advisory | `HosAdvisoryCoordinator` | `EU561HosClockTests`, tacho import; README disclaimer | **Partial** (VU residual) |
-| FO5 | UK living layer + fuse | Hazard/predictive coordinators; catalogs | Toll Phase8; layby/hazard/roadworks/POI suites | **Partial** (live £ / cadastre) |
-| FO6 | Connection + proxy status | `FleetProxyDeskStatus`; Connection UIs | `FleetProxyDeskStatusTests`; schema Doc | **Partial** (Stripe residual) |
-| FO7 | Android C2 client | `android-fleet-driver/` | CI `android-c1` | **Partial** (AA/offline gated) |
+| ID | Design component | Implementation path (**S**) | Test / CI evidence (**T/C/D**) | Evaluation |
+|----|------------------|-----------------------------|-------------------------------|------------|
+| FO1 | ORS planning + constraint profile | `OpenRouteServiceRoutingClient`; trailer→ORS ladder | Payload/factory + `VehicleProfileComboLengthTests`; **C** `macos` | **Met (MVP)** |
+| FO2 | Fleet dispatch + SSE/REST | `FleetDispatchCoordinator`; fleet server/gateway; Mac/web desk | `FleetSSETests` / store tests; fleet-e2e smoke; web `npm test` | **Met (MVP)** |
+| FO3 | Physics rehearsal + brief | `RouteSimulationCoordinator` / physics engines | `KineticPhysicsEngineTests`, `TripBriefFormatterTests` | **Met (MVP)** |
+| FO4 | HOS advisory | `HosAdvisoryCoordinator` | `EU561HosClockTests`, tacho import; README disclaimer (**D**) | **Partial** (VU residual) |
+| FO5 | UK living layer + fuse | Hazard/predictive coordinators; LEZ/toll catalogs | `Phase8ParityTests`; `TruckPoiLivingLayerTests` (Sheffield / Birmingham / Bradford / Bristol / Bath); layby/hazard suites | **Partial** (live £ / remaining cadastre) |
+| FO6 | Connection + proxy status | `FleetProxyDeskStatus`; Connection UIs | `FleetProxyDeskStatusTests`; Android `FleetProxyStatusLabelsTest`; schema (**D**) | **Partial** (Stripe residual) |
+| FO7 | Android C2 client | `android-fleet-driver/` | **C** `android-c1`; [`android-c2-gate.md`](android-c2-gate.md) | **Partial** (AA/offline gated) |
 | FO8 | Overpass lane enrichment | Planning lane enrichment | `LaneGuidanceEnricherTests` | **Partial** (HD residual) |
 | NFO1 | Module + coordinator rules | [`architecture.md`](architecture.md) | Coordinator tests | **Met** |
 | NFO2 | Strict concurrency | Package norms | `swift test` | **Met** |
-| NFO3 | Glass UI | `GlassmorphicModifiers` | UI smoke / convention | **Met** |
-| NFO4 | Secrets hygiene | Masking helpers | Masking unit tests; screenshot policy | **Met** |
-| NFO5 | Remote policy + ledger | DataLayer networking | `RemoteRequestPolicyTests`; ledger/meter tests | **Met** |
-| NFO6 | Verifiability | CI workflow | Jobs `macos` / `ios` / `web-dispatch` / `android-c1` / `hosted-gateway` | **Met** |
+| NFO3 | Glass UI | `GlassmorphicModifiers` | UI smoke (**C** `ios`) / convention | **Met** |
+| NFO4 | Secrets hygiene | `maskApiKey` / `maskedTokenLine` | Masking unit tests; screenshot policy (**D**) | **Met** |
+| NFO5 | Remote policy + ledger | `RemoteRequestPolicy`; `APIUsageLedger` | `RemoteRequestPolicyTests`; ledger/meter tests | **Met** |
+| NFO6 | Verifiability | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) | Jobs `macos` / `ios` / `web-dispatch` / `android-c1` / `hosted-gateway` | **Met** |
 | NFO7 | Docs SSOT | scorecard / sweep / this writeup | PR Docs upkeep | **Met** |
 
-### Appendix B — Document index
+### Appendix B — SSOT bibliography
+
+Grouped index of authoritative Docs (prefer these over chat memory).
+
+#### Architecture / product map
 
 | Doc | Role |
 |-----|------|
+| This file [`project-writeup.md`](project-writeup.md) | Senior full-stack technical monograph (living) |
 | [`developer-map.md`](developer-map.md) | Thin layout / tests / hard rules index |
-| [`getting-started.md`](getting-started.md) | Stranger-path role picker |
 | [`architecture.md`](architecture.md) | Modules, coordinators, desk↔driver |
+| [`getting-started.md`](getting-started.md) | Stranger-path role picker |
+| Root [`README.md`](../README.md) | Product bullets, API keys, legal HOS notice |
+
+#### Competitive / personas
+
+| Doc | Role |
+|-----|------|
 | [`competitive-feature-scorecard.md`](competitive-feature-scorecard.md) | Lead / Parity / Gap integers |
 | [`competitive-gap-matrix.md`](competitive-gap-matrix.md) | Sequenced gaps |
 | [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md) | Research runbook + agent rows |
 | [`buyer-personas-uk-hgv.md`](buyer-personas-uk-hgv.md) | OO / SF / Android / hosted personas |
+
+#### Fleet / API / hosted
+
+| Doc | Role |
+|-----|------|
 | [`fleet-api-schema.json`](fleet-api-schema.json) | Fleet wire contract (`FleetProxyDeskStatus`) |
 | [`hosted-gateway-deployment.md`](hosted-gateway-deployment.md) | Operator HTTPS gateway |
 | [`android-c2-gate.md`](android-c2-gate.md) | Android C2 status + gates |
-| [`engineering-test-matrix.md`](engineering-test-matrix.md) | Cross-surface test ledger |
 | [`fleet-e2e-qa.md`](fleet-e2e-qa.md) | Fleet E2E playbook |
-| [`phase1-device-checklist.md`](phase1-device-checklist.md) | Optional physical smoke |
 | [`pilot-fleet-pack.md`](pilot-fleet-pack.md) | Pilot pack |
+
+#### QA / CI
+
+| Doc | Role |
+|-----|------|
+| [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) | Standing CI jobs |
+| [`engineering-test-matrix.md`](engineering-test-matrix.md) | Cross-surface test ledger |
+| [`phase1-device-checklist.md`](phase1-device-checklist.md) | Optional physical smoke |
 | [`screenshots/README.md`](screenshots/README.md) | Product shot captions / re-capture |
-| Root [`README.md`](../README.md) | Product bullets, API keys, legal HOS notice |
 
 ### Appendix C — Screenshots
 
 Visual evidence for GTM and stranger paths lives under [`screenshots/`](screenshots/) with captions in [`screenshots/README.md`](screenshots/README.md). Re-capture via `RouteFinderAppUITests/ProductScreenshotsUITests` when chrome changes.
 
-**Hard rule:** never commit or publish screenshots that show unmasked API keys, Bearer tokens, or org secrets. Prefer Connection UIs that already mask tokens (`maskApiKey` / `maskedTokenLine`).
+**Hard rule:** never commit or publish screenshots that show unmasked API keys, Bearer tokens, or org secrets. Prefer Connection UIs that already mask tokens (`maskApiKey` / `maskedTokenLine` / Android `FleetProxyStatusLabels`).
 
 ### Appendix D — Data sources
 
@@ -1036,10 +1058,11 @@ Visual evidence for GTM and stranger paths lives under [`screenshots/`](screensh
 |--------|--------------------|-------|
 | HeiGIT OpenRouteService | Live HGV constraint routing / geocode (solo or fleet proxy) | Operator/depot keys; fair-use meters; avoid-polygon area caps |
 | OpenStreetMap / Overpass | Lane enrichment, roadworks, clearance probes, POI context | Open data; query caps (e.g. Overpass ≤12/route) |
+| Open-data LEZ / CAZ (OGL/OSM) | Densified avoid rings for Sheffield / Birmingham / Bradford / Bristol / Bath | ORS-safe; not legal cadastre; London ULEZ omit by area cap |
 | TomTom | Live traffic / hazard sampling when configured | Proprietary feed via fleet proxy or configured key |
 | RegCheck + DVLA | Plate → vehicle profile | Configured credentials; planning aid |
 | OpenWeather | Forecast risk sampler when configured | Optional via proxy |
-| Authored UK catalogs | LEZ rings, named toll £ advisories | Not legal cadastre; not live operator tariffs |
+| Authored UK catalogs | LEZ rings, named toll £ advisories | Triple-sync Swift + Android + web; not live operator tariffs |
 | Driver-card JSON/DDD import | Advisory HOS remainings | VU remains legal authority |
 
 Configuration and key placement: root README API-keys section and [`hosted-gateway-deployment.md`](hosted-gateway-deployment.md). Do not commit secrets.
@@ -1061,6 +1084,29 @@ Configuration and key placement: root README API-keys section and [`hosted-gatew
 | Fair-use meters | Soft API budgets / proxy-status usage fields |
 | C2 | Android fleet-driver navigator MVP (proxy client) |
 | Glass UI | SwiftUI chrome via `GlassmorphicModifiers` |
+| S / T / C / D | Evidence grades: Symbol / Test / CI job / Doc SSOT (§1.4) |
+| `FleetProxyDeskStatus` | `/v1/proxy/status` DTO — `orgId` / `orgName` + meters |
+| `RemoteRequestPolicy` | Shared timeout / retry / 429 policy for remote I/O |
+| `LEZAvoidPolicy` | Avoid-ring selection + `avoidPolygonAreaCapSquareMeters` soft cap |
+| `APIUsageLedger` | Soft usage accounting surfaced via Connection meters |
+| Triple-sync | Shared UK catalog change lands Swift + Android + `web-dispatch` in one PR |
+| STRIDE-lite | Condensed Spoofing/Tampering/Repudiation/Info disclosure/DoS/Elevation table (Appendix F) |
+| Partial ≠ Fail | Gated residual after MVP ship — not unmarked incomplete work (§5.1) |
+
+### Appendix F — STRIDE-lite threat table
+
+Formalizes §2.8 trust boundaries and §4.5 threat-coverage lite. Not a full enterprise threat model; controls are those already shipped.
+
+| STRIDE | Boundary / asset | Threat example | Control in RouteFinder |
+|--------|------------------|----------------|------------------------|
+| **S** Spoofing | LAN / hosted fleet edge | Caller without valid Bearer | `FleetAuthTests` path; Operator-minted tokens; Connection Test fails closed |
+| **T** Tampering | Desk↔cab trip / snapshot wire | Schema drift or malformed proxy JSON | [`fleet-api-schema.json`](fleet-api-schema.json) + mirrored decode (`FleetProxyDeskStatusTests`) |
+| **R** Repudiation | Advisory HOS / VU authority | Product presented as legal tacho | Copy + README disclaimer; VU remains authority (no download claim) |
+| **I** Info disclosure | Cab / desk UI, Docs screenshots, git | Unmasked Bearer / API key | `maskApiKey` / `maskedTokenLine` / `FleetProxyStatusLabels`; screenshot policy; no secrets in git |
+| **D** Denial of service | ORS / gateway / Overpass | 429 floods; oversize LEZ avoid polygons | `RemoteRequestPolicy` backoff; fair-use meters; `LEZAvoidPolicy` area soft cap (London omit) |
+| **E** Elevation of privilege | Hosted multi-depot | Cross-org access via shared weak token | Per-org Bearer minting (Operator); Account-Manager-lite identity — **not** multi-tenant SaaS IAM / Stripe |
+
+Residual threats requiring unlock: partner VU channels, Stripe PCI, production CarPlay/AA entitlement surfaces.
 
 ---
 
@@ -1078,4 +1124,5 @@ Configuration and key placement: root README API-keys section and [`hosted-gatew
 | 2026-11-11 | #139 / (this PR) | **Appendices A–E polished**; `EPIC-DOCS-WRITEUP` structurally **Done** |
 | 2026-11-11 | #143 / #144 | **Senior monograph pass 1** — Abstract/Status reframe; §1.4 scoring/evidence method; Design invariants + §§2.8–2.12; Bristol+Bath LEZ honesty; next = pass 2 Implementation depth |
 | 2026-11-11 | #145 / #146 | **Senior monograph pass 2** — §3 Implementation depth (call graphs, key invariants, Connection parity, CI map, FO/NFO S/T/C/D); next = pass 3 Testing/Evaluation |
-| 2026-11-11 | #147 / (this PR) | **Senior monograph pass 3** — §§4–5 Testing/Evaluation (property claims, threat-coverage lite, S/T/C/D verification, Met/Partial vocabulary); next = pass 4 Appendices |
+| 2026-11-11 | #147 / #148 | **Senior monograph pass 3** — §§4–5 Testing/Evaluation (property claims, threat-coverage lite, S/T/C/D verification, Met/Partial vocabulary); next = pass 4 Appendices |
+| 2026-11-11 | #149 / (this PR) | **Senior monograph pass 4** — Appendices A–F (SSOT bibliography, glossary expansion, STRIDE-lite); `EPIC-DOCS-WRITEUP-SENIOR` **Done** |

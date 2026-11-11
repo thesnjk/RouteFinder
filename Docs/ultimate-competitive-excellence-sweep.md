@@ -383,6 +383,7 @@ Always **print** push commands. Do **not** push unless the user asked to push (o
 | 12 | Agent | ~~`EPIC-TOLL-DEPTH` Mersey Tunnels Queensway/Kingsway~~ **Done** 2026-11-11 — Class 2 HGV cash £4.80; residual = live operator feed |
 | 13 | Agent | ~~`EPIC-TOLL-DEPTH` Dunham Bridge + Batheaston Bridge~~ **Done** 2026-11-11 — GOV.UK A-road holes; Dunham £4.00 / Batheaston HGV-unsuitable; residual = live operator feed |
 | 14 | Agent | ~~`EPIC-HOSTED-DESK` org identity + Connection meters~~ **Done** 2026-11-11 — proxy/status orgId/orgName; residual = Stripe billing |
+| 14b | Agent | ~~`EPIC-HOSTED-DESK` Mac masked-token parity~~ **Done** 2026-11-11 — Fleet-proxy panel Token line matches web `maskApiKey` |
 | 15 | Agent | **Stop inventing product epics** — next implementation requires paid secrets/entitlements (AA / CarPlay / VU / further LEZ / live £ feed / HD / Stripe / Android offline / further country PBF). Do not invent multi-surface crowd LAN; do not ask-loop while agent-doable residuals remain. |
 | 14 | Operator | Optional Block 1b / Part B LAN smoke via [`phase1-device-checklist.md`](phase1-device-checklist.md) before first pilot / fleet demo |
 

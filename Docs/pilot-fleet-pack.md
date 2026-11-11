@@ -81,7 +81,7 @@ Ops guide: [README — Fleet LAN server](../README.md#fleet-lan-server-multi-dev
 | Method | Path | Body / notes |
 |---|---|---|
 | `GET` | `/health` | `FleetServerHealthResponse` `{ ok, version }` — public even when API key set |
-| `GET` | `/v1/proxy/status` | `{ orsConfigured, routesToday, routeDailyCap, geocodeToday, geocodeDailyCap }` |
+| `GET` | `/v1/proxy/status` | `{ orsConfigured, routesToday, routeDailyCap, geocodeToday, geocodeDailyCap, orgId?, orgName? }` — optional org identity for authenticated bearer; desks show masked token (never full secret) |
 | `POST` | `/v1/proxy/ors/v2/directions/...` | Operator-paid ORS proxy (requires `--ors-key`) |
 | `GET` | `/v1/proxy/pelias/v1/search` | Operator-paid Pelias geocode proxy |
 | `POST` | `/v1/orgs` | `{ "name": "…" }` → `FleetOrg` |

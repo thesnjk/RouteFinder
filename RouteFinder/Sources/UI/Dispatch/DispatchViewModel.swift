@@ -44,6 +44,13 @@ public final class DispatchViewModel {
     public private(set) var fleetServerModeLabel: String = "Local disk"
     /// Desk metering from `/v1/proxy/status` when remote Connected; nil otherwise.
     public private(set) var fleetProxyStatus: FleetProxyDeskStatus?
+    /// Masked saved fleet API key for Connected Fleet-proxy panel (web Connection parity).
+    public var maskedFleetAPITokenLine: String {
+        let saved = (try? FleetServerCredentials.loadAPIKey()) ?? ""
+        let draft = fleetAPIKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        let token = saved.isEmpty ? draft : saved
+        return FleetProxyDeskStatus.maskedTokenLine(for: token)
+    }
     /// Draft shared fleet API key for inline desk paste (Auth failed recovery).
     public var fleetAPIKeyDraft: String = ""
     /// True while persisting the desk fleet API key and re-probing health.

@@ -57,6 +57,11 @@ struct DispatchTripFormView: View {
            let status = viewModel.fleetProxyStatus {
             DisclosureGroup {
                 VStack(alignment: .leading, spacing: RFSpacing.xs) {
+                    Text(viewModel.maskedFleetAPITokenLine)
+                        .font(RFFont.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("dispatchProxyMaskedToken")
                     ForEach(Array(status.summaryLines.enumerated()), id: \.offset) { _, line in
                         Text(line)
                             .font(RFFont.caption)

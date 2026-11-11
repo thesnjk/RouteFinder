@@ -1032,9 +1032,39 @@ struct SettingsSheet: View {
                     .foregroundStyle(fleetConnectionStatusColor(status))
             }
 
+            if let proxy = viewModel.fleetProxyStatus {
+                VStack(alignment: .leading, spacing: RFSpacing.xs) {
+                    if let depot = proxy.authenticatedDepotLine {
+                        Text(depot)
+                            .font(RFFont.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Text(viewModel.settingsMaskedFleetAPITokenLine)
+                        .font(RFFont.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("settingsProxyMaskedToken")
+                    Text(proxy.orsSummaryLine)
+                        .font(RFFont.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let warning = proxy.nearCapWarning {
+                        Text(warning)
+                            .font(RFFont.caption.weight(.semibold))
+                            .foregroundStyle(.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .accessibilityIdentifier("settingsProxyStatusPanel")
+            }
+
             Toggle("Use remote fleet server", isOn: $viewModel.useRemoteFleetServer)
-                .onChange(of: viewModel.useRemoteFleetServer) { _, _ in
+                .onChange(of: viewModel.useRemoteFleetServer) { _, enabled in
                     viewModel.saveFleetServerURLFromSettings()
+                    if !enabled {
+                        viewModel.fleetProxyStatus = nil
+                    }
                 }
 
             TextField("Fleet server URL (LAN or https://…)", text: $viewModel.fleetServerURLText)

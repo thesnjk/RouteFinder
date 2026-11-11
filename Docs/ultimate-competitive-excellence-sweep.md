@@ -385,6 +385,7 @@ Always **print** push commands. Do **not** push unless the user asked to push (o
 | 14 | Agent | ~~`EPIC-HOSTED-DESK` org identity + Connection meters~~ **Done** 2026-11-11 — proxy/status orgId/orgName; residual = Stripe billing |
 | 14b | Agent | ~~`EPIC-HOSTED-DESK` Mac masked-token parity~~ **Done** 2026-11-11 — Fleet-proxy panel Token line matches web `maskApiKey` |
 | 14c | Agent | ~~`EPIC-DOCS` fleet-api-schema FleetProxyDeskStatus~~ **Done** 2026-11-11 — schema SSOT includes proxy/status orgId/orgName |
+| 14d | Agent | ~~`EPIC-HOSTED-DESK` Settings Connection proxy-status parity~~ **Done** 2026-11-11 — Settings Test shows depot / masked token / ORS meters |
 | 15 | Agent | **Stop inventing product epics** — next implementation requires paid secrets/entitlements (AA / CarPlay / VU / further LEZ / live £ feed / HD / Stripe / Android offline / further country PBF). Do not invent multi-surface crowd LAN; do not ask-loop while agent-doable residuals remain. |
 | 14 | Operator | Optional Block 1b / Part B LAN smoke via [`phase1-device-checklist.md`](phase1-device-checklist.md) before first pilot / fleet demo |
 

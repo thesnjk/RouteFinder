@@ -57,6 +57,8 @@ public protocol FleetDispatchHost: AnyObject {
     var fleetServerAPIKeyText: String { get set }
     var useRemoteFleetServer: Bool { get set }
     var fleetServerConnectionStatus: String? { get set }
+    /// Desk metering + org identity from `/v1/proxy/status` after a successful Settings Test.
+    var fleetProxyStatus: FleetProxyDeskStatus? { get set }
     var discoveredFleetServers: [DiscoveredFleetServer] { get set }
     var isDiscoveringFleetServers: Bool { get set }
     var fleetDiscoveryStatus: String? { get set }
@@ -105,6 +107,7 @@ public final class FleetDispatchCoordinator {
             host.fleetServerConnectionStatus = "Fleet store switched to remote."
         } else {
             host.fleetServerConnectionStatus = "Fleet store switched to local disk."
+            host.fleetProxyStatus = nil
         }
     }
 
@@ -286,6 +289,7 @@ public final class FleetDispatchCoordinator {
         guard let host else { return }
         guard let url = FleetWorkspaceSettings.loadFleetServerURL() else {
             host.fleetServerConnectionStatus = "Enter a fleet server URL first."
+            host.fleetProxyStatus = nil
             return
         }
         let trimmedKey = host.fleetServerAPIKeyText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -294,6 +298,7 @@ public final class FleetDispatchCoordinator {
         do {
             let health = try await client.checkHealth()
             guard health.ok else {
+                host.fleetProxyStatus = nil
                 host.fleetServerConnectionStatus = FleetServerHealthLabel.status(
                     healthOk: false,
                     authSucceeded: false
@@ -301,13 +306,15 @@ public final class FleetDispatchCoordinator {
                 return
             }
             do {
-                try await client.verifyAuthenticatedAccess()
+                let status = try await client.fetchProxyStatus()
+                host.fleetProxyStatus = status
                 host.fleetServerConnectionStatus = FleetServerHealthLabel.status(
                     healthOk: true,
                     authSucceeded: true,
                     version: health.version
                 )
             } catch {
+                host.fleetProxyStatus = nil
                 if FleetServerHealthLabel.isAuthFailure(error) {
                     host.fleetServerConnectionStatus = FleetServerHealthLabel.status(
                         healthOk: true,
@@ -322,6 +329,7 @@ public final class FleetDispatchCoordinator {
                 }
             }
         } catch {
+            host.fleetProxyStatus = nil
             if FleetServerHealthLabel.isAuthFailure(error) {
                 host.fleetServerConnectionStatus = FleetServerHealthLabel.status(
                     healthOk: true,
@@ -360,6 +368,7 @@ public final class FleetDispatchCoordinator {
         host.useRemoteFleetServer = true
         saveFleetServerURLFromSettings()
         reloadFleetStore()
+        host.fleetProxyStatus = nil
         host.fleetServerConnectionStatus = "Applied \(server.displayName)."
         host.fleetDiscoveryStatus = nil
     }

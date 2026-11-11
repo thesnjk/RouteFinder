@@ -1697,6 +1697,12 @@ public final class RouteViewModel {
         await downloadSelectedOfflineRegion()
     }
 
+    /// Downloads the Scotland Central Belt mid-corridor (M8–M9) between North West and UK mainland.
+    public func downloadScotlandCentralOfflineCorridor() async {
+        selectedOfflineDownloadRegion = .scotlandCentral
+        await downloadSelectedOfflineRegion()
+    }
+
     /// Attempts to ensure a UK-wide corridor (may request many tiles — prefer pre-placed packs).
     public func downloadUKOfflineCorridor() async {
         selectedOfflineDownloadRegion = .ukCorridor

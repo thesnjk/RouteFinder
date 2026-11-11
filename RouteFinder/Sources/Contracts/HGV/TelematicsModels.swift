@@ -82,6 +82,8 @@ public enum OfflineDownloadRegion: String, Sendable, Codable, CaseIterable, Iden
     case midlands
     /// Mid-size North West / M6–M62 band (Manchester–Liverpool–Preston–Warrington).
     case northWest
+    /// Mid-size Scotland Central Belt / M8–M9 band (Glasgow–Edinburgh).
+    case scotlandCentral
     case ukCorridor
 
     public var id: String { rawValue }
@@ -92,6 +94,7 @@ public enum OfflineDownloadRegion: String, Sendable, Codable, CaseIterable, Iden
         case .eastAnglia: return "East Anglia (A14–M11)"
         case .midlands: return "Midlands (M1–M6)"
         case .northWest: return "North West (M6–M62)"
+        case .scotlandCentral: return "Scotland Central (M8–M9)"
         case .ukCorridor: return "UK mainland (large)"
         }
     }
@@ -102,6 +105,7 @@ public enum OfflineDownloadRegion: String, Sendable, Codable, CaseIterable, Iden
         case .eastAnglia: return "Medium — covers Norwich–Cambridge–Ipswich; larger than Norfolk demo, far smaller than UK mainland."
         case .midlands: return "Medium — covers Birmingham–Leicester–Northampton–Coventry (M1–M6); larger than East Anglia, far smaller than UK mainland."
         case .northWest: return "Medium — covers Manchester–Liverpool–Preston–Warrington (M6–M62); larger than East Anglia, far smaller than UK mainland."
+        case .scotlandCentral: return "Medium — covers Glasgow–Edinburgh Central Belt (M8–M9); larger than East Anglia, far smaller than UK mainland."
         case .ukCorridor: return "Large download — prefer pre-placed *.graphjson when possible."
         }
     }
@@ -122,6 +126,10 @@ public enum OfflineDownloadRegion: String, Sendable, Codable, CaseIterable, Iden
             // Separate corridor from Midlands (does not contain / contained by that bbox).
             // Area sits between East Anglia and Midlands vs ukCorridor honesty caps.
             return (minLat: 53.15, maxLat: 54.25, minLon: -3.60, maxLon: -1.40)
+        case .scotlandCentral:
+            // Glasgow–Edinburgh Central Belt approach (M8–M9 band).
+            // Separate from England mid-corridors; area between East Anglia and Midlands.
+            return (minLat: 55.50, maxLat: 56.40, minLon: -5.00, maxLon: -2.40)
         case .ukCorridor:
             return (minLat: 49.8, maxLat: 58.7, minLon: -8.2, maxLon: 1.8)
         }

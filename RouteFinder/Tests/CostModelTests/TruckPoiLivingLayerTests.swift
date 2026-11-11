@@ -150,6 +150,30 @@ import Testing
     #expect(!bradford.contains(Coordinate(latitude: 53.80, longitude: -1.55)))
 }
 
+@Test func ukLezBristolAndBathDensifiedUnderOrsCap() {
+    let bristol = try! #require(UKLowEmissionZoneCatalog.zones.first { $0.id == "bristol-caz" })
+    let bath = try! #require(UKLowEmissionZoneCatalog.zones.first { $0.id == "bath-caz" })
+    let bristolRing = bristol.avoidPolygonRing()
+    let bathRing = bath.avoidPolygonRing()
+    #expect(bristolRing.count - 1 >= 20)
+    #expect(bathRing.count - 1 >= 20)
+    #expect(bristolRing.first == bristolRing.last)
+    #expect(bathRing.first == bathRing.last)
+    #expect(
+        LEZAvoidPolicy.approximateRingAreaSquareMeters(bristolRing)
+            <= LEZAvoidPolicy.avoidPolygonAreaCapSquareMeters
+    )
+    #expect(
+        LEZAvoidPolicy.approximateRingAreaSquareMeters(bathRing)
+            <= LEZAvoidPolicy.avoidPolygonAreaCapSquareMeters
+    )
+    #expect(bristol.contains(Coordinate(latitude: bristol.latitude, longitude: bristol.longitude)))
+    #expect(bath.contains(Coordinate(latitude: bath.latitude, longitude: bath.longitude)))
+    // Exterior controls: Avonmouth / Keynsham approaches outside densified rings.
+    #expect(!bristol.contains(Coordinate(latitude: 51.506, longitude: -2.691)))
+    #expect(!bath.contains(Coordinate(latitude: 51.413, longitude: -2.497)))
+}
+
 @Test func ukLezCircleFallbackWhenNoBoundaryRing() {
     let circleOnly = UKLowEmissionZoneCatalog.Zone(
         id: "test-circle",

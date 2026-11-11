@@ -109,7 +109,7 @@ Strategy: global vision, **ship UK first**; differentiate on physics-sim + predi
 - **Lane HD / street callouts** — street TTS/HUD sanitize **Shipped (MVP slice)** (iOS + Android drop turn/keep/head echoes); residual HD visuals / richer OSM — `EPIC-LANE-DEPTH`
 - Full **toll tariff** depth — Mac + web desk corridor indicative £ **Shipped (MVP slice)** + named advisories/avoid/HUD/PTT + authored HGV £ refresh (M6/Dartford/Tyne) + Mersey Tunnels + Dunham Bridge + Batheaston Bridge (2026-11-11); residual live operator tariffs — `EPIC-TOLL-DEPTH`
 - **Remote VU download** — `EPIC-VU-PARTNER` (CSV / webhook + desk Can-I-drive week card shipped; legal VU residual)
-- Legal **cadastral LEZ** — `EPIC-LEZ-CADASTRE` open-data densify Sheffield + Birmingham + Bradford **Shipped (MVP slice)** 2026-11-11; residual = remaining zones + London-wide ULEZ (ORS area-cap blocked) + licensed cadastre
+- Legal **cadastral LEZ** — `EPIC-LEZ-CADASTRE` open-data densify Sheffield + Birmingham + Bradford + Bristol + Bath **Shipped (MVP slice)** 2026-11-11; residual = remaining zones + London-wide ULEZ (ORS area-cap blocked) + licensed cadastre
 - **Hosted multi-depot desk** — `EPIC-HOSTED-DESK` org identity + web + Mac Settings/Dispatch/Wizard + Android wizard/home Connection masked token/meters + `fleet-api-schema.json` FleetProxyDeskStatus **Shipped (MVP slice)** 2026-11-11; residual = Stripe/self-serve billing
 - **In-process planet PBF** parser (pipeline uses osmium + `PBFPreprocessor` / tile scripts — not a driver-facing gap)
 
@@ -241,7 +241,7 @@ See [`ultimate-hgv-platform-spec.md`](ultimate-hgv-platform-spec.md).
 10. **`EPIC-LANE-DEPTH`** — street TTS sanitize + Overpass iOS↔Android parity **Shipped (MVP slice)** (cap 12 / STRAIGHT skip / 50 km arc). Residual: HD lane visuals.
 11. **`EPIC-TOLL-DEPTH`** — Mac + web desk corridor indicative £ **Shipped (MVP slice)** (avoid/HUD/PTT + cab catalog) + authored HGV £ refresh (M6/Dartford/Tyne) + Mersey Tunnels + Dunham Bridge (£4.00) + Batheaston Bridge (HGV-unsuitable) (2026-11-11). Residual: live operator tariffs.
 12. **`EPIC-VU-PARTNER`** — legal remote VU download (partner webhook + desk Can-I-drive week card shipped as advisory MVP).
-13. **`EPIC-LEZ-CADASTRE`** — Sheffield + Birmingham + Bradford open-data densify **Shipped (MVP slice)** 2026-11-11; residual = remaining zones + London ORS-blocked + licensed cadastre.
+13. **`EPIC-LEZ-CADASTRE`** — Sheffield + Birmingham + Bradford + Bristol + Bath open-data densify **Shipped (MVP slice)** 2026-11-11; residual = remaining zones + London ORS-blocked + licensed cadastre.
 14. **`EPIC-HOSTED-DESK`** — org identity on `/v1/proxy/status` + web Connection depot/masked token/meters **Shipped (MVP slice)** 2026-11-11. Residual: Stripe/self-serve billing.
 
 Full table + first slices: [`ultimate-competitive-excellence-sweep.md`](ultimate-competitive-excellence-sweep.md#driver-first-reopen--2026-10-12b).

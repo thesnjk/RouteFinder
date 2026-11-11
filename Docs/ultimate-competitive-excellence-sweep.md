@@ -313,7 +313,7 @@ Original Oct 12 “Defer” list is **void** under the driver-first scope rule. 
 | 7 | `EPIC-LANE-DEPTH` | Fewer missed exits at complex junctions | TomTom / Sygic HD lanes | OSM + Overpass depth; street-name callouts like CoPilot 11.4 | Callouts on prepare/execute + richer `turn:lanes` |
 | 8 | `EPIC-TOLL-DEPTH` | Know toll cost / avoid before committing | TomTom / PTV tariffs | Authored HGV £ refresh + Mersey + Dunham (£4.00) + Batheaston (HGV-unsuitable) **Shipped (MVP slice)** 2026-11-11; residual = live operator feed | Keep catalog notes honest; no live API claim |
 | 9 | `EPIC-VU-PARTNER` | True remaining drive time from the legal VU | Samsara / Geotab remote VU | Partner SDK / webhook; keep advisory honest | Read-only VU status card + Can-I-drive fuse |
-| 10 | `EPIC-LEZ-CADASTRE` | Fewer false LEZ hits / misses | Sygic / TomTom legal zones | Sheffield + Birmingham + Bradford open-data densify **Shipped (MVP slice)** 2026-11-11; residual = remaining zones + London ORS-blocked + licensed cadastre | Densify remaining coarse envelopes; do not claim legal Pass |
+| 10 | `EPIC-LEZ-CADASTRE` | Fewer false LEZ hits / misses | Sygic / TomTom legal zones | Sheffield + Birmingham + Bradford + Bristol + Bath open-data densify **Shipped (MVP slice)** 2026-11-11; residual = remaining zones + London ORS-blocked + licensed cadastre | Densify remaining coarse envelopes; do not claim legal Pass |
 | 11 | `EPIC-HOSTED-DESK` | Desk pushes trips without LAN when depot Wi‑Fi fails | CoPilot Account Manager | Org identity on proxy/status + Connection depot/masked token/meters **Shipped (MVP slice)** 2026-11-11; residual = Stripe billing | Keep non-goal: no full SaaS billing UI |
 
 **Sequenced later ≠ won’t ship.** Hygiene H1–H3 land before epic rank 1+ unless a pilot forces otherwise.
@@ -379,6 +379,7 @@ Always **print** push commands. Do **not** push unless the user asked to push (o
 | 8 | Agent | ~~`EPIC-LEZ-CADASTRE` Sheffield + Birmingham open-data densify~~ **Done** 2026-11-11 — MVP slice; residual = remaining zones / London ORS-blocked / licensed cadastre |
 | 9 | Agent | ~~`EPIC-OFFLINE-SCOTLAND-CENTRAL` M8–M9 Glasgow–Edinburgh~~ **Done** 2026-11-11 — country-pack depth slice; residual = more corridors / `ukCorridor` hosting / Android offline |
 | 10 | Agent | ~~`EPIC-LEZ-CADASTRE` Bradford open-data densify~~ **Done** 2026-11-11 — MVP slice; residual = remaining zones / London ORS-blocked / licensed cadastre |
+| 10b | Agent | ~~`EPIC-LEZ-CADASTRE` Bristol + Bath open-data densify~~ **Done** 2026-11-11 — free OGL/OSM rings; residual = remaining zones / London ORS-blocked / licensed cadastre |
 | 11 | Agent | ~~`EPIC-TOLL-DEPTH` authored HGV indicative £ refresh~~ **Done** 2026-11-11 — M6/Dartford/Tyne; residual = live operator feed |
 | 12 | Agent | ~~`EPIC-TOLL-DEPTH` Mersey Tunnels Queensway/Kingsway~~ **Done** 2026-11-11 — Class 2 HGV cash £4.80; residual = live operator feed |
 | 13 | Agent | ~~`EPIC-TOLL-DEPTH` Dunham Bridge + Batheaston Bridge~~ **Done** 2026-11-11 — GOV.UK A-road holes; Dunham £4.00 / Batheaston HGV-unsuitable; residual = live operator feed |

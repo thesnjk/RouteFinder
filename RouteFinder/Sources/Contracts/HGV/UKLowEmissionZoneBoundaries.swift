@@ -3,8 +3,8 @@ import Foundation
 /// Hand-authored / open-data-simplified UK LEZ / CAZ boundary rings for ORS `avoid_polygons`.
 ///
 /// Rings are closed GeoJSON-style `[lon, lat]` envelopes — **not** legal cadastral boundaries.
-/// Sheffield + Birmingham + Bradford densified from OGL / OSM-published outlines
-/// (Douglas–Peucker ≈28 verts), kept under HeiGIT ORS avoid-polygon area caps.
+/// Sheffield + Birmingham + Bradford + Bristol + Bath densified from OGL / OSM-published
+/// outlines (Douglas–Peucker ≈28 verts), kept under HeiGIT ORS avoid-polygon area caps.
 /// London-wide ULEZ remains a coarse envelope (full TfL polygon exceeds ORS ~200 km²
 /// avoid limit — announcement/`contains` only).
 public enum UKLowEmissionZoneBoundaries: Sendable {
@@ -72,16 +72,37 @@ public enum UKLowEmissionZoneBoundaries: Sendable {
         [-1.92599, 52.47974],
     ])
 
-    /// Bristol Clean Air Zone — central / inner-city envelope.
+    /// Bristol Clean Air Zone — densified from Bristol City Council open GeoJSON (UK OGL),
+    /// Douglas–Peucker ≈28 verts; area ~3.2 km² (under ORS avoid soft cap).
     public static let bristolCAZ: [[Double]] = closed([
-        [-2.62, 51.440],
-        [-2.56, 51.440],
-        [-2.54, 51.452],
-        [-2.54, 51.468],
-        [-2.56, 51.475],
-        [-2.62, 51.475],
-        [-2.64, 51.462],
-        [-2.64, 51.448],
+        [-2.58213, 51.46070],
+        [-2.58571, 51.45936],
+        [-2.59078, 51.46129],
+        [-2.59376, 51.46032],
+        [-2.60548, 51.45173],
+        [-2.61305, 51.44981],
+        [-2.62075, 51.45183],
+        [-2.62486, 51.45071],
+        [-2.62963, 51.45817],
+        [-2.62713, 51.46238],
+        [-2.62947, 51.45714],
+        [-2.62268, 51.44897],
+        [-2.62297, 51.44447],
+        [-2.62687, 51.44138],
+        [-2.62400, 51.43962],
+        [-2.62494, 51.44130],
+        [-2.62176, 51.44409],
+        [-2.61754, 51.44292],
+        [-2.61471, 51.44501],
+        [-2.60604, 51.44622],
+        [-2.58920, 51.44425],
+        [-2.58081, 51.44664],
+        [-2.57801, 51.44410],
+        [-2.58205, 51.44771],
+        [-2.57976, 51.45096],
+        [-2.58403, 51.45262],
+        [-2.57999, 51.45637],
+        [-2.58422, 51.45714],
     ])
 
     /// Sheffield Clean Air Zone — densified from Sheffield City Council open GeoJSON (UK OGL),
@@ -119,16 +140,36 @@ public enum UKLowEmissionZoneBoundaries: Sendable {
         [-1.45457, 53.38508],
     ])
 
-    /// Bath Clean Air Zone — compact city-centre envelope.
+    /// Bath Clean Air Zone — densified from OSM-published BANES CAZ outline (OGL-compatible),
+    /// Douglas–Peucker ≈28 verts; area ~3.1 km² (under ORS avoid soft cap).
     public static let bathCAZ: [[Double]] = closed([
-        [-2.385, 51.372],
-        [-2.340, 51.372],
-        [-2.330, 51.380],
-        [-2.330, 51.392],
-        [-2.340, 51.398],
-        [-2.385, 51.398],
-        [-2.395, 51.390],
-        [-2.395, 51.378],
+        [-2.37868, 51.38672],
+        [-2.37118, 51.38260],
+        [-2.37474, 51.38174],
+        [-2.37330, 51.38068],
+        [-2.37488, 51.37882],
+        [-2.36533, 51.37777],
+        [-2.36938, 51.37666],
+        [-2.36880, 51.37505],
+        [-2.37229, 51.37472],
+        [-2.36857, 51.37382],
+        [-2.36459, 51.37711],
+        [-2.35261, 51.37607],
+        [-2.34907, 51.37921],
+        [-2.34973, 51.38273],
+        [-2.34771, 51.38575],
+        [-2.34399, 51.38471],
+        [-2.34123, 51.38730],
+        [-2.34564, 51.38726],
+        [-2.34584, 51.39162],
+        [-2.35409, 51.39006],
+        [-2.35726, 51.39179],
+        [-2.36263, 51.39156],
+        [-2.36337, 51.39277],
+        [-2.36430, 51.39095],
+        [-2.36792, 51.39124],
+        [-2.36825, 51.39258],
+        [-2.37493, 51.39164],
     ])
 
     /// Newcastle Clean Air Zone — city-centre / Quayside envelope.

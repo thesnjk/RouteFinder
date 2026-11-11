@@ -114,6 +114,34 @@ class ComplianceParityTest {
     }
 
     @Test
+    fun lezSheffieldAndBirminghamDensifiedUnderOrsCap() {
+        val sheffield = UkLezCatalog.zones.first { it.id == "sheffield-caz" }
+        val birmingham = UkLezCatalog.zones.first { it.id == "birmingham-caz" }
+        val sheffieldRing = UkLezBoundaries.sheffieldCAZ
+        val birminghamRing = UkLezBoundaries.birminghamCAZ
+        // Closed rings: unique verts exclude closing duplicate.
+        assertTrue(sheffieldRing.size - 1 >= 20)
+        assertTrue(birminghamRing.size - 1 >= 20)
+        assertEquals(sheffieldRing.first()[0], sheffieldRing.last()[0], 1e-9)
+        assertEquals(sheffieldRing.first()[1], sheffieldRing.last()[1], 1e-9)
+        assertEquals(birminghamRing.first()[0], birminghamRing.last()[0], 1e-9)
+        assertEquals(birminghamRing.first()[1], birminghamRing.last()[1], 1e-9)
+
+        assertTrue(
+            LezAvoidPolicy.approximateRingAreaSquareMeters(sheffieldRing) <=
+                LezAvoidPolicy.AVOID_POLYGON_AREA_CAP_SQUARE_METERS,
+        )
+        assertTrue(
+            LezAvoidPolicy.approximateRingAreaSquareMeters(birminghamRing) <=
+                LezAvoidPolicy.AVOID_POLYGON_AREA_CAP_SQUARE_METERS,
+        )
+        assertTrue(sheffield.contains(sheffield.center))
+        assertTrue(birmingham.contains(birmingham.center))
+        assertFalse(sheffield.contains(LatLon(53.414, -1.412)))
+        assertFalse(birmingham.contains(LatLon(52.586, -1.982)))
+    }
+
+    @Test
     fun lezAvoidPolicyOmitsZoneContainingDestination() {
         val bath = UkLezCatalog.zones.first { it.id == "bath-caz" }
         val rings = LezAvoidPolicy.polygons(

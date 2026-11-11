@@ -376,8 +376,9 @@ Always **print** push commands. Do **not** push unless the user asked to push (o
 | 5 | Agent | ~~`EPIC-DOCS-P0-SSOT` retire stale P0 Blocked framing~~ **Done** 2026-11-11 — gap-matrix / benchmark / scorecard match Pass (CI) |
 | 6 | Agent | ~~`EPIC-DOCS-PHASE58-SSOT` waive Phase 58 Blocked~~ **Done** 2026-11-11 — ungated Docs nits exhausted |
 | 7 | Agent | ~~`EPIC-OFFLINE-NORTHWEST` M6–M62 mid-corridor~~ **Done** 2026-11-11 — country-pack depth slice; residual = more corridors / `ukCorridor` hosting / Android offline |
-| 8 | Agent | **Stop inventing product epics** — next implementation requires an **explicit user unlock by name** (AA / CarPlay / VU / LEZ / live £ / HD / billing / Android offline / further country PBF). Do not invent multi-surface crowd LAN. |
-| 9 | Operator | Optional Block 1b / Part B LAN smoke via [`phase1-device-checklist.md`](phase1-device-checklist.md) before first pilot / fleet demo |
+| 8 | Agent | ~~`EPIC-LEZ-CADASTRE` Sheffield + Birmingham open-data densify~~ **Done** 2026-11-11 — MVP slice; residual = remaining zones / London ORS-blocked / licensed cadastre |
+| 9 | Agent | **Stop inventing product epics** — next implementation requires an **explicit user unlock by name** (AA / CarPlay / VU / further LEZ / live £ / HD / billing / Android offline / further country PBF). Do not invent multi-surface crowd LAN. |
+| 10 | Operator | Optional Block 1b / Part B LAN smoke via [`phase1-device-checklist.md`](phase1-device-checklist.md) before first pilot / fleet demo |
 
 Also see: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B for optional physical walkaround → desk defect detail.
 

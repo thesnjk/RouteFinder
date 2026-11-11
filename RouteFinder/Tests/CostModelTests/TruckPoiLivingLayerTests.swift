@@ -112,6 +112,30 @@ import Testing
     #expect(!bath.contains(Coordinate(latitude: 51.45, longitude: -2.60)))
 }
 
+@Test func ukLezSheffieldAndBirminghamDensifiedUnderOrsCap() {
+    let sheffield = try! #require(UKLowEmissionZoneCatalog.zones.first { $0.id == "sheffield-caz" })
+    let birmingham = try! #require(UKLowEmissionZoneCatalog.zones.first { $0.id == "birmingham-caz" })
+
+    let sheffieldRing = sheffield.avoidPolygonRing()
+    let birminghamRing = birmingham.avoidPolygonRing()
+    // Closed rings: unique verts exclude closing duplicate.
+    #expect(sheffieldRing.count - 1 >= 20)
+    #expect(birminghamRing.count - 1 >= 20)
+    #expect(sheffieldRing.first == sheffieldRing.last)
+    #expect(birminghamRing.first == birminghamRing.last)
+
+    let sheffieldArea = LEZAvoidPolicy.approximateRingAreaSquareMeters(sheffieldRing)
+    let birminghamArea = LEZAvoidPolicy.approximateRingAreaSquareMeters(birminghamRing)
+    #expect(sheffieldArea <= LEZAvoidPolicy.avoidPolygonAreaCapSquareMeters)
+    #expect(birminghamArea <= LEZAvoidPolicy.avoidPolygonAreaCapSquareMeters)
+
+    #expect(sheffield.contains(Coordinate(latitude: sheffield.latitude, longitude: sheffield.longitude)))
+    #expect(birmingham.contains(Coordinate(latitude: birmingham.latitude, longitude: birmingham.longitude)))
+    // Exterior controls: Meadowhall / Walsall approaches outside densified rings.
+    #expect(!sheffield.contains(Coordinate(latitude: 53.414, longitude: -1.412)))
+    #expect(!birmingham.contains(Coordinate(latitude: 52.586, longitude: -1.982)))
+}
+
 @Test func ukLezCircleFallbackWhenNoBoundaryRing() {
     let circleOnly = UKLowEmissionZoneCatalog.Zone(
         id: "test-circle",

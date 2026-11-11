@@ -34,6 +34,21 @@ public struct FleetProxyDeskStatus: Sendable, Codable, Equatable {
     /// Fraction of cap at which the desk shows a near-cap warning.
     public static let nearCapFraction: Double = 0.9
 
+    /// Masks a bearer/API token for desk display (web `maskApiKey` parity — never show full secret).
+    public static func maskApiKey(_ token: String) -> String {
+        let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return "(none)" }
+        if trimmed.count <= 8 { return "••••" }
+        let prefix = trimmed.prefix(4)
+        let suffix = trimmed.suffix(4)
+        return "\(prefix)…\(suffix)"
+    }
+
+    /// Connection-panel style token line using a masked key.
+    public static func maskedTokenLine(for token: String) -> String {
+        "Token: \(maskApiKey(token))"
+    }
+
     /// Creates a desk proxy status snapshot.
     public init(
         orsConfigured: Bool,

@@ -104,6 +104,14 @@ struct FleetProxyDeskStatusTests {
         #expect(lines[1].contains("OpenWeather: on"))
     }
 
+    @Test func maskApiKeyMatchesWebRules() {
+        #expect(FleetProxyDeskStatus.maskApiKey("") == "(none)")
+        #expect(FleetProxyDeskStatus.maskApiKey("  ") == "(none)")
+        #expect(FleetProxyDeskStatus.maskApiKey("abcdef") == "••••")
+        #expect(FleetProxyDeskStatus.maskApiKey("test-token-alpha") == "test…lpha")
+        #expect(FleetProxyDeskStatus.maskedTokenLine(for: "test-token-alpha") == "Token: test…lpha")
+    }
+
     @Test func decodesOptionalOrgIdentityAndSummaryLine() throws {
         let json = """
         {

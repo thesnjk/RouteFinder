@@ -1984,15 +1984,39 @@ public final class RouteViewModel {
         activeInspection = record
         do {
             try await inspectionStore.save(record)
-            try await inspectionStore.enqueueSync(record)
             let summary = TripBriefInspectionSummary(record: record)
             latestInspectionSummary = summary
             refreshTripBriefShareText()
             if record.defectCount > 0 {
-                await publishInspectionFleetHandoff(record: record, summary: summary)
+                try await inspectionStore.enqueueSync(record)
+                let published = await publishInspectionFleetHandoff(record: record, summary: summary)
+                if published {
+                    try await inspectionStore.markSynced(id: record.id)
+                } else {
+                    errorMessage = "Defects not on desk — will retry when fleet reconnects"
+                }
             }
         } catch {
             errorMessage = "Could not save inspection: \(error.localizedDescription)"
+        }
+    }
+
+    /// Retries walkaround defect handoffs still marked ``syncPending``.
+    public func drainPendingInspectionFleetHandoffs() async {
+        guard useRemoteFleetServer, activeDispatchTripId != nil else { return }
+        let pending = (try? await inspectionStore.loadSyncPending()) ?? []
+        var anyFailure = false
+        for record in pending where record.defectCount > 0 {
+            let summary = TripBriefInspectionSummary(record: record)
+            let published = await publishInspectionFleetHandoff(record: record, summary: summary)
+            if published {
+                try? await inspectionStore.markSynced(id: record.id)
+            } else {
+                anyFailure = true
+            }
+        }
+        if anyFailure {
+            errorMessage = "Defects not on desk — will retry when fleet reconnects"
         }
     }
 
@@ -2199,7 +2223,7 @@ public final class RouteViewModel {
     private func publishInspectionFleetHandoff(
         record: InspectionRecord,
         summary: TripBriefInspectionSummary
-    ) async {
+    ) async -> Bool {
         await fleetDispatchCoordinator.publishInspectionFleetHandoff(record: record, summary: summary)
     }
 

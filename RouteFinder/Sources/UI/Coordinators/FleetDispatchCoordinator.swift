@@ -66,6 +66,8 @@ public protocol FleetDispatchHost: AnyObject {
     var lastPublishedFleetSnapshot: FleetTripSnapshot? { get set }
     func applyDispatchedTrip(_ trip: FleetTrip) async
     func fleetSnapshotBuildInputs() -> FleetSnapshotBuildInputs?
+    /// Retries any walkaround defect handoffs still marked ``syncPending``.
+    func drainPendingInspectionFleetHandoffs() async
 }
 
 /// Coordinates fleet polling, SSE dispatch, and snapshot publishing.
@@ -135,6 +137,7 @@ public final class FleetDispatchCoordinator {
 
             let trimmedKey = host.fleetServerAPIKeyText.trimmingCharacters(in: .whitespacesAndNewlines)
             let apiKey = trimmedKey.isEmpty ? (try? FleetServerCredentials.loadAPIKey()) : trimmedKey
+            await host.drainPendingInspectionFleetHandoffs()
             let stream = FleetSSEClient.events(baseURL: baseURL, apiKey: apiKey, vehicleId: vehicleId)
 
             await withTaskGroup(of: Void.self) { group in
@@ -161,12 +164,14 @@ public final class FleetDispatchCoordinator {
     }
 
     /// Publishes trip status + physics ETA (and GPS when available) for the dispatch console.
+    /// - Returns: `true` when the snapshot was accepted by the fleet store.
+    @discardableResult
     public func publishDispatchSnapshot(
         status: FleetTripStatus? = nil,
         inspectionSummary: TripBriefInspectionSummary? = nil,
         inspectionReportPDFBase64: String? = nil
-    ) async {
-        guard let host, let inputs = host.fleetSnapshotBuildInputs() else { return }
+    ) async -> Bool {
+        guard let host, let inputs = host.fleetSnapshotBuildInputs() else { return false }
         let resolvedStatus = status ?? (inputs.rehearsed ? .rehearsed : .active)
         let snapshot = FleetTripSnapshot(
             tripId: inputs.tripId,
@@ -186,8 +191,13 @@ public final class FleetDispatchCoordinator {
             lastPublishedDriverLongitude = longitude
         }
         host.lastPublishedFleetSnapshot = snapshot
-        _ = try? await fleetStore.applySnapshot(snapshot)
-        startPeriodicGPSPublishIfNeeded()
+        do {
+            try await fleetStore.applySnapshot(snapshot)
+            startPeriodicGPSPublishIfNeeded()
+            return true
+        } catch {
+            return false
+        }
     }
 
     /// Starts a 20s GPS snapshot loop while an active dispatch trip is present.
@@ -229,15 +239,17 @@ public final class FleetDispatchCoordinator {
     }
 
     /// Publishes inspection handoff to the remote fleet server when configured.
+    /// - Returns: `true` when the desk snapshot including defects was accepted.
+    @discardableResult
     public func publishInspectionFleetHandoff(
         record: InspectionRecord,
         summary: TripBriefInspectionSummary
-    ) async {
-        guard let host, host.activeDispatchTripId != nil, host.useRemoteFleetServer else { return }
+    ) async -> Bool {
+        guard let host, host.activeDispatchTripId != nil, host.useRemoteFleetServer else { return false }
         let pdfBase64 = InspectionMediaBudget.cappedPDFBase64(
             InspectionReportPDFRenderer.pdfData(from: record).base64EncodedString()
         )
-        await publishDispatchSnapshot(
+        return await publishDispatchSnapshot(
             inspectionSummary: summary,
             inspectionReportPDFBase64: pdfBase64
         )
@@ -421,5 +433,6 @@ public final class FleetDispatchCoordinator {
     private func handleRemoteTripPushed() async {
         showFleetDispatchToast("New dispatch received — loading route…")
         await pollAndApplyFleetDispatch()
+        await host?.drainPendingInspectionFleetHandoffs()
     }
 }

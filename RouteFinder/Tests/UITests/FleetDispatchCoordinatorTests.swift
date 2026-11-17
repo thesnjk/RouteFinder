@@ -98,6 +98,8 @@ private final class MockFleetHost: FleetDispatchHost {
         activeDispatchTripId = trip.id
     }
 
+    func drainPendingInspectionFleetHandoffs() async {}
+
     func fleetSnapshotBuildInputs() -> FleetSnapshotBuildInputs? {
         guard let tripId = activeDispatchTripId else { return nil }
         return FleetSnapshotBuildInputs(

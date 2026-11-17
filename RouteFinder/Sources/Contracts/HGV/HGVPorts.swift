@@ -57,6 +57,10 @@ public protocol HosClockPort: Sendable {
 public protocol InspectionStorePort: Sendable {
     func save(_ record: InspectionRecord) async throws
     func enqueueSync(_ record: InspectionRecord) async throws
+    /// Returns persisted walkaround records still waiting for fleet desk handoff.
+    func loadSyncPending() async throws -> [InspectionRecord]
+    /// Clears ``InspectionRecord/syncPending`` after a successful fleet publish.
+    func markSynced(id: UUID) async throws
 }
 
 /// Hazard event source port.

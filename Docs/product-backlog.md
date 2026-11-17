@@ -42,9 +42,12 @@ Last updated: 2026-11-17
 | B32 | Agent | **Done** 2026-11-17 | Point [`README.md`](../README.md) (or top Docs pointer if present) at charter NARROW + backlog self-service — no product invent | README User guide NARROW blurb + charter/backlog links |
 | B33 | Agent | **Done** 2026-11-17 | Cross-link [`fleet-setup-guide.md`](fleet-setup-guide.md) → operator-next-steps Block 3 / pilot-outreach (pilot path after pairing) | After-pairing → Block 3 + pilot-outreach / B5 |
 | B34 | Agent | **Done** 2026-11-17 | Honesty one-liner on [`demo-superiority-script.md`](demo-superiority-script.md): demo ≠ WTP; log objections to negative-findings | Demo honesty + Related → negative-findings |
-| B35 | Agent | Todo | Honesty / NARROW pointer on [`pilot-feedback-backlog.md`](pilot-feedback-backlog.md) → charter + negative-findings; no invented pilot feedback | Feedback log honesty |
-| B36 | Agent | Todo | Point [`web-dispatch/README.md`](../web-dispatch/README.md) at charter NARROW + [`getting-started.md`](getting-started.md) / backlog — no product invent | Desk README → charter/backlog |
-| B37 | Agent | Todo | Cross-link [`phase1-device-checklist.md`](phase1-device-checklist.md) → operator-next-steps Block 3 / pilot-outreach (device smoke ≠ outreach done) | Device smoke → pilot path |
+| B35 | Agent | Deferred | Honesty / NARROW pointer on [`pilot-feedback-backlog.md`](pilot-feedback-backlog.md) → charter + negative-findings; no invented pilot feedback | Docs filler — resume when product queue empty |
+| B36 | Agent | Deferred | Point [`web-dispatch/README.md`](../web-dispatch/README.md) at charter NARROW + [`getting-started.md`](getting-started.md) / backlog — no product invent | Docs filler — resume when product queue empty |
+| B37 | Agent | Deferred | Cross-link [`phase1-device-checklist.md`](phase1-device-checklist.md) → operator-next-steps Block 3 / pilot-outreach (device smoke ≠ outreach done) | Docs filler — resume when product queue empty |
+| B38 | Agent | **Done** 2026-11-17 | Walkaround `syncPending` drain + retry on fleet reconnect; clear on success; defects-not-on-desk message | Inspection sync queue + reconnect drain |
+| B39 | Agent | Todo | CI/schema contract checks vs [`fleet-api-schema.json`](fleet-api-schema.json) (golden fixtures) | Schema contract hygiene |
+| B40 | Agent | Todo | Offline/heuristic lane honesty one-liner when Overpass disabled (iOS ± Android) | Lane disclosure UX |
 
 ### Append rule
 

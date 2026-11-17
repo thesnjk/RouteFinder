@@ -37,6 +37,20 @@ public actor DiskInspectionStore: InspectionStorePort {
         try await save(pending)
     }
 
+    /// Returns persisted walkaround records still waiting for fleet desk handoff.
+    public func loadSyncPending() async throws -> [InspectionRecord] {
+        try await loadAll().filter(\.syncPending)
+    }
+
+    /// Clears ``InspectionRecord/syncPending`` after a successful fleet publish.
+    public func markSynced(id: UUID) async throws {
+        let records = try await loadAll()
+        guard var record = records.first(where: { $0.id == id }) else { return }
+        guard record.syncPending else { return }
+        record.syncPending = false
+        try await save(record)
+    }
+
     /// Loads all saved inspection records, newest first.
     public func loadAll() async throws -> [InspectionRecord] {
         let urls = try FileManager.default.contentsOfDirectory(

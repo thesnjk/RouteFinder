@@ -25,6 +25,16 @@ import Testing
     try await store.enqueueSync(record)
     let pending = try await store.loadAll()
     #expect(pending.first?.syncPending == true)
+
+    let syncQueue = try await store.loadSyncPending()
+    #expect(syncQueue.count == 1)
+    #expect(syncQueue.first?.id == record.id)
+
+    try await store.markSynced(id: record.id)
+    let afterSync = try await store.loadSyncPending()
+    #expect(afterSync.isEmpty)
+    let cleared = try await store.loadAll()
+    #expect(cleared.first?.syncPending == false)
 }
 
 @Test func diskFleetStorePersistsTripAcrossInstances() async throws {

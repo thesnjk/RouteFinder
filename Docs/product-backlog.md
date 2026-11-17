@@ -41,7 +41,10 @@ Last updated: 2026-11-17
 | B31 | Agent | **Done** 2026-11-17 | Add Related OS one-liner on [`getting-started.md`](getting-started.md) / charter for scorecard GO/NARROW gate before growth claims | Doc-index growth gate + charter scorecard cell |
 | B32 | Agent | **Done** 2026-11-17 | Point [`README.md`](../README.md) (or top Docs pointer if present) at charter NARROW + backlog self-service — no product invent | README User guide NARROW blurb + charter/backlog links |
 | B33 | Agent | **Done** 2026-11-17 | Cross-link [`fleet-setup-guide.md`](fleet-setup-guide.md) → operator-next-steps Block 3 / pilot-outreach (pilot path after pairing) | After-pairing → Block 3 + pilot-outreach / B5 |
-| B34 | Agent | Todo | Honesty one-liner on [`demo-superiority-script.md`](demo-superiority-script.md): demo ≠ WTP; log objections to negative-findings | Demo ≠ purchase intent |
+| B34 | Agent | **Done** 2026-11-17 | Honesty one-liner on [`demo-superiority-script.md`](demo-superiority-script.md): demo ≠ WTP; log objections to negative-findings | Demo honesty + Related → negative-findings |
+| B35 | Agent | Todo | Honesty / NARROW pointer on [`pilot-feedback-backlog.md`](pilot-feedback-backlog.md) → charter + negative-findings; no invented pilot feedback | Feedback log honesty |
+| B36 | Agent | Todo | Point [`web-dispatch/README.md`](../web-dispatch/README.md) at charter NARROW + [`getting-started.md`](getting-started.md) / backlog — no product invent | Desk README → charter/backlog |
+| B37 | Agent | Todo | Cross-link [`phase1-device-checklist.md`](phase1-device-checklist.md) → operator-next-steps Block 3 / pilot-outreach (device smoke ≠ outreach done) | Device smoke → pilot path |
 
 ### Append rule
 

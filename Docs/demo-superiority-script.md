@@ -1,11 +1,13 @@
 # Demo superiority script (≈2 minutes)
 
 Engineering excellence Phase 6. One-take demo for UK small-fleet ICP.  
-Last updated: 2026-09-27
+Last updated: 2026-11-17
 
 **Audience:** Operator or engineer who has never written this code.  
 **Outcome:** Push → Rehearse → map pin → walkaround defect visible on dispatch — without a cloud seat portal.  
 **Driver surface:** Depot **cab phone** (or simulator) — CarPlay / Android Auto not part of this demo.
+
+**Honesty:** A successful demo is **not** willingness to pay. Log objections, ghosts, and “sounds interesting” (without payment) in [`research/negative-findings-log.md`](research/negative-findings-log.md) — do not invent quotations or purchase intent.
 
 ---
 
@@ -112,6 +114,7 @@ Same corridor rules as Appendix A (≤140 km; London ULEZ area-capped).
 
 ## Related
 
+- [`research/negative-findings-log.md`](research/negative-findings-log.md) — demo ≠ WTP; log objections here
 - [`phase1-device-checklist.md`](phase1-device-checklist.md)
 - [`fleet-e2e-qa.md`](fleet-e2e-qa.md)
 - [`engineering-test-matrix.md`](engineering-test-matrix.md)

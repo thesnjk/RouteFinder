@@ -7,6 +7,8 @@ Last updated: 2026-11-17 · Recommendation: **NARROW** (pre-paid-pilot)
 
 ## Thresholds (founder policy)
 
+Early warnings for these Unresolved gates → [`risk-register.md`](risk-register.md) (Scorecard link column).
+
 | Gate | Threshold (policy) | Status |
 |------|--------------------|--------|
 | Recurring problem | 6/10 interviews same problem | **Unresolved** — interviews not completed |
@@ -34,4 +36,4 @@ Last updated: 2026-11-17 · Recommendation: **NARROW** (pre-paid-pilot)
 
 **NARROW** — Keep ICP (UK 5–15 truck independents, Norfolk first). Do not pivot product thesis. Do not GO to paid growth/App Store push until pilot evidence moves Unresolved cells. Do not STOP engineering maintenance/Docs honesty.
 
-**Next gate:** Refresh this scorecard after outreach outcomes land; explicit GO / NARROW / PIVOT / STOP — no silent pivots.
+**Next gate:** Refresh this scorecard after outreach outcomes land; explicit GO / NARROW / PIVOT / STOP — no silent pivots. Risk early-warnings: [`risk-register.md`](risk-register.md).

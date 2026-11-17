@@ -59,6 +59,8 @@ No obligation to buy. If Operator continues, parties use the **API-included desk
 
 The **£0 pilot band is ≤3 phones** for feedback scope; the product ICP remains **5–15 trucks** on the same desk/roster once they continue on a paid tier.
 
+**VAT / invoice treatment:** Indicative desk fees above are **ex-VAT vs inc-VAT undecided** — treatment is **Unresolved** until invoice design. Do not invent a VAT rate or scheme in this pack. Cross-link: charter [Revenue model](project-charter.md#revenue-model) and [`competitor-pricing-2026.md`](competitor-pricing-2026.md) VAT footnote.
+
 Owner-operator App Store pricing remains deferred until after pilot feedback.
 
 **Signatures**

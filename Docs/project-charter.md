@@ -55,6 +55,8 @@ Evidence labels used below: **Verified fact** · **Reasoned inference** · **Wor
 
 Prices are **indicative**, dated via pilot pack (2026-09). Not verified willingness-to-pay. GBP. Do not invent conversion or retention rates.
 
+**VAT / invoice treatment:** **Unresolved** until invoice design — do not invent ex-VAT vs inc-VAT or a VAT scheme here. Same note on the pricing table in [`pilot-fleet-pack.md`](pilot-fleet-pack.md); competitor retail VAT context in [`competitor-pricing-2026.md`](competitor-pricing-2026.md) (VAT footnote).
+
 ---
 
 ## Geography and opportunities

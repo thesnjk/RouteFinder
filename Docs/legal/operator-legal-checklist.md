@@ -1,8 +1,20 @@
 # Operator legal checklist (Track A)
 
-Do these yourself. The agent drafts docs; a solicitor reviews them. **Do not skip solicitor review before App Store or paid pilots.**
+**Owner: Founder** for §§1–5 and §7. Agent §6 drafts are Done in-repo; agent must **not** draft new Privacy / ToS / Driver Terms / pilot legal past existing `Docs/legal/` drafts unless Founder-requested. A solicitor reviews Founder-owned packets. **Do not skip solicitor review before App Store or paid pilots.**
 
-Last updated: 2026-09-17
+Backlog: Founder **B16** (this checklist); outreach solicitor cue on **B5** points here. Operator Block 4: [`../operator-next-steps.md`](../operator-next-steps.md).
+
+Last updated: 2026-11-17
+
+| Section | Owner | Status note |
+|---------|-------|-------------|
+| §1 UK IPO trademark | Founder | Search logged; filing decision Founder |
+| §2 Book solicitor | Founder | Booking + review before paid / App Store |
+| §3 Company entity | Founder | Ltd on public legal docs |
+| §4 Domains and handles | Founder | Hosting paths Founder |
+| §5 After solicitor signs off | Founder | Placeholders → live Ltd / URLs |
+| §6 Phase 9 agent deliverables | Agent | **Done** — existing drafts only; no silent re-draft |
+| §7 Pre–App Store | Founder | Sign-off checklist before store / paid |
 
 ---
 

@@ -11,7 +11,7 @@ Last updated: 2026-11-17
 | **Posture** | **NARROW** — [`project-charter.md`](project-charter.md) |
 | **Focus** | Norfolk / East Anglia pilot validation for the shipped desk+cab ICP — not new surfaces or densify grind |
 | **Next decision gate** | After ≥3 discovery conversations with workflow evidence **and** ≥1 signed/started free pilot **or** a clear refusal pattern → refresh [`research/validation-scorecard.md`](research/validation-scorecard.md) and choose **GO / NARROW / PIVOT / STOP** explicitly (no silent pivots) |
-| **Founder next** | Backlog **B5** — N1/N2 outreach + log CRM stages ([`pilot-outreach.md`](pilot-outreach.md)); solicitor before paid / App Store |
+| **Founder next** | Backlog **B5** — N1/N2 outreach + log CRM stages ([`pilot-outreach.md`](pilot-outreach.md)); legal checklist **B16** before paid / App Store |
 | **Agent rule** | Do **not** invent outreach outcomes, meetings, or WTP |
 
 ---
@@ -78,9 +78,11 @@ Pitch line (honest):
 
 ---
 
-## Block 4 — Legal checklist (you)
+## Block 4 — Legal checklist (Founder-owned — backlog B16)
 
-Complete [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md): Ltd entity, trademark filing decision, solicitor review, host [`legal/site/`](legal/site/) HTML, App Store Connect URLs. Required before **paid** pilots / App Store. Free pilots may start with signed pilot agreement + in-app Driver Terms while solicitor review is booked.
+Complete [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md) §§1–5, 7: Ltd entity, trademark filing decision, solicitor review, host [`legal/site/`](legal/site/) HTML, App Store Connect URLs. Required before **paid** pilots / App Store. Free pilots may start with signed pilot agreement + in-app Driver Terms while solicitor review is booked (**B5** may cue solicitor; execution stays on **B16**).
+
+**Agent boundary:** do not silently draft new Privacy / ToS / Driver Terms / pilot legal past existing `Docs/legal/` drafts. §6 agent deliverables are already Done.
 
 Verification checklist: [`phase9-legal-gtm-verification.md`](phase9-legal-gtm-verification.md).
 

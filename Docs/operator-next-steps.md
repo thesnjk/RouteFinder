@@ -20,7 +20,8 @@ Last updated: 2026-11-17
 
 1. **CI green on `main`** — <https://github.com/thesnjk/RouteFinder/actions>
 2. Product stages **1–8** complete (fleet proxy, stranger UX, dispatch, CarPlay when entitled, Android driver, hosted gateway, parity extras)
-3. Phase 9 **drafts** in-repo: [`legal/`](legal/), [`pilot-fleet-pack.md`](pilot-fleet-pack.md), [`app-store-connect-metadata.md`](app-store-connect-metadata.md) — solicitor / hosting still **you**
+3. Phase 9 **drafts** in-repo: [`legal/`](legal/), [`pilot-fleet-pack.md`](pilot-fleet-pack.md), [`app-store-connect-metadata.md`](app-store-connect-metadata.md) — solicitor / hosting still Founder (**B16**)
+4. Confirm ICP (5–15 trucks, Sarah-class buyer, Norfolk/~45 min) via [`research/discovery-templates.md`](research/discovery-templates.md) recruitment/ICP + [`buyer-personas-uk-hgv.md`](buyer-personas-uk-hgv.md) before adding names to [`pilot-outreach.md`](pilot-outreach.md) — do not invent meetings or WTP
 
 ---
 
@@ -63,8 +64,8 @@ Commercial path under charter **NARROW**. Indicative desk fee (**£39/mo** band)
 
 1. Print [`pilot-fleet-pack.md`](pilot-fleet-pack.md) (agreement + indicative API-included pricing table)
 2. Optional: Block 1b phone smoke (Block 1b) and/or Part B LAN before a live on-site demo
-3. Founder executes backlog **B5**: send **3–5** Norfolk variants from [`pilot-outreach.md`](pilot-outreach.md) — start with **N1 J Medler** / **N2 Richardson**, not northern reserves
-4. Log **CRM Stage** (Target → Contacted → … → Customer / Lost) plus date + Meeting/Outcome — see outreach stage legend; **never invent** stages or results
+3. Founder executes backlog **B5**: send **3–5** Norfolk variants from [`pilot-outreach.md`](pilot-outreach.md) — start with **N1 J Medler** / **N2 Richardson**, not northern reserves (ICP filter: discovery-templates + personas)
+4. Log **CRM Stage** (Target → Contacted → … → Customer / Lost) plus date + Meeting/Outcome — see outreach stage legend; **never invent** stages or results; refusals/ghosts → [`research/negative-findings-log.md`](research/negative-findings-log.md)
 5. Log every **Android / Windows** objection in [`pilot-feedback-backlog.md`](pilot-feedback-backlog.md)
 6. When gate evidence exists (or clear refusals), refresh [`research/validation-scorecard.md`](research/validation-scorecard.md) (Agent **B8** only from dated logs) and record GO / NARROW / PIVOT / STOP on the charter
 

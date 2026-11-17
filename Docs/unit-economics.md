@@ -2,7 +2,9 @@
 
 RouteFinder tracks outbound API calls to protect free-tier quotas and to support **operator-paid** fleet routing (customers do not paste HeiGIT keys when the fleet ORS proxy is enabled).
 
-Last updated: 2026-09-17
+Last updated: 2026-11-17
+
+**Honesty:** This Doc is **API metering + fair-use caps**, not a 24-month P&L, LTV/CAC, or contribution-margin model. Do not invent HeiGIT/provider £ COGS or willingness-to-pay from empty outreach. Indicative desk prices below are **Working assumption** in **GBP**; VAT treatment is **Unresolved** until invoice design — see charter [Revenue model](project-charter.md#revenue-model), [`pilot-fleet-pack.md`](pilot-fleet-pack.md), and [`competitor-pricing-2026.md`](competitor-pricing-2026.md) VAT footnote. Scorecard Contribution margin cites this Doc as metering, not validated unit economics.
 
 ## Providers (on-device ledger)
 
@@ -53,17 +55,17 @@ The `CostModel` module remains route physics and simulation economics. Unit econ
 
 ## Pricing fair-use (subscription narrative)
 
-**API-included desk subscription** (align with [`pilot-fleet-pack.md`](pilot-fleet-pack.md)):
+**API-included desk subscription** (align with [`pilot-fleet-pack.md`](pilot-fleet-pack.md)). Indicative prices = **Working assumption** (GBP); **not** measured LTV/CAC. VAT **Unresolved**.
 
-| Tier | Scope | Indicative price | Included |
-|------|--------|------------------|----------|
+| Tier | Scope | Indicative price (Working assumption) | Included |
+|------|--------|--------------------------------------|----------|
 | Pilot | ≤3 phones, 60 days | **£0** | Setup + feedback |
 | Desk LAN | ≤10 trucks, office LAN server | **£39/mo** (band £29–£49) | Fleet console + **ORS/Pelias proxy** fair-use (2k route / 2k geocode per day per server) |
 | Desk + remote | Hosted gateway VPS | **£49–£79/mo** + VPS pass-through | Same API caps **per org** on gateway; Operator owns VPS |
 | Extra trucks | >10 on same desk | **£3–£5/truck/mo** (negotiable) | Same proxy caps — abuse = 429 |
 | Owner-operator App Store | Single driver | **Deferred** post-pilot | Separate SKU later |
 
-**API cost included** means Provider/Operator supplies HeiGIT usage via fleet `--ors-key` / hosted `ORS_API_KEY` — **not** unlimited planet-scale routing. Fair-use = hard caps above; abuse / quota exhaustion is Operator’s responsibility to escalate with Provider. Hosted gateway metering is config/token based ([hosted-gateway-deployment.md](hosted-gateway-deployment.md)); billing UI remains deferred.
+**API cost included** means Provider/Operator supplies HeiGIT usage via fleet `--ors-key` / hosted `ORS_API_KEY` — **not** unlimited planet-scale routing. Fair-use = hard caps above; abuse / quota exhaustion is Operator’s responsibility to escalate with Provider. Hosted gateway metering is config/token based ([hosted-gateway-deployment.md](hosted-gateway-deployment.md)); billing UI remains deferred. Do not invent provider £ COGS from these caps.
 
 ## Operational guidance
 

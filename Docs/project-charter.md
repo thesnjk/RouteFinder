@@ -103,3 +103,4 @@ Prices are **indicative**, dated via pilot pack (2026-09). Not verified willingn
 | [`developer-map.md`](developer-map.md) | Layout / tests / pointers |
 | [`pilot-outreach.md`](pilot-outreach.md) | Named-account outreach tracker |
 | [`pilot-fleet-pack.md`](pilot-fleet-pack.md) | Pilot agreement + pricing template |
+| `agent-master-prompt.md` | Agent operating rules — **local-only; never commit** |

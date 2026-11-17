@@ -395,6 +395,7 @@ Always **print** push commands. Do **not** push unless the user asked to push (o
 | 16 | Agent | ~~`EPIC-DOCS-WRITEUP` NEA-style [`project-writeup.md`](project-writeup.md)~~ **Done** 2026-11-11 — Analysis→Evaluation + Appendices A–E complete (no clients); living Doc — update on surface change; product residuals remain secrets-gated |
 | 17 | Agent | ~~`EPIC-DOCS-WRITEUP-SENIOR`~~ senior full-stack monograph — **Done** 2026-11-11 (passes 1–4: Design systems / Impl depth / Test·Eval / Appendices A–F STRIDE-lite); living Doc — update on surface change; product residuals remain secrets-gated |
 | 18 | Agent | ~~`EPIC-DOCS-FOUNDER-OS`~~ founder-grade agent OS — **Done** 2026-11-17 — charter + product-backlog + research validation/assumptions/risks/portfolio; stale pilot-feedback Phase 3 fixed; next = commercial backlog B4+ (no product invent under secrets gate) |
+| 19 | Agent | ~~`EPIC-DOCS-FOUNDER-OS-PROMPT`~~ local master-prompt A–Q upgrade + committed Docs sync — **Done** 2026-11-17 — continue loop = charter→backlog; B11–B15 appended; master prompt remains untracked |
 | 14 | Operator | Optional Block 1b / Part B LAN smoke via [`phase1-device-checklist.md`](phase1-device-checklist.md) before first pilot / fleet demo |
 
 Also see: [`fleet-e2e-qa.md`](fleet-e2e-qa.md) Part B for optional physical walkaround → desk defect detail.

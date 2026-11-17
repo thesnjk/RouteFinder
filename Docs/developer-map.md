@@ -36,7 +36,9 @@ xcodebuild test -project RouteFinderApp.xcodeproj -scheme RouteFinderApp \
 
 - **Charter (direction SSOT):** `Docs/project-charter.md` — posture NARROW; next decision gate
 - **Self-service backlog:** `Docs/product-backlog.md` — first unfinished Agent row on attach/continue
-- **Research OS:** `Docs/research/` — validation-scorecard, assumptions, risks, opportunity portfolio, discovery templates
+- **Research OS:** `Docs/research/` — validation-scorecard, assumptions, risks, opportunity portfolio, discovery templates, negative-findings
+- **Legal readiness:** `Docs/legal/` + `Docs/legal/operator-legal-checklist.md` (solicitor before paid / App Store)
+- **Agent operating rules:** `Docs/agent-master-prompt.md` — **local-only** (`.git/info/exclude`; never commit)
 - Project writeup (senior full-stack technical monograph; complete living Doc — Appendices A–F): `Docs/project-writeup.md`
 - Fleet LAN QA: `Docs/fleet-e2e-qa.md`
 - Fleet API schema: `Docs/fleet-api-schema.json` (`FleetProxyDeskStatus` / `/v1/proxy/status` contract)

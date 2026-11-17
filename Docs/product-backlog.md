@@ -38,7 +38,10 @@ Last updated: 2026-11-17
 | B28 | Agent | **Done** 2026-11-17 | Point [`app-store-connect-metadata.md`](app-store-connect-metadata.md) production/App Store steps at Founder **B16** / operator-legal-checklist; date refresh | Ownership + TestFlight vs production → B16; no listing invent |
 | B29 | Agent | **Done** 2026-11-17 | Cross-link [`hosted-gateway-deployment.md`](hosted-gateway-deployment.md) privacy/legal note → operator-legal-checklist + B16 (no new legal drafting) | Privacy/legal blurb + Related → B16; no new legal drafting |
 | B30 | Agent | **Done** 2026-11-17 | Sync [`operator-next-steps.md`](operator-next-steps.md) Prerequisites before outreach → discovery recruitment + personas (if not already complete after B25) | Prerequisites #4 + Block 3 ICP/negative-findings links |
-| B31 | Agent | Todo | Add Related OS one-liner on [`getting-started.md`](getting-started.md) / charter for scorecard GO/NARROW gate before growth claims | Growth claims gated by scorecard |
+| B31 | Agent | **Done** 2026-11-17 | Add Related OS one-liner on [`getting-started.md`](getting-started.md) / charter for scorecard GO/NARROW gate before growth claims | Doc-index growth gate + charter scorecard cell |
+| B32 | Agent | Todo | Point [`README.md`](../README.md) (or top Docs pointer if present) at charter NARROW + backlog self-service — no product invent | README → charter/backlog |
+| B33 | Agent | Todo | Cross-link [`fleet-setup-guide.md`](fleet-setup-guide.md) → operator-next-steps Block 3 / pilot-outreach (pilot path after pairing) | Fleet setup → pilot path |
+| B34 | Agent | Todo | Honesty one-liner on [`demo-superiority-script.md`](demo-superiority-script.md): demo ≠ WTP; log objections to negative-findings | Demo ≠ purchase intent |
 
 ### Append rule
 

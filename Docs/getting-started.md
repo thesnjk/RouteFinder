@@ -99,8 +99,13 @@ See [android-c2-gate.md](android-c2-gate.md) and [phase6b-android-nav-verificati
 
 ## Doc index
 
+**Growth gate:** Do not claim App Store push or paid-growth readiness while charter posture is **NARROW** — refresh [`research/validation-scorecard.md`](research/validation-scorecard.md) and choose **GO / NARROW / PIVOT / STOP** on dated evidence only (no silent pivots).
+
 | Doc | Audience |
 |-----|----------|
+| [project-charter.md](project-charter.md) | Direction SSOT — posture NARROW |
+| [research/validation-scorecard.md](research/validation-scorecard.md) | GO / NARROW / PIVOT / STOP before growth claims |
+| [product-backlog.md](product-backlog.md) | Self-service next actions (Founder **B5** outreach) |
 | [fleet-setup-guide.md](fleet-setup-guide.md) | Pairing Mac ↔ iPhone ↔ web |
 | [hosted-gateway-deployment.md](hosted-gateway-deployment.md) | VPS HTTPS gateway for remote depots |
 | [phase7-hosted-verification.md](phase7-hosted-verification.md) | Hosted relay exit-gate checklist |

@@ -4,6 +4,8 @@ Operator-run playbook for booking **3–5** small independent haulage/courier me
 
 **Operator base: Norfolk / East Anglia.** Prefer door visits and coffee demos within ~45 minutes. Northern England names stay as remote-email reserves only.
 
+**ICP / recruitment:** Filter names with [`research/discovery-templates.md`](research/discovery-templates.md) (recruitment/ICP) and [`buyer-personas-uk-hgv.md`](buyer-personas-uk-hgv.md) (Sarah primary; Dave deferred). Do **not** invent meetings or WTP in this tracker.
+
 Last updated: 2026-11-17
 
 ---
@@ -37,6 +39,7 @@ Map legacy empty **Meeting/Outcome** cells: blank → Target (or Contacted if Da
 3. Print [`pilot-fleet-pack.md`](pilot-fleet-pack.md) (agreement + feedback form + **API-included pricing**)
 4. Fleet Part B LAN dry-run if pitching live dispatch on site
 5. Phase 9 legal **drafts** ready (solicitor optional for free pilot; required before paid / App Store) — [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md)
+6. Confirm target matches ICP (5–15 trucks, Sarah-class buyer, Norfolk/~45 min) via [`research/discovery-templates.md`](research/discovery-templates.md) recruitment/ICP + [`buyer-personas-uk-hgv.md`](buyer-personas-uk-hgv.md) — before adding or advancing names
 
 ---
 

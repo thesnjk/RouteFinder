@@ -7,12 +7,17 @@ Last updated: 2026-11-17
 | Need | Living Doc / template |
 |------|------------------------|
 | Named accounts + outreach log | [`../pilot-outreach.md`](../pilot-outreach.md) |
+| Personas (Sarah / Dave / …) | [`../buyer-personas-uk-hgv.md`](../buyer-personas-uk-hgv.md) |
 | Pilot agreement, scope, pricing, feedback form | [`../pilot-fleet-pack.md`](../pilot-fleet-pack.md) |
 | Post-pilot engineering triage | [`../pilot-feedback-backlog.md`](../pilot-feedback-backlog.md) |
 | Assumptions | [`assumption-register.md`](assumption-register.md) |
 | Scorecard | [`validation-scorecard.md`](validation-scorecard.md) |
 | Negative findings | [`negative-findings-log.md`](negative-findings-log.md) |
 | Operator sequence | [`../operator-next-steps.md`](../operator-next-steps.md) |
+
+## Recruitment / ICP filter (stub)
+
+Prefer **5–15 trucks**, Sarah-class buyer, Norfolk / East Anglia (~45 min) before logging names on [`../pilot-outreach.md`](../pilot-outreach.md). Personas: [`../buyer-personas-uk-hgv.md`](../buyer-personas-uk-hgv.md). Do not duplicate the account table here.
 
 ## Interview guide (minimal)
 

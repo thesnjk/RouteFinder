@@ -34,6 +34,11 @@ Last updated: 2026-11-17
 | B24 | Agent | **Done** 2026-11-17 | Point [`phase9-legal-gtm-verification.md`](phase9-legal-gtm-verification.md) §7 at Founder **B16** / operator-legal-checklist | §7 + Operator-only → Founder/B16; no new legal drafting |
 | B25 | Agent | **Done** 2026-11-17 | Cross-link [`pilot-outreach.md`](pilot-outreach.md) prerequisites → discovery recruitment/ICP + personas | Outreach ICP prerequisite + discovery stub; no invented outcomes |
 | B26 | Agent | **Done** 2026-11-17 | Cross-link opportunity-portfolio Selected primary/backup ↔ personas Sarah/Dave + charter | Selected ↔ Sarah/Dave + charter; no invented WTP |
+| B27 | Agent | **Done** 2026-11-17 | Refresh [`getting-started.md`](getting-started.md): date; posture NARROW + links to charter, backlog B5, pilot-outreach / discovery ICP | NARROW/charter/outreach/discovery pointers; stranger flows unchanged |
+| B28 | Agent | Todo | Point [`app-store-connect-metadata.md`](app-store-connect-metadata.md) production/App Store steps at Founder **B16** / operator-legal-checklist; date refresh | App Store ↔ Founder legal boundary |
+| B29 | Agent | Todo | Cross-link [`hosted-gateway-deployment.md`](hosted-gateway-deployment.md) privacy/legal note → operator-legal-checklist + B16 (no new legal drafting) | Hosted gateway ↔ Founder legal |
+| B30 | Agent | Todo | Sync [`operator-next-steps.md`](operator-next-steps.md) Prerequisites before outreach → discovery recruitment + personas (if not already complete after B25) | Operator prerequisites ↔ discovery ICP |
+| B31 | Agent | Todo | Add Related OS one-liner on [`getting-started.md`](getting-started.md) / charter for scorecard GO/NARROW gate before growth claims | Growth claims gated by scorecard |
 
 ### Append rule
 

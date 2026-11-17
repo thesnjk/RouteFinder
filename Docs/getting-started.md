@@ -2,7 +2,9 @@
 
 Pick your role **in the app** after sign-in (Getting started sheet). Each path below is a stranger test — no prior RouteFinder knowledge required.
 
-Last updated: 2026-09-26
+Last updated: 2026-11-17
+
+**Posture:** Charter **NARROW** ([`project-charter.md`](project-charter.md)) — shipped desk+cab pilot validation before growth claims. Founder outreach (**B5**): [`pilot-outreach.md`](pilot-outreach.md). ICP / recruitment filter: [`research/discovery-templates.md`](research/discovery-templates.md). Decision gate / scorecard: [`research/validation-scorecard.md`](research/validation-scorecard.md) — do not claim GO growth until Unresolved cells move on dated evidence.
 
 ---
 

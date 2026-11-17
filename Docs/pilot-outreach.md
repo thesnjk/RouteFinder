@@ -4,7 +4,29 @@ Operator-run playbook for booking **3–5** small independent haulage/courier me
 
 **Operator base: Norfolk / East Anglia.** Prefer door visits and coffee demos within ~45 minutes. Northern England names stay as remote-email reserves only.
 
-Last updated: 2026-09-17
+Last updated: 2026-11-17
+
+---
+
+## CRM stage legend
+
+Use one stage per account. **Do not invent outcomes** — only advance when a dated real action or reply occurs.
+
+| Stage | Meaning |
+|-------|---------|
+| Target | Named account; not yet contacted |
+| Contacted | Outreach attempted (door / call / form / email) |
+| Replied | Any human reply |
+| Discovery booked | Meeting scheduled |
+| Discovery held | Meeting completed |
+| Pilot offered | Pilot pack / terms presented |
+| Pilot agreed | Signed or clear verbal yes logged |
+| Pilot active | Phones live in pilot window |
+| Continuation decision | End-of-pilot pay / extend / stop conversation |
+| Customer | Paying (or contracted) after pilot |
+| Lost | Explicit no / no fit / unreachable after honest try |
+
+Map legacy empty **Meeting/Outcome** cells: blank → Target (or Contacted if Date contacted is set and Outcome notes an open attempt). Never fill Meeting/Outcome with fabricated results.
 
 ---
 
@@ -20,13 +42,13 @@ Last updated: 2026-09-17
 
 ## Target list — Norfolk / East Anglia (primary)
 
-| # | Company | Contact | Size | Date contacted | Meeting | Outcome |
-|---|---|---|---|---|---|---|
-| 1 | J Medler Haulage (Norwich outskirts) | [jmedlerhaulagenorwich.co.uk](https://jmedlerhaulagenorwich.co.uk/) · door / site | ~12 HGV | 2026-09-03 | | site opened — send **N1** via contact form / door |
-| 2 | Richardson Truck Services (Bradenham, IP25) | 07901 774767 · [richardson-truck-services.co.uk](https://www.richardson-truck-services.co.uk/) | Family haulage + workshop | 2026-09-03 | | dialer opened — **call** then set Outcome to spoke / voicemail |
-| 3 | Gary Chapman & Son (Norfolk) | [garychapmanandson.co.uk](https://www.garychapmanandson.co.uk/) · door / site | Family plant / haulage | | | |
-| 4 | T.G. Askew (Bressingham, Norfolk) | [tgaskew.co.uk](https://www.tgaskew.co.uk/) · door / site | Family bulk haulage, FORS | | | |
-| 5 | W's Transport (East Dereham) | Research before call (confirm still trading) | ~6 lorries historically | | | |
+| # | Company | Contact | Size | Stage | Date contacted | Meeting | Outcome |
+|---|---|---|---|---|---|---|---|
+| 1 | J Medler Haulage (Norwich outskirts) | [jmedlerhaulagenorwich.co.uk](https://jmedlerhaulagenorwich.co.uk/) · door / site | ~12 HGV | Contacted | 2026-09-03 | | site opened — send **N1** via contact form / door |
+| 2 | Richardson Truck Services (Bradenham, IP25) | 07901 774767 · [richardson-truck-services.co.uk](https://www.richardson-truck-services.co.uk/) | Family haulage + workshop | Contacted | 2026-09-03 | | dialer opened — **call** then set Outcome to spoke / voicemail |
+| 3 | Gary Chapman & Son (Norfolk) | [garychapmanandson.co.uk](https://www.garychapmanandson.co.uk/) · door / site | Family plant / haulage | Target | | | |
+| 4 | T.G. Askew (Bressingham, Norfolk) | [tgaskew.co.uk](https://www.tgaskew.co.uk/) · door / site | Family bulk haulage, FORS | Target | | | |
+| 5 | W's Transport (East Dereham) | Research before call (confirm still trading) | ~6 lorries historically | Target | | | |
 
 Aim for **3 signed pilots**; overbook to 5 conversations. Start with **N1 / N2** (Norfolk), not northern reserves.
 
@@ -44,13 +66,13 @@ Aim for **3 signed pilots**; overbook to 5 conversations. Start with **N1 / N2**
 
 ## Reserves — remote email only (not worth the drive from Norfolk)
 
-| # | Company | Contact | Size | Date contacted | Meeting | Outcome |
-|---|---|---|---|---|---|---|
-| R1 | Direct Driver Ltd (Huddersfield) | [directdriver.co.uk](https://directdriver.co.uk/) | ~10 vehicles | | | |
-| R2 | Alfie Adams Transport (Bolton / Manchester) | 07941 633788 · Alfieadamstransport@gmail.com · [alfieadamstransport.co.uk](https://www.alfieadamstransport.co.uk/) | ~4 wagons | 2026-09-03 | | mailto opened earlier — optional remote only |
-| R3 | Allan Greenwood Haulage (Halifax) | [allangreenwoodhaulage.co.uk](https://allangreenwoodhaulage.co.uk/) | Family + ~3 drivers | | | |
-| R4 | F.C. Transport Leeds Ltd (Wakefield) | [fctransportleedsltd.co.uk](https://www.fctransportleedsltd.co.uk/) | Small mixed fleet | | | |
-| R5 | Harris Haulage Ltd (Dudley / Bridgnorth) | 07733 118 973 · craigharrishaulage@outlook.com | Family mixed fleet | | | |
+| # | Company | Contact | Size | Stage | Date contacted | Meeting | Outcome |
+|---|---|---|---|---|---|---|---|
+| R1 | Direct Driver Ltd (Huddersfield) | [directdriver.co.uk](https://directdriver.co.uk/) | ~10 vehicles | Target | | | |
+| R2 | Alfie Adams Transport (Bolton / Manchester) | 07941 633788 · Alfieadamstransport@gmail.com · [alfieadamstransport.co.uk](https://www.alfieadamstransport.co.uk/) | ~4 wagons | Contacted | 2026-09-03 | | mailto opened earlier — optional remote only |
+| R3 | Allan Greenwood Haulage (Halifax) | [allangreenwoodhaulage.co.uk](https://allangreenwoodhaulage.co.uk/) | Family + ~3 drivers | Target | | | |
+| R4 | F.C. Transport Leeds Ltd (Wakefield) | [fctransportleedsltd.co.uk](https://www.fctransportleedsltd.co.uk/) | Small mixed fleet | Target | | | |
+| R5 | Harris Haulage Ltd (Dudley / Bridgnorth) | 07733 118 973 · craigharrishaulage@outlook.com | Family mixed fleet | Target | | | |
 
 Other distant reserves: Froggatt’s (Chesterfield · 01246 826 771), Fosters Haulage (Bury · 07778 742089), Smalldene Midlands (Birmingham tippers).
 

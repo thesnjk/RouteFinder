@@ -44,3 +44,5 @@ Last updated: 2026-11-17
 | Evidence labels used | |
 
 **Prohibit:** fabricated quotes; treating enthusiasm as purchase intent; bulk outreach before message validation.
+
+**Empty-outcome honesty:** Log objections, ghosts, refusals, and empty meeting/outcome columns in [`negative-findings-log.md`](negative-findings-log.md). Empty outreach outcomes ≠ willingness to pay.

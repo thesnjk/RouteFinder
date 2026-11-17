@@ -11,8 +11,11 @@ Last updated: 2026-11-17
 | 2026-09 | [`pilot-outreach.md`](../pilot-outreach.md) | Outreach tables exist; meeting/outcome columns largely empty | No validated WTP yet | Verified fact |
 | — | — | *Log every “no”, ghost, or “already have CoPilot/Samsara” here* | — | — |
 
+**Scorecard link:** While meeting/outcome columns stay empty, Paid pilot intent remains **Unresolved** on [`validation-scorecard.md`](validation-scorecard.md) — see 2026-09 outreach row above. Discovery index: [`discovery-templates.md`](discovery-templates.md).
+
 ## Rules
 
 - Record date, company (or anonymised), objection, next action
 - Do not invent quotations
 - Treat “sounds interesting” as **not** purchase intent
+- Empty outreach outcomes are evidence of *absence*, not WTP — keep them here until dated results land

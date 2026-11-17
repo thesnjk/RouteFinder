@@ -8,8 +8,8 @@ Last updated: 2026-11-17
 
 | Role | Opportunity | Notes |
 |------|-------------|--------|
-| **Primary** | UK small-fleet (5–15) desk+cab — Norfolk pilot → API-included desk fee | Active |
-| **Backup** | Owner-operator App Store SKU | Deferred until paying-fleet signals |
+| **Primary** | UK small-fleet (5–15) desk+cab — Norfolk pilot → API-included desk fee | Active — buyer **Sarah** ([`buyer-personas-uk-hgv.md`](../buyer-personas-uk-hgv.md)); charter ICP wedge 5–15 ([`project-charter.md`](../project-charter.md)) |
+| **Backup** | Owner-operator App Store SKU | Deferred until paying-fleet signals — persona **Dave** ([`buyer-personas-uk-hgv.md`](../buyer-personas-uk-hgv.md)); charter secondary / deferred App Store |
 
 ## Scoring snapshot (qualitative — not a fake quantitative model)
 

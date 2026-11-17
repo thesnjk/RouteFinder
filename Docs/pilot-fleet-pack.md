@@ -2,7 +2,9 @@
 
 Materials for a **60-day free pilot** with small UK independents (5–15 trucks). RouteFinder already ships native Mac/iPad dispatch + LAN HTTP/SSE + web dispatch — this pack documents what you bring to a meeting, not a new SaaS portal.
 
-Last updated: 2026-09-26
+Last updated: 2026-11-17
+
+**Commercial honesty:** Indicative desk prices in this pack are **Working assumption** (GBP), not measured WTP or LTV/CAC. VAT treatment is **Unresolved** until invoice design. API fair-use / metering detail lives in [`unit-economics.md`](unit-economics.md) — do not invent provider £ COGS or new price bands here.
 
 ---
 
@@ -49,8 +51,8 @@ All RouteFinder software, branding, and documentation remain the exclusive prope
 
 No obligation to buy. If Operator continues, parties use the **API-included desk subscription** below (indicative; confirm in writing). **API cost included** means Provider/Operator runs `RouteFinderFleetServer` (or hosted gateway) with `--ors-key` / `ORS_API_KEY` so drivers do not paste HeiGIT keys — subject to **fair-use daily caps** (default 2,000 routes / 2,000 geocodes per day; HTTP 429 when exceeded). Not unlimited planet-scale routing. See [`unit-economics.md`](unit-economics.md).
 
-| Tier | Scope | Indicative price | Included |
-|------|--------|------------------|----------|
+| Tier | Scope | Indicative price (Working assumption) | Included |
+|------|--------|--------------------------------------|----------|
 | Pilot | ≤3 phones, 60 days | **£0** | Setup + feedback form |
 | Desk LAN | ≤10 trucks, office LAN server | **£39/mo** (band £29–£49) | Dispatch console + **ORS/Pelias proxy** fair-use |
 | Desk + remote | Hosted gateway VPS | **£49–£79/mo** + VPS pass-through | Same API caps **per org** on gateway; Operator owns VPS |

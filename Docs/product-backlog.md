@@ -27,7 +27,7 @@ Last updated: 2026-11-17
 | B23 | Agent | **Done** 2026-11-17 | Refresh [`pilot-fleet-pack.md`](pilot-fleet-pack.md) date + honesty: indicative prices Working assumption; VAT Unresolved; metering → unit-economics (no new £ invent) | Date + Working assumption / VAT / metering honesty; £ bands unchanged |
 | B24 | Agent | **Done** 2026-11-17 | Point [`phase9-legal-gtm-verification.md`](phase9-legal-gtm-verification.md) §7 at Founder **B16** / operator-legal-checklist | §7 + Operator-only → Founder/B16; no new legal drafting |
 | B25 | Agent | **Done** 2026-11-17 | Cross-link [`pilot-outreach.md`](pilot-outreach.md) prerequisites → discovery recruitment/ICP + personas | Outreach ICP prerequisite + discovery stub; no invented outcomes |
-| B26 | Agent | Todo | Cross-link opportunity-portfolio Selected primary/backup ↔ personas Sarah/Dave + charter | Portfolio ↔ personas sync |
+| B26 | Agent | **Done** 2026-11-17 | Cross-link opportunity-portfolio Selected primary/backup ↔ personas Sarah/Dave + charter | Selected ↔ Sarah/Dave + charter; no invented WTP |
 
 ### Append rule
 

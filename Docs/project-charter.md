@@ -64,9 +64,9 @@ Prices are **indicative**, dated via pilot pack (2026-09). Not verified willingn
 | Field | Value |
 |-------|--------|
 | **Initial geography** | UK; outreach primary = **Norfolk / East Anglia** (~45 min drive demos) |
-| **Active (primary) opportunity** | Small-fleet desk+cab pilot → paid API-included LAN/hosted desk |
-| **Backup opportunity** | Owner-operator App Store SKU after paying-fleet signals |
-| **Portfolio snapshot** | [`research/opportunity-portfolio.md`](research/opportunity-portfolio.md) |
+| **Active (primary) opportunity** | Small-fleet desk+cab pilot → paid API-included LAN/hosted desk (Sarah / ICP 5–15 — Selected **Primary** in [`research/opportunity-portfolio.md`](research/opportunity-portfolio.md); personas [`buyer-personas-uk-hgv.md`](buyer-personas-uk-hgv.md)) |
+| **Backup opportunity** | Owner-operator App Store SKU after paying-fleet signals (Dave deferred — Selected **Backup** in portfolio; personas Doc) |
+| **Portfolio snapshot** | [`research/opportunity-portfolio.md`](research/opportunity-portfolio.md) (Selected ↔ personas) |
 
 ---
 

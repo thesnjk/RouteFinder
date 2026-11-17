@@ -23,6 +23,11 @@ Last updated: 2026-11-17
 | B13 | Agent | Todo | Cross-link [`research/risk-register.md`](research/risk-register.md) early-warning rows to scorecard dimensions that are still Unresolved | Risk ↔ validation traceability |
 | B14 | Agent | Todo | Verify [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md) items are listed as Founder-owned in backlog/operator Docs (no silent agent legal drafting past existing drafts) | Founder/agent boundary clarity |
 | B15 | Agent | Todo | When B5 logs ≥1 dated outreach result: append a scorecard “evidence log” subsection pointing at outreach rows only (no invented WTP) | Evidence trail for B8 |
+| B17 | Agent | Todo | Sync [`research/opportunity-portfolio.md`](research/opportunity-portfolio.md) Exclude rows ↔ charter Explicit exclusions (bidirectional pointers; no new opportunities) | Charter ↔ portfolio exclusion sync — see #170 |
+| B18 | Agent | **Done** 2026-11-17 | Add scorecard-gate column on [`research/assumption-register.md`](research/assumption-register.md) for open assumptions (A1–A7 → Unresolved gates) | Scorecard gate column A1–A8; scorecard pointer |
+| B19 | Agent | Todo | Point scorecard + discovery-templates at [`research/negative-findings-log.md`](research/negative-findings-log.md); reinforce empty-outcome honesty | Negative-findings discoverability |
+| B20 | Agent | Todo | Refresh [`unit-economics.md`](unit-economics.md) honesty: date; this Doc = API metering not LTV/CAC; GBP; no invented COGS/WTP | Metering vs commercial model clarity |
+| B21 | Agent | Todo | Cross-link [`buyer-personas-uk-hgv.md`](buyer-personas-uk-hgv.md) ↔ charter ICP 5–15 + discovery recruitment filter | Persona ↔ ICP / discovery sync |
 
 ### Append rule
 

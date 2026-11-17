@@ -7,6 +7,8 @@ Last updated: 2026-11-17 · Recommendation: **NARROW** (pre-paid-pilot)
 
 ## Thresholds (founder policy)
 
+Open assumptions mapped to these gates → [`assumption-register.md`](assumption-register.md) (Scorecard gate column).
+
 | Gate | Threshold (policy) | Status |
 |------|--------------------|--------|
 | Recurring problem | 6/10 interviews same problem | **Unresolved** — interviews not completed |
@@ -34,4 +36,4 @@ Last updated: 2026-11-17 · Recommendation: **NARROW** (pre-paid-pilot)
 
 **NARROW** — Keep ICP (UK 5–15 truck independents, Norfolk first). Do not pivot product thesis. Do not GO to paid growth/App Store push until pilot evidence moves Unresolved cells. Do not STOP engineering maintenance/Docs honesty.
 
-**Next gate:** Refresh this scorecard after outreach outcomes land; explicit GO / NARROW / PIVOT / STOP — no silent pivots.
+**Next gate:** Refresh this scorecard after outreach outcomes land; explicit GO / NARROW / PIVOT / STOP — no silent pivots. Open assumptions: [`assumption-register.md`](assumption-register.md).

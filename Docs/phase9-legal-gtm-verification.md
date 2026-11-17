@@ -1,8 +1,10 @@
 # Phase 9 — Legal and GTM verification
 
-Manual QA after Phase 9 drafts. Solicitor / trademark / App Store submit remain **operator** actions.
+Manual QA after Phase 9 drafts.
 
-Last updated: 2026-09-17
+**Ownership:** In-repo drafts and checklist §6 = Agent Done (existing legal drafts only). §7 + solicitor / Ltd / hosting / App Store URLs = **Founder** — [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md); backlog **B16** when present. Agent must not silently re-draft Privacy/ToS/Driver Terms past existing drafts.
+
+Last updated: 2026-11-17
 
 ---
 
@@ -16,7 +18,7 @@ Last updated: 2026-09-17
 - [ ] [`app-store-connect-metadata.md`](app-store-connect-metadata.md) has URLs, description, privacy mapping, review notes
 - [ ] [`pilot-fleet-pack.md`](pilot-fleet-pack.md) pricing table anchors **£39/mo** Desk LAN; API section lists snapshot GPS + telematics ingest
 - [ ] [`unit-economics.md`](unit-economics.md) pricing table matches pilot pack
-- [ ] [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md) §6 agent deliverables checked; §7 left for you
+- [ ] [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md) §6 agent deliverables checked; §7 **Founder-owned** → backlog **B16** (when present) / operator-legal-checklist
 - [ ] [`pilot-outreach.md`](pilot-outreach.md) Norfolk N1–N5 + subject lines + voicemail; send log present
 
 ---
@@ -52,7 +54,9 @@ UITest (optional local): `testSettingsAPIUsageAndLegalDriverTerms` in `RouteFind
 
 ---
 
-## Operator-only (not agent)
+## Operator-only (Founder — not agent)
+
+Pre–App Store / paid readiness items map to [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md) §§1–5, 7 and backlog **B16** when present. Outreach sends remain Founder **B5**.
 
 - [ ] Solicitor review booked / completed
 - [ ] Ltd placeholders replaced

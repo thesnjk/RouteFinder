@@ -18,6 +18,10 @@ Product showcase captures (see [`Docs/screenshots/`](Docs/screenshots/) for capt
 
 ## User guide
 
+**Posture NARROW:** engineering MVP is largely shipped; commercial focus is Norfolk/East Anglia pilot validation — not new surfaces or App Store / paid-growth push while the validation scorecard stays NARROW. Direction: [project charter](Docs/project-charter.md). Self-service next actions: [product backlog](Docs/product-backlog.md) (Founder **B5** outreach).
+
+- [Project charter](Docs/project-charter.md) — Direction SSOT (posture NARROW)
+- [Product backlog](Docs/product-backlog.md) — Self-service next actions
 - [Project writeup](Docs/project-writeup.md) — Senior full-stack technical monograph (Analysis→Evaluation + Appendices; living Doc; no client interviews)
 - [Route simulation and rehearsal](Docs/user-guide-simulation.md) — Rehearse Route vs Play, traffic banner, lane guidance, vehicle footprint, language settings
 - [Fleet E2E QA playbook](Docs/fleet-e2e-qa.md) — Automated fleet smoke script + Mac/iPhone LAN checklist

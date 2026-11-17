@@ -12,7 +12,7 @@ Last updated: 2026-11-17
 | B2 | Agent | **Done** 2026-11-17 | Fill [`research/validation-scorecard.md`](research/validation-scorecard.md) v0 from existing Docs only; label every cell | Scorecard NARROW / pre-paid-pilot |
 | B3 | Agent | **Done** 2026-11-17 | Seed [`research/assumption-register.md`](research/assumption-register.md) + [`research/negative-findings-log.md`](research/negative-findings-log.md) from personas/scorecard honesty | Assumptions + known loses |
 | B4 | Agent | **Done** 2026-11-17 | Outreach tracker hygiene — CRM stage column/legend on [`pilot-outreach.md`](pilot-outreach.md) (Target→…→Lost) **without inventing outcomes** | Stage legend + Stage column; N1/N2/R2 = Contacted from prior dated attempts only |
-| B5 | Founder | Todo | Complete next Norfolk outreach actions (N1/N2) and log results; book solicitor when ready for paid/App Store | Contact log + legal checklist progress |
+| B5 | Founder | Todo | Complete next Norfolk outreach actions (N1/N2) and log results; when ready for paid/App Store, cue solicitor via **B16** / [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md) | Contact log; solicitor cue → B16 |
 | B6 | Agent | **Done** 2026-11-17 | Sync [`operator-next-steps.md`](operator-next-steps.md) Block 3 checklist with charter next gate (no new product invent) | Posture blurb + Block 3 CRM/B5/scorecard gate links |
 | B7 | Founder | Todo | Optional Block 1b phone smoke + Part B LAN before first live demo | Device confidence (optional) |
 | B8 | Agent | Todo | After founder logs outreach outcomes: refresh [`research/validation-scorecard.md`](research/validation-scorecard.md) cells from dated evidence only (no invented WTP) | Scorecard honesty |
@@ -21,8 +21,9 @@ Last updated: 2026-11-17
 | B11 | Agent | **Done** 2026-11-17 | Sync committed Docs for founder-grade master-prompt OS (developer-map legal + local-prompt pointer; backlog post-upgrade rows) — **never commit** `agent-master-prompt.md` | Developer-map + backlog honesty |
 | B12 | Agent | Todo | Audit [`research/discovery-templates.md`](research/discovery-templates.md) completeness vs charter discovery needs; fill missing template stubs only (no fabricated interviews) | Discovery kit ready for founder |
 | B13 | Agent | Todo | Cross-link [`research/risk-register.md`](research/risk-register.md) early-warning rows to scorecard dimensions that are still Unresolved | Risk ↔ validation traceability |
-| B14 | Agent | Todo | Verify [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md) items are listed as Founder-owned in backlog/operator Docs (no silent agent legal drafting past existing drafts) | Founder/agent boundary clarity |
+| B14 | Agent | **Done** 2026-11-17 | Verify [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md) items are listed as Founder-owned in backlog/operator Docs (no silent agent legal drafting past existing drafts) | Owner matrix + B16 + Block 4 boundary |
 | B15 | Agent | Todo | When B5 logs ≥1 dated outreach result: append a scorecard “evidence log” subsection pointing at outreach rows only (no invented WTP) | Evidence trail for B8 |
+| B16 | Founder | Todo | Complete [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md) §§1–5, 7 (IPO decision, solicitor booking/sign-off, Ltd, domains/hosting, pre–App Store) | Founder legal readiness before paid / App Store |
 
 ### Append rule
 

@@ -148,3 +148,12 @@ When drivers or desks are **not** on the office Wi‑Fi:
 Verification checklist: [phase7-hosted-verification.md](phase7-hosted-verification.md).
 
 LAN Mac `RouteFinderFleetServer` remains the default for same-Wi‑Fi pilots.
+
+---
+
+## After pairing — pilot path
+
+Technical pairing (Mac/iPhone/web on LAN or hosted HTTPS) is **not** a sold pilot. After devices work:
+
+1. Follow [`operator-next-steps.md`](operator-next-steps.md) **Block 3** (Norfolk outreach primary).
+2. Log CRM stages only in [`pilot-outreach.md`](pilot-outreach.md) — Founder backlog **B5**; do not invent meetings or WTP.

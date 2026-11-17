@@ -40,7 +40,7 @@ Last updated: 2026-11-17
 | B30 | Agent | **Done** 2026-11-17 | Sync [`operator-next-steps.md`](operator-next-steps.md) Prerequisites before outreach → discovery recruitment + personas (if not already complete after B25) | Prerequisites #4 + Block 3 ICP/negative-findings links |
 | B31 | Agent | **Done** 2026-11-17 | Add Related OS one-liner on [`getting-started.md`](getting-started.md) / charter for scorecard GO/NARROW gate before growth claims | Doc-index growth gate + charter scorecard cell |
 | B32 | Agent | **Done** 2026-11-17 | Point [`README.md`](../README.md) (or top Docs pointer if present) at charter NARROW + backlog self-service — no product invent | README User guide NARROW blurb + charter/backlog links |
-| B33 | Agent | Todo | Cross-link [`fleet-setup-guide.md`](fleet-setup-guide.md) → operator-next-steps Block 3 / pilot-outreach (pilot path after pairing) | Fleet setup → pilot path |
+| B33 | Agent | **Done** 2026-11-17 | Cross-link [`fleet-setup-guide.md`](fleet-setup-guide.md) → operator-next-steps Block 3 / pilot-outreach (pilot path after pairing) | After-pairing → Block 3 + pilot-outreach / B5 |
 | B34 | Agent | Todo | Honesty one-liner on [`demo-superiority-script.md`](demo-superiority-script.md): demo ≠ WTP; log objections to negative-findings | Demo ≠ purchase intent |
 
 ### Append rule

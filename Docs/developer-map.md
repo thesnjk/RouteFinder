@@ -34,10 +34,14 @@ xcodebuild test -project RouteFinderApp.xcodeproj -scheme RouteFinderApp \
 
 ## Docs pointers
 
+- **Charter (direction SSOT):** `Docs/project-charter.md` — posture NARROW; next decision gate
+- **Self-service backlog:** `Docs/product-backlog.md` — first unfinished Agent row on attach/continue
+- **Research OS:** `Docs/research/` — validation-scorecard, assumptions, risks, opportunity portfolio, discovery templates
 - Project writeup (senior full-stack technical monograph; complete living Doc — Appendices A–F): `Docs/project-writeup.md`
 - Fleet LAN QA: `Docs/fleet-e2e-qa.md`
 - Fleet API schema: `Docs/fleet-api-schema.json` (`FleetProxyDeskStatus` / `/v1/proxy/status` contract)
 - Hosted desk deploy: `Docs/hosted-gateway-deployment.md` (EPIC-HOSTED-DESK Operator gateway)
+- Pilot commercial: `Docs/pilot-outreach.md`, `Docs/pilot-fleet-pack.md`, `Docs/operator-next-steps.md`
 - Getting started: `Docs/getting-started.md`
 - Screenshots re-capture: `Docs/screenshots/README.md`
 - Competitive / sweep: `Docs/ultimate-competitive-excellence-sweep.md` (Phase 3b surface matrix) + `Docs/engineering-test-matrix.md` + relevant `Docs/phase*` verification docs

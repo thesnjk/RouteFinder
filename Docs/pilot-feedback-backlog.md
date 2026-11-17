@@ -2,7 +2,7 @@
 
 Ranked backlog filled **after** week-2 pilot feedback. Do not pre-build speculative features (hosted portal, Valhalla, live telematics) until evidence lands here.
 
-Last updated: 2026-09-03
+Last updated: 2026-11-17
 
 ---
 
@@ -48,24 +48,25 @@ Last updated: 2026-09-03
 
 | Item | Why deferred |
 |---|---|
-| Hosted multi-tenant SaaS portal | Native + LAN web dispatch first; hosted only if ≥2 pilots need remote |
-| Full Android navigator (C2) | Gate: [`android-c2-gate.md`](android-c2-gate.md) — ≥2 paying renewals blocked by Android |
-| Self-hosted Valhalla/GraphHopper | ORS + offline + metering enough for ≤3 pilots |
-| Continuous live location streaming | Snapshot ping only if F9 demanded by ≥2 fleets |
+| Hosted multi-tenant SaaS portal / Stripe self-serve | Connection Account-Manager-lite shipped; Stripe residual until WTP |
+| Live telematics continuous map | Snapshot ping only unless ≥2 pilots demand |
+| Self-hosted Valhalla/GraphHopper | ORS + offline + metering enough for early pilots |
 | Custom OS / MDM kiosk | Ops after paying customers |
-| Mass ads | B2B haulage = referrals |
-| Further `RouteViewModel` decomposition | Ph51/52 done; stop until pilot bugs |
+| Mass ads | B2B haulage = referrals; validate message first |
+| Further `RouteViewModel` decomposition | Stop until pilot bugs |
+| CarPlay production / Android Auto / VU download / live £ / HD | Secrets/partner gates — see scorecard |
 
-In progress (scaffolded 2026-09-03; continuity + ORS proxy 2026-09-04):
+### Shipped MVP (do not re-list as “do not build”)
 
 | Item | Path | Notes |
 |---|---|---|
-| LAN web dispatch console | [`../web-dispatch/`](../web-dispatch/) | v1.5: tour, QR, snapshots, MapLibre |
-| Android C1 fleet driver | [`../android-fleet-driver/`](../android-fleet-driver/) | Trip receive + snapshot; not full nav |
+| LAN web dispatch console | [`../web-dispatch/`](../web-dispatch/) | Roster, QR, snapshots, MapLibre, Connection meters |
+| Android C2 fleet driver | [`../android-fleet-driver/`](../android-fleet-driver/) | Nav + fleet proxy client MVP; AA/offline residual |
+| Hosted gateway | [`../hosted-gateway/`](../hosted-gateway/) + [`hosted-gateway-deployment.md`](hosted-gateway-deployment.md) | Optional Operator HTTPS `/v1/*` |
 | Fleet ORS proxy | `RouteFinderFleetServer --ors-key` | Operator-paid; drivers skip HeiGIT keys |
-| Fleet setup wizard + QR | iOS Settings / Mac Dispatch / web | Pairing without Terminal docs |
+| Fleet setup wizard + QR + Connection status | iOS / Mac / web / Android | `FleetProxyDeskStatus` org identity + masked meters |
 
-**Phase 3 (pilot-driven — do not build yet):** Android C2, hosted relay, live telematics map, CarPlay production. Gate: [`android-c2-gate.md`](android-c2-gate.md).
+**Still pilot-driven (no speculative invent):** live telematics streaming, Stripe billing UI, CarPlay/AA production, VU partner download—wait for unlock **or** clear pilot blocker evidence in the open-items table above.
 
 
 ---

@@ -17,7 +17,7 @@ Last updated: 2026-11-17
 | B7 | Founder | Todo | Optional Block 1b phone smoke + Part B LAN before first live demo | Device confidence (optional) |
 | B8 | Agent | Todo | After founder logs outreach outcomes: refresh [`research/validation-scorecard.md`](research/validation-scorecard.md) cells from dated evidence only (no invented WTP) | Scorecard honesty |
 | B9 | Agent | **Done** 2026-11-17 | Align [`Docs/competitor-pricing-2026.md`](competitor-pricing-2026.md) observation dates / GBP-VAT notes where stale — no fabricated prices | Dated Aug 2026 labels; £0 RF app + desk Working assumption; VAT Unresolved footnote |
-| B10 | Agent | Todo | Add one-line VAT / invoice treatment **Unresolved** footnote cross-link from charter revenue table ↔ pilot pack (no invented VAT policy) | Commercial Docs consistency |
+| B10 | Agent | **Done** 2026-11-17 | Add one-line VAT / invoice treatment **Unresolved** footnote cross-link from charter revenue table ↔ pilot pack (no invented VAT policy) | Bidirectional Unresolved notes + competitor-pricing VAT link |
 | B11 | Agent | **Done** 2026-11-17 | Sync committed Docs for founder-grade master-prompt OS (developer-map legal + local-prompt pointer; backlog post-upgrade rows) — **never commit** `agent-master-prompt.md` | Developer-map + backlog honesty |
 | B12 | Agent | Todo | Audit [`research/discovery-templates.md`](research/discovery-templates.md) completeness vs charter discovery needs; fill missing template stubs only (no fabricated interviews) | Discovery kit ready for founder |
 | B13 | Agent | Todo | Cross-link [`research/risk-register.md`](research/risk-register.md) early-warning rows to scorecard dimensions that are still Unresolved | Risk ↔ validation traceability |

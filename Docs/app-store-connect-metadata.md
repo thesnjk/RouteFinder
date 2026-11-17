@@ -1,7 +1,9 @@
 # App Store Connect metadata (draft)
 
 **Status:** Operator paste-ready draft — not submitted. Align URLs with [`legal/site/README.md`](legal/site/README.md) after you host HTML.  
-**Last updated:** 2026-09-17
+**Last updated:** 2026-11-17
+
+**Ownership:** Production App Store submit, hosted Privacy/Terms URLs, and solicitor sign-off are **Founder** — backlog **B16** + [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md) §§1–5, 7. Agent may refresh this draft Doc only; agent does **not** submit to ASC or invent solicitor completion. Free pilots may use TestFlight while B16 is in progress.
 
 ---
 
@@ -93,7 +95,7 @@ Routing outputs are advisory only. We do not claim certified LEZ, tachograph, or
 
 **Demo account:** not required for single-device navigation. For fleet, provide a TestFlight build + short LAN setup only if Review requests it.
 
-**TestFlight vs production:** use TestFlight for pilot phones; production App Store build after solicitor sign-off and hosted legal URLs are live.
+**TestFlight vs production:** use TestFlight for pilot phones; production App Store build only after Founder **B16** / [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md) §7 (solicitor sign-off + hosted legal URLs live). Do not invent sign-off dates here.
 
 ---
 
@@ -142,5 +144,5 @@ Only claim CarPlay in screenshots/copy if the **paid Apple Developer** build inc
 ## Related
 
 - Hosted HTML: [`legal/site/`](legal/site/)
-- Operator checklist: [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md)
+- Operator checklist (Founder **B16**): [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md)
 - Verification: [`phase9-legal-gtm-verification.md`](phase9-legal-gtm-verification.md)

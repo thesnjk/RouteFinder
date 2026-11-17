@@ -46,7 +46,7 @@ Last updated: 2026-11-17
 | B36 | Agent | Deferred | Point [`web-dispatch/README.md`](../web-dispatch/README.md) at charter NARROW + [`getting-started.md`](getting-started.md) / backlog — no product invent | Docs filler — resume when product queue empty |
 | B37 | Agent | Deferred | Cross-link [`phase1-device-checklist.md`](phase1-device-checklist.md) → operator-next-steps Block 3 / pilot-outreach (device smoke ≠ outreach done) | Docs filler — resume when product queue empty |
 | B38 | Agent | **Done** 2026-11-17 | Walkaround `syncPending` drain + retry on fleet reconnect; clear on success; defects-not-on-desk message | Inspection sync queue + reconnect drain |
-| B39 | Agent | Todo | CI/schema contract checks vs [`fleet-api-schema.json`](fleet-api-schema.json) (golden fixtures) | Schema contract hygiene |
+| B39 | Agent | **Done** 2026-11-17 | CI/schema contract checks vs [`fleet-api-schema.json`](fleet-api-schema.json) (golden fixtures) | Fixtures + Node validator + Swift decode + CI step |
 | B40 | Agent | Todo | Offline/heuristic lane honesty one-liner when Overpass disabled (iOS ± Android) | Lane disclosure UX |
 
 ### Append rule

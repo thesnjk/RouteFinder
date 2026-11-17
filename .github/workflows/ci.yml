@@ -24,6 +24,10 @@ jobs:
       - name: Run tests
         run: swift test
 
+      - name: Fleet API schema contract
+        working-directory: .
+        run: node Scripts/validate-fleet-api-schema.mjs
+
       - name: Fleet E2E smoke
         run: bash Scripts/fleet-e2e-smoke.sh
 

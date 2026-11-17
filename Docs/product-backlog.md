@@ -11,10 +11,13 @@ Last updated: 2026-11-17
 | B1 | Agent | **Done** 2026-11-17 | Ship founder OS Docs (charter, backlog, research scorecard/assumptions/risks/portfolio, discovery links); fix stale pilot-feedback Phase 3; developer-map + sweep | Committed Docs; posture NARROW |
 | B2 | Agent | **Done** 2026-11-17 | Fill [`research/validation-scorecard.md`](research/validation-scorecard.md) v0 from existing Docs only; label every cell | Scorecard NARROW / pre-paid-pilot |
 | B3 | Agent | **Done** 2026-11-17 | Seed [`research/assumption-register.md`](research/assumption-register.md) + [`research/negative-findings-log.md`](research/negative-findings-log.md) from personas/scorecard honesty | Assumptions + known loses |
-| B4 | Agent | Todo | Outreach tracker hygiene — add CRM stage column/legend to [`pilot-outreach.md`](pilot-outreach.md) (Target→…→Lost) **without inventing outcomes** | Structured stages on living tracker |
+| B4 | Agent | **Done** 2026-11-17 | Outreach tracker hygiene — CRM stage column/legend on [`pilot-outreach.md`](pilot-outreach.md) (Target→…→Lost) **without inventing outcomes** | Stage legend + Stage column; N1/N2/R2 = Contacted from prior dated attempts only |
 | B5 | Founder | Todo | Complete next Norfolk outreach actions (N1/N2) and log results; book solicitor when ready for paid/App Store | Contact log + legal checklist progress |
-| B6 | Agent | Todo | After B4: sync [`operator-next-steps.md`](operator-next-steps.md) Block 3 checklist with charter next gate (no new product invent) | Operator Docs honesty |
+| B6 | Agent | Todo | Sync [`operator-next-steps.md`](operator-next-steps.md) Block 3 checklist with charter next gate (no new product invent) | Operator Docs honesty |
 | B7 | Founder | Todo | Optional Block 1b phone smoke + Part B LAN before first live demo | Device confidence (optional) |
+| B8 | Agent | Todo | After founder logs outreach outcomes: refresh [`research/validation-scorecard.md`](research/validation-scorecard.md) cells from dated evidence only (no invented WTP) | Scorecard honesty |
+| B9 | Agent | Todo | Align [`Docs/competitor-pricing-2026.md`](competitor-pricing-2026.md) observation dates / GBP-VAT notes where stale — no fabricated prices | Dated pricing Doc hygiene |
+| B10 | Agent | Todo | Add one-line VAT / invoice treatment **Unresolved** footnote cross-link from charter revenue table ↔ pilot pack (no invented VAT policy) | Commercial Docs consistency |
 
 ### Append rule
 

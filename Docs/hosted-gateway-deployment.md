@@ -4,6 +4,8 @@ All-in-one HTTPS fleet API for **remote depots** that cannot use office LAN. Imp
 
 Package: [`hosted-gateway/`](../hosted-gateway/).
 
+**Privacy / legal:** Operator-run VPS + per-org tokens — customer personal data and secrets stay Founder/Operator responsibility. Paid / App Store readiness (solicitor, Ltd, hosted Privacy/Terms URLs) = Founder **B16** + [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md). Agent must not commit org bearer tokens or invent solicitor sign-off. Privacy draft: [`legal/privacy-policy.md`](legal/privacy-policy.md) (solicitor review pending).
+
 ## What you get
 
 | Capability | Detail |
@@ -169,3 +171,9 @@ Phase 7 primary path is this **VPS all-in-one**. A Cloudflare Worker edge layer 
 | Hosted gateway | Home office, remote depot, cellular drivers |
 
 See [fleet-setup-guide.md](fleet-setup-guide.md) and [phase7-hosted-verification.md](phase7-hosted-verification.md).
+
+## Related
+
+- Founder legal checklist (**B16**): [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md)
+- App Store metadata (production gated on B16): [`app-store-connect-metadata.md`](app-store-connect-metadata.md)
+- Phase 9 verification: [`phase9-legal-gtm-verification.md`](phase9-legal-gtm-verification.md)

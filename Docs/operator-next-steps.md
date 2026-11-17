@@ -2,7 +2,17 @@
 
 Simulator-first gate after code ship on `main`. CI UI tests are the official P0 Pass — physical iPhone is optional once before the first pilot email.
 
-Last updated: 2026-11-11
+Last updated: 2026-11-17
+
+## Current posture
+
+| Field | Value |
+|-------|--------|
+| **Posture** | **NARROW** — [`project-charter.md`](project-charter.md) |
+| **Focus** | Norfolk / East Anglia pilot validation for the shipped desk+cab ICP — not new surfaces or densify grind |
+| **Next decision gate** | After ≥3 discovery conversations with workflow evidence **and** ≥1 signed/started free pilot **or** a clear refusal pattern → refresh [`research/validation-scorecard.md`](research/validation-scorecard.md) and choose **GO / NARROW / PIVOT / STOP** explicitly (no silent pivots) |
+| **Founder next** | Backlog **B5** — N1/N2 outreach + log CRM stages ([`pilot-outreach.md`](pilot-outreach.md)); solicitor before paid / App Store |
+| **Agent rule** | Do **not** invent outreach outcomes, meetings, or WTP |
 
 ---
 
@@ -49,11 +59,14 @@ CI already **Pass** for inspection snapshot → desk payload (Phase 7b). Run phy
 
 ## Block 3 — Norfolk pilot outreach **(primary)**
 
-1. Print [`pilot-fleet-pack.md`](pilot-fleet-pack.md) (agreement + **£39/mo** API-included pricing table)
-2. Optional: Block 1b phone smoke
-3. Send **3–5** Norfolk variants from [`pilot-outreach.md`](pilot-outreach.md) — start with **N1 J Medler** / **N2 Richardson**, not northern reserves
-4. Log date + outcome in the outreach target table
+Commercial path under charter **NARROW**. Indicative desk fee (**£39/mo** band) is a **Working assumption** until pilot continuation evidence — VAT treatment **Unresolved**.
+
+1. Print [`pilot-fleet-pack.md`](pilot-fleet-pack.md) (agreement + indicative API-included pricing table)
+2. Optional: Block 1b phone smoke (Block 1b) and/or Part B LAN before a live on-site demo
+3. Founder executes backlog **B5**: send **3–5** Norfolk variants from [`pilot-outreach.md`](pilot-outreach.md) — start with **N1 J Medler** / **N2 Richardson**, not northern reserves
+4. Log **CRM Stage** (Target → Contacted → … → Customer / Lost) plus date + Meeting/Outcome — see outreach stage legend; **never invent** stages or results
 5. Log every **Android / Windows** objection in [`pilot-feedback-backlog.md`](pilot-feedback-backlog.md)
+6. When gate evidence exists (or clear refusals), refresh [`research/validation-scorecard.md`](research/validation-scorecard.md) (Agent **B8** only from dated logs) and record GO / NARROW / PIVOT / STOP on the charter
 
 Pitch line (honest):
 
@@ -61,7 +74,7 @@ Pitch line (honest):
 
 **May mention:** dispatch map pin from trip snapshots, read-only partner telematics CSV, optional hosted gateway for remote depots, UK toll **hints**, Android driver app for mixed fleets.
 
-**Do not promise:** continuous live telematics platform, TRAVIS booking commerce, toll tariff tables, legal VU download, 24/7 SLA, CarPlay (unless paid-team entitled build), Android Auto.
+**Do not promise:** continuous live telematics platform, TRAVIS booking commerce, toll tariff tables, legal VU download, 24/7 SLA, CarPlay (unless paid-team entitled build), Android Auto, validated willingness-to-pay, or App Store readiness before solicitor checklist.
 
 ---
 

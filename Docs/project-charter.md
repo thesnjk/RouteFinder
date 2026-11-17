@@ -103,7 +103,7 @@ Verdict detail / qualitative scores for these tracks: **Exclude** rows in [`rese
 | Doc | Role |
 |-----|------|
 | [`product-backlog.md`](product-backlog.md) | Ordered self-service next actions |
-| [`research/validation-scorecard.md`](research/validation-scorecard.md) | GO / NARROW / PIVOT / STOP |
+| [`research/validation-scorecard.md`](research/validation-scorecard.md) | Explicit **GO / NARROW / PIVOT / STOP** — no silent pivots; no App Store / paid-growth push while **NARROW** Unresolved |
 | [`developer-map.md`](developer-map.md) | Layout / tests / pointers |
 | [`pilot-outreach.md`](pilot-outreach.md) | Named-account outreach tracker |
 | [`pilot-fleet-pack.md`](pilot-fleet-pack.md) | Pilot agreement + pricing template |

@@ -30,3 +30,5 @@ Last updated: 2026-11-17
 | Crowd LAN invent | Low | — | — | Speculative | High | Med | — | — | — | **Exclude** |
 
 Scores are **Reasoned inference / Working assumption** only—do not treat as measured market research.
+
+**Charter sync:** Rows with verdict **Exclude** (including “until WTP/unlock”) mirror [`project-charter.md`](../project-charter.md) **Explicit exclusions**. Do not add or remove opportunities here without updating the charter; do not invent WTP or market sizes.

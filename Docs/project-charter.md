@@ -79,6 +79,8 @@ Prices are **indicative**, dated via pilot pack (2026-09). Not verified willingn
 - Mass ads before message/offer validation
 - Inventing CarPlay / Android Auto / HD / live £ / further PBF without unlock
 
+Verdict detail / qualitative scores for these tracks: **Exclude** rows in [`research/opportunity-portfolio.md`](research/opportunity-portfolio.md) — keep that snapshot aligned with this list (no silent multi-track builds).
+
 ---
 
 ## Founder constraints

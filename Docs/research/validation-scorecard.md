@@ -7,7 +7,7 @@ Last updated: 2026-11-17 · Recommendation: **NARROW** (pre-paid-pilot)
 
 ## Thresholds (founder policy)
 
-Early warnings for these Unresolved gates → [`risk-register.md`](risk-register.md) (Scorecard link column).
+Early warnings → [`risk-register.md`](risk-register.md). Open assumptions → [`assumption-register.md`](assumption-register.md) (Scorecard gate column). Disconfirming / empty outreach outcomes → [`negative-findings-log.md`](negative-findings-log.md) (do not invent rows).
 
 | Gate | Threshold (policy) | Status |
 |------|--------------------|--------|
@@ -36,4 +36,4 @@ Early warnings for these Unresolved gates → [`risk-register.md`](risk-register
 
 **NARROW** — Keep ICP (UK 5–15 truck independents, Norfolk first). Do not pivot product thesis. Do not GO to paid growth/App Store push until pilot evidence moves Unresolved cells. Do not STOP engineering maintenance/Docs honesty.
 
-**Next gate:** Refresh this scorecard after outreach outcomes land; explicit GO / NARROW / PIVOT / STOP — no silent pivots. Risk early-warnings: [`risk-register.md`](risk-register.md).
+**Next gate:** Refresh this scorecard after outreach outcomes land; explicit GO / NARROW / PIVOT / STOP — no silent pivots. Risks: [`risk-register.md`](risk-register.md). Assumptions: [`assumption-register.md`](assumption-register.md). Empty outcomes / refusals: [`negative-findings-log.md`](negative-findings-log.md).

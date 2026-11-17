@@ -1,6 +1,8 @@
 # Buyer Personas — UK HGV (2026)
 
-Two primary personas for competitive positioning (equal weight in Phase 26 research and gap ranking), plus two secondary personas for Android / hosted surface scoring.
+Charter direction: [`project-charter.md`](project-charter.md). **Primary commercial buyer** = Sarah (small-fleet); charter ICP wedge **5–15 trucks** within the broader ≈2–20 band. **Dave** (owner-operator) remains a research persona; App Store SKU is **deferred** post-pilot. Discovery recruitment / ICP filter: [`research/discovery-templates.md`](research/discovery-templates.md).
+
+Two personas carry equal weight in Phase 26 competitive gap ranking, plus two secondary personas for Android / hosted surface scoring. Do not invent interview quotes here.
 
 ---
 
@@ -59,7 +61,7 @@ Two primary personas for competitive positioning (equal weight in Phase 26 resea
 
 | Attribute | Detail |
 |---|---|
-| **Fleet size** | 2–20 rigids/artics |
+| **Fleet size** | 2–20 rigids/artics; charter ICP wedge **5–15** ([`project-charter.md`](project-charter.md)) |
 | **Role** | Owner or transport manager; 1 office Mac/iPad |
 | **Tech** | Mix of driver phones; may have Geotab/Samsara for compliance |
 | **Budget sensitivity** | Medium — pays for compliance/telematics, resists nav per-seat tax |

@@ -7,12 +7,18 @@ Last updated: 2026-11-17
 | Need | Living Doc / template |
 |------|------------------------|
 | Named accounts + outreach log | [`../pilot-outreach.md`](../pilot-outreach.md) |
+| Personas (Sarah / Dave / …) | [`../buyer-personas-uk-hgv.md`](../buyer-personas-uk-hgv.md) |
+| Charter ICP + direction | [`../project-charter.md`](../project-charter.md) |
 | Pilot agreement, scope, pricing, feedback form | [`../pilot-fleet-pack.md`](../pilot-fleet-pack.md) |
 | Post-pilot engineering triage | [`../pilot-feedback-backlog.md`](../pilot-feedback-backlog.md) |
 | Assumptions | [`assumption-register.md`](assumption-register.md) |
 | Scorecard | [`validation-scorecard.md`](validation-scorecard.md) |
 | Negative findings | [`negative-findings-log.md`](negative-findings-log.md) |
 | Operator sequence | [`../operator-next-steps.md`](../operator-next-steps.md) |
+
+## Recruitment / ICP filter (stub)
+
+Before adding names to outreach: prefer **5–15 trucks** (≈2–20 OK to talk), Sarah-class buyer, Norfolk / East Anglia (~45 min). Detail: personas Doc + charter — **do not** duplicate the account table here.
 
 ## Interview guide (minimal)
 

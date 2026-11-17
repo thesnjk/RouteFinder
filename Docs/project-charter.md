@@ -35,8 +35,8 @@ Evidence labels used below: **Verified fact** · **Reasoned inference** · **Wor
 
 | Field | Value | Label |
 |-------|--------|--------|
-| **Primary customer** | Small-fleet transport manager / owner (“Sarah”) — ≈2–20 trucks; ICP wedge **5–15 trucks** | Working assumption (personas Doc) |
-| **Secondary customer** | UK owner-operator (“Dave”) — App Store SKU **deferred** post-pilot | Working assumption |
+| **Primary customer** | Small-fleet transport manager / owner (“Sarah”) — ≈2–20 trucks; ICP wedge **5–15 trucks** ([`buyer-personas-uk-hgv.md`](buyer-personas-uk-hgv.md)) | Working assumption (personas Doc) |
+| **Secondary customer** | UK owner-operator (“Dave”) — App Store SKU **deferred** post-pilot ([`buyer-personas-uk-hgv.md`](buyer-personas-uk-hgv.md)) | Working assumption |
 | **Primary problem** | Consumer maps ignore HGV constraints; truck-nav peers lack physics rehearsal + lightweight desk coupling; telematics is heavy SaaS | Reasoned inference from competitive Docs |
 | **Primary workflow** | Office creates/pushes constrained trip → cab receives / routes / rehearses → advisory HOS + UK living-layer advisories → desk sees roster/snapshots | Verified fact (shipped product) |
 | **Promised outcome** | Fewer unsuitable roads / surprise LEZ exposure; shareable trip risk brief; office–cab sync without per-seat CoPilot tax | Working assumption (pilot value hypothesis) |

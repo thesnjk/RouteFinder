@@ -23,6 +23,11 @@ Last updated: 2026-11-17
 | B13 | Agent | Todo | Cross-link [`research/risk-register.md`](research/risk-register.md) early-warning rows to scorecard dimensions that are still Unresolved | Risk ↔ validation traceability |
 | B14 | Agent | Todo | Verify [`legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md) items are listed as Founder-owned in backlog/operator Docs (no silent agent legal drafting past existing drafts) | Founder/agent boundary clarity |
 | B15 | Agent | Todo | When B5 logs ≥1 dated outreach result: append a scorecard “evidence log” subsection pointing at outreach rows only (no invented WTP) | Evidence trail for B8 |
+| B22 | Agent | **Done** 2026-11-17 | Expand [`developer-map.md`](developer-map.md) Research OS into explicit links (scorecard, assumptions, risks, portfolio, discovery, negative-findings) + Founder legal checklist pointer | Greppable research OS + Founder legal note |
+| B23 | Agent | Todo | Refresh [`pilot-fleet-pack.md`](pilot-fleet-pack.md) date + honesty: indicative prices Working assumption; VAT Unresolved; metering → unit-economics (no new £ invent) | Pilot pack commercial honesty |
+| B24 | Agent | Todo | Point [`phase9-legal-gtm-verification.md`](phase9-legal-gtm-verification.md) §7 at Founder **B16** / operator-legal-checklist | Phase 9 Founder boundary |
+| B25 | Agent | Todo | Cross-link [`pilot-outreach.md`](pilot-outreach.md) prerequisites → discovery recruitment/ICP + personas | Outreach ↔ discovery ICP |
+| B26 | Agent | Todo | Cross-link opportunity-portfolio Selected primary/backup ↔ personas Sarah/Dave + charter | Portfolio ↔ personas sync |
 
 ### Append rule
 

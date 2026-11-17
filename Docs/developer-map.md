@@ -34,10 +34,20 @@ xcodebuild test -project RouteFinderApp.xcodeproj -scheme RouteFinderApp \
 
 ## Docs pointers
 
-- **Charter (direction SSOT):** `Docs/project-charter.md` — posture NARROW; next decision gate
-- **Self-service backlog:** `Docs/product-backlog.md` — first unfinished Agent row on attach/continue
-- **Research OS:** `Docs/research/` — validation-scorecard, assumptions, risks, opportunity portfolio, discovery templates, negative-findings
-- **Legal readiness:** `Docs/legal/` + `Docs/legal/operator-legal-checklist.md` (solicitor before paid / App Store)
+- **Charter (direction SSOT):** [`Docs/project-charter.md`](project-charter.md) — posture NARROW; next decision gate
+- **Self-service backlog:** [`Docs/product-backlog.md`](product-backlog.md) — first unfinished Agent row on attach/continue
+- **Research OS** (`Docs/research/`):
+
+| Doc | Role |
+|-----|------|
+| [`research/validation-scorecard.md`](research/validation-scorecard.md) | GO / NARROW / PIVOT / STOP |
+| [`research/assumption-register.md`](research/assumption-register.md) | Testable beliefs |
+| [`research/risk-register.md`](research/risk-register.md) | Early warnings ↔ scorecard |
+| [`research/opportunity-portfolio.md`](research/opportunity-portfolio.md) | Primary + backup + Exclude |
+| [`research/discovery-templates.md`](research/discovery-templates.md) | Interview / ICP stubs |
+| [`research/negative-findings-log.md`](research/negative-findings-log.md) | Refusals / empty outcomes |
+
+- **Legal readiness:** [`Docs/legal/`](legal/) + [`Docs/legal/operator-legal-checklist.md`](legal/operator-legal-checklist.md) — **Founder-owned** (backlog **B16** when present); solicitor before paid / App Store; agent does not silently re-draft past existing legal drafts
 - **Agent operating rules:** `Docs/agent-master-prompt.md` — **local-only** (`.git/info/exclude`; never commit)
 - Project writeup (senior full-stack technical monograph; complete living Doc — Appendices A–F): `Docs/project-writeup.md`
 - Fleet LAN QA: `Docs/fleet-e2e-qa.md`
